@@ -12,7 +12,7 @@
 #ifndef PROCESS_LIB_TES_FEM_NOTPL_H_
 #define PROCESS_LIB_TES_FEM_NOTPL_H_
 
-#include "TESFEM-data-notpl.h"
+#include <Eigen/Eigen>
 
 namespace ProcessLib
 {
@@ -20,11 +20,24 @@ namespace ProcessLib
 namespace TES
 {
 
-class LAMethodsNoTpl
+struct LADataNoTpl
 {
-public:
-    static double getMassCoeff(LADataNoTpl const& d);
+    Eigen::Matrix3d getMassCoeffMatrix();
+
+    double _hydraulic_conductivity;
+
+    double _poro;
+
+    double _p;
+    double _T;
+    double _x;
+
+    double _rho_SR;
+
+    double _M_inert;
+    double _M_react;
 };
+
 
 } // namespace TES
 

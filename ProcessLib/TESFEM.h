@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "TESFEM-notpl.h"
-#include "TESFEM-data-notpl.h"
 
 namespace ProcessLib
 {
@@ -51,8 +50,8 @@ class LocalAssemblerData
 {
 public:
     using ShapeFunction = ShapeFunction_;
-    using NodalMatrixType   = typename ShapeMatrixPolicyType<ShapeFunction, GlobalDim>::NodalMatrixType;
-    using NodalVectorType   = typename ShapeMatrixPolicyType<ShapeFunction, GlobalDim>::NodalVectorType;
+    // using NodalMatrixType   = typename ShapeMatrixPolicyType<ShapeFunction, GlobalDim>::NodalMatrixType;
+    // using NodalVectorType   = typename ShapeMatrixPolicyType<ShapeFunction, GlobalDim>::NodalVectorType;
 
     using ShapeMatricesType = ShapeMatrixPolicyType<ShapeFunction, GlobalDim>;
     using ShapeMatrices     = typename ShapeMatricesType::ShapeMatrices;
@@ -73,6 +72,11 @@ private:
     std::vector<ShapeMatrices> _shape_matrices;
     // double _hydraulic_conductivity;
     LADataNoTpl _data;
+
+    static const unsigned NODAL_DOF = 3;
+    static const unsigned MAT_SIZE = ShapeFunction::NPOINTS * NODAL_DOF;
+    using NodalMatrixType = Eigen::Matrix<double, MAT_SIZE, MAT_SIZE>;
+    using NodalVectorType = Eigen::Matrix<double, MAT_SIZE, 1>;
 
     std::unique_ptr<NodalMatrixType> _localA;
     std::unique_ptr<NodalVectorType> _localRhs;

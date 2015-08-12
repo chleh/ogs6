@@ -11,6 +11,12 @@
 #define PROCESS_LIB_TESPROCESS_H_
 
 #include <memory>
+#include <vector>
+
+#include "AssemblerLib/LocalToGlobalIndexMap.h"
+#include "AssemblerLib/VectorMatrixAssembler.h"
+#include "ProcessVariable.h"
+#include "Process.h"
 
 #include "TESFEM.h"
 

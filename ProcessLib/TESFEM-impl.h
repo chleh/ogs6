@@ -14,6 +14,8 @@
 #include "NumLib/Fem/FiniteElement/TemplateIsoparametric.h"
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
 
+// #include "logog/include/logog.hpp"
+
 namespace ProcessLib
 {
 
@@ -57,8 +59,10 @@ init(MeshLib::Element const& e,
 
     _data._hydraulic_conductivity = hydraulic_conductivity;
 
-    _localA.reset(new NodalMatrixType(local_matrix_size, local_matrix_size));
-    _localRhs.reset(new NodalVectorType(local_matrix_size));
+    _localA.reset(new NodalMatrixType);
+    _localRhs.reset(new NodalVectorType);
+
+    DBUG("local matrix size: %i", local_matrix_size);
 }
 
 
@@ -85,8 +89,13 @@ assemble()
     {
         auto const& sm = _shape_matrices[ip];
         auto const& wp = integration_method.getWeightedPoint(ip);
-        _localA->noalias() += sm.dNdx.transpose() * LAMethodsNoTpl::getMassCoeff(_data) *
-                              sm.dNdx * sm.detJ * wp.getWeight();
+        std::cerr << "dNdx: " << sm.dNdx << std::endl;
+        std::cerr << "_localA:\n" << (*_localA) << std::endl;
+        std::cerr << "_localA block\n" << (_localA->template block<2,2>(0,0)) << std::endl;
+        std::cerr << "coeff:\n" << sm.dNdx.transpose() * 1.0 * sm.dNdx * sm.detJ * wp.getWeight() << std::endl;
+
+        _localA->template block<ShapeFunction::NPOINTS,ShapeFunction::NPOINTS>(0,0) += sm.dNdx.transpose() * 1.0 *
+                               sm.dNdx * sm.detJ * wp.getWeight();
     }
 }
 

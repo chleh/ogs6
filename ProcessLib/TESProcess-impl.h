@@ -14,6 +14,8 @@
 
 #include "logog/include/logog.hpp"
 
+#include "TESProcess.h"
+
 namespace ProcessLib
 {
 
@@ -132,6 +134,8 @@ initialize()
 
     // Collect the mesh subsets in a vector.
     _all_mesh_subsets.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
+    _all_mesh_subsets.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
+    _all_mesh_subsets.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
 
     _local_to_global_index_map.reset(
         new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets));
@@ -143,6 +147,8 @@ initialize()
     _A.reset(_global_setup.createMatrix(_local_to_global_index_map->dofSize()));
     _x.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
     _rhs.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
+
+    DBUG("size of A: %ix%i, x: %i, rhs: %i\n", _A->getNRows(), _A->getNCols(), _x->size(), _rhs->size());
 
     if (_mesh.getDimension()==1)
         createLocalAssemblers<1>();
