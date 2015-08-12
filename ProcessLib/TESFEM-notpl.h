@@ -23,8 +23,24 @@ namespace TES
 struct LADataNoTpl
 {
     Eigen::Matrix3d getMassCoeffMatrix();
+    Eigen::MatrixXd getLaplaceCoeffMatrix(const unsigned dim);
+    Eigen::Matrix3d getAdvectionCoeffMatrix();
+    Eigen::Matrix3d getContentCoeffMatrix();
+    Eigen::Vector3d getRHSCoeffVector();
+
 
     double _hydraulic_conductivity = 888.888;
+
+    double _reaction_rate = 888.888;
+
+    double _fluid_specific_heat_source = 888.888;
+
+    double _solid_specific_heat_source = 888.888;
+    Eigen::MatrixXd _solid_perm_tensor = Eigen::MatrixXd::Constant(3, 3, 888.888); // TODO get dimensions
+    double _solid_heat_cond = 888.888;
+
+    double _tortuosity = 888.888;
+    double _diffusion_coefficient_component = 888.888;
 
     double _poro = 888.888;
 
