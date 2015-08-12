@@ -24,18 +24,18 @@ struct LADataNoTpl
 {
     Eigen::Matrix3d getMassCoeffMatrix();
 
-    double _hydraulic_conductivity;
+    double _hydraulic_conductivity = 888.888;
 
-    double _poro;
+    double _poro = 888.888;
 
-    double _p;
-    double _T;
-    double _x;
+    double _p = 888.888;
+    double _T = 888.888;
+    double _x = 0.5;
 
-    double _rho_SR;
+    double _rho_SR = 888.888;
 
-    double _M_inert;
-    double _M_react;
+    double _M_inert = 888.888;
+    double _M_react = 888.888;
 };
 
 

@@ -89,13 +89,30 @@ assemble()
     {
         auto const& sm = _shape_matrices[ip];
         auto const& wp = integration_method.getWeightedPoint(ip);
-        std::cerr << "dNdx: " << sm.dNdx << std::endl;
         std::cerr << "_localA:\n" << (*_localA) << std::endl;
         std::cerr << "_localA block\n" << (_localA->template block<2,2>(0,0)) << std::endl;
         std::cerr << "coeff:\n" << sm.dNdx.transpose() * 1.0 * sm.dNdx * sm.detJ * wp.getWeight() << std::endl;
 
-        _localA->template block<ShapeFunction::NPOINTS,ShapeFunction::NPOINTS>(0,0) += sm.dNdx.transpose() * 1.0 *
-                               sm.dNdx * sm.detJ * wp.getWeight();
+        auto massCoeffMat = _data.getMassCoeffMatrix();
+
+        auto const N = ShapeFunction::NPOINTS;
+
+        for (unsigned r=0; r<NODAL_DOF; ++r)
+        {
+            for (unsigned c=0; c<NODAL_DOF; ++c)
+            {
+                _localA->template block<N, N>(N*r, N*c) +=
+                        sm.dNdx.transpose() * massCoeffMat(r, c) * sm.dNdx
+                        * sm.detJ * wp.getWeight();
+
+                std::cerr << "_localA block(" << N*r << "," << N*c << ")\n"
+                          << (_localA->template block<N, N>(N*r, N*c)) << std::endl;
+                std::cerr << "coeff:\n"
+                          << sm.dNdx.transpose() * massCoeffMat(r, c) * sm.dNdx
+                             * sm.detJ * wp.getWeight() << std::endl;
+            }
+        }
+
     }
 }
 
