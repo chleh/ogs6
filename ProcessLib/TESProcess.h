@@ -28,6 +28,7 @@
 #include "Process.h"
 
 #include "TESFEM.h"
+#include "TESFEM-notpl.h"
 
 namespace MeshLib
 {
@@ -41,8 +42,6 @@ namespace ProcessLib
 
 namespace TES
 {
-
-const unsigned NODAL_DOF = 3;
 
 template<typename GlobalSetup>
 class TESProcess : public Process

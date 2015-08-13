@@ -20,6 +20,9 @@ namespace ProcessLib
 namespace TES
 {
 
+const unsigned NODAL_DOF = 3;
+
+
 struct LADataNoTpl
 {
     typedef Eigen::Ref<const Eigen::MatrixXd> MatRef;
@@ -30,8 +33,6 @@ struct LADataNoTpl
     Eigen::Matrix3d getContentCoeffMatrix();
     Eigen::Vector3d getRHSCoeffVector();
 
-    void init(unsigned GlobalDim);
-
     void assembleIntegrationPoint(
             Eigen::MatrixXd* localA,
             Eigen::VectorXd* localRhs,
@@ -40,8 +41,6 @@ struct LADataNoTpl
             const double smDetJ,
             const double weight
             );
-
-    unsigned _GlobalDim = 888888;
 
     double _reaction_rate = 888.888;
 

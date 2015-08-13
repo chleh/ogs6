@@ -56,8 +56,6 @@ init(MeshLib::Element const& e,
                     _shape_matrices[ip]);
     }
 
-    _data.init(GlobalDim);
-
     _localA.resize(MAT_SIZE, MAT_SIZE);
     _localRhs.resize(MAT_SIZE);
     // _localA.reset(new NodalMatrixType);
@@ -80,7 +78,6 @@ LocalAssemblerData<ShapeFunction_,
     GlobalDim>::
 assemble()
 {
-#if 1
     _localA.setZero();
     _localRhs.setZero();
 
@@ -96,7 +93,6 @@ assemble()
         _data.assembleIntegrationPoint(&_localA, &_localRhs,
                                        sm.N, sm.dNdx, sm.detJ, weight);
     }
-#endif
 }
 
 

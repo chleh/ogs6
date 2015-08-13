@@ -231,14 +231,6 @@ getRHSCoeffVector()
 
 void
 LADataNoTpl::
-init(unsigned GlobalDim)
-{
-	_GlobalDim = GlobalDim;
-}
-
-
-void
-LADataNoTpl::
 assembleIntegrationPoint(
 		Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
 		const MatRef &smN, const MatRef &smDNdx, const double smDetJ,
@@ -248,9 +240,10 @@ assembleIntegrationPoint(
     std::cerr << "localA block\n" << (localA->template block<2,2>(0,0)) << std::endl;
     std::cerr << "coeff:\n" << smDNdx.transpose() * 1.0 * smDNdx * smDetJ * weight << std::endl;
 
-    auto const N = smN.size();
-    auto const D = _GlobalDim;
-    unsigned const NODAL_DOF = 3;
+    auto const N = smDNdx.cols(); // number of integration points
+    auto const D = smDNdx.rows(); // global dimension
+
+    std::cerr << "global dim:\n" << D << std::endl;
 
     auto const laplaceCoeffMat = getLaplaceCoeffMatrix(D);
     auto const massCoeffMat    = getMassCoeffMatrix();
