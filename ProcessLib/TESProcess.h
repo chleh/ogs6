@@ -15,6 +15,15 @@
 
 #include "AssemblerLib/LocalToGlobalIndexMap.h"
 #include "AssemblerLib/VectorMatrixAssembler.h"
+
+#include "FileIO/VtkIO/VtuInterface.h"
+
+#include "MathLib/LinAlg/ApplyKnownSolution.h"
+#include "MathLib/LinAlg/SetMatrixSparsity.h"
+
+#include "MeshGeoToolsLib/MeshNodeSearcher.h"
+#include "MeshLib/NodeAdjacencyTable.h"
+
 #include "ProcessVariable.h"
 #include "Process.h"
 
@@ -32,6 +41,8 @@ namespace ProcessLib
 
 namespace TES
 {
+
+const unsigned NODAL_DOF = 3;
 
 template<typename GlobalSetup>
 class TESProcess : public Process
@@ -57,9 +68,7 @@ public:
     ~TESProcess();
 
 private:
-    ProcessVariable* _hydraulic_head = nullptr;
-
-    double const _hydraulic_conductivity = 1;
+    ProcessVariable* _process_vars[NODAL_DOF] = { nullptr, nullptr, nullptr };
 
     MeshLib::MeshSubset const* _mesh_subset_all_nodes = nullptr;
     std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets;

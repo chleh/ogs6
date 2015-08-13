@@ -22,14 +22,26 @@ namespace TES
 
 struct LADataNoTpl
 {
+    typedef Eigen::Ref<const Eigen::MatrixXd> MatRef;
+
     Eigen::Matrix3d getMassCoeffMatrix();
     Eigen::MatrixXd getLaplaceCoeffMatrix(const unsigned dim);
     Eigen::Matrix3d getAdvectionCoeffMatrix();
     Eigen::Matrix3d getContentCoeffMatrix();
     Eigen::Vector3d getRHSCoeffVector();
 
+    void init(unsigned GlobalDim);
 
-    double _hydraulic_conductivity = 888.888;
+    void assembleIntegrationPoint(
+            Eigen::MatrixXd* localA,
+            Eigen::VectorXd* localRhs,
+            MatRef const& smN,
+            MatRef const& smDNdx,
+            const double smDetJ,
+            const double weight
+            );
+
+    unsigned _GlobalDim = 888888;
 
     double _reaction_rate = 888.888;
 

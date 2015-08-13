@@ -29,7 +29,6 @@ public:
 
     virtual void init(MeshLib::Element const& e,
                       std::size_t const local_matrix_size,
-                      double const hydraulic_conductivity,
                       unsigned const integration_order) = 0;
 
     virtual void assemble() = 0;
@@ -60,7 +59,6 @@ public:
     void
     init(MeshLib::Element const& e,
          std::size_t const local_matrix_size,
-         double const hydraulic_conductivity,
          unsigned const integration_order);
 
     void assemble();
@@ -70,7 +68,6 @@ public:
 
 private:
     std::vector<ShapeMatrices> _shape_matrices;
-    // double _hydraulic_conductivity;
     LADataNoTpl _data;
 
     static const unsigned NODAL_DOF = 3;
@@ -78,8 +75,10 @@ private:
     using NodalMatrixType = Eigen::Matrix<double, MAT_SIZE, MAT_SIZE>;
     using NodalVectorType = Eigen::Matrix<double, MAT_SIZE, 1>;
 
-    std::unique_ptr<NodalMatrixType> _localA;
-    std::unique_ptr<NodalVectorType> _localRhs;
+    // std::unique_ptr<NodalMatrixType> _localA;
+    // std::unique_ptr<NodalVectorType> _localRhs;
+    Eigen::MatrixXd _localA;
+    Eigen::VectorXd _localRhs;
 
     unsigned _integration_order = 2;
 

@@ -9,7 +9,10 @@
  * not all of OGS6 has to be recompiled every time a small change is done.
  */
 
+#include <iostream>
+
 #include "TESFEM-notpl.h"
+
 
 const double GAS_CONST = 8.3144621;
 
@@ -223,6 +226,71 @@ getRHSCoeffVector()
 		 rhs_x;
 
 	return rhs;
+}
+
+
+void
+LADataNoTpl::
+init(unsigned GlobalDim)
+{
+	_GlobalDim = GlobalDim;
+}
+
+
+void
+LADataNoTpl::
+assembleIntegrationPoint(
+		Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
+		const MatRef &smN, const MatRef &smDNdx, const double smDetJ,
+		const double weight)
+{
+    std::cerr << "localA:\n" << (*localA) << std::endl;
+    std::cerr << "localA block\n" << (localA->template block<2,2>(0,0)) << std::endl;
+    std::cerr << "coeff:\n" << smDNdx.transpose() * 1.0 * smDNdx * smDetJ * weight << std::endl;
+
+    auto const N = smN.size();
+    auto const D = _GlobalDim;
+    unsigned const NODAL_DOF = 3;
+
+    auto const laplaceCoeffMat = getLaplaceCoeffMatrix(D);
+    auto const massCoeffMat    = getMassCoeffMatrix();
+    auto const advCoeffMat     = getAdvectionCoeffMatrix();
+    auto const contentCoeffMat = getContentCoeffMatrix();
+
+    Eigen::MatrixXd const velocity = Eigen::MatrixXd::Constant(D, 1, 888.888);
+
+    for (unsigned r=0; r<NODAL_DOF; ++r)
+    {
+        for (unsigned c=0; c<NODAL_DOF; ++c)
+        {
+            std::cerr << "vel prod: " << smDNdx.transpose() * velocity << std::endl;
+            localA->block(N*r, N*c, N, N).noalias() +=
+                    (
+                        smDNdx.transpose() * laplaceCoeffMat.block(D*r, D*c, D, D) * smDNdx
+                        + smN * (massCoeffMat(r, c) + contentCoeffMat(r, c)) * smN.transpose()
+                        + smN * advCoeffMat(r, c) * velocity.transpose() * smDNdx
+                    )
+                    * smDetJ * weight;
+
+            std::cerr << "localA block(" << N*r << "," << N*c << ")\n"
+                      << (localA->block(N*r, N*c, N, N)) << std::endl;
+            std::cerr << "coeff:\n"
+                      << smN.transpose() * massCoeffMat(r, c) * smN
+                         * smDetJ * weight << std::endl;
+        }
+    }
+
+    std::cerr << "sm.N: %s" << smN << std::endl;
+    std::cerr << "sm.dNdx: %s" << smDNdx << std::endl;
+    std::cerr << "mass coeffs:\n" << massCoeffMat << std::endl;
+
+    auto const rhsCoeffVector = getRHSCoeffVector();
+
+    for (unsigned r=0; r<NODAL_DOF; ++r)
+    {
+        localRhs->block(N*r, 0, N, 1) +=
+                rhsCoeffVector(r) * smN * smDetJ * weight;
+    }
 }
 
 } // namespace TES

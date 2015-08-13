@@ -36,7 +36,6 @@ LocalAssemblerData<ShapeFunction_,
     GlobalDim>::
 init(MeshLib::Element const& e,
      std::size_t const local_matrix_size,
-     double const hydraulic_conductivity,
      unsigned const integration_order)
 {
     using FemType = NumLib::TemplateIsoparametric<ShapeFunction, ShapeMatricesType>;
@@ -57,10 +56,12 @@ init(MeshLib::Element const& e,
                     _shape_matrices[ip]);
     }
 
-    _data._hydraulic_conductivity = hydraulic_conductivity;
+    _data.init(GlobalDim);
 
-    _localA.reset(new NodalMatrixType);
-    _localRhs.reset(new NodalVectorType);
+    _localA.resize(MAT_SIZE, MAT_SIZE);
+    _localRhs.resize(MAT_SIZE);
+    // _localA.reset(new NodalMatrixType);
+    // _localRhs.reset(new NodalVectorType);
 
     DBUG("local matrix size: %i", local_matrix_size);
 }
@@ -79,64 +80,23 @@ LocalAssemblerData<ShapeFunction_,
     GlobalDim>::
 assemble()
 {
-    _localA->setZero();
-    _localRhs->setZero();
+#if 1
+    _localA.setZero();
+    _localRhs.setZero();
 
     IntegrationMethod_ integration_method(_integration_order);
     unsigned const n_integration_points = integration_method.getNPoints();
-
-    auto const velocity = Eigen::Matrix<double, GlobalDim, 1>::Constant(888.888);
 
     for (std::size_t ip(0); ip < n_integration_points; ip++)
     {
         auto const& sm = _shape_matrices[ip];
         auto const& wp = integration_method.getWeightedPoint(ip);
-        std::cerr << "_localA:\n" << (*_localA) << std::endl;
-        std::cerr << "_localA block\n" << (_localA->template block<2,2>(0,0)) << std::endl;
-        std::cerr << "coeff:\n" << sm.dNdx.transpose() * 1.0 * sm.dNdx * sm.detJ * wp.getWeight() << std::endl;
+        auto const weight = wp.getWeight();
 
-        auto const laplaceCoeffMat = _data.getLaplaceCoeffMatrix(GlobalDim);
-        auto const massCoeffMat    = _data.getMassCoeffMatrix();
-        auto const advCoeffMat     = _data.getAdvectionCoeffMatrix();
-        auto const contentCoeffMat = _data.getContentCoeffMatrix();
-
-        auto const N = ShapeFunction::NPOINTS;
-        auto const D = GlobalDim;
-
-        for (unsigned r=0; r<NODAL_DOF; ++r)
-        {
-            for (unsigned c=0; c<NODAL_DOF; ++c)
-            {
-                std::cerr << "vel prod: " << sm.dNdx.transpose() * velocity << std::endl;
-                _localA->template block<N, N>(N*r, N*c) +=
-                        (
-                            sm.dNdx.transpose() * laplaceCoeffMat.block<D, D>(D*r, D*c) * sm.dNdx
-                            + sm.N * (massCoeffMat(r, c) + contentCoeffMat(r, c)) * sm.N.transpose()
-                            + sm.N * advCoeffMat(r, c) * velocity.transpose() * sm.dNdx
-                        )
-                        * sm.detJ * wp.getWeight();
-
-                std::cerr << "_localA block(" << N*r << "," << N*c << ")\n"
-                          << (_localA->template block<N, N>(N*r, N*c)) << std::endl;
-                std::cerr << "coeff:\n"
-                          << sm.N.transpose() * massCoeffMat(r, c) * sm.N
-                             * sm.detJ * wp.getWeight() << std::endl;
-            }
-        }
-
-        std::cerr << "sm.N: " << sm.N << std::endl;
-        std::cerr << "sm.dNdx: " << sm.dNdx << std::endl;
-        std::cerr << "mass coeffs:\n" << massCoeffMat << std::endl;
-
-
-        auto const rhsCoeffVector = _data.getRHSCoeffVector();
-
-        for (unsigned r=0; r<NODAL_DOF; ++r)
-        {
-            _localRhs->template block<N, 1>(N*r, 0) +=
-                    rhsCoeffVector(r) * sm.N * sm.detJ * wp.getWeight();
-        }
+        _data.assembleIntegrationPoint(&_localA, &_localRhs,
+                                       sm.N, sm.dNdx, sm.detJ, weight);
     }
+#endif
 }
 
 
@@ -154,8 +114,8 @@ LocalAssemblerData<ShapeFunction_,
 addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
             AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const& indices) const
 {
-    A.add(indices, *_localA);
-    rhs.add(indices.rows, *_localRhs);
+    A.add(indices, _localA);
+    rhs.add(indices.rows, _localRhs);
 }
 
 

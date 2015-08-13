@@ -31,22 +31,32 @@ TESProcess(MeshLib::Mesh& mesh,
 {
     DBUG("Create TESProcess.");
 
-    // Find the corresponding process variable.
-    std::string const name = config.get<std::string>("process_variables.fluid_pressure");
+    const std::string vars[NODAL_DOF] = { "fluid_pressure",
+                                          "temperature",
+                                          "vapour_mass_fraction" };
 
-    auto variable = std::find_if(variables.cbegin(), variables.cend(),
-            [&name](ProcessVariable const& v) {
-                return v.getName() == name;
-            });
+    for (unsigned i=0; i<NODAL_DOF; ++i)
+    {
+        std::string const name = config.get<std::string>("process_variables." + vars[i]);
+        std::cerr << ">> " << vars[i] << " -- " << name << std::endl;
 
-    if (variable == variables.end())
-        ERR("Expected process variable \'%s\' not found in provided variables list.",
-            name);
+        auto variable = std::find_if(variables.cbegin(), variables.cend(),
+                [&name](ProcessVariable const& v) {
+                    return v.getName() == name;
+                });
 
-    DBUG("Associate hydraulic_head with process variable \'%s\'.",
-        name.c_str());
-    _hydraulic_head = const_cast<ProcessVariable*>(&*variable);
+        if (variable == variables.end())
+        {
+            ERR("Expected process variable \'%s\' not found in provided variables list.",
+                name.c_str());
+            std::abort();
+        }
 
+
+        DBUG("Associate %s with process variable \'%s\'.",
+             vars[i].c_str(), name.c_str());
+        _process_vars[i] = const_cast<ProcessVariable*>(&*variable);
+    }
 }
 
 template<typename GlobalSetup>
@@ -81,40 +91,46 @@ createLocalAssemblers()
             local_asm_builder,
             _mesh.getElements(),
             _local_assemblers,
-            _hydraulic_conductivity,
             _integration_order);
 
     DBUG("Create global assembler.");
     _global_assembler.reset(
         new GlobalAssembler(*_A, *_rhs, *_local_to_global_index_map));
 
-    DBUG("Initialize boundary conditions.");
-    MeshGeoToolsLib::MeshNodeSearcher& hydraulic_head_mesh_node_searcher =
-        MeshGeoToolsLib::MeshNodeSearcher::getMeshNodeSearcher(
-            _hydraulic_head->getMesh());
 
-    _hydraulic_head->initializeDirichletBCs(
-            hydraulic_head_mesh_node_searcher,
-            _dirichlet_bc.global_ids, _dirichlet_bc.values);
-
-    //
-    // Neumann boundary conditions.
-    //
+    for (unsigned i=0; i<NODAL_DOF; ++i)
     {
-        // Find mesh nodes.
-        MeshGeoToolsLib::BoundaryElementsSearcher hydraulic_head_mesh_element_searcher(
-            _hydraulic_head->getMesh(), hydraulic_head_mesh_node_searcher);
+        DBUG("Initialize boundary conditions.");
+        MeshGeoToolsLib::MeshNodeSearcher& process_var_mesh_node_searcher =
+            MeshGeoToolsLib::MeshNodeSearcher::getMeshNodeSearcher(
+                _process_vars[i]->getMesh());
 
-        // Create a neumann BC for the hydraulic head storing them in the
-        // _neumann_bcs vector.
-        _hydraulic_head->createNeumannBcs(
-                std::back_inserter(_neumann_bcs),
-                hydraulic_head_mesh_element_searcher,
-                _global_setup,
-                _integration_order,
-                *_local_to_global_index_map,
-                *_mesh_subset_all_nodes);
+        _process_vars[i]->initializeDirichletBCs(
+                process_var_mesh_node_searcher,
+                _dirichlet_bc.global_ids, _dirichlet_bc.values);
+
+
+        //
+        // Neumann boundary conditions.
+        //
+        {
+            // Find mesh nodes.
+            MeshGeoToolsLib::BoundaryElementsSearcher process_var_mesh_element_searcher(
+                _process_vars[i]->getMesh(), process_var_mesh_node_searcher);
+
+            // Create a neumann BC for the hydraulic head storing them in the
+            // _neumann_bcs vector.
+            _process_vars[i]->createNeumannBcs(
+                    std::back_inserter(_neumann_bcs),
+                    process_var_mesh_element_searcher,
+                    _global_setup,
+                    _integration_order,
+                    *_local_to_global_index_map,
+                    *_mesh_subset_all_nodes);
+        }
     }
+
+
 
     for (auto bc : _neumann_bcs)
         bc->initialize(_global_setup, *_A, *_rhs, _mesh.getDimension());
@@ -133,9 +149,10 @@ initialize()
     _mesh_subset_all_nodes = new MeshLib::MeshSubset(_mesh, &_mesh.getNodes());
 
     // Collect the mesh subsets in a vector.
-    _all_mesh_subsets.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
-    _all_mesh_subsets.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
-    _all_mesh_subsets.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
+    for (unsigned i=0; i<NODAL_DOF; ++i)
+    {
+        _all_mesh_subsets.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
+    }
 
     _local_to_global_index_map.reset(
         new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets));
