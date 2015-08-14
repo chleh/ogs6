@@ -97,17 +97,20 @@ createLocalAssemblers()
     _global_assembler.reset(
         new GlobalAssembler(*_A, *_rhs, *_local_to_global_index_map));
 
-
     for (unsigned i=0; i<NODAL_DOF; ++i)
     {
-        DBUG("Initialize boundary conditions.");
+        // TODO [CL] can't that be (partially) moved to ProcessVariable?
+
         MeshGeoToolsLib::MeshNodeSearcher& process_var_mesh_node_searcher =
             MeshGeoToolsLib::MeshNodeSearcher::getMeshNodeSearcher(
                 _process_vars[i]->getMesh());
 
+
+        DBUG("Initialize boundary conditions.");
         _process_vars[i]->initializeDirichletBCs(
-                process_var_mesh_node_searcher,
-                _dirichlet_bc.global_ids, _dirichlet_bc.values);
+                    process_var_mesh_node_searcher,
+                    _dirichlet_bc.global_ids, _dirichlet_bc.values,
+                    NODAL_DOF, i);
 
 
         //
@@ -187,6 +190,14 @@ solve()
     _A->setZero();
     MathLib::setMatrixSparsity(*_A, _node_adjacency_table);
     *_rhs = 0;   // This resets the whole vector.
+
+    // set initial values
+    for (unsigned i=0; i<NODAL_DOF; ++i)
+    {
+        _process_vars[i]->setIC(*_x, NODAL_DOF, i);
+    }
+
+    std::cerr << __FUNCTION__ << ":" << __LINE__ << ":_x\n" << _x->getRawVector() << std::endl;
 
     // Call global assembler for each local assembly item.
     _global_setup.execute(*_global_assembler, _local_assemblers);

@@ -43,6 +43,16 @@ namespace ProcessLib
 namespace TES
 {
 
+
+/// Global ids in the global matrix/vector where the dirichlet bc is
+/// imposed and their corresponding values.
+struct DirichletBC
+{
+    std::vector<std::size_t> global_ids;
+    std::vector<double> values;
+};
+
+
 template<typename GlobalSetup>
 class TESProcess : public Process
 {
@@ -92,12 +102,7 @@ private:
 
     std::unique_ptr<GlobalAssembler> _global_assembler;
 
-    /// Global ids in the global matrix/vector where the dirichlet bc is
-    /// imposed and their corresponding values.
-    struct DirichletBC {
-        std::vector<std::size_t> global_ids;
-        std::vector<double> values;
-    } _dirichlet_bc;
+    DirichletBC _dirichlet_bc;
 
     std::vector<NeumannBc<GlobalSetup>*> _neumann_bcs;
 
