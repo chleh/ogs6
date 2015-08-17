@@ -26,7 +26,7 @@ T square(const T& v)
 }
 
 
-
+#if 0
 static double fluid_specific_isobaric_heat_capacity(
 		const double /*p*/, const double /*T*/, const double /*x*/)
 {
@@ -35,6 +35,8 @@ static double fluid_specific_isobaric_heat_capacity(
 
 	return 1000.0;
 }
+#endif
+
 
 static double fluid_density(const double p, const double T, const double x)
 {
@@ -325,6 +327,8 @@ static double fluid_heat_conductivity_H2O(double rho, double T)
 
 static double fluid_heat_conductivity(const double p, const double T, const double x)
 {
+	// OGS 5 fluid heat conductivity model 11
+
 	const double M0 = ProcessLib::TES::M_N2;
 	const double M1 = ProcessLib::TES::M_H2O;
 
@@ -349,11 +353,13 @@ static double fluid_heat_conductivity(const double p, const double T, const doub
 	return k0*x0 / (x0+x1*phi_12) + k1*x1 / (x1+x0*phi_21);
 }
 
+#if 0
 static double solid_specific_isobaric_heat_capacity(const double /*rho_SR*/)
 {
 	// OGS 5 heat capacity model 1 (constant) value 620.573
 	return 620.573;
 }
+#endif
 
 
 namespace ProcessLib
@@ -366,9 +372,6 @@ Eigen::Matrix3d
 LADataNoTpl::
 getMassCoeffMatrix()
 {
-	const double cpG   = fluid_specific_isobaric_heat_capacity(_p, _T, _vapour_mass_fraction);
-	const double cpS   = solid_specific_isobaric_heat_capacity(_solid_density);
-
 	double dxn_dxm = _M_inert * _M_react
 					 / square(_M_inert * _vapour_mass_fraction + _M_react * (1.0 - _vapour_mass_fraction));
 
@@ -377,7 +380,7 @@ getMassCoeffMatrix()
 	const double M_px = (_M_react-_M_inert) * _p / (GAS_CONST * _T) * dxn_dxm * _poro;
 
 	const double M_Tp = -_poro;
-	const double M_TT = _poro * _rho_GR * cpG + (1.0-_poro) * _solid_density * cpS;
+	const double M_TT = _poro * _rho_GR * _cpG + (1.0-_poro) * _solid_density * _cpS;
 	const double M_Tx = 0.0;
 
 	const double M_xp = 0.0;
@@ -446,8 +449,6 @@ Eigen::Matrix3d
 LADataNoTpl::
 getAdvectionCoeffMatrix()
 {
-	const double cpG   = fluid_specific_isobaric_heat_capacity(_p, _T, _vapour_mass_fraction);
-
 	const double A_pp = 0.0;
 	const double A_pT = 0.0;
 
@@ -455,7 +456,7 @@ getAdvectionCoeffMatrix()
 
 	const double A_Tp = 0.0;
 
-	const double A_TT = _rho_GR * cpG; // porosity?
+	const double A_TT = _rho_GR * _cpG; // porosity?
 	const double A_Tx = 0.0;
 
 	const double A_xp = 0.0;

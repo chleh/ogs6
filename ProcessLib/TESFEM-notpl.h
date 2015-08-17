@@ -27,8 +27,8 @@ const unsigned NODAL_DOF = 3;
 const unsigned NODAL_DOF_2ND = 2; // loading or solid density, and reaction rate
 
 
-const double M_N2  = 0.028;
-const double M_H2O = 0.018;
+const double M_N2  = 0.028013;
+const double M_H2O = 0.018016;
 
 
 class LADataNoTpl
@@ -66,18 +66,22 @@ private:
             MatRef const& smDNdx
             );
 
-    double _fluid_specific_heat_source = 888.888;
+    // many values taken from zeolite-adsorption-benchmark-snap/start-at-0.99
 
-    double _solid_specific_heat_source = 888.888;
-    Eigen::MatrixXd _solid_perm_tensor = Eigen::MatrixXd::Constant(3, 3, 888.888); // TODO get dimensions
-    double _solid_heat_cond = 888.888;
+    double _fluid_specific_heat_source = 0.0;
+    double _cpG = 1012.0; // specific isobaric fluid heat capacity
 
-    double _tortuosity = 888.888;
-    double _diffusion_coefficient_component = 888.888;
+    Eigen::MatrixXd _solid_perm_tensor = Eigen::MatrixXd::Identity(3, 3) * 6.94e-14; // TODO get dimensions
+    double _solid_specific_heat_source = 0.0;
+    double _solid_heat_cond = 0.4;
+    double _cpS = 880.0;    // specific isobaric solid heat capacity
 
-    double _poro = 888.888;
+    double _tortuosity = 1.0;
+    double _diffusion_coefficient_component = 0.0; // ???
 
-    const double _rho_SR_dry = 888.888;
+    double _poro = 0.7;
+
+    const double _rho_SR_dry = 1150.0;
 
     double _M_inert = M_N2; // N2
     double _M_react = M_H2O;
