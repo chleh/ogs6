@@ -29,11 +29,12 @@ class Adsorption
 // static members
 public:
 	static Adsorption* newInstance(SolidReactiveSystem rsys);
-	static Adsorption* newInstance2(std::string const& rsys);
+	static Adsorption* newInstance(std::string const& rsys);
 
-	static double get_hv(const double Tads);
-	static double get_ps(const double Tads);
+	static double get_evaporation_enthalpy(const double Tads);
+	static double get_equilibrium_vapour_pressure(const double Tads);
 	static double get_specific_heat_capacity(const double Tads); // TODO [CL] why unused?
+	static double get_molar_fraction(double xm, double M_this, double M_other);
 
 	static double get_loading(const double rho_curr, const double rho_dry);
 
@@ -45,7 +46,6 @@ public:
 	virtual double characteristic_curve(const double A) const = 0;
 
 // "normal" members
-	// double get_mole_fraction(double xm) const;
 	double get_enthalpy(const double T_Ads, const double p_Ads, const double M_Ads) const;
 	double get_potential(const double T_Ads, const double p_Ads, const double M_Ads) const;
 	double get_entropy(const double Tads, const double A) const;

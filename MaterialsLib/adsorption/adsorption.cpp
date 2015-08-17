@@ -17,7 +17,7 @@ namespace Ads
 {
 
 //Saturation pressure for water used in Nunez
-double Adsorption::get_ps(const double Tads)
+double Adsorption::get_equilibrium_vapour_pressure(const double Tads)
 {
 	//critical T and p
 	const double Tc = 647.3; //K
@@ -35,7 +35,7 @@ double Adsorption::get_ps(const double Tads)
 }
 
 //Evaporation enthalpy of water from Nunez
-double Adsorption::get_hv(double Tads) //in kJ/kg
+double Adsorption::get_evaporation_enthalpy(double Tads) //in kJ/kg
 {
 	Tads -= 273.15;
 	if (Tads <= 10.){
@@ -68,12 +68,10 @@ double Adsorption::get_specific_heat_capacity(const double Tads)
 }
 
 
-/*
-double Adsorption::get_mole_fraction(double xm) const
+double Adsorption::get_molar_fraction(double xm, double M_this, double M_other)
 {
-	return M_carrier*xm/(M_carrier*xm + M_react*(1.0-xm));
+	return M_other*xm/(M_other*xm + M_this*(1.0-xm));
 }
-*/
 
 
 double Adsorption::get_reaction_rate(const double p_Ads, const double T_Ads,
@@ -92,12 +90,18 @@ double Adsorption::get_reaction_rate(const double p_Ads, const double T_Ads,
 //Evaluate adsorbtion potential A
 double Adsorption::get_potential(const double T_Ads, double p_Ads, const double M_Ads) const
 {
-	double A = GAS_CONST * T_Ads * log(get_ps(T_Ads)/p_Ads) / (M_Ads*1.e3); //in kJ/kg = J/g
+	double A = GAS_CONST * T_Ads * log(get_equilibrium_vapour_pressure(T_Ads)/p_Ads) / (M_Ads*1.e3); //in kJ/kg = J/g
 	if (A < 0.0) {
 		// vapour partial pressure > saturation pressure
 		// A = 0.0; // TODO [CL] debug output
 	}
 	return A;
+}
+
+
+double Adsorption::get_loading(const double rho_curr, const double rho_dry)
+{
+	return rho_curr / rho_dry - 1.0;
 }
 
 
@@ -116,7 +120,7 @@ double Adsorption::get_enthalpy(const double T_Ads, const double p_Ads, const do
 	// TODO [CL] consider using A as obtained from current loading (needs inverse CC A(W)) instead of p_Vapour, T_Vapour
 	const double A = get_potential(T_Ads, p_Ads, M_Ads);
 
-	return (get_hv(T_Ads) + A - T_Ads * get_entropy(T_Ads,A))*1000.0; //in J/kg
+	return (get_evaporation_enthalpy(T_Ads) + A - T_Ads * get_entropy(T_Ads,A))*1000.0; //in J/kg
 }
 
 
@@ -145,7 +149,7 @@ stringToReactiveSystem(std::string const& name, SolidReactiveSystem& rsys_out)
 }
 
 
-Adsorption* Adsorption::newInstance2(std::string const& rsys)
+Adsorption* Adsorption::newInstance(std::string const& rsys)
 {
 	SolidReactiveSystem r;
 	if (stringToReactiveSystem(rsys, r)) {
