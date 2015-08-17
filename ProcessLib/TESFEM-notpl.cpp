@@ -373,25 +373,23 @@ Eigen::Matrix3d
 LADataNoTpl::
 getMassCoeffMatrix()
 {
-	const double rho_GR = fluid_density(_p, _T, _x);
-
 	const double cpG   = fluid_specific_isobaric_heat_capacity(_p, _T, _x);
 	const double cpS   = solid_isobaric_heat_capacity(_rho_SR);
 
 	double dxn_dxm = _M_inert * _M_react // 0 is inert, 1 is reactive
 					 / square(_M_inert * _x + _M_react * (1.0 - _x));
 
-	const double M_pp = _poro/_p * rho_GR;
-	const double M_pT = -_poro/_T *  rho_GR;
+	const double M_pp = _poro/_p * _rho_GR;
+	const double M_pT = -_poro/_T *  _rho_GR;
 	const double M_px = (_M_react-_M_inert) * _p / (GAS_CONST * _T) * dxn_dxm * _poro;
 
 	const double M_Tp = -_poro;
-	const double M_TT = _poro * rho_GR * cpG + (1.0-_poro) * _rho_SR * cpS;
+	const double M_TT = _poro * _rho_GR * cpG + (1.0-_poro) * _rho_SR * cpS;
 	const double M_Tx = 0.0;
 
 	const double M_xp = 0.0;
 	const double M_xT = 0.0;
-	const double M_xx = _poro * rho_GR;
+	const double M_xx = _poro * _rho_GR;
 
 
 	Eigen::Matrix3d M;
@@ -407,15 +405,12 @@ Eigen::MatrixXd
 LADataNoTpl::
 getLaplaceCoeffMatrix(const unsigned dim)
 {
-	// TODO implement
-
-	const double rho_GR = fluid_density(_p, _T, _x);
 	const double eta_GR = fluid_viscosity(_p, _T, _x);
 
 	const double lambda_F = fluid_heat_conductivity(_p, _T, _x);
 
 	// TODO: k_rel
-	auto const L_pp = _solid_perm_tensor.block(0,0,dim,dim) * rho_GR / eta_GR;
+	auto const L_pp = _solid_perm_tensor.block(0,0,dim,dim) * _rho_GR / eta_GR;
 
 	auto const L_pT = Eigen::MatrixXd::Zero(dim, dim);
 	auto const L_px = Eigen::MatrixXd::Zero(dim, dim);
@@ -432,7 +427,7 @@ getLaplaceCoeffMatrix(const unsigned dim)
 	auto const L_xT = Eigen::MatrixXd::Zero(dim, dim);
 
 	auto const L_xx = Eigen::MatrixXd::Identity(dim, dim)
-					  * _tortuosity * _poro * rho_GR * _diffusion_coefficient_component;
+					  * _tortuosity * _poro * _rho_GR * _diffusion_coefficient_component;
 
 
 	Eigen::MatrixXd L(dim*3, dim*3);
@@ -457,8 +452,6 @@ Eigen::Matrix3d
 LADataNoTpl::
 getAdvectionCoeffMatrix()
 {
-	const double rho_GR = fluid_density(_p, _T, _x);
-
 	const double cpG   = fluid_specific_isobaric_heat_capacity(_p, _T, _x);
 
 	const double A_pp = 0.0;
@@ -468,12 +461,12 @@ getAdvectionCoeffMatrix()
 
 	const double A_Tp = 0.0;
 
-	const double A_TT = rho_GR * cpG; // porosity?
+	const double A_TT = _rho_GR * cpG; // porosity?
 	const double A_Tx = 0.0;
 
 	const double A_xp = 0.0;
 	const double A_xT = 0.0;
-	const double A_xx = rho_GR; // porosity?
+	const double A_xx = _rho_GR; // porosity?
 
 
 	Eigen::Matrix3d A;
@@ -517,11 +510,9 @@ Eigen::Vector3d
 LADataNoTpl::
 getRHSCoeffVector()
 {
-	const double rho_GR = fluid_density(_p, _T, _x);
-
 	const double rhs_p = (_poro - 1.0) * _reaction_rate;
 
-	const double rhs_T = rho_GR * _fluid_specific_heat_source
+	const double rhs_T = _rho_GR * _fluid_specific_heat_source
 						 + (1.0 - _poro) * _reaction_rate * evaporation_enthalpy(_p, _T, _x)
 						 + _rho_SR * (1.0 - _poro) * _solid_specific_heat_source;
 
@@ -539,16 +530,14 @@ getRHSCoeffVector()
 
 void
 LADataNoTpl::
-assembleIntegrationPoint(
-		Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
-		std::vector<double> const& localX,
-		std::vector<double> const& localSecondaryVariables,
-		const VecRef &smN, const MatRef &smDNdx, const double smDetJ,
-		const double weight)
+preEachAssembleIntegrationPoint(const std::vector<double> &localX,
+								const std::vector<double> &localSecondaryVariables,
+								const VecRef &smN, const MatRef &smDNdx)
 {
     auto const N = smDNdx.cols(); // number of integration points
-    auto const D = smDNdx.rows(); // global dimension
+    // auto const D = smDNdx.rows(); // global dimension
 
+    // interpolate primary variables
     {
         double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_x };
 
@@ -566,6 +555,7 @@ assembleIntegrationPoint(
         }
     }
 
+    // interpolate secondary variables
     {
         double* int_pt_val[NODAL_DOF_2ND] = { &_solid_density, &_reaction_rate };
 
@@ -584,9 +574,6 @@ assembleIntegrationPoint(
     }
 
 
-
-
-
     std::cerr << "integration point values of"
                  " p=" << _p
               << " T=" << _T
@@ -594,6 +581,30 @@ assembleIntegrationPoint(
               << " rho_SR=" << _solid_density
               << " react_rate=" << _reaction_rate << std::endl;
 
+
+    // pre-compute certain properties
+
+    _rho_GR = fluid_density(_p, _T, _x);
+    // _eta_GR = fluid_viscosity(_p, _T, _x); // used only once
+    // _lambda_GR = fluid_heat_conductivity(_p, _T, _x); // used only once
+    // _cpS = solid_isobaric_heat_capacity(_solid_density); // used only once
+    // _H_vap = evaporation_enthalpy(_p, _T, _x); // used only once
+}
+
+
+void
+LADataNoTpl::
+assembleIntegrationPoint(
+		Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
+		std::vector<double> const& localX,
+		std::vector<double> const& localSecondaryVariables,
+		const VecRef &smN, const MatRef &smDNdx, const double smDetJ,
+		const double weight)
+{
+    preEachAssembleIntegrationPoint(localX, localSecondaryVariables, smN, smDNdx);
+
+    auto const N = smDNdx.cols(); // number of integration points
+    auto const D = smDNdx.rows(); // global dimension
 
     std::cerr << "localA:\n" << (*localA) << std::endl;
     std::cerr << "localA block\n" << (localA->template block<2,2>(0,0)) << std::endl;

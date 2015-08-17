@@ -24,16 +24,11 @@ const unsigned NODAL_DOF = 3;
 const unsigned NODAL_DOF_2ND = 2; // loading or solid density, and reaction rate
 
 
-struct LADataNoTpl
+class LADataNoTpl
 {
+public:
     typedef Eigen::Ref<const Eigen::MatrixXd> MatRef;
     typedef Eigen::Ref<const Eigen::VectorXd> VecRef;
-
-    Eigen::Matrix3d getMassCoeffMatrix();
-    Eigen::MatrixXd getLaplaceCoeffMatrix(const unsigned dim);
-    Eigen::Matrix3d getAdvectionCoeffMatrix();
-    Eigen::Matrix3d getContentCoeffMatrix();
-    Eigen::Vector3d getRHSCoeffVector();
 
     void assembleIntegrationPoint(
             Eigen::MatrixXd* localA,
@@ -44,6 +39,21 @@ struct LADataNoTpl
             MatRef const& smDNdx,
             const double smDetJ,
             const double weight
+            );
+
+
+private:
+    Eigen::Matrix3d getMassCoeffMatrix();
+    Eigen::MatrixXd getLaplaceCoeffMatrix(const unsigned dim);
+    Eigen::Matrix3d getAdvectionCoeffMatrix();
+    Eigen::Matrix3d getContentCoeffMatrix();
+    Eigen::Vector3d getRHSCoeffVector();
+
+    void preEachAssembleIntegrationPoint(
+            std::vector<double> const& localX,
+            std::vector<double> const& localSecondaryVariables,
+            VecRef const& smN,
+            MatRef const& smDNdx
             );
 
     double _fluid_specific_heat_source = 888.888;
@@ -57,6 +67,12 @@ struct LADataNoTpl
 
     double _poro = 888.888;
 
+    double _rho_SR = 888.888;
+
+    double _M_inert = 888.888;
+    double _M_react = 888.888;
+
+
     // integration point values of unknowns
     double _p = 888.888; // gas pressure
     double _T = 888.888; // temperature
@@ -66,10 +82,9 @@ struct LADataNoTpl
     double _solid_density = 888.888;
     double _reaction_rate = 888.888;
 
-    double _rho_SR = 888.888;
-
-    double _M_inert = 888.888;
-    double _M_react = 888.888;
+    // temporary storage for some properties
+    // values do not change within the assembly of one integration point
+    double _rho_GR = 888.888;
 };
 
 
