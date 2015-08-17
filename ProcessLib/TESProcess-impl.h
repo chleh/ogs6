@@ -59,6 +59,7 @@ TESProcess(MeshLib::Mesh& mesh,
 {
     DBUG("Create TESProcess.");
 
+    // primary variables
     {
         const std::string vars[NODAL_DOF] = { "fluid_pressure",
                                               "temperature",
@@ -74,6 +75,7 @@ TESProcess(MeshLib::Mesh& mesh,
         }
     }
 
+    // secondary variables
     {
         const std::string vars[NODAL_DOF_2ND] = { "solid_density" };
 
@@ -85,6 +87,14 @@ TESProcess(MeshLib::Mesh& mesh,
 
             _secondary_process_vars[i] = const_cast<ProcessVariable*>(variable);
         }
+    }
+
+    // reactive system
+    {
+        std::string rsys = config.get<std::string>("reactive_system");
+        DBUG("reactive_system: %s", rsys.c_str());
+
+        _materials.adsorption = Ads::Adsorption::newInstance2(rsys);
     }
 }
 

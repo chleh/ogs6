@@ -27,7 +27,7 @@ public:
 
     virtual ~TESProcessInterface() = default;
 
-private:
+protected:
     Materials _materials;
 };
 
