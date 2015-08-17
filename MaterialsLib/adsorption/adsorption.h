@@ -12,7 +12,6 @@ const double GAS_CONST = 8.3144621;
 const double M_N2  = 0.028;
 const double M_H2O = 0.018;
 
-
 enum class SolidReactiveSystem
 {
 	Z13XBF,
@@ -30,59 +29,29 @@ class Adsorption
 // static members
 public:
 	static Adsorption* newInstance(SolidReactiveSystem rsys);
+	static Adsorption* newInstance2(std::string const& rsys);
 
 	static double get_hv(const double Tads);
 	static double get_ps(const double Tads);
 	static double get_specific_heat_capacity(const double Tads); // TODO [CL] why unused?
 
+	static double get_loading(const double rho_curr, const double rho_dry);
 
 // virtual members:
-public:
 	virtual ~Adsorption() {}
 
 	virtual double get_adsorbate_density(const double Tads) const = 0;
 	virtual double get_alphaT(const double Tads) const = 0;
 	virtual double characteristic_curve(const double A) const = 0;
 
-
 // "normal" members
-public:
-	double get_mole_fraction(double xm) const;
-	double get_enthalpy(const double Tads, const double pads) const;
-	double get_potential(const double Tads, double pads) const;
+	// double get_mole_fraction(double xm) const;
+	double get_enthalpy(const double T_Ads, const double p_Ads, const double M_Ads) const;
+	double get_potential(const double T_Ads, const double p_Ads, const double M_Ads) const;
 	double get_entropy(const double Tads, const double A) const;
 
-	Adsorption();
-
-	void update_param(double T_solid,
-	                  double p_gas,
-	                  double w_water,
-	                  double rho_s_initial);
-
-	void eval(double t, Eigen::VectorXd const& y, Eigen::VectorXd &dydx);
-
-private:
-	double get_qR() const;
-	void get_x(Eigen::VectorXd& output_x) const;
-	double Z13XBF_adsorption() const; // TODO [CL] rename
-
-	void calculate_qR();
-	void set_rho_s(double new_rho_s);
-	void set_sorption_equilibrium();
-
-	// TODO [CL] reduce number of variables
-	double rho_s;    // solid phase density
-	double p_gas;    // [bar] gas phase pressure;
-	double p_r_g;    // [Pa]  pressure of H2O on gas phase;
-	double T_s;      // solid phase temperature;
-	double qR;       // rate of solid density change;
-	double x_react;    // mass fraction of water in gas phase;
-	const double rho_low; //lower density limit
-	const double M_carrier; //inert component molar mass
-	const double M_react;   //reactive component molar mass
-	double C_eq; //equilibrium loading of sorbens
-
-	Eigen::VectorXd x;
+	double get_reaction_rate(const double p_Ads, const double T_ads,
+							 const double M_Ads, const double loading);
 };
 
 

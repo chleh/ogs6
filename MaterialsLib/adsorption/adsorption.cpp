@@ -1,3 +1,6 @@
+
+#include "logog/include/logog.hpp"
+
 #include "adsorption.h"
 
 #include "density_legacy.h"
@@ -10,22 +13,8 @@
 #include "density_nunez.h"
 
 
-const double p_min = 0.0; //minimum pressure for which we find a valid adsorption potential
-
-
-
-
 namespace Ads
 {
-
-Adsorption::Adsorption()
-    : rho_low(1150.0),
-      M_carrier(M_N2),
-      M_react(M_H2O),
-      x(Eigen::VectorXd(1))
-{
-}
-
 
 //Saturation pressure for water used in Nunez
 double Adsorption::get_ps(const double Tads)
@@ -79,110 +68,36 @@ double Adsorption::get_specific_heat_capacity(const double Tads)
 }
 
 
-
+/*
 double Adsorption::get_mole_fraction(double xm) const
 {
 	return M_carrier*xm/(M_carrier*xm + M_react*(1.0-xm));
 }
+*/
 
 
-void Adsorption::calculate_qR()
-{
-	//Convert mass fraction into mole fraction
-	const double mol_frac_react = get_mole_fraction(x_react);
-
-	//partial pressure
-	p_r_g = std::max(mol_frac_react * p_gas * 1.0e5, p_min); //avoid illdefined log, gas pressure in Pa
-	set_sorption_equilibrium();
-	const double dCdt = Z13XBF_adsorption();
-	qR = rho_low * dCdt;
-}
-
-
-void Adsorption::set_rho_s(double new_rho_s)
-{
-	rho_s = new_rho_s;
-}
-
-
-double Adsorption::get_qR() const
-{
-	return qR;
-}
-
-
-void Adsorption::get_x(Eigen::VectorXd& output_x) const
-{
-	output_x = x;
-}
-
-
-double Adsorption::Z13XBF_adsorption() const
+double Adsorption::get_reaction_rate(const double p_Ads, const double T_Ads,
+									 const double M_Ads, const double loading)
 {
 	const double k_rate = 6.0e-3; //to be specified
-	const double C = rho_s/rho_low - 1.; //current degree of loading
-	const double dCdt = k_rate * (C_eq - C); //scaled with mass fraction
-	if (dCdt > 0. && p_r_g < p_min*1.01)
-		return 0.;
-	//automatic time stepping should be used instead of the following.
-	//else if (dCdt > 0.) {
-	//	double dens_guess = p_r_g*COMP_MOL_MASS_WATER/(R*T); //vapor density guess
-	//	//const double max_rate = dens_guess/(rho_low*dt);
-	//	//dCdt = min(dCdt,max_rate);
-	//}
-	return dCdt;
-}
 
+	const double A = get_potential(T_Ads, p_Ads, M_Ads);
+	const double C_eq = get_adsorbate_density(T_Ads) * characteristic_curve(A);
 
-//determine equilibrium loading according to Dubinin
-void Adsorption::set_sorption_equilibrium()
-{
-	//determine adsorption potential
-	const double A = get_potential(T_s, p_r_g);
-	//determine adsorbed volume
-	const double W = characteristic_curve(A);
-	//determine equilibrium loading
-	// TODO [CL] eliminate this member variable
-	C_eq = W * get_adsorbate_density(T_s); //kg/kg
+	return k_rate * (C_eq - loading); //scaled with mass fraction
+									  // this the rate in terms of loading!
 }
 
 
 //Evaluate adsorbtion potential A
-double Adsorption::get_potential(const double Tads, double pads) const
+double Adsorption::get_potential(const double T_Ads, double p_Ads, const double M_Ads) const
 {
-	pads = std::max(pads, p_min);
-	double A = GAS_CONST * Tads * log(get_ps(Tads)/pads) / (M_react*1.e3); //in kJ/kg = J/g
+	double A = GAS_CONST * T_Ads * log(get_ps(T_Ads)/p_Ads) / (M_Ads*1.e3); //in kJ/kg = J/g
 	if (A < 0.0) {
 		// vapour partial pressure > saturation pressure
 		// A = 0.0; // TODO [CL] debug output
 	}
 	return A;
-}
-
-
-void Adsorption::update_param(double T_solid,
-                              double p_gas,
-                              double x_reactive,
-                              double rho_s_initial)
-{
-	this->T_s       = T_solid;
-	// TODO: combine to partial pressure of reactive component
-	this->p_gas     = p_gas; // should be in unit bar
-	this->x_react   = x_reactive;
-
-	this->rho_s     = rho_s_initial;
-	this->x(0)      = rho_s_initial;
-}
-
-
-void Adsorption::eval(double /*t*/, Eigen::VectorXd const& y, Eigen::VectorXd &dydx)
-{
-	assert( y.size() == dydx.size() );
-
-	set_rho_s( y(0) );
-	calculate_qR();
-	dydx(0) = get_qR();
-
 }
 
 
@@ -196,19 +111,54 @@ double Adsorption::get_entropy(const double Tads, const double A) const
 
 
 //Calculate sorption enthalpy
-double Adsorption::get_enthalpy(const double Tads, const double pads) const
+double Adsorption::get_enthalpy(const double T_Ads, const double p_Ads, const double M_Ads) const
 {
 	// TODO [CL] consider using A as obtained from current loading (needs inverse CC A(W)) instead of p_Vapour, T_Vapour
-	const double A = get_potential(Tads, pads);
+	const double A = get_potential(T_Ads, p_Ads, M_Ads);
 
-	return (get_hv(Tads) + A - Tads * get_entropy(Tads,A))*1000.0; //in J/kg
+	return (get_hv(T_Ads) + A - T_Ads * get_entropy(T_Ads,A))*1000.0; //in J/kg
+}
+
+
+bool
+stringToReactiveSystem(std::string const& name, SolidReactiveSystem& rsys_out)
+{
+	if (name == "Z13XBF")
+		rsys_out = SolidReactiveSystem::Z13XBF;
+	else if (name == "Z13XBF_100MPa")
+		rsys_out = SolidReactiveSystem::Z13XBF_100MPa;
+	else if (name == "Z13XBF_Const")
+		rsys_out = SolidReactiveSystem::Z13XBF_Const;
+	else if (name == "Z13XBF_Cook")
+		rsys_out = SolidReactiveSystem::Z13XBF_Cook;
+	else if (name == "Z13XBF_Dubinin")
+		rsys_out = SolidReactiveSystem::Z13XBF_Dubinin;
+	else if (name == "Z13XBF_Hauer")
+		rsys_out = SolidReactiveSystem::Z13XBF_Hauer;
+	else if (name == "Z13XBF_Mette")
+		rsys_out = SolidReactiveSystem::Z13XBF_Mette;
+	else if (name == "Z13XBF_Nunez")
+		rsys_out = SolidReactiveSystem::Z13XBF_Nunez;
+	else return false;
+
+	return true;
+}
+
+
+Adsorption* Adsorption::newInstance2(std::string const& rsys)
+{
+	SolidReactiveSystem r;
+	if (stringToReactiveSystem(rsys, r)) {
+		return newInstance(r);
+	} else {
+		ERR("unknown reactive system: %s", rsys);
+		return nullptr;
+	}
 }
 
 
 Adsorption* Adsorption::newInstance(const SolidReactiveSystem rsys)
 {
-	// using ::FiniteElement;
-
 	switch (rsys)
 	{
 	case SolidReactiveSystem::Z13XBF:
@@ -228,9 +178,9 @@ Adsorption* Adsorption::newInstance(const SolidReactiveSystem rsys)
 	case SolidReactiveSystem::Z13XBF_Nunez:
 		return new DensityNunez();
 	default:
-		return NULL;
+		return nullptr;
 	}
 }
 
-}
+} // namespace Ads
 

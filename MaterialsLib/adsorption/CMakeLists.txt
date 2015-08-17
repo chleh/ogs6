@@ -20,5 +20,5 @@ file(GLOB adsorption_HEADERS *.h)
 # 	${CMAKE_SOURCE_DIR}/FEM
 # )
 
-add_library(FEM_adsorption STATIC ${adsorption_HEADERS} ${adsorption_SOURCES} )
+add_library(MaterialsLib_adsorption STATIC ${adsorption_HEADERS} ${adsorption_SOURCES} )
 
