@@ -14,6 +14,9 @@
 
 #include <Eigen/Eigen>
 
+#include "TESProcess-notpl.h"
+
+
 namespace ProcessLib
 {
 
@@ -40,6 +43,9 @@ public:
             const double smDetJ,
             const double weight
             );
+
+
+    TESProcessInterface const* _process;
 
 
 private:
@@ -71,7 +77,6 @@ private:
 
     double _M_inert = 888.888;
     double _M_react = 888.888;
-
 
     // integration point values of unknowns
     double _p = 888.888; // gas pressure

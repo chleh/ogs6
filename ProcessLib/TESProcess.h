@@ -27,8 +27,10 @@
 #include "ProcessVariable.h"
 #include "Process.h"
 
+#include "TESProcess-notpl.h"
 #include "TESFEM.h"
 #include "TESFEM-notpl.h"
+
 
 namespace MeshLib
 {
@@ -54,7 +56,9 @@ struct DirichletBC
 
 
 template<typename GlobalSetup>
-class TESProcess : public Process
+class TESProcess
+        : public Process,
+          public TESProcessInterface
 {
     using ConfigTree = boost::property_tree::ptree;
 
@@ -77,43 +81,44 @@ public:
     ~TESProcess();
 
 private:
-    ProcessVariable* _process_vars[NODAL_DOF] = { nullptr, nullptr, nullptr };
-    ProcessVariable* _secondary_process_vars[NODAL_DOF_2ND] = { nullptr, nullptr };
-
-    MeshLib::MeshSubset const* _mesh_subset_all_nodes = nullptr;
-    std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets;
-
-    GlobalSetup _global_setup;
-    std::unique_ptr<typename GlobalSetup::MatrixType> _A;
-    std::unique_ptr<typename GlobalSetup::VectorType> _rhs;
-    std::unique_ptr<typename GlobalSetup::VectorType> _x;
-
-
     using LocalAssembler = TES::LocalAssemblerDataInterface<
         typename GlobalSetup::MatrixType, typename GlobalSetup::VectorType>;
-
-    std::vector<LocalAssembler*> _local_assemblers;
-
     using GlobalAssembler =
         AssemblerLib::VectorMatrixAssembler<
             typename GlobalSetup::MatrixType,
             typename GlobalSetup::VectorType>;
 
+
+    MeshLib::MeshSubset const* _mesh_subset_all_nodes = nullptr;
+    GlobalSetup _global_setup;
+    std::vector<LocalAssembler*> _local_assemblers;
+    std::unique_ptr<GlobalAssembler> _global_assembler;
+
+    MeshLib::NodeAdjacencyTable _node_adjacency_table;
+
+
+
+    // primary variables
+    ProcessVariable* _process_vars[NODAL_DOF] = { nullptr, nullptr, nullptr };
+    std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets;
+
+    std::unique_ptr<typename GlobalSetup::MatrixType> _A;
+    std::unique_ptr<typename GlobalSetup::VectorType> _rhs;
+    std::unique_ptr<typename GlobalSetup::VectorType> _x;
+
     std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map;
 
+    DirichletBC _dirichlet_bc;
+    std::vector<NeumannBc<GlobalSetup>*> _neumann_bcs;
 
+
+    // secondary variables
+    ProcessVariable* _secondary_process_vars[NODAL_DOF_2ND] = { nullptr, nullptr };
     std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets_secondary;
     std::unique_ptr<typename GlobalSetup::VectorType> _secondary_variables;
     std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map_secondary;
 
 
-    std::unique_ptr<GlobalAssembler> _global_assembler;
-
-    DirichletBC _dirichlet_bc;
-
-    std::vector<NeumannBc<GlobalSetup>*> _neumann_bcs;
-
-    MeshLib::NodeAdjacencyTable _node_adjacency_table;
 };
 
 } // namespace TES

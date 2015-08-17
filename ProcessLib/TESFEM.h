@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "TESFEM-notpl.h"
+#include "TESProcess-notpl.h"
 
 namespace ProcessLib
 {
@@ -29,7 +30,8 @@ public:
 
     virtual void init(MeshLib::Element const& e,
                       std::size_t const local_matrix_size,
-                      unsigned const integration_order) = 0;
+                      unsigned const integration_order,
+                      TESProcessInterface const* process) = 0;
 
     virtual void assemble(std::vector<double> const& localX,
                           std::vector<double> const& localSecondaryVariables) = 0;
@@ -60,7 +62,8 @@ public:
     void
     init(MeshLib::Element const& e,
          std::size_t const local_matrix_size,
-         unsigned const integration_order) override;
+         unsigned const integration_order,
+         TESProcessInterface const* process) override;
 
     void assemble(std::vector<double> const& localX,
                   std::vector<double> const& localSecondaryVariables) override;
@@ -83,8 +86,6 @@ private:
     Eigen::VectorXd _localRhs;
 
     unsigned _integration_order = 2;
-
-    friend class LAMethodsNoTpl;
 };
 
 

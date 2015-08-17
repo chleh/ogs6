@@ -117,10 +117,11 @@ createLocalAssemblers()
 
     DBUG("Calling local assembler builder for all mesh elements.");
     _global_setup.execute(
-            local_asm_builder,
-            _mesh.getElements(),
-            _local_assemblers,
-            _integration_order);
+                local_asm_builder,
+                _mesh.getElements(),
+                _local_assemblers,
+                _integration_order,
+                this);
 
     DBUG("Create global assembler.");
     _global_assembler.reset(
