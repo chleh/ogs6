@@ -31,7 +31,7 @@ public:
                       std::size_t const local_matrix_size,
                       unsigned const integration_order) = 0;
 
-    virtual void assemble() = 0;
+    virtual void assemble(std::vector<double> const& local_x) = 0;
 
     virtual void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
                              AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const&) const = 0;
@@ -59,12 +59,12 @@ public:
     void
     init(MeshLib::Element const& e,
          std::size_t const local_matrix_size,
-         unsigned const integration_order);
+         unsigned const integration_order) override;
 
-    void assemble();
+    void assemble(std::vector<double> const& local_x) override;
 
     void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
-                     AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const& indices) const;
+                     AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const& indices) const override;
 
 private:
     std::vector<ShapeMatrices> _shape_matrices;

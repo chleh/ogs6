@@ -26,6 +26,7 @@ const unsigned NODAL_DOF = 3;
 struct LADataNoTpl
 {
     typedef Eigen::Ref<const Eigen::MatrixXd> MatRef;
+    typedef Eigen::Ref<const Eigen::VectorXd> VecRef;
 
     Eigen::Matrix3d getMassCoeffMatrix();
     Eigen::MatrixXd getLaplaceCoeffMatrix(const unsigned dim);
@@ -36,7 +37,8 @@ struct LADataNoTpl
     void assembleIntegrationPoint(
             Eigen::MatrixXd* localA,
             Eigen::VectorXd* localRhs,
-            MatRef const& smN,
+            std::vector<double> const& localX,
+            VecRef const& smN,
             MatRef const& smDNdx,
             const double smDetJ,
             const double weight

@@ -96,6 +96,7 @@ createLocalAssemblers()
     DBUG("Create global assembler.");
     _global_assembler.reset(
         new GlobalAssembler(*_A, *_rhs, *_local_to_global_index_map));
+    _global_assembler->setX(_x.get());
 
     for (unsigned i=0; i<NODAL_DOF; ++i)
     {
@@ -197,7 +198,7 @@ solve()
         _process_vars[i]->setIC(*_x, NODAL_DOF, i);
     }
 
-    std::cerr << __FUNCTION__ << ":" << __LINE__ << ":_x\n" << _x->getRawVector() << std::endl;
+    // std::cerr << __FUNCTION__ << ":" << __LINE__ << ":_x\n" << _x->getRawVector() << std::endl;
 
     // Call global assembler for each local assembly item.
     _global_setup.execute(*_global_assembler, _local_assemblers);

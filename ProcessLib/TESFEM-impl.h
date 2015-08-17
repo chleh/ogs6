@@ -76,7 +76,7 @@ LocalAssemblerData<ShapeFunction_,
     GlobalMatrix,
     GlobalVector,
     GlobalDim>::
-assemble()
+assemble(std::vector<double> const& local_x)
 {
     _localA.setZero();
     _localRhs.setZero();
@@ -90,7 +90,10 @@ assemble()
         auto const& wp = integration_method.getWeightedPoint(ip);
         auto const weight = wp.getWeight();
 
-        _data.assembleIntegrationPoint(&_localA, &_localRhs,
+
+        std::cerr << __FUNCTION__ << ":" << __LINE__ << ":" << sm.N << std::endl;
+
+        _data.assembleIntegrationPoint(&_localA, &_localRhs, local_x,
                                        sm.N, sm.dNdx, sm.detJ, weight);
     }
 }

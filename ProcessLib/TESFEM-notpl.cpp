@@ -233,15 +233,38 @@ void
 LADataNoTpl::
 assembleIntegrationPoint(
 		Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
-		const MatRef &smN, const MatRef &smDNdx, const double smDetJ,
+		std::vector<double> const& localX,
+		const VecRef &smN, const MatRef &smDNdx, const double smDetJ,
 		const double weight)
 {
+    auto const N = smDNdx.cols(); // number of integration points
+    auto const D = smDNdx.rows(); // global dimension
+
+    double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_x };
+
+    for (unsigned d=0; d<NODAL_DOF; ++d)
+    {
+        *int_pt_val[d] = 0.0;
+    }
+
+    for (unsigned d=0; d<NODAL_DOF; ++d)
+    {
+        for (unsigned n=0; n<N; ++n)
+        {
+            *int_pt_val[d] += localX[n*NODAL_DOF+d] * smN(n);
+        }
+    }
+
+    std::cerr << "integration point values of"
+                 " p=" << _p
+              << " T=" << _T
+              << " x=" << _x << std::endl;
+
+
     std::cerr << "localA:\n" << (*localA) << std::endl;
     std::cerr << "localA block\n" << (localA->template block<2,2>(0,0)) << std::endl;
     std::cerr << "coeff:\n" << smDNdx.transpose() * 1.0 * smDNdx * smDetJ * weight << std::endl;
 
-    auto const N = smDNdx.cols(); // number of integration points
-    auto const D = smDNdx.rows(); // global dimension
 
     std::cerr << "global dim:\n" << D << std::endl;
 
