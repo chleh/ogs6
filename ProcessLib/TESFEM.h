@@ -31,7 +31,8 @@ public:
                       std::size_t const local_matrix_size,
                       unsigned const integration_order) = 0;
 
-    virtual void assemble(std::vector<double> const& local_x) = 0;
+    virtual void assemble(std::vector<double> const& localX,
+                          std::vector<double> const& localSecondaryVariables) = 0;
 
     virtual void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
                              AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const&) const = 0;
@@ -61,7 +62,8 @@ public:
          std::size_t const local_matrix_size,
          unsigned const integration_order) override;
 
-    void assemble(std::vector<double> const& local_x) override;
+    void assemble(std::vector<double> const& localX,
+                  std::vector<double> const& localSecondaryVariables) override;
 
     void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
                      AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const& indices) const override;

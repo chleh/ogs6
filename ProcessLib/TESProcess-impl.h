@@ -16,6 +16,34 @@
 
 #include "TESProcess.h"
 
+
+template <class ConfigTree>
+static ProcessLib::ProcessVariable const*
+find_variable(ConfigTree const& config,
+              std::string const& variable_role,
+              std::vector<ProcessLib::ProcessVariable> const& variables)
+{
+    std::string const name = config.template get<std::string>(variable_role);
+
+    auto variable = std::find_if(variables.cbegin(), variables.cend(),
+            [&name](ProcessLib::ProcessVariable const& v) {
+                return v.getName() == name;
+            });
+
+    if (variable == variables.end())
+    {
+        ERR("Expected process variable \'%s\' not found in provided variables list.",
+            name.c_str());
+        std::abort();
+    }
+
+
+    DBUG("Found process variable %s for role %s.",
+         name.c_str(), variable_role.c_str());
+
+    return &*variable;
+}
+
 namespace ProcessLib
 {
 
@@ -31,31 +59,32 @@ TESProcess(MeshLib::Mesh& mesh,
 {
     DBUG("Create TESProcess.");
 
-    const std::string vars[NODAL_DOF] = { "fluid_pressure",
-                                          "temperature",
-                                          "vapour_mass_fraction" };
-
-    for (unsigned i=0; i<NODAL_DOF; ++i)
     {
-        std::string const name = config.get<std::string>("process_variables." + vars[i]);
-        std::cerr << ">> " << vars[i] << " -- " << name << std::endl;
+        const std::string vars[NODAL_DOF] = { "fluid_pressure",
+                                              "temperature",
+                                              "vapour_mass_fraction" };
 
-        auto variable = std::find_if(variables.cbegin(), variables.cend(),
-                [&name](ProcessVariable const& v) {
-                    return v.getName() == name;
-                });
+        ConfigTree proc_vars = config.get_child("process_variables");
 
-        if (variable == variables.end())
+        for (unsigned i=0; i<NODAL_DOF; ++i)
         {
-            ERR("Expected process variable \'%s\' not found in provided variables list.",
-                name.c_str());
-            std::abort();
+            auto variable = find_variable(proc_vars, vars[i], variables);
+
+            _process_vars[i] = const_cast<ProcessVariable*>(variable);
         }
+    }
 
+    {
+        const std::string vars[NODAL_DOF_2ND] = { "solid_density" };
 
-        DBUG("Associate %s with process variable \'%s\'.",
-             vars[i].c_str(), name.c_str());
-        _process_vars[i] = const_cast<ProcessVariable*>(&*variable);
+        ConfigTree proc_vars = config.get_child("secondary_variables");
+
+        for (unsigned i=0; i<NODAL_DOF_2ND && i<1; ++i)
+        {
+            auto variable = find_variable(proc_vars, vars[i], variables);
+
+            _secondary_process_vars[i] = const_cast<ProcessVariable*>(variable);
+        }
     }
 }
 
@@ -97,6 +126,9 @@ createLocalAssemblers()
     _global_assembler.reset(
         new GlobalAssembler(*_A, *_rhs, *_local_to_global_index_map));
     _global_assembler->setX(_x.get());
+    _global_assembler->setSecondaryVariables(
+                _secondary_variables.get(),
+                _local_to_global_index_map_secondary.get());
 
     for (unsigned i=0; i<NODAL_DOF; ++i)
     {
@@ -169,7 +201,18 @@ initialize()
     _x.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
     _rhs.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
 
-    DBUG("size of A: %ix%i, x: %i, rhs: %i\n", _A->getNRows(), _A->getNCols(), _x->size(), _rhs->size());
+
+    for (unsigned i=0; i<NODAL_DOF_2ND; ++i)
+    {
+        _all_mesh_subsets_secondary.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
+    }
+
+    _local_to_global_index_map_secondary.reset(
+        new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets_secondary));
+
+    _secondary_variables.reset(
+                _global_setup.createVector(
+                    _local_to_global_index_map_secondary->dofSize()));
 
     if (_mesh.getDimension()==1)
         createLocalAssemblers<1>();
@@ -197,6 +240,14 @@ solve()
     {
         _process_vars[i]->setIC(*_x, NODAL_DOF, i);
     }
+
+    // set initial values for secondary variables
+    for (unsigned i=0; i<NODAL_DOF_2ND; ++i)
+    {
+        if (_secondary_process_vars[i])
+            _secondary_process_vars[i]->setIC(*_secondary_variables, NODAL_DOF_2ND, i);
+    }
+
 
     // std::cerr << __FUNCTION__ << ":" << __LINE__ << ":_x\n" << _x->getRawVector() << std::endl;
 

@@ -78,6 +78,7 @@ public:
 
 private:
     ProcessVariable* _process_vars[NODAL_DOF] = { nullptr, nullptr, nullptr };
+    ProcessVariable* _secondary_process_vars[NODAL_DOF_2ND] = { nullptr, nullptr };
 
     MeshLib::MeshSubset const* _mesh_subset_all_nodes = nullptr;
     std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets;
@@ -86,6 +87,7 @@ private:
     std::unique_ptr<typename GlobalSetup::MatrixType> _A;
     std::unique_ptr<typename GlobalSetup::VectorType> _rhs;
     std::unique_ptr<typename GlobalSetup::VectorType> _x;
+
 
     using LocalAssembler = TES::LocalAssemblerDataInterface<
         typename GlobalSetup::MatrixType, typename GlobalSetup::VectorType>;
@@ -97,8 +99,13 @@ private:
             typename GlobalSetup::MatrixType,
             typename GlobalSetup::VectorType>;
 
-
     std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map;
+
+
+    std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets_secondary;
+    std::unique_ptr<typename GlobalSetup::VectorType> _secondary_variables;
+    std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map_secondary;
+
 
     std::unique_ptr<GlobalAssembler> _global_assembler;
 

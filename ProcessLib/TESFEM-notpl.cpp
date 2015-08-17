@@ -16,6 +16,11 @@
 
 const double GAS_CONST = 8.3144621;
 
+const double M_N2  = 0.028;
+const double M_H2O = 0.018;
+
+
+
 template <typename T>
 T square(const T& v)
 {
@@ -24,32 +29,335 @@ T square(const T& v)
 
 
 
-static inline double fluid_cp(const double p, const double T, const double x)
+static double fluid_specific_isobaric_heat_capacity(
+		const double /*p*/, const double /*T*/, const double /*x*/)
 {
-	return 888.888 + 0.0 * (p + T + x);
+	// OGS-5 heat cap model 1 value 1000
+	// constant cp
+
+	return 1000.0;
 }
 
-static inline double fluid_rho(const double p, const double T, const double x)
+static double fluid_density(const double p, const double T, const double x)
 {
-	return 888.888 + 0.0 * (p + T + x);
+	// OGS-5 density model 26
+
+	const double M0 = M_N2;
+	const double M1 = M_H2O;
+
+	const double xn = M0*x/(M0*x + M1*(1.0-x));
+
+	return p / (GAS_CONST * T) * (M1*xn + M0*(1.0-xn));;
 }
 
-static inline double fluid_eta(const double p, const double T, const double x)
+static double fluid_viscosity_N2(double rho, const double T)
 {
-	return 888.888 + 0.0 * (p + T + x);
+	const double rho_c = 314;             // [kg/m3]
+	const double CVF = 14.058;            // [1e-3 Pa-s]
+
+	const double sigma = 0.36502496e-09;
+	const double k = 1.38062e-23;
+	const double eps = 138.08483e-23;
+	const double c1 = 0.3125;
+	const double c2 = 2.0442e-49;
+
+	double A[5],C[5];
+
+	A[0] = 0.46649;
+	A[1] = -0.57015;
+	A[2] = 0.19164;
+	A[3] = -0.03708;
+	A[4] = 0.00241;
+
+	C[0] = -20.09997;
+	C[1] = 3.4376416;
+	C[2] = -1.4470051;
+	C[3] = -0.027766561;
+	C[4] = -0.21662362;
+
+	const double T_star = T * k / eps;
+	rho = rho / rho_c;
+
+	double Omega = 0.0;
+	for (unsigned i = 0; i < 5; i++)
+		Omega += A[i] * std::pow(log(T_star),i);
+
+	Omega = exp (Omega);
+
+	//eta in [Pa*s]
+	const double eta_0 = c1 * sqrt(c2 * T) / (sigma * sigma * Omega);
+
+	double sum = 0.0;
+	for (unsigned i = 2; i < 5; i++)
+		sum = sum + C[i] * std::pow(rho, i-1);
+
+	//
+	const double eta_r = CVF * 1e-6 * (C[0] / (rho - C[1]) + C[0] / C[1] + sum);
+
+	return eta_0 + eta_r;               // [Pa*s]
 }
 
-static inline double fluid_heat_cond(const double p, const double T, const double x)
+static double fluid_viscosity_H2O(double rho, double T)
 {
-	return 888.888 + 0.0 * (p + T + x);
+	double my,my_0,my_1;
+	double H[4],h[6][7];
+	double sum1 = 0,sum2 = 0,sum3 = 0;
+	int i,j;
+
+	T = T / 647.096;
+	rho = rho / 322.0;
+
+	H[0] = 1.67752;
+	H[1] = 2.20462;
+	H[2] = 0.6366564;
+	H[3] = -0.241605;
+
+	for (i = 0; i < 6; i++)
+		for (j = 0; j < 7; j++)
+			h[i][j] = 0;
+	h[0][0] = 0.520094000;
+	h[1][0] = 0.085089500;
+	h[2][0] = -1.083740000;
+	h[3][0] = -0.289555000;
+	h[0][1] = 0.222531000;
+	h[1][1] = 0.999115000;
+	h[2][1] = 1.887970000;
+	h[3][1] = 1.266130000;
+	h[5][1] = 0.120573000;
+	h[0][2] = -0.281378000;
+	h[1][2] = -0.906851000;
+	h[2][2] = -0.772479000;
+	h[3][2] = -0.489837000;
+	h[4][2] = -0.257040000;
+	h[0][3] = 0.161913000;
+	h[1][3] = 0.257399000;
+	h[0][4] = -0.032537200;
+	h[3][4] = 0.069845200;
+	h[4][5] = 0.008721020;
+	h[3][6] = -0.004356730;
+	h[5][6] = -0.000593264;
+
+	for(i = 0; i < 4; i++)
+		sum1 = sum1 + (H[i] / std::pow(T,i));
+
+	my_0 = 100 * sqrt(T) / sum1;
+
+	for(i = 0; i < 6; i++)
+	{
+		for (j = 0; j < 7; j++)
+			sum3 = sum3 + h[i][j] * std::pow(rho - 1,j);
+		sum2 = sum2 + std::pow(1 / T - 1,i) * sum3;
+		sum3 = 0;
+	}
+
+	my_1 = exp(rho * sum2);
+
+	my = (my_0 * my_1) / 1e6;
+	return my;
 }
 
-static inline double solid_cp(const double rho_SR)
+static double fluid_viscosity(const double p, const double T, const double x)
 {
-	return 888.888 + 0.0 * (rho_SR);
+	// OGS 5 viscosity model 26
+
+	const double M0 = M_N2;
+	const double M1 = M_H2O;
+
+	//reactive component
+	const double x0 = M0*x/(M0*x + M1*(1.0-x)); //mass in mole fraction
+	const double V0 = fluid_viscosity_H2O(M1*p/(GAS_CONST*T), T);
+	//inert component
+	const double x1 = 1.0 - x0;
+	const double V1 = fluid_viscosity_N2(M0*p/(GAS_CONST*T), T);
+
+	const double M0_over_M1 (M1/M0); //reactive over inert
+	const double V0_over_V1 (V0/V1);
+
+	const double phi_12 =   (1.0 + sqrt(V0_over_V1) * pow(1.0/M0_over_M1, 0.25))
+						  * (1.0 + sqrt(V0_over_V1) * pow(1.0/M0_over_M1, 0.25))
+						  / pow(8.0*(1.0+M0_over_M1),0.5);
+	const double phi_21 = phi_12 * M0_over_M1 / V0_over_V1;
+
+	return V0*x0 / (x0 + x1 * phi_12)
+			+ V1*x1 / (x1 + x0 * phi_21);
 }
 
-static inline double evap_enthalp(const double p, const double T, const double x)
+static double fluid_heat_conductivity_N2(double rho, double T)
+{
+	const double X1 = 0.95185202;
+	const double X2 = 1.0205422;
+
+	const double rho_c = 314;             // [kg/m3]
+	const double M = 28.013;
+	const double k = 1.38062e-23;
+	const double eps = 138.08483e-23;
+	const double N_A = 6.02213E26;
+	const double R = 8.31434;
+	const double CCF = 4.173;             //mW/m/K
+
+	const double c1 = 0.3125;
+	const double c2 = 2.0442e-49;
+	const double sigma = 0.36502496e-09;
+
+	double F;
+	double A[5],f[9],C[4];
+	double sum = 0,eta_0,c_v0,T_star,Omega = 0;
+	double lamda_tr,lamda_in,lamda_r,lamda_0,lamda;
+
+	int i;
+
+	T_star = T * k / eps;
+	rho = rho / rho_c;
+
+	A[0] = 0.46649;
+	A[1] = -0.57015;
+	A[2] = 0.19164;
+	A[3] = -0.03708;
+	A[4] = 0.00241;
+
+	f[0] = -0.837079888737e3;
+	f[1] = 0.37914711487e2;
+	f[2] = -0.601737844275;
+	f[3] = 0.350418363823e1;
+	f[4] = -0.874955653028e-5;
+	f[5] = 0.148968607239e-7;
+	f[6] = -0.256370354277e-11;
+	f[7] = 0.100773735767e1;
+	f[8] = 0.335340610e4;
+
+	C[0] = 3.3373542;
+	C[1] = 0.37098251;
+	C[2] = 0.89913456;
+	C[3] = 0.16972505;
+
+	// dilute heat conductivity
+	for (i = 0; i < 7; i++)
+		sum = sum + f[i] * pow(T,(i - 3));
+	const double temp (exp ((f[8] / T)) - 1);
+	c_v0 = R * (sum + ((f[7] * (f[8] / T) * (f[8] / T) * (exp((f[8] / T)))) / (temp * temp) - 1));
+	sum = 0;
+
+	double cvint;
+	cvint = c_v0 * 1000 / N_A;
+
+	// dilute gas viscosity
+	for (i = 0; i < 5; i++)
+		Omega = Omega + A[i] * std::pow(log(T_star),i);
+	Omega = exp (Omega);
+
+	//eta in [Pa*s]
+	eta_0 = 1e6 * (c1 * sqrt(c2 * T) / (sigma * sigma * Omega));
+
+	F = eta_0 * k * N_A / (M * 1000);
+
+	lamda_tr = 2.5 * (1.5 - X1);
+	lamda_in = X2 * (cvint / k + X1);
+
+	lamda_0 = F * (lamda_tr + lamda_in);
+	sum = 0;
+	for (i = 0; i < 4; i++)
+		sum = sum + C[i] * std::pow(rho,(i + 1));
+
+	lamda_r = sum * CCF;
+
+	lamda = (lamda_0 + lamda_r) / 1000;   //lamda in [W/m/K]
+
+	return lamda;
+}
+
+static double fluid_heat_conductivity_H2O(double rho, double T)
+{
+	double lamda,lamda_0,lamda_1,lamda_2;
+	double sum1 = 0;
+	double S,Q,dT;
+	double a[4],b[3],B[2],d[4],C[6];
+	int i;
+
+	T = T / 647.096;
+	rho = rho / 317.11;
+
+	a[0] =  0.0102811;
+	a[1] =  0.0299621;
+	a[2] =  0.0156146;
+	a[3] = -0.00422464;
+
+	b[0] = -0.397070;
+	b[1] =  0.400302;
+	b[2] =  1.060000;
+
+	B[0] = -0.171587;
+	B[1] =  2.392190;
+
+	d[0] = 0.0701309;
+	d[1] = 0.0118520;
+	d[2] = 0.00169937;
+	d[3] = -1.0200;
+
+	C[0] = 0.642857;
+	C[1] = -4.11717;
+	C[2] = -6.17937;
+	C[3] = 0.00308976;
+	C[4] = 0.0822994;
+	C[5] = 10.0932;
+
+	for (i = 0; i < 4; i++)
+		sum1 = sum1 + a[i] * std::pow(T,i);
+
+	lamda_0 = sqrt(T) * sum1;
+	lamda_1 = b[0] + b[1] * rho + b[2] * exp(B[0] * (rho + B[1]) * (rho + B[1]));
+
+	dT = fabs(T - 1) + C[3];
+	Q = 2 + (C[4] / pow(dT,3. / 5.));
+
+	if (T >= 1)
+		S = 1 / dT;
+	else
+		S = C[5] / pow(dT,3. / 5.);
+
+	lamda_2 =
+	        (d[0] /
+	         std::pow(T, 10) + d[1]) * std::pow(rho,9. / 5.) * exp(C[0] * (1 - pow(rho,14. / 5.)))
+	        + d[2]* S* std::pow(rho,Q) * exp((Q / (1. + Q)) * (1 - std::pow(rho,(1. + Q))))
+	        + d[3] * exp(C[1] * pow(T,3. / 2.) + C[2] / std::pow(rho,5));
+
+	lamda = (lamda_0 + lamda_1 + lamda_2); // lamda in [W/m/K]
+
+	return lamda;
+}
+
+static double fluid_heat_conductivity(const double p, const double T, const double x)
+{
+	const double M0 = M_N2;
+	const double M1 = M_H2O;
+
+	// TODO [CL] max() is redundant if the fraction is guaranteed to be between 0 and 1.
+	//reactive component
+	const double x0 = std::max(M0*x/(M0*x + M1*(1.0-x)), 0.); // convert mass to mole fraction
+	const double k0 = fluid_heat_conductivity_H2O(M1*p/(GAS_CONST*T), T);
+	//inert component
+	const double x1 = 1.0 - x0;
+	const double k1 = fluid_heat_conductivity_N2(M0*p/(GAS_CONST*T), T);
+
+	const double M1_over_M2 = M1/M0; //reactive over inert
+	const double V1_over_V2 = fluid_viscosity_H2O(M1*p/(GAS_CONST*T), T)
+							/ fluid_viscosity_N2 (M0*p/(GAS_CONST*T), T);
+	const double L1_over_L2 = V1_over_V2 / M1_over_M2;
+
+	const double phi_12 =   (1.0 + pow(L1_over_L2, 0.5) * pow(M1_over_M2, -0.25))
+						  * (1.0 + pow(V1_over_V2, 0.5) * pow(M1_over_M2, -0.25))
+						  / pow(8.0 * (1.0 + M1_over_M2), 0.5);
+	const double phi_21 = phi_12 * M1_over_M2 / V1_over_V2;
+
+	return k0*x0 / (x0+x1*phi_12) + k1*x1 / (x1+x0*phi_21);
+}
+
+static double solid_isobaric_heat_capacity(const double /*rho_SR*/)
+{
+	// OGS 5 heat capacity model 1 (constant) value 620.573
+	return 620.573;
+}
+
+static double evaporation_enthalpy(const double p, const double T, const double x)
 {
 	return 888.888 + 0.0 * (p + T + x);
 }
@@ -65,10 +373,10 @@ Eigen::Matrix3d
 LADataNoTpl::
 getMassCoeffMatrix()
 {
-	const double rho_GR = fluid_rho(_p, _T, _x);
+	const double rho_GR = fluid_density(_p, _T, _x);
 
-	const double cpG   = fluid_cp(_p, _T, _x);
-	const double cpS   = solid_cp(_rho_SR);
+	const double cpG   = fluid_specific_isobaric_heat_capacity(_p, _T, _x);
+	const double cpS   = solid_isobaric_heat_capacity(_rho_SR);
 
 	double dxn_dxm = _M_inert * _M_react // 0 is inert, 1 is reactive
 					 / square(_M_inert * _x + _M_react * (1.0 - _x));
@@ -101,10 +409,10 @@ getLaplaceCoeffMatrix(const unsigned dim)
 {
 	// TODO implement
 
-	const double rho_GR = fluid_rho(_p, _T, _x);
-	const double eta_GR = fluid_eta(_p, _T, _x);
+	const double rho_GR = fluid_density(_p, _T, _x);
+	const double eta_GR = fluid_viscosity(_p, _T, _x);
 
-	const double lambda_F = fluid_heat_cond(_p, _T, _x);
+	const double lambda_F = fluid_heat_conductivity(_p, _T, _x);
 
 	// TODO: k_rel
 	auto const L_pp = _solid_perm_tensor.block(0,0,dim,dim) * rho_GR / eta_GR;
@@ -149,9 +457,9 @@ Eigen::Matrix3d
 LADataNoTpl::
 getAdvectionCoeffMatrix()
 {
-	const double rho_GR = fluid_rho(_p, _T, _x);
+	const double rho_GR = fluid_density(_p, _T, _x);
 
-	const double cpG   = fluid_cp(_p, _T, _x);
+	const double cpG   = fluid_specific_isobaric_heat_capacity(_p, _T, _x);
 
 	const double A_pp = 0.0;
 	const double A_pT = 0.0;
@@ -209,12 +517,12 @@ Eigen::Vector3d
 LADataNoTpl::
 getRHSCoeffVector()
 {
-	const double rho_GR = fluid_rho(_p, _T, _x);
+	const double rho_GR = fluid_density(_p, _T, _x);
 
 	const double rhs_p = (_poro - 1.0) * _reaction_rate;
 
 	const double rhs_T = rho_GR * _fluid_specific_heat_source
-						 + (1.0 - _poro) * _reaction_rate * evap_enthalp(_p, _T, _x)
+						 + (1.0 - _poro) * _reaction_rate * evaporation_enthalpy(_p, _T, _x)
 						 + _rho_SR * (1.0 - _poro) * _solid_specific_heat_source;
 
 	const double rhs_x = (_poro - 1.0) * _reaction_rate; // TODO: what if x < 0.0
@@ -234,31 +542,57 @@ LADataNoTpl::
 assembleIntegrationPoint(
 		Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
 		std::vector<double> const& localX,
+		std::vector<double> const& localSecondaryVariables,
 		const VecRef &smN, const MatRef &smDNdx, const double smDetJ,
 		const double weight)
 {
     auto const N = smDNdx.cols(); // number of integration points
     auto const D = smDNdx.rows(); // global dimension
 
-    double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_x };
-
-    for (unsigned d=0; d<NODAL_DOF; ++d)
     {
-        *int_pt_val[d] = 0.0;
-    }
+        double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_x };
 
-    for (unsigned d=0; d<NODAL_DOF; ++d)
-    {
-        for (unsigned n=0; n<N; ++n)
+        for (unsigned d=0; d<NODAL_DOF; ++d)
         {
-            *int_pt_val[d] += localX[n*NODAL_DOF+d] * smN(n);
+            *int_pt_val[d] = 0.0;
+        }
+
+        for (unsigned d=0; d<NODAL_DOF; ++d)
+        {
+            for (unsigned n=0; n<N; ++n)
+            {
+                *int_pt_val[d] += localX[d*N+n] * smN(n);
+            }
         }
     }
+
+    {
+        double* int_pt_val[NODAL_DOF_2ND] = { &_solid_density, &_reaction_rate };
+
+        for (unsigned d=0; d<NODAL_DOF_2ND; ++d)
+        {
+            *int_pt_val[d] = 0.0;
+        }
+
+        for (unsigned d=0; d<NODAL_DOF_2ND; ++d)
+        {
+            for (unsigned n=0; n<N; ++n)
+            {
+                *int_pt_val[d] += localSecondaryVariables[d*N+n] * smN(n);
+            }
+        }
+    }
+
+
+
+
 
     std::cerr << "integration point values of"
                  " p=" << _p
               << " T=" << _T
-              << " x=" << _x << std::endl;
+              << " x=" << _x
+              << " rho_SR=" << _solid_density
+              << " react_rate=" << _reaction_rate << std::endl;
 
 
     std::cerr << "localA:\n" << (*localA) << std::endl;

@@ -21,6 +21,7 @@ namespace TES
 {
 
 const unsigned NODAL_DOF = 3;
+const unsigned NODAL_DOF_2ND = 2; // loading or solid density, and reaction rate
 
 
 struct LADataNoTpl
@@ -38,13 +39,12 @@ struct LADataNoTpl
             Eigen::MatrixXd* localA,
             Eigen::VectorXd* localRhs,
             std::vector<double> const& localX,
+            std::vector<double> const& localSecondaryVariables,
             VecRef const& smN,
             MatRef const& smDNdx,
             const double smDetJ,
             const double weight
             );
-
-    double _reaction_rate = 888.888;
 
     double _fluid_specific_heat_source = 888.888;
 
@@ -57,9 +57,14 @@ struct LADataNoTpl
 
     double _poro = 888.888;
 
-    double _p = 888.888;
-    double _T = 888.888;
-    double _x = 0.5;
+    // integration point values of unknowns
+    double _p = 888.888; // gas pressure
+    double _T = 888.888; // temperature
+    double _x = 0.5;     // fluid mass fraction of the second component
+
+    // integration point values of secondary veriables
+    double _solid_density = 888.888;
+    double _reaction_rate = 888.888;
 
     double _rho_SR = 888.888;
 
