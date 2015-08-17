@@ -16,8 +16,6 @@
 
 const double GAS_CONST = 8.3144621;
 
-const double M_N2  = 0.028;
-const double M_H2O = 0.018;
 
 
 
@@ -42,8 +40,8 @@ static double fluid_density(const double p, const double T, const double x)
 {
 	// OGS-5 density model 26
 
-	const double M0 = M_N2;
-	const double M1 = M_H2O;
+	const double M0 = ProcessLib::TES::M_N2;
+	const double M1 = ProcessLib::TES::M_H2O;
 
 	const double xn = M0*x/(M0*x + M1*(1.0-x));
 
@@ -160,8 +158,8 @@ static double fluid_viscosity(const double p, const double T, const double x)
 {
 	// OGS 5 viscosity model 26
 
-	const double M0 = M_N2;
-	const double M1 = M_H2O;
+	const double M0 = ProcessLib::TES::M_N2;
+	const double M1 = ProcessLib::TES::M_H2O;
 
 	//reactive component
 	const double x0 = M0*x/(M0*x + M1*(1.0-x)); //mass in mole fraction
@@ -327,8 +325,8 @@ static double fluid_heat_conductivity_H2O(double rho, double T)
 
 static double fluid_heat_conductivity(const double p, const double T, const double x)
 {
-	const double M0 = M_N2;
-	const double M1 = M_H2O;
+	const double M0 = ProcessLib::TES::M_N2;
+	const double M1 = ProcessLib::TES::M_H2O;
 
 	// TODO [CL] max() is redundant if the fraction is guaranteed to be between 0 and 1.
 	//reactive component
@@ -351,15 +349,10 @@ static double fluid_heat_conductivity(const double p, const double T, const doub
 	return k0*x0 / (x0+x1*phi_12) + k1*x1 / (x1+x0*phi_21);
 }
 
-static double solid_isobaric_heat_capacity(const double /*rho_SR*/)
+static double solid_specific_isobaric_heat_capacity(const double /*rho_SR*/)
 {
 	// OGS 5 heat capacity model 1 (constant) value 620.573
 	return 620.573;
-}
-
-static double evaporation_enthalpy(const double p, const double T, const double x)
-{
-	return 888.888 + 0.0 * (p + T + x);
 }
 
 
@@ -373,18 +366,18 @@ Eigen::Matrix3d
 LADataNoTpl::
 getMassCoeffMatrix()
 {
-	const double cpG   = fluid_specific_isobaric_heat_capacity(_p, _T, _x);
-	const double cpS   = solid_isobaric_heat_capacity(_rho_SR);
+	const double cpG   = fluid_specific_isobaric_heat_capacity(_p, _T, _vapour_mass_fraction);
+	const double cpS   = solid_specific_isobaric_heat_capacity(_solid_density);
 
-	double dxn_dxm = _M_inert * _M_react // 0 is inert, 1 is reactive
-					 / square(_M_inert * _x + _M_react * (1.0 - _x));
+	double dxn_dxm = _M_inert * _M_react
+					 / square(_M_inert * _vapour_mass_fraction + _M_react * (1.0 - _vapour_mass_fraction));
 
 	const double M_pp = _poro/_p * _rho_GR;
 	const double M_pT = -_poro/_T *  _rho_GR;
 	const double M_px = (_M_react-_M_inert) * _p / (GAS_CONST * _T) * dxn_dxm * _poro;
 
 	const double M_Tp = -_poro;
-	const double M_TT = _poro * _rho_GR * cpG + (1.0-_poro) * _rho_SR * cpS;
+	const double M_TT = _poro * _rho_GR * cpG + (1.0-_poro) * _solid_density * cpS;
 	const double M_Tx = 0.0;
 
 	const double M_xp = 0.0;
@@ -405,9 +398,10 @@ Eigen::MatrixXd
 LADataNoTpl::
 getLaplaceCoeffMatrix(const unsigned dim)
 {
-	const double eta_GR = fluid_viscosity(_p, _T, _x);
+	const double eta_GR = fluid_viscosity(_p, _T, _vapour_mass_fraction);
 
-	const double lambda_F = fluid_heat_conductivity(_p, _T, _x);
+	const double lambda_F = fluid_heat_conductivity(_p, _T, _vapour_mass_fraction);
+	const double lambda_S = _solid_heat_cond;
 
 	// TODO: k_rel
 	auto const L_pp = _solid_perm_tensor.block(0,0,dim,dim) * _rho_GR / eta_GR;
@@ -419,7 +413,7 @@ getLaplaceCoeffMatrix(const unsigned dim)
 
 	// TODO: add zeolite part
 	auto const L_TT = Eigen::MatrixXd::Identity(dim, dim)
-					  * ( _poro * lambda_F + (1.0 - _poro) * _solid_heat_cond);
+					  * ( _poro * lambda_F + (1.0 - _poro) * lambda_S);
 
 	auto const L_Tx = Eigen::MatrixXd::Zero(dim, dim);
 
@@ -452,7 +446,7 @@ Eigen::Matrix3d
 LADataNoTpl::
 getAdvectionCoeffMatrix()
 {
-	const double cpG   = fluid_specific_isobaric_heat_capacity(_p, _T, _x);
+	const double cpG   = fluid_specific_isobaric_heat_capacity(_p, _T, _vapour_mass_fraction);
 
 	const double A_pp = 0.0;
 	const double A_pT = 0.0;
@@ -510,13 +504,15 @@ Eigen::Vector3d
 LADataNoTpl::
 getRHSCoeffVector()
 {
+	const double reaction_enthalpy = _process->getMaterials().adsorption->get_enthalpy(_T, _p_V, _M_react);
+
 	const double rhs_p = (_poro - 1.0) * _reaction_rate;
 
-	const double rhs_T = _rho_GR * _fluid_specific_heat_source
-						 + (1.0 - _poro) * _reaction_rate * evaporation_enthalpy(_p, _T, _x)
-						 + _rho_SR * (1.0 - _poro) * _solid_specific_heat_source;
+	const double rhs_T = _rho_GR * _poro * _fluid_specific_heat_source
+						 + (1.0 - _poro) * _reaction_rate * reaction_enthalpy
+						 + _solid_density * (1.0 - _poro) * _solid_specific_heat_source;
 
-	const double rhs_x = (_poro - 1.0) * _reaction_rate; // TODO: what if x < 0.0
+	const double rhs_x = (_poro - 1.0) * _reaction_rate; // TODO [CL] what if x < 0.0
 
 
 	Eigen::Vector3d rhs;
@@ -539,7 +535,7 @@ preEachAssembleIntegrationPoint(const std::vector<double> &localX,
 
     // interpolate primary variables
     {
-        double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_x };
+        double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_vapour_mass_fraction };
 
         for (unsigned d=0; d<NODAL_DOF; ++d)
         {
@@ -577,18 +573,26 @@ preEachAssembleIntegrationPoint(const std::vector<double> &localX,
     std::cerr << "integration point values of"
                  " p=" << _p
               << " T=" << _T
-              << " x=" << _x
+              << " x=" << _vapour_mass_fraction
               << " rho_SR=" << _solid_density
               << " react_rate=" << _reaction_rate << std::endl;
 
 
     // pre-compute certain properties
 
-    _rho_GR = fluid_density(_p, _T, _x);
+    _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
     // _eta_GR = fluid_viscosity(_p, _T, _x); // used only once
     // _lambda_GR = fluid_heat_conductivity(_p, _T, _x); // used only once
     // _cpS = solid_isobaric_heat_capacity(_solid_density); // used only once
     // _H_vap = evaporation_enthalpy(_p, _T, _x); // used only once
+
+    // _vapour_molar_fraction = Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _M_react, _M_inert);
+    _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _M_react, _M_inert);
+
+    const double loading = Ads::Adsorption::get_loading(_solid_density, _rho_SR_dry);
+
+    _reaction_rate = _process->getMaterials().adsorption->get_reaction_rate(_p_V, _T, _M_react, loading)
+                     * _rho_SR_dry;
 }
 
 
@@ -649,7 +653,7 @@ assembleIntegrationPoint(
 
     for (unsigned r=0; r<NODAL_DOF; ++r)
     {
-        localRhs->block(N*r, 0, N, 1) +=
+        localRhs->block(N*r, 0, N, 1).noalias() +=
                 rhsCoeffVector(r) * smN * smDetJ * weight;
     }
 }

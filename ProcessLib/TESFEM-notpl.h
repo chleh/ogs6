@@ -27,6 +27,10 @@ const unsigned NODAL_DOF = 3;
 const unsigned NODAL_DOF_2ND = 2; // loading or solid density, and reaction rate
 
 
+const double M_N2  = 0.028;
+const double M_H2O = 0.018;
+
+
 class LADataNoTpl
 {
 public:
@@ -73,23 +77,25 @@ private:
 
     double _poro = 888.888;
 
-    double _rho_SR = 888.888;
+    const double _rho_SR_dry = 888.888;
 
-    double _M_inert = 888.888;
-    double _M_react = 888.888;
+    double _M_inert = M_N2; // N2
+    double _M_react = M_H2O;
 
     // integration point values of unknowns
     double _p = 888.888; // gas pressure
     double _T = 888.888; // temperature
-    double _x = 0.5;     // fluid mass fraction of the second component
+    double _vapour_mass_fraction = 0.5;     // fluid mass fraction of the second component
 
     // integration point values of secondary veriables
-    double _solid_density = 888.888;
-    double _reaction_rate = 888.888;
+    double _solid_density = 888.888; // rho_SR
+    double _reaction_rate = 888.888; // dC/dt * _rho_SR_dry
 
     // temporary storage for some properties
-    // values do not change within the assembly of one integration point
+    // values do not change during the assembly of one integration point
     double _rho_GR = 888.888;
+    double _p_V = 888.888; // vapour partial pressure
+    // double _vapour_molar_fraction = 888.888;
 };
 
 
