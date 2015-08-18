@@ -77,7 +77,7 @@ private:
     double _cpS = 880.0;    // specific isobaric solid heat capacity
 
     double _tortuosity = 1.0;
-    double _diffusion_coefficient_component = 0.0; // ???
+    double _diffusion_coefficient_component = 9.65e-5; // ???
 
     double _poro = 0.7;
 

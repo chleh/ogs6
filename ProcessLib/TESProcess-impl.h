@@ -265,6 +265,8 @@ solve()
     // Call global assembler for each local assembly item.
     _global_setup.execute(*_global_assembler, _local_assemblers);
 
+    printGlobalMatrix(_A->getRawMatrix());
+
     // Call global assembler for each Neumann boundary local assembler.
     for (auto bc : _neumann_bcs)
         bc->integrate(_global_setup);

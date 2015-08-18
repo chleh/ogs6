@@ -35,7 +35,7 @@ LocalAssemblerData<ShapeFunction_,
     GlobalVector,
     GlobalDim>::
 init(MeshLib::Element const& e,
-     std::size_t const local_matrix_size,
+     std::size_t const /*local_matrix_size*/,
      unsigned const integration_order, const TESProcessInterface* process)
 {
     using FemType = NumLib::TemplateIsoparametric<ShapeFunction, ShapeMatricesType>;
@@ -61,7 +61,7 @@ init(MeshLib::Element const& e,
     // _localA.reset(new NodalMatrixType);
     // _localRhs.reset(new NodalVectorType);
 
-    DBUG("local matrix size: %i", local_matrix_size);
+    // DBUG("local matrix size: %i", local_matrix_size);
 
     _data._process = process;
 }

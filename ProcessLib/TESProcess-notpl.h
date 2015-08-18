@@ -3,7 +3,7 @@
 
 
 #include "MaterialsLib/adsorption/adsorption.h"
-
+#include "Eigen/Sparse"
 
 namespace ProcessLib
 {
@@ -30,6 +30,9 @@ public:
 protected:
     Materials _materials;
 };
+
+
+void printGlobalMatrix(const Eigen::SparseMatrix<double>& mat);
 
 } // namespace TES
 
