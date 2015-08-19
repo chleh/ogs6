@@ -508,13 +508,14 @@ Eigen::Vector3d
 LADataNoTpl::
 getRHSCoeffVector()
 {
-	const double reaction_enthalpy = _process->getMaterials().adsorption->get_enthalpy(_T, _p_V, _M_react);
+	const double reaction_enthalpy = _process->getMaterials()._adsorption->get_enthalpy(_T, _p_V, _M_react);
 
-	const double rhs_p = (_poro - 1.0) * _reaction_rate;
+	const double rhs_p = (_poro - 1.0) * _reaction_rate; // TODO [CL] body force term
 
 	const double rhs_T = _rho_GR * _poro * _fluid_specific_heat_source
 						 + (1.0 - _poro) * _reaction_rate * reaction_enthalpy
 						 + _solid_density * (1.0 - _poro) * _solid_specific_heat_source;
+						 // TODO [CL] momentum production term
 
 	const double rhs_x = (_poro - 1.0) * _reaction_rate; // TODO [CL] what if x < 0.0
 
@@ -601,7 +602,7 @@ preEachAssembleIntegrationPoint(const std::vector<double> &localX,
     DBUG("solid_density = %g", _solid_density);
 
 
-    _reaction_rate = _process->getMaterials().adsorption->get_reaction_rate(_p_V, _T, _M_react, loading)
+    _reaction_rate = _process->getMaterials()._adsorption->get_reaction_rate(_p_V, _T, _M_react, loading)
                      * _rho_SR_dry;
     DBUG("reaction_rate = %g", _reaction_rate);
 }
@@ -636,7 +637,7 @@ ogs5OutVec(const LADataNoTpl::VecRef& vec)
 void
 LADataNoTpl::
 assembleIntegrationPoint(
-		Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
+		Eigen::MatrixXd* localA, Eigen::VectorXd* /*localRhs*/,
 		std::vector<double> const& localX,
 		std::vector<double> const& localSecondaryVariables,
 		const VecRef &smN, const MatRef &smDNdx, const double smDetJ,
@@ -648,6 +649,7 @@ assembleIntegrationPoint(
     auto const D = smDNdx.rows(); // global dimension: 1, 2 or 3
 
     assert(N*NODAL_DOF == localA->cols());
+    assert(N*NODAL_DOF == _Lap->cols());
 
     // std::cerr << "localA:\n" << (*localA) << std::endl;
     // std::cerr << "localA block\n" << (localA->template block<2,2>(0,0)) << std::endl;
@@ -661,31 +663,22 @@ assembleIntegrationPoint(
     auto const advCoeffMat     = getAdvectionCoeffMatrix();
     auto const contentCoeffMat = getContentCoeffMatrix();
 
-    std::printf("\n---LaplaceCoeffs:\n");
-    ogs5OutMat(laplaceCoeffMat);
-    std::printf("\n---MassCoeffs:\n");
-    ogs5OutMat(massCoeffMat);
-    std::printf("\n---AdvectionCoeffs:\n");
-    ogs5OutMat(advCoeffMat);
-    std::printf("\n---ContentCoeffs:\n");
-    ogs5OutMat(contentCoeffMat);
-
     Eigen::MatrixXd const velocity = Eigen::MatrixXd::Constant(D, 1, 0.0);
 
-    Eigen::MatrixXd Lap = Eigen::MatrixXd::Zero(N*NODAL_DOF, N*NODAL_DOF);
-    auto Mas = Lap;
-    auto Adv = Lap;
-    auto Cnt = Lap;
 
+    DBUG("detJ = %g, weight = %g, detJ*weight = %g", smDetJ, weight, smDetJ*weight);
+
+    std::cerr << "sm.N:\n" << smN << std::endl;
+    std::cerr << "sm.dNdx:\n" << smDNdx << std::endl;
 
     for (unsigned r=0; r<NODAL_DOF; ++r)
     {
         for (unsigned c=0; c<NODAL_DOF; ++c)
         {
-            Lap.block(N*r, N*c, N, N).noalias() += smDetJ * weight * smDNdx.transpose() * laplaceCoeffMat.block(D*r, D*c, D, D) * smDNdx;
-            Mas.block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * massCoeffMat(r, c)    * smN.transpose();
-            Adv.block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * advCoeffMat(r, c) * velocity.transpose() * smDNdx;
-            Cnt.block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * contentCoeffMat(r, c) * smN.transpose();
+            _Lap->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smDNdx.transpose() * laplaceCoeffMat.block(D*r, D*c, D, D) * smDNdx;
+            _Mas->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * massCoeffMat(r, c) * smN.transpose();
+            _Adv->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * advCoeffMat(r, c) * velocity.transpose() * smDNdx;
+            _Cnt->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * contentCoeffMat(r, c) * smN.transpose();
 
             // std::cerr << "vel prod: " << smDNdx.transpose() * velocity << std::endl;
 #if 0
@@ -698,7 +691,7 @@ assembleIntegrationPoint(
                     * smDetJ * weight;
 #endif
 
-            localA->noalias() += Lap + Mas + Adv + Cnt;
+            // localA->noalias() += Lap + Mas + Adv + Cnt;
 
             // std::cerr << "localA block(" << N*r << "," << N*c << ")\n"
             //           << (localA->block(N*r, N*c, N, N)) << std::endl;
@@ -714,34 +707,71 @@ assembleIntegrationPoint(
 
     auto const rhsCoeffVector = getRHSCoeffVector();
 
+    std::printf("\n--rhs coeffs\n");
+    ogs5OutVec(rhsCoeffVector);
+    std::printf("\n");
+
     for (unsigned r=0; r<NODAL_DOF; ++r)
     {
-        localRhs->block(N*r, 0, N, 1).noalias() +=
+        _rhs->block(N*r, 0, N, 1).noalias() +=
                 rhsCoeffVector(r) * smN * smDetJ * weight;
     }
+}
 
+
+void
+LADataNoTpl::preEachAssemble(const unsigned num_int_pts)
+{
+    if (_Lap.get() == nullptr)
+    {
+        _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+        _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+        _Adv.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+        _Cnt.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+        _rhs.reset(new Eigen::VectorXd(num_int_pts*NODAL_DOF));
+    }
+
+
+    _Lap->setZero();
+    _Mas->setZero();
+    _Adv->setZero();
+    _Cnt->setZero();
+    _rhs->setZero();
+}
+
+void
+LADataNoTpl::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
+                              Eigen::VectorXd const& oldX)
+{
+    localA->noalias() += *_Lap + *_Mas/_process->getMaterials()._time_step + *_Adv + *_Cnt;
+    localRhs->noalias() += *_rhs
+                           + *_Mas * oldX/_process->getMaterials()._time_step;
 
     std::printf("\nStiffness:\n");
     ogs5OutMat(*localA);
     std::printf("\n");
 
     std::printf("\n---Mass matrix:\n");
-    ogs5OutMat(Mas);
+    ogs5OutMat(*_Mas);
     std::printf("\n");
 
     std::printf("---Laplacian matrix:\n");
-    ogs5OutMat(Lap);
+    ogs5OutMat(*_Lap);
     std::printf("\n");
 
     std::printf("---Advective matrix:\n");
-    ogs5OutMat(Adv);
+    ogs5OutMat(*_Adv);
     std::printf("\n");
 
     std::printf("---Content:\n");
-    ogs5OutMat(Cnt);
+    ogs5OutMat(*_Cnt);
     std::printf("\n");
 
     std::printf("---RHS:\n");
+    ogs5OutVec(*_rhs);
+    std::printf("\n");
+
+    std::printf("---RHS2:\n");
     ogs5OutVec(*localRhs);
     std::printf("\n");
 }

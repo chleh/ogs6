@@ -14,7 +14,8 @@ namespace TES
 
 struct Materials
 {
-    Ads::Adsorption* adsorption;
+    Ads::Adsorption* _adsorption;
+    const double _time_step = 5.0;
 };
 
 

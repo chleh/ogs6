@@ -94,7 +94,7 @@ TESProcess(MeshLib::Mesh& mesh,
         std::string rsys = config.get<std::string>("reactive_system");
         DBUG("reactive_system: %s", rsys.c_str());
 
-        _materials.adsorption = Ads::Adsorption::newInstance(rsys);
+        _materials._adsorption = Ads::Adsorption::newInstance(rsys);
     }
 }
 

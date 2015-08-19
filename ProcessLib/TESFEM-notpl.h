@@ -12,6 +12,7 @@
 #ifndef PROCESS_LIB_TES_FEM_NOTPL_H_
 #define PROCESS_LIB_TES_FEM_NOTPL_H_
 
+#include <memory>
 #include <Eigen/Eigen>
 
 #include "TESProcess-notpl.h"
@@ -29,6 +30,7 @@ const unsigned NODAL_DOF_2ND = 2; // loading or solid density, and reaction rate
 
 const double M_N2  = 0.028013;
 const double M_H2O = 0.018016;
+
 
 
 class LADataNoTpl
@@ -51,6 +53,9 @@ public:
 
     TESProcessInterface const* _process;
 
+    void preEachAssemble(const unsigned num_int_pts);
+    void postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
+                          const Eigen::VectorXd& oldX);
 
 private:
     Eigen::Matrix3d getMassCoeffMatrix();
@@ -100,7 +105,20 @@ private:
     double _rho_GR = 888.888;
     double _p_V = 888.888; // vapour partial pressure
     // double _vapour_molar_fraction = 888.888;
+
+    std::unique_ptr<Eigen::MatrixXd> _Lap;
+    std::unique_ptr<Eigen::MatrixXd> _Mas;
+    std::unique_ptr<Eigen::MatrixXd> _Adv;
+    std::unique_ptr<Eigen::MatrixXd> _Cnt;
+    std::unique_ptr<Eigen::VectorXd> _rhs;
 };
+
+
+void
+ogs5OutVec(const LADataNoTpl::VecRef& vec);
+
+void
+ogs5OutMat(const LADataNoTpl::MatRef& vec);
 
 
 } // namespace TES

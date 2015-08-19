@@ -81,11 +81,14 @@ LocalAssemblerData<ShapeFunction_,
 assemble(std::vector<double> const& localX,
          std::vector<double> const& localSecondaryVariables)
 {
+
     _localA.setZero();
     _localRhs.setZero();
 
     IntegrationMethod_ integration_method(_integration_order);
     unsigned const n_integration_points = integration_method.getNPoints();
+
+    _data.preEachAssemble(n_integration_points);
 
     for (std::size_t ip(0); ip < n_integration_points; ip++)
     {
@@ -96,6 +99,10 @@ assemble(std::vector<double> const& localX,
         _data.assembleIntegrationPoint(&_localA, &_localRhs, localX, localSecondaryVariables,
                                        sm.N, sm.dNdx, sm.detJ, weight);
     }
+
+    // first timestep:
+    const Eigen::Map<const Eigen::VectorXd> oldX(localX.data(), localX.size());
+    _data.postEachAssemble(&_localA, &_localRhs, oldX);
 }
 
 
