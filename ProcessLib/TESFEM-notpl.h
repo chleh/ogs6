@@ -31,6 +31,8 @@ const unsigned NODAL_DOF_2ND = 2; // loading or solid density, and reaction rate
 const double M_N2  = 0.028013;
 const double M_H2O = 0.018016;
 
+const double NONLINEAR_ERROR_TOLERANCE = 1e-6;
+
 
 
 class LADataNoTpl
@@ -40,10 +42,10 @@ public:
     typedef Eigen::Ref<const Eigen::VectorXd> VecRef;
 
     void assembleIntegrationPoint(
+            unsigned integration_point,
             Eigen::MatrixXd* localA,
             Eigen::VectorXd* localRhs,
             std::vector<double> const& localX,
-            std::vector<double> const& localSecondaryVariables,
             VecRef const& smN,
             MatRef const& smDNdx,
             const double smDetJ,
@@ -53,36 +55,42 @@ public:
 
     TESProcessInterface const* _process;
 
-    void preEachAssemble(const unsigned num_int_pts);
+    void init(unsigned num_int_pts);
+
+    void preEachAssemble();
     void postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
                           const Eigen::VectorXd& oldX);
 
 private:
-    Eigen::Matrix3d getMassCoeffMatrix();
-    Eigen::MatrixXd getLaplaceCoeffMatrix(const unsigned dim);
-    Eigen::Matrix3d getAdvectionCoeffMatrix();
-    Eigen::Matrix3d getContentCoeffMatrix();
-    Eigen::Vector3d getRHSCoeffVector();
+    Eigen::Matrix3d getMassCoeffMatrix(const unsigned int_pt);
+    Eigen::MatrixXd getLaplaceCoeffMatrix(const unsigned int_pt, const unsigned dim);
+    Eigen::Matrix3d getAdvectionCoeffMatrix(const unsigned int_pt);
+    Eigen::Matrix3d getContentCoeffMatrix(const unsigned int_pt);
+    Eigen::Vector3d getRHSCoeffVector(const unsigned int_pt);
 
     void preEachAssembleIntegrationPoint(
+            const unsigned int_pt,
             std::vector<double> const& localX,
-            std::vector<double> const& localSecondaryVariables,
             VecRef const& smN,
             MatRef const& smDNdx
             );
 
     // many values taken from zeolite-adsorption-benchmark-snap/start-at-0.99
 
+
+    std::vector<double> _solid_density;
+    std::vector<double> _solid_density_prev_ts;
+
     double _fluid_specific_heat_source = 0.0;
     double _cpG = 1012.0; // specific isobaric fluid heat capacity
 
-    Eigen::MatrixXd _solid_perm_tensor = Eigen::MatrixXd::Identity(3, 3) * 6.94e-14; // TODO get dimensions
+    Eigen::MatrixXd _solid_perm_tensor = Eigen::MatrixXd::Identity(3, 3) * 1.e-7; // TODO get dimensions
     double _solid_specific_heat_source = 0.0;
     double _solid_heat_cond = 0.4;
     double _cpS = 880.0;    // specific isobaric solid heat capacity
 
     double _tortuosity = 1.0;
-    double _diffusion_coefficient_component = 9.65e-5; // ???
+    double _diffusion_coefficient_component = 9.65e-2; // ???
 
     double _poro = 0.7;
 
@@ -97,7 +105,7 @@ private:
     double _vapour_mass_fraction = 0.5;     // fluid mass fraction of the second component
 
     // integration point values of secondary veriables
-    double _solid_density = 888.888; // rho_SR
+    // double _solid_density = 888.888; // rho_SR
     double _reaction_rate = 888.888; // dC/dt * _rho_SR_dry
 
     // temporary storage for some properties

@@ -34,6 +34,7 @@ public:
                       TESProcessInterface const* process) = 0;
 
     virtual void assemble(std::vector<double> const& localX,
+                          std::vector<double> const& localXPrevTs,
                           std::vector<double> const& localSecondaryVariables) = 0;
 
     virtual void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
@@ -66,6 +67,7 @@ public:
          TESProcessInterface const* process) override;
 
     void assemble(std::vector<double> const& localX,
+                  std::vector<double> const& localXPrevTs,
                   std::vector<double> const& localSecondaryVariables) override;
 
     void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,

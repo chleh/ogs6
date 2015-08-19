@@ -64,6 +64,8 @@ init(MeshLib::Element const& e,
     // DBUG("local matrix size: %i", local_matrix_size);
 
     _data._process = process;
+
+    _data.init(n_integration_points);
 }
 
 
@@ -79,7 +81,8 @@ LocalAssemblerData<ShapeFunction_,
     GlobalVector,
     GlobalDim>::
 assemble(std::vector<double> const& localX,
-         std::vector<double> const& localSecondaryVariables)
+         std::vector<double> const& localXPrevTs,
+         std::vector<double> const& /*localSecondaryVariables*/)
 {
 
     _localA.setZero();
@@ -88,7 +91,7 @@ assemble(std::vector<double> const& localX,
     IntegrationMethod_ integration_method(_integration_order);
     unsigned const n_integration_points = integration_method.getNPoints();
 
-    _data.preEachAssemble(n_integration_points);
+    _data.preEachAssemble();
 
     for (std::size_t ip(0); ip < n_integration_points; ip++)
     {
@@ -96,12 +99,12 @@ assemble(std::vector<double> const& localX,
         auto const& wp = integration_method.getWeightedPoint(ip);
         auto const weight = wp.getWeight();
 
-        _data.assembleIntegrationPoint(&_localA, &_localRhs, localX, localSecondaryVariables,
+        _data.assembleIntegrationPoint(ip, &_localA, &_localRhs, localX,
                                        sm.N, sm.dNdx, sm.detJ, weight);
     }
 
     // first timestep:
-    const Eigen::Map<const Eigen::VectorXd> oldX(localX.data(), localX.size());
+    const Eigen::Map<const Eigen::VectorXd> oldX(localXPrevTs.data(), localXPrevTs.size());
     _data.postEachAssemble(&_localA, &_localRhs, oldX);
 }
 

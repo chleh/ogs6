@@ -104,7 +104,9 @@ private:
 
     std::unique_ptr<typename GlobalSetup::MatrixType> _A;
     std::unique_ptr<typename GlobalSetup::VectorType> _rhs;
-    std::unique_ptr<typename GlobalSetup::VectorType> _x;
+    std::unique_ptr<typename GlobalSetup::VectorType> _x;           // current iteration
+    std::unique_ptr<typename GlobalSetup::VectorType> _x_prev_iter; // previous iteration
+    std::unique_ptr<typename GlobalSetup::VectorType> _x_prev_ts;   // previous timestep
 
     std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map;
 
@@ -117,8 +119,6 @@ private:
     std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets_secondary;
     std::unique_ptr<typename GlobalSetup::VectorType> _secondary_variables;
     std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map_secondary;
-
-
 };
 
 } // namespace TES

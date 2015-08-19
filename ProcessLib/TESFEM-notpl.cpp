@@ -19,6 +19,9 @@
 
 const double GAS_CONST = 8.3144621;
 
+enum class MatOutType { OGS5, PYTHON };
+
+const MatOutType MATRIX_OUTPUT_FORMAT = MatOutType::PYTHON;
 
 
 
@@ -373,7 +376,7 @@ namespace TES
 
 Eigen::Matrix3d
 LADataNoTpl::
-getMassCoeffMatrix()
+getMassCoeffMatrix(const unsigned int_pt)
 {
 	double dxn_dxm = _M_inert * _M_react
 					 / square(_M_inert * _vapour_mass_fraction + _M_react * (1.0 - _vapour_mass_fraction));
@@ -383,7 +386,7 @@ getMassCoeffMatrix()
 	const double M_px = (_M_react-_M_inert) * _p / (GAS_CONST * _T) * dxn_dxm * _poro;
 
 	const double M_Tp = -_poro;
-	const double M_TT = _poro * _rho_GR * _cpG + (1.0-_poro) * _solid_density * _cpS;
+	const double M_TT = _poro * _rho_GR * _cpG + (1.0-_poro) * _solid_density[int_pt] * _cpS;
 	const double M_Tx = 0.0;
 
 	const double M_xp = 0.0;
@@ -402,7 +405,7 @@ getMassCoeffMatrix()
 
 Eigen::MatrixXd
 LADataNoTpl::
-getLaplaceCoeffMatrix(const unsigned dim)
+getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 {
 	const double eta_GR = fluid_viscosity(_p, _T, _vapour_mass_fraction);
 
@@ -450,7 +453,7 @@ getLaplaceCoeffMatrix(const unsigned dim)
 
 Eigen::Matrix3d
 LADataNoTpl::
-getAdvectionCoeffMatrix()
+getAdvectionCoeffMatrix(const unsigned /*int_pt*/)
 {
 	const double A_pp = 0.0;
 	const double A_pT = 0.0;
@@ -478,7 +481,7 @@ getAdvectionCoeffMatrix()
 
 Eigen::Matrix3d
 LADataNoTpl::
-getContentCoeffMatrix()
+getContentCoeffMatrix(const unsigned /*int_pt*/)
 {
 	const double C_pp = 0.0;
 	const double C_pT = 0.0;
@@ -506,7 +509,7 @@ getContentCoeffMatrix()
 
 Eigen::Vector3d
 LADataNoTpl::
-getRHSCoeffVector()
+getRHSCoeffVector(const unsigned int_pt)
 {
 	const double reaction_enthalpy = _process->getMaterials()._adsorption->get_enthalpy(_T, _p_V, _M_react);
 
@@ -514,7 +517,7 @@ getRHSCoeffVector()
 
 	const double rhs_T = _rho_GR * _poro * _fluid_specific_heat_source
 						 + (1.0 - _poro) * _reaction_rate * reaction_enthalpy
-						 + _solid_density * (1.0 - _poro) * _solid_specific_heat_source;
+						 + _solid_density[int_pt] * (1.0 - _poro) * _solid_specific_heat_source;
 						 // TODO [CL] momentum production term
 
 	const double rhs_x = (_poro - 1.0) * _reaction_rate; // TODO [CL] what if x < 0.0
@@ -531,9 +534,10 @@ getRHSCoeffVector()
 
 void
 LADataNoTpl::
-preEachAssembleIntegrationPoint(const std::vector<double> &localX,
-								const std::vector<double> &localSecondaryVariables,
-								const VecRef &smN, const MatRef &smDNdx)
+preEachAssembleIntegrationPoint(
+		const unsigned int_pt,
+		const std::vector<double> &localX,
+		const VecRef &smN, const MatRef &smDNdx)
 {
     auto const N = smDNdx.cols(); // number of integration points
     // auto const D = smDNdx.rows(); // global dimension
@@ -556,24 +560,6 @@ preEachAssembleIntegrationPoint(const std::vector<double> &localX,
         }
     }
 
-    // interpolate secondary variables
-    {
-        double* int_pt_val[NODAL_DOF_2ND] = { &_solid_density, &_reaction_rate };
-
-        for (unsigned d=0; d<NODAL_DOF_2ND; ++d)
-        {
-            *int_pt_val[d] = 0.0;
-        }
-
-        for (unsigned d=0; d<NODAL_DOF_2ND; ++d)
-        {
-            for (unsigned n=0; n<N; ++n)
-            {
-                *int_pt_val[d] += localSecondaryVariables[d*N+n] * smN(n);
-            }
-        }
-    }
-
 
 #if 0
     std::cerr << "integration point values of"
@@ -588,7 +574,7 @@ preEachAssembleIntegrationPoint(const std::vector<double> &localX,
     // pre-compute certain properties
 
     _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
-    DBUG("rho_GR = %g", _rho_GR);
+    // DBUG("rho_GR = %g", _rho_GR);
     // _eta_GR = fluid_viscosity(_p, _T, _x); // used only once
     // _lambda_GR = fluid_heat_conductivity(_p, _T, _x); // used only once
     // _cpS = solid_isobaric_heat_capacity(_solid_density); // used only once
@@ -596,15 +582,17 @@ preEachAssembleIntegrationPoint(const std::vector<double> &localX,
 
     // _vapour_molar_fraction = Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _M_react, _M_inert);
     _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _M_react, _M_inert);
-    DBUG("p_V = %g", _p_V);
+    // DBUG("p_V = %g", _p_V);
 
-    const double loading = Ads::Adsorption::get_loading(_solid_density, _rho_SR_dry);
-    DBUG("solid_density = %g", _solid_density);
+    const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _rho_SR_dry);
+    // DBUG("solid_density = %g", _solid_density);
 
 
     _reaction_rate = _process->getMaterials()._adsorption->get_reaction_rate(_p_V, _T, _M_react, loading)
                      * _rho_SR_dry;
-    DBUG("reaction_rate = %g", _reaction_rate);
+    // DBUG("reaction_rate = %g", _reaction_rate);
+
+    _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + _reaction_rate * _process->getMaterials()._time_step;
 }
 
 
@@ -613,15 +601,44 @@ ogs5OutMat(const LADataNoTpl::MatRef& mat)
 {
     for (unsigned r=0; r<mat.rows(); ++r)
     {
-        std::printf("|");
+        switch (MATRIX_OUTPUT_FORMAT)
+        {
+        case MatOutType::OGS5:
+            if (r!=0) std::printf("\n");
+            std::printf("|");
+            break;
+        case MatOutType::PYTHON:
+            if (r!=0) std::printf(",\n");
+            std::printf("[");
+            break;
+        }
 
         for (unsigned c=0; c<mat.cols(); ++c)
         {
-            std::printf(" %.12e", mat(r, c));
+            switch (MATRIX_OUTPUT_FORMAT)
+            {
+            case MatOutType::OGS5:
+                std::printf(" %.12e", mat(r, c));
+                break;
+            case MatOutType::PYTHON:
+                if (c!=0) std::printf(",");
+                std::printf(" %19.12g", mat(r, c));
+                break;
+            }
+
         }
 
-        std::printf(" |\n");
+        switch (MATRIX_OUTPUT_FORMAT)
+        {
+        case MatOutType::OGS5:
+            std::printf(" |");
+            break;
+        case MatOutType::PYTHON:
+            std::printf(" ]");
+            break;
+        }
     }
+    std::printf("\n");
 }
 
 void
@@ -629,21 +646,31 @@ ogs5OutVec(const LADataNoTpl::VecRef& vec)
 {
     for (unsigned r=0; r<vec.size(); ++r)
     {
-        std::printf("| %.12e |\n", vec[r]);
+        switch (MATRIX_OUTPUT_FORMAT)
+        {
+        case MatOutType::OGS5:
+            if (r!=0) std::printf("\n");
+            std::printf("| %.12e |", vec[r]);
+            break;
+        case MatOutType::PYTHON:
+            if (r!=0) std::printf(",\n");
+            std::printf("[ %19.12g ]", vec[r]);
+            break;
+        }
     }
+    std::printf("\n");
 }
 
 
 void
 LADataNoTpl::
-assembleIntegrationPoint(
+assembleIntegrationPoint(unsigned integration_point,
 		Eigen::MatrixXd* localA, Eigen::VectorXd* /*localRhs*/,
 		std::vector<double> const& localX,
-		std::vector<double> const& localSecondaryVariables,
 		const VecRef &smN, const MatRef &smDNdx, const double smDetJ,
 		const double weight)
 {
-    preEachAssembleIntegrationPoint(localX, localSecondaryVariables, smN, smDNdx);
+    preEachAssembleIntegrationPoint(integration_point, localX, smN, smDNdx);
 
     auto const N = smDNdx.cols(); // number of integration points
     auto const D = smDNdx.rows(); // global dimension: 1, 2 or 3
@@ -651,25 +678,15 @@ assembleIntegrationPoint(
     assert(N*NODAL_DOF == localA->cols());
     assert(N*NODAL_DOF == _Lap->cols());
 
-    // std::cerr << "localA:\n" << (*localA) << std::endl;
-    // std::cerr << "localA block\n" << (localA->template block<2,2>(0,0)) << std::endl;
-    // std::cerr << "coeff:\n" << smDNdx.transpose() * 1.0 * smDNdx * smDetJ * weight << std::endl;
-
-
-    // std::cerr << "global dim:\n" << D << std::endl;
-
-    auto const laplaceCoeffMat = getLaplaceCoeffMatrix(D);
-    auto const massCoeffMat    = getMassCoeffMatrix();
-    auto const advCoeffMat     = getAdvectionCoeffMatrix();
-    auto const contentCoeffMat = getContentCoeffMatrix();
+    auto const laplaceCoeffMat = getLaplaceCoeffMatrix(integration_point, D);
+    auto const massCoeffMat    = getMassCoeffMatrix(integration_point);
+    auto const advCoeffMat     = getAdvectionCoeffMatrix(integration_point);
+    auto const contentCoeffMat = getContentCoeffMatrix(integration_point);
 
     Eigen::MatrixXd const velocity = Eigen::MatrixXd::Constant(D, 1, 0.0);
 
 
-    DBUG("detJ = %g, weight = %g, detJ*weight = %g", smDetJ, weight, smDetJ*weight);
-
-    std::cerr << "sm.N:\n" << smN << std::endl;
-    std::cerr << "sm.dNdx:\n" << smDNdx << std::endl;
+    // DBUG("detJ = %g, weight = %g, detJ*weight = %g", smDetJ, weight, smDetJ*weight);
 
     for (unsigned r=0; r<NODAL_DOF; ++r)
     {
@@ -680,7 +697,6 @@ assembleIntegrationPoint(
             _Adv->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * advCoeffMat(r, c) * velocity.transpose() * smDNdx;
             _Cnt->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * contentCoeffMat(r, c) * smN.transpose();
 
-            // std::cerr << "vel prod: " << smDNdx.transpose() * velocity << std::endl;
 #if 0
             localA->block(N*r, N*c, N, N).noalias() +=
                     (
@@ -692,24 +708,10 @@ assembleIntegrationPoint(
 #endif
 
             // localA->noalias() += Lap + Mas + Adv + Cnt;
-
-            // std::cerr << "localA block(" << N*r << "," << N*c << ")\n"
-            //           << (localA->block(N*r, N*c, N, N)) << std::endl;
-            // std::cerr << "coeff:\n"
-            //           << smN.transpose() * massCoeffMat(r, c) * smN
-            //              * smDetJ * weight << std::endl;
         }
     }
 
-    // std::cerr << "sm.N: %s" << smN << std::endl;
-    // std::cerr << "sm.dNdx: %s" << smDNdx << std::endl;
-    // std::cerr << "mass coeffs:\n" << massCoeffMat << std::endl;
-
-    auto const rhsCoeffVector = getRHSCoeffVector();
-
-    std::printf("\n--rhs coeffs\n");
-    ogs5OutVec(rhsCoeffVector);
-    std::printf("\n");
+    auto const rhsCoeffVector = getRHSCoeffVector(integration_point);
 
     for (unsigned r=0; r<NODAL_DOF; ++r)
     {
@@ -720,18 +722,28 @@ assembleIntegrationPoint(
 
 
 void
-LADataNoTpl::preEachAssemble(const unsigned num_int_pts)
+LADataNoTpl::init(const unsigned num_int_pts)
 {
-    if (_Lap.get() == nullptr)
-    {
-        _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-        _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-        _Adv.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-        _Cnt.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-        _rhs.reset(new Eigen::VectorXd(num_int_pts*NODAL_DOF));
-    }
+    _solid_density.resize(num_int_pts, _process->getMaterials()._initial_solid_density);
+    _solid_density_prev_ts.resize(num_int_pts, _process->getMaterials()._initial_solid_density);
+
+    _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _Adv.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _Cnt.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _rhs.reset(new Eigen::VectorXd(num_int_pts*NODAL_DOF));
+
+    _Lap->setZero();
+    _Mas->setZero();
+    _Adv->setZero();
+    _Cnt->setZero();
+    _rhs->setZero();
+}
 
 
+void
+LADataNoTpl::preEachAssemble()
+{
     _Lap->setZero();
     _Mas->setZero();
     _Adv->setZero();
@@ -747,6 +759,7 @@ LADataNoTpl::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs
     localRhs->noalias() += *_rhs
                            + *_Mas * oldX/_process->getMaterials()._time_step;
 
+#if 1
     std::printf("\nStiffness:\n");
     ogs5OutMat(*localA);
     std::printf("\n");
@@ -774,6 +787,7 @@ LADataNoTpl::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs
     std::printf("---RHS2:\n");
     ogs5OutVec(*localRhs);
     std::printf("\n");
+#endif
 }
 
 } // namespace TES
