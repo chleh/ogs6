@@ -78,9 +78,12 @@ double Adsorption::get_reaction_rate(const double p_Ads, const double T_Ads,
 									 const double M_Ads, const double loading)
 {
 	const double k_rate = 6.0e-3; //to be specified
+	// const double k_rate = 3.0e-3; //to be specified
 
 	const double A = get_potential(T_Ads, p_Ads, M_Ads);
 	const double C_eq = get_adsorbate_density(T_Ads) * characteristic_curve(A);
+
+	// return 0.0; // TODO [CL] for testing only
 
 	return k_rate * (C_eq - loading); //scaled with mass fraction
 									  // this the rate in terms of loading!
@@ -120,6 +123,7 @@ double Adsorption::get_enthalpy(const double T_Ads, const double p_Ads, const do
 	// TODO [CL] consider using A as obtained from current loading (needs inverse CC A(W)) instead of p_Vapour, T_Vapour
 	const double A = get_potential(T_Ads, p_Ads, M_Ads);
 
+	// return 0.0; // TODO [CL] for testing only
 	return (get_evaporation_enthalpy(T_Ads) + A - T_Ads * get_entropy(T_Ads,A))*1000.0; //in J/kg
 }
 
