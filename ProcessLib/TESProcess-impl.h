@@ -13,6 +13,8 @@
 #include <cassert>
 #include <cstdio>
 
+#include "MathLib/Nonlinear/Picard.h"
+
 #include "logog/include/logog.hpp"
 
 #include "TESProcess.h"
@@ -137,7 +139,7 @@ createLocalAssemblers()
     DBUG("Create global assembler.");
     _global_assembler.reset(
         new GlobalAssembler(*_A, *_rhs, *_local_to_global_index_map));
-    _global_assembler->setX(_x.get(), _x_prev_ts.get());
+    // _global_assembler->setX(_x.get(), _x_prev_ts.get());
     _global_assembler->setSecondaryVariables(
                 _secondary_variables.get(),
                 _local_to_global_index_map_secondary.get());
@@ -263,56 +265,20 @@ solve()
             _secondary_process_vars[i]->setIC(*_secondary_variables, NODAL_DOF_2ND, i);
     }
 
+
+    MathLib::Nonlinear::Picard picard;
+    picard.setAbsTolerance(1e-6);
+    picard.setRelTolerance(1e-6);
+    picard.setMaxIterations(10);
+
+
     for (unsigned time_step = 0; time_step < 1; ++time_step)
     {
         std::printf("=================== timestep %i ===================\n", time_step);
         *_x_prev_ts = *_x;
+        // *_x_prev_iter = *_x;
 
-        bool accepted;
-
-        for (unsigned iter = 0; iter < 3; ++iter)
-        {
-            std::printf("===== timestep %i iteration %i ===================\n", time_step, iter);
-
-            // Copy initial state to "old" solutions
-            // TODO [CL] what if local assembly depends on old x values?
-            *_x_prev_iter = *_x;
-
-
-            // Call global assembler for each local assembly item.
-            _global_setup.execute(*_global_assembler, _local_assemblers);
-
-            // Call global assembler for each Neumann boundary local assembler.
-            for (auto bc : _neumann_bcs)
-                bc->integrate(_global_setup);
-
-
-            // Apply known values from the Dirichlet boundary conditions.
-            MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
-
-            std::printf("---------- A -------------\n");
-            printGlobalMatrix(_A->getRawMatrix());
-            std::printf("---------- rhs -----------\n");
-            printGlobalVector(_rhs->getRawVector());
-            std::printf("---------- x -------------\n");
-            printGlobalVector(_x->getRawVector());
-
-
-            std::puts("------ x_prev_iter ----------");
-            printGlobalVector(_x_prev_iter->getRawVector());
-
-
-            typename GlobalSetup::LinearSolver linearSolver(*_A);
-            linearSolver.solve(*_rhs, *_x);
-
-            accepted = calculateError(&_x->getRawVector(), _x_prev_iter->getRawVector(), &_materials);
-
-            if (accepted)
-            {
-                DBUG("timestep %i was accepted after the %ith nonlinear iteration.");
-                break;
-            }
-        }
+        bool accepted = picard.solve(*this, *_x_prev_ts, *_x);
 
         if (!accepted) {
             DBUG("timestep has not been accepted. cancelling.");
@@ -370,6 +336,42 @@ TESProcess<GlobalSetup>::
 
     delete _mesh_subset_all_nodes;
 }
+
+
+
+template<typename GlobalSetup>
+void
+TESProcess<GlobalSetup>::
+operator()(typename GlobalSetup::VectorType& x_prev_ts, typename GlobalSetup::VectorType& x_new)
+{
+    _global_assembler->setX(&x_new, &x_prev_ts);
+    // Call global assembler for each local assembly item.
+    _global_setup.execute(*_global_assembler, _local_assemblers);
+
+    // Call global assembler for each Neumann boundary local assembler.
+    for (auto bc : _neumann_bcs)
+        bc->integrate(_global_setup);
+
+
+    // Apply known values from the Dirichlet boundary conditions.
+    MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
+
+    std::printf("---------- A -------------\n");
+    printGlobalMatrix(_A->getRawMatrix());
+    std::printf("---------- rhs -----------\n");
+    printGlobalVector(_rhs->getRawVector());
+    std::printf("---------- x -------------\n");
+    printGlobalVector(_x->getRawVector());
+
+
+    // std::puts("------ x_prev_iter ----------");
+    // printGlobalVector(_x_prev_iter->getRawVector());
+
+
+    typename GlobalSetup::LinearSolver linearSolver(*_A);
+    linearSolver.solve(*_rhs, x_new);
+}
+
 
 } // namespace TES
 

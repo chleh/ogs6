@@ -78,6 +78,8 @@ public:
 
     void post(std::string const& file_name);
 
+    void operator()(typename GlobalSetup::VectorType& x_old, typename GlobalSetup::VectorType& x_new);
+
     ~TESProcess();
 
 private:

@@ -759,7 +759,7 @@ LADataNoTpl::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs
     localRhs->noalias() += *_rhs
                            + *_Mas * oldX/_process->getMaterials()._time_step;
 
-#if 1
+#if 0
     std::printf("\nStiffness:\n");
     ogs5OutMat(*localA);
     std::printf("\n");
