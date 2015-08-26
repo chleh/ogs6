@@ -269,7 +269,7 @@ solve()
     MathLib::Nonlinear::Picard picard;
     picard.setAbsTolerance(1e-1);
     picard.setRelTolerance(1e-6);
-    picard.setMaxIterations(20);
+    picard.setMaxIterations(100);
 
 
     std::puts("------ initial values ----------");
@@ -287,6 +287,7 @@ solve()
 
         if (!accepted) {
             DBUG("timestep has not been accepted. cancelling.");
+            break;
         }
     }
 

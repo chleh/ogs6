@@ -12,6 +12,8 @@
 #include <iostream>
 #include <cstdio>
 
+#include <typeinfo>
+
 #include "logog/include/logog.hpp"
 
 #include "TESFEM-notpl.h"
@@ -21,7 +23,7 @@ const double GAS_CONST = 8.3144621;
 
 enum class MatOutType { OGS5, PYTHON };
 
-const MatOutType MATRIX_OUTPUT_FORMAT = MatOutType::PYTHON;
+const MatOutType MATRIX_OUTPUT_FORMAT = MatOutType::OGS5;
 
 
 
@@ -538,6 +540,11 @@ initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
     // _cpS = solid_isobaric_heat_capacity(_solid_density); // used only once
     // _H_vap = evaporation_enthalpy(_p, _T, _x); // used only once
 
+    // TODO [CL] test inert.
+    _reaction_rate[int_pt] = 0.0;
+    if (int_pt == 0) DBUG("@@@ reaction_rate: %19.12g", _reaction_rate[int_pt]);
+    return;
+
     const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _rho_SR_dry);
     // DBUG("solid_density = %g", _solid_density);
 
@@ -710,7 +717,37 @@ assembleIntegrationPoint(unsigned integration_point,
 
     // Eigen::MatrixXd const velocity = Eigen::MatrixXd::Constant(D, 1, 0.0);
 
-    auto const velocity = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
+#if 0
+    auto const vel1 = smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
+    std::cerr << "vel 1: " << vel1 << std::endl;
+    auto const vel2 = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx;
+    std::cerr << "vel 2: " << vel2 << std::endl;
+
+    auto const velocity = - laplaceCoeffMat.block(0, 0, D, D) * (smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N));
+    std::cerr << "type of velocity: " << typeid(velocity).name() << std::endl;
+    std::cerr << "velocity: " << velocity << std::endl;
+    auto const velocity2 = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
+    std::cerr << "velocity2: " << velocity2 << std::endl;
+    std::cerr << "lap coeff\n" << laplaceCoeffMat.block(0, 0, D, D) << std::endl;
+    std::cerr << "localX data: " << localX[0] << ", " << localX[1] << std::endl;
+    std::cerr << "smDNdx: " << smDNdx(0, 0) << ", " << smDNdx(0, 1) << std::endl;
+
+    auto const nodal_pressures = Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
+    auto const pressure_gradient = smDNdx * nodal_pressures;
+    assert(pressure_gradient.rows() == D && pressure_gradient.cols() == 1);
+    std::cerr << "pressure gradient: " << pressure_gradient << std::endl;
+    auto const filter_velocity = - laplaceCoeffMat.block(0, 0, D, D) * pressure_gradient; // Darcy's law filter velocity
+    std::cerr << "filter velocity: " << filter_velocity << std::endl;
+
+    // Note: the rhs has to be put in parentheses like that!
+    // auto const velocity = - laplaceCoeffMat.block(0, 0, D, D) * (smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N));
+#endif
+
+    // using auto for the type went terribly wrong!
+    Eigen::MatrixXd const velocity = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
+    assert(velocity.cols() == 1 && velocity.rows() == D);
+    // std::cerr << "velocity: " << velocity << std::endl;
+
 
     // DBUG("detJ = %g, weight = %g, detJ*weight = %g", smDetJ, weight, smDetJ*weight);
 
@@ -810,10 +847,6 @@ LADataNoTpl::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs
     std::printf("\n");
 
     std::printf("---RHS:\n");
-    ogs5OutVec(*_rhs);
-    std::printf("\n");
-
-    std::printf("---RHS2:\n");
     ogs5OutVec(*localRhs);
     std::printf("\n");
 #endif
