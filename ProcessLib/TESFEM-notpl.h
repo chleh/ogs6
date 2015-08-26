@@ -52,7 +52,6 @@ public:
             const double weight
             );
 
-
     TESProcessInterface const* _process;
 
     void init(unsigned num_int_pts);
@@ -75,11 +74,18 @@ private:
             MatRef const& smDNdx
             );
 
+    void initNewTimestep(
+            const unsigned int_pt,
+            std::vector<double> const& localX);
+
     // many values taken from zeolite-adsorption-benchmark-snap/start-at-0.99
 
 
     std::vector<double> _solid_density;
     std::vector<double> _solid_density_prev_ts;
+
+    std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
+    std::vector<double> _reaction_rate_prev_ts;
 
     double _fluid_specific_heat_source = 0.0;
     double _cpG = 1012.0; // specific isobaric fluid heat capacity
@@ -103,10 +109,6 @@ private:
     double _p = 888.888; // gas pressure
     double _T = 888.888; // temperature
     double _vapour_mass_fraction = 0.5;     // fluid mass fraction of the second component
-
-    // integration point values of secondary veriables
-    // double _solid_density = 888.888; // rho_SR
-    double _reaction_rate = 888.888; // dC/dt * _rho_SR_dry
 
     // temporary storage for some properties
     // values do not change during the assembly of one integration point

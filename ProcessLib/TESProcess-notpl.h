@@ -16,14 +16,18 @@ namespace TES
 struct Materials
 {
     Ads::Adsorption* _adsorption;
-    double _time_step = 0.1;
+    double _time_step = 0.5;
     double _initial_solid_density = 1382.36248218;
+    bool  _is_new_timestep = true;
 };
 
 
 class TESProcessInterface
 {
 public:
+    Materials& getMaterials() {
+        return _materials;
+    }
     Materials const& getMaterials() const {
         return _materials;
     }

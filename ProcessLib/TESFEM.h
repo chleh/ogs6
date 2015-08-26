@@ -31,7 +31,7 @@ public:
     virtual void init(MeshLib::Element const& e,
                       std::size_t const local_matrix_size,
                       unsigned const integration_order,
-                      TESProcessInterface const* process) = 0;
+                      TESProcessInterface* process) = 0;
 
     virtual void assemble(std::vector<double> const& localX,
                           std::vector<double> const& localXPrevTs,
@@ -64,7 +64,7 @@ public:
     init(MeshLib::Element const& e,
          std::size_t const local_matrix_size,
          unsigned const integration_order,
-         TESProcessInterface const* process) override;
+         TESProcessInterface* process) override;
 
     void assemble(std::vector<double> const& localX,
                   std::vector<double> const& localXPrevTs,

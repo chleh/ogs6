@@ -36,7 +36,7 @@ LocalAssemblerData<ShapeFunction_,
     GlobalDim>::
 init(MeshLib::Element const& e,
      std::size_t const /*local_matrix_size*/,
-     unsigned const integration_order, const TESProcessInterface* process)
+     unsigned const integration_order, TESProcessInterface* process)
 {
     using FemType = NumLib::TemplateIsoparametric<ShapeFunction, ShapeMatricesType>;
 

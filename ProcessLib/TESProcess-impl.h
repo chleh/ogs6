@@ -267,16 +267,21 @@ solve()
 
 
     MathLib::Nonlinear::Picard picard;
-    picard.setAbsTolerance(1e-6);
+    picard.setAbsTolerance(1e-1);
     picard.setRelTolerance(1e-6);
-    picard.setMaxIterations(10);
+    picard.setMaxIterations(20);
 
 
-    for (unsigned time_step = 0; time_step < 1; ++time_step)
+    std::puts("------ initial values ----------");
+    printGlobalVector(_x->getRawVector());
+
+    for (unsigned time_step = 0; time_step < 2; ++time_step)
     {
         std::printf("=================== timestep %i ===================\n", time_step);
         *_x_prev_ts = *_x;
         // *_x_prev_iter = *_x;
+
+        _materials._is_new_timestep = true;
 
         bool accepted = picard.solve(*this, *_x_prev_ts, *_x);
 
@@ -342,9 +347,12 @@ TESProcess<GlobalSetup>::
 template<typename GlobalSetup>
 void
 TESProcess<GlobalSetup>::
-operator()(typename GlobalSetup::VectorType& x_prev_ts, typename GlobalSetup::VectorType& x_new)
+operator()(typename GlobalSetup::VectorType& /*x_prev_ts*/, typename GlobalSetup::VectorType& x_new)
 {
-    _global_assembler->setX(&x_new, &x_prev_ts);
+    _global_assembler->setX(&x_new, _x_prev_ts.get());
+
+    std::printf("@@@ %p %p\n", &x_new, _x_prev_ts.get());
+
     // Call global assembler for each local assembly item.
     _global_setup.execute(*_global_assembler, _local_assemblers);
 
@@ -356,20 +364,20 @@ operator()(typename GlobalSetup::VectorType& x_prev_ts, typename GlobalSetup::Ve
     // Apply known values from the Dirichlet boundary conditions.
     MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
-    std::printf("---------- A -------------\n");
-    printGlobalMatrix(_A->getRawMatrix());
-    std::printf("---------- rhs -----------\n");
-    printGlobalVector(_rhs->getRawVector());
-    std::printf("---------- x -------------\n");
-    printGlobalVector(_x->getRawVector());
-
-
-    // std::puts("------ x_prev_iter ----------");
-    // printGlobalVector(_x_prev_iter->getRawVector());
+    // std::printf("---------- A -------------\n");
+    // printGlobalMatrix(_A->getRawMatrix());
+    // std::printf("---------- rhs -----------\n");
+    // printGlobalVector(_rhs->getRawVector());
 
 
     typename GlobalSetup::LinearSolver linearSolver(*_A);
     linearSolver.solve(*_rhs, x_new);
+
+    std::puts("------ solution ----------");
+    printGlobalVector(x_new.getRawVector());
+
+    _materials._is_new_timestep = false;
+
 }
 
 

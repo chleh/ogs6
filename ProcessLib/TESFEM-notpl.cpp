@@ -481,7 +481,7 @@ getAdvectionCoeffMatrix(const unsigned /*int_pt*/)
 
 Eigen::Matrix3d
 LADataNoTpl::
-getContentCoeffMatrix(const unsigned /*int_pt*/)
+getContentCoeffMatrix(const unsigned int_pt)
 {
 	const double C_pp = 0.0;
 	const double C_pT = 0.0;
@@ -495,7 +495,7 @@ getContentCoeffMatrix(const unsigned /*int_pt*/)
 
 	const double C_xp = 0.0;
 	const double C_xT = 0.0;
-	const double C_xx = (_poro - 1.0) * _reaction_rate;
+	const double C_xx = (_poro - 1.0) * _reaction_rate[int_pt];
 
 
 	Eigen::Matrix3d C;
@@ -513,14 +513,14 @@ getRHSCoeffVector(const unsigned int_pt)
 {
 	const double reaction_enthalpy = _process->getMaterials()._adsorption->get_enthalpy(_T, _p_V, _M_react);
 
-	const double rhs_p = (_poro - 1.0) * _reaction_rate; // TODO [CL] body force term
+	const double rhs_p = (_poro - 1.0) * _reaction_rate[int_pt]; // TODO [CL] body force term
 
 	const double rhs_T = _rho_GR * _poro * _fluid_specific_heat_source
-						 + (1.0 - _poro) * _reaction_rate * reaction_enthalpy
+						 + (1.0 - _poro) * _reaction_rate[int_pt] * reaction_enthalpy
 						 + _solid_density[int_pt] * (1.0 - _poro) * _solid_specific_heat_source;
 						 // TODO [CL] momentum production term
 
-	const double rhs_x = (_poro - 1.0) * _reaction_rate; // TODO [CL] what if x < 0.0
+	const double rhs_x = (_poro - 1.0) * _reaction_rate[int_pt]; // TODO [CL] what if x < 0.0
 
 
 	Eigen::Vector3d rhs;
@@ -529,6 +529,34 @@ getRHSCoeffVector(const unsigned int_pt)
 		 rhs_x;
 
 	return rhs;
+}
+
+
+void LADataNoTpl::
+initNewTimestep(const unsigned int_pt, const std::vector<double> &localX)
+{
+    // _cpS = solid_isobaric_heat_capacity(_solid_density); // used only once
+    // _H_vap = evaporation_enthalpy(_p, _T, _x); // used only once
+
+    const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _rho_SR_dry);
+    // DBUG("solid_density = %g", _solid_density);
+
+    const double k = 6.0e-3;
+    auto const dCdt0 = _process->getMaterials()._adsorption->get_reaction_rate(_p_V, _T, _M_react, loading);
+    auto const dCdt  = dCdt0 * exp(-k*_process->getMaterials()._time_step);
+    auto const C_eq  = dCdt0 / k + loading;
+    std::printf("equilibrium loading: %g\n", C_eq);
+
+    auto const C_next = C_eq - dCdt / k;
+
+    _reaction_rate[int_pt] = dCdt * _rho_SR_dry;
+    if (int_pt == 0) DBUG("reaction_rate = %g", _reaction_rate[int_pt]);
+
+    // _solid_density[int_pt] = _solid_density_prev_ts[int_pt]
+    //                          + _reaction_rate[int_pt] * _process->getMaterials()._time_step;
+
+    _solid_density[int_pt] = _rho_SR_dry * (1.0 + C_next);
+    if (int_pt == 0) DBUG("solid_density = %g", _solid_density[int_pt]);
 }
 
 
@@ -577,22 +605,15 @@ preEachAssembleIntegrationPoint(
     // DBUG("rho_GR = %g", _rho_GR);
     // _eta_GR = fluid_viscosity(_p, _T, _x); // used only once
     // _lambda_GR = fluid_heat_conductivity(_p, _T, _x); // used only once
-    // _cpS = solid_isobaric_heat_capacity(_solid_density); // used only once
-    // _H_vap = evaporation_enthalpy(_p, _T, _x); // used only once
 
     // _vapour_molar_fraction = Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _M_react, _M_inert);
     _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _M_react, _M_inert);
     // DBUG("p_V = %g", _p_V);
 
-    const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _rho_SR_dry);
-    // DBUG("solid_density = %g", _solid_density);
 
-
-    _reaction_rate = _process->getMaterials()._adsorption->get_reaction_rate(_p_V, _T, _M_react, loading)
-                     * _rho_SR_dry;
-    // DBUG("reaction_rate = %g", _reaction_rate);
-
-    _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + _reaction_rate * _process->getMaterials()._time_step;
+    if (_process->getMaterials()._is_new_timestep) {
+        initNewTimestep(int_pt, localX);
+    }
 }
 
 
@@ -679,12 +700,14 @@ assembleIntegrationPoint(unsigned integration_point,
     assert(N*NODAL_DOF == _Lap->cols());
 
     auto const laplaceCoeffMat = getLaplaceCoeffMatrix(integration_point, D);
+    assert(laplaceCoeffMat.cols() == D*NODAL_DOF);
     auto const massCoeffMat    = getMassCoeffMatrix(integration_point);
     auto const advCoeffMat     = getAdvectionCoeffMatrix(integration_point);
     auto const contentCoeffMat = getContentCoeffMatrix(integration_point);
 
-    Eigen::MatrixXd const velocity = Eigen::MatrixXd::Constant(D, 1, 0.0);
+    // Eigen::MatrixXd const velocity = Eigen::MatrixXd::Constant(D, 1, 0.0);
 
+    auto const velocity = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
 
     // DBUG("detJ = %g, weight = %g, detJ*weight = %g", smDetJ, weight, smDetJ*weight);
 
@@ -726,6 +749,9 @@ LADataNoTpl::init(const unsigned num_int_pts)
 {
     _solid_density.resize(num_int_pts, _process->getMaterials()._initial_solid_density);
     _solid_density_prev_ts.resize(num_int_pts, _process->getMaterials()._initial_solid_density);
+
+    _reaction_rate.resize(num_int_pts, _process->getMaterials()._initial_solid_density);
+    _reaction_rate_prev_ts.resize(num_int_pts, _process->getMaterials()._initial_solid_density);
 
     _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
     _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));

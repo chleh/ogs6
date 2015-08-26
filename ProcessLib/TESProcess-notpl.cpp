@@ -50,7 +50,7 @@ void printGlobalMatrix(const Eigen::SparseMatrix<double> &mat)
     {
         for (unsigned c=0; c<C; ++c)
         {
-            std::printf("%14g", const_cast<Eigen::SparseMatrix<double>& >(mat).coeffRef(r, c));
+            std::printf("%19.12g", const_cast<Eigen::SparseMatrix<double>& >(mat).coeffRef(r, c));
         }
         std::printf("\n");
     }
@@ -61,7 +61,7 @@ void printGlobalVector(const Eigen::Ref<Eigen::VectorXd>& vec)
 {
     for (unsigned i=0; i<vec.size(); ++i)
     {
-        std::printf("%14g\n", vec[i]);
+        std::printf("%19.12g\n", vec[i]);
     }
 }
 
