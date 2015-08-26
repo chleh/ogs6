@@ -434,6 +434,9 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 	auto const L_xx = Eigen::MatrixXd::Identity(dim, dim)
 					  * _tortuosity * _poro * _rho_GR * _diffusion_coefficient_component;
 
+	std::cout << "L_pp: " << L_pp << std::endl;
+	std::cout << "L_TT: " << L_TT << std::endl;
+	std::cout << "L_xx: " << L_xx << std::endl;
 
 	Eigen::MatrixXd L(dim*3, dim*3);
 
@@ -662,7 +665,7 @@ ogs5OutMat(const LADataNoTpl::MatRef& mat)
         switch (MATRIX_OUTPUT_FORMAT)
         {
         case MatOutType::OGS5:
-            std::printf(" |");
+            std::printf(" | ");
             break;
         case MatOutType::PYTHON:
             std::printf(" ]");
@@ -681,7 +684,7 @@ ogs5OutVec(const LADataNoTpl::VecRef& vec)
         {
         case MatOutType::OGS5:
             if (r!=0) std::printf("\n");
-            std::printf("| %.12e |", vec[r]);
+            std::printf("| %.12e | ", vec[r]);
             break;
         case MatOutType::PYTHON:
             if (r!=0) std::printf(",\n");
@@ -825,28 +828,29 @@ LADataNoTpl::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs
     localRhs->noalias() += *_rhs
                            + *_Mas * oldX/_process->getMaterials()._time_step;
 
-#if 0
-    std::printf("\nStiffness:\n");
+#if 1
+    std::puts("### Element: ?");
+    std::printf("Stiffness: \n");
     ogs5OutMat(*localA);
     std::printf("\n");
 
-    std::printf("\n---Mass matrix:\n");
+    std::printf("\n---Mass matrix: \n");
     ogs5OutMat(*_Mas);
     std::printf("\n");
 
-    std::printf("---Laplacian matrix:\n");
+    std::printf("---Laplacian matrix: \n");
     ogs5OutMat(*_Lap);
     std::printf("\n");
 
-    std::printf("---Advective matrix:\n");
+    std::printf("---Advective matrix: \n");
     ogs5OutMat(*_Adv);
     std::printf("\n");
 
-    std::printf("---Content:\n");
+    std::printf("---Content: \n");
     ogs5OutMat(*_Cnt);
     std::printf("\n");
 
-    std::printf("---RHS:\n");
+    std::printf("---RHS: \n");
     ogs5OutVec(*localRhs);
     std::printf("\n");
 #endif
