@@ -434,12 +434,6 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 	auto const L_xx = Eigen::MatrixXd::Identity(dim, dim)
 					  * _tortuosity * _poro * _rho_GR * _diffusion_coefficient_component;
 
-#if 0
-	std::cout << "L_pp: " << L_pp << std::endl;
-	std::cout << "L_TT: " << L_TT << std::endl;
-	std::cout << "L_xx: " << L_xx << std::endl;
-#endif
-
 	Eigen::MatrixXd L(dim*3, dim*3);
 
 	L.block(0, 0, dim, dim) = L_pp;
@@ -542,40 +536,16 @@ getRHSCoeffVector(const unsigned int_pt)
 void LADataNoTpl::
 initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
 {
-    // _cpS = solid_isobaric_heat_capacity(_solid_density); // used only once
-    // _H_vap = evaporation_enthalpy(_p, _T, _x); // used only once
-
-#if 0
-    // TODO [CL] test inert.
-    _reaction_rate[int_pt] = 0.0;
-    if (int_pt == 0) DBUG("@@@ reaction_rate: %19.12g", _reaction_rate[int_pt]);
-    return;
-#endif
-
     const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _rho_SR_dry);
-    // DBUG("solid_density = %g", _solid_density);
 
     const double k = 6.0e-3;
     auto const dCdt0 = _process->getMaterials()._adsorption->get_reaction_rate(_p_V, _T, _M_react, loading);
     auto const dCdt  = dCdt0 * exp(-k*_process->getMaterials()._time_step);
     auto const C_eq  = dCdt0 / k + loading;
-    // if (int_pt == 0) DBUG("@@@ equilibrium loading: %19.12g\n", C_eq);
-
     auto const C_next = C_eq - dCdt / k;
 
     _reaction_rate[int_pt] = dCdt * _rho_SR_dry;
-    // if (int_pt == 0) DBUG("@@@ reaction_rate: %19.12g", _reaction_rate[int_pt]);
-
-    // _solid_density[int_pt] = _solid_density_prev_ts[int_pt]
-    //                          + _reaction_rate[int_pt] * _process->getMaterials()._time_step;
-
     _solid_density[int_pt] = _rho_SR_dry * (1.0 + C_next);
-    /*
-    if (int_pt == 0) {
-        DBUG("@@@ solid_density: %19.12g", _solid_density[int_pt]);
-        DBUG("@@@ current loading: %19.12g", C_next);
-    }
-    */
 }
 
 
@@ -607,27 +577,9 @@ preEachAssembleIntegrationPoint(
         }
     }
 
-
-#if 0
-    std::cerr << "integration point values of"
-                 " p=" << _p
-              << " T=" << _T
-              << " x=" << _vapour_mass_fraction
-              << " rho_SR=" << _solid_density
-              << " react_rate=" << _reaction_rate << std::endl;
-#endif
-
-
     // pre-compute certain properties
-
     _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
-    // DBUG("rho_GR = %g", _rho_GR);
-    // _eta_GR = fluid_viscosity(_p, _T, _x); // used only once
-    // _lambda_GR = fluid_heat_conductivity(_p, _T, _x); // used only once
-
-    // _vapour_molar_fraction = Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _M_react, _M_inert);
     _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _M_react, _M_inert);
-    // DBUG("p_V = %g", _p_V);
 
 
     if (_process->getMaterials()._is_new_timestep) {
@@ -724,41 +676,9 @@ assembleIntegrationPoint(unsigned integration_point,
     auto const advCoeffMat     = getAdvectionCoeffMatrix(integration_point);
     auto const contentCoeffMat = getContentCoeffMatrix(integration_point);
 
-    // Eigen::MatrixXd const velocity = Eigen::MatrixXd::Constant(D, 1, 0.0);
-
-#if 0
-    auto const vel1 = smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
-    std::cerr << "vel 1: " << vel1 << std::endl;
-    auto const vel2 = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx;
-    std::cerr << "vel 2: " << vel2 << std::endl;
-
-    auto const velocity = - laplaceCoeffMat.block(0, 0, D, D) * (smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N));
-    std::cerr << "type of velocity: " << typeid(velocity).name() << std::endl;
-    std::cerr << "velocity: " << velocity << std::endl;
-    auto const velocity2 = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
-    std::cerr << "velocity2: " << velocity2 << std::endl;
-    std::cerr << "lap coeff\n" << laplaceCoeffMat.block(0, 0, D, D) << std::endl;
-    std::cerr << "localX data: " << localX[0] << ", " << localX[1] << std::endl;
-    std::cerr << "smDNdx: " << smDNdx(0, 0) << ", " << smDNdx(0, 1) << std::endl;
-
-    auto const nodal_pressures = Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
-    auto const pressure_gradient = smDNdx * nodal_pressures;
-    assert(pressure_gradient.rows() == D && pressure_gradient.cols() == 1);
-    std::cerr << "pressure gradient: " << pressure_gradient << std::endl;
-    auto const filter_velocity = - laplaceCoeffMat.block(0, 0, D, D) * pressure_gradient; // Darcy's law filter velocity
-    std::cerr << "filter velocity: " << filter_velocity << std::endl;
-
-    // Note: the rhs has to be put in parentheses like that!
-    // auto const velocity = - laplaceCoeffMat.block(0, 0, D, D) * (smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N));
-#endif
-
     // using auto for the type went terribly wrong!
     Eigen::MatrixXd const velocity = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
     assert(velocity.cols() == 1 && velocity.rows() == D);
-    // std::cerr << "velocity: " << velocity << std::endl;
-
-
-    // DBUG("detJ = %g, weight = %g, detJ*weight = %g", smDetJ, weight, smDetJ*weight);
 
     for (unsigned r=0; r<NODAL_DOF; ++r)
     {
@@ -768,18 +688,6 @@ assembleIntegrationPoint(unsigned integration_point,
             _Mas->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * massCoeffMat(r, c) * smN.transpose();
             _Adv->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * advCoeffMat(r, c) * velocity.transpose() * smDNdx;
             _Cnt->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * contentCoeffMat(r, c) * smN.transpose();
-
-#if 0
-            localA->block(N*r, N*c, N, N).noalias() +=
-                    (
-                        smDNdx.transpose() * laplaceCoeffMat.block(D*r, D*c, D, D) * smDNdx
-                        + smN * (massCoeffMat(r, c) + contentCoeffMat(r, c)) * smN.transpose()
-                        + smN * advCoeffMat(r, c) * velocity.transpose() * smDNdx
-                    )
-                    * smDetJ * weight;
-#endif
-
-            // localA->noalias() += Lap + Mas + Adv + Cnt;
         }
     }
 

@@ -114,7 +114,6 @@ private:
     // values do not change during the assembly of one integration point
     double _rho_GR = 888.888;
     double _p_V = 888.888; // vapour partial pressure
-    // double _vapour_molar_fraction = 888.888;
 
     std::unique_ptr<Eigen::MatrixXd> _Lap;
     std::unique_ptr<Eigen::MatrixXd> _Mas;

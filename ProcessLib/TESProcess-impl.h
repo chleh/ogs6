@@ -215,7 +215,6 @@ initialize()
     _x.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
     _rhs.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
 
-    _x_prev_iter.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
     _x_prev_ts.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
 
 
@@ -275,7 +274,6 @@ solve()
     {
         std::printf("=================== timestep %i === %g s ===================\n", time_step, (time_step+1)*_materials._time_step);
         *_x_prev_ts = *_x;
-        // *_x_prev_iter = *_x;
 
         _materials._is_new_timestep = true;
 
@@ -359,23 +357,11 @@ operator()(typename GlobalSetup::VectorType& /*x_prev_ts*/, typename GlobalSetup
     for (auto bc : _neumann_bcs)
         bc->integrate(_global_setup);
 
-
     // Apply known values from the Dirichlet boundary conditions.
     MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
-    // std::printf("---------- A -------------\n");
-    // printGlobalMatrix(_A->getRawMatrix());
-    // std::printf("---------- rhs -----------\n");
-    // printGlobalVector(_rhs->getRawVector());
-
-    // std::puts("------ rhs -------");
-    // printGlobalVector(_rhs->getRawVector());
-
     typename GlobalSetup::LinearSolver linearSolver(*_A);
     linearSolver.solve(*_rhs, x_new);
-
-    // std::puts("------ solution ----------");
-    // printGlobalVector(x_new.getRawVector());
 
     _materials._is_new_timestep = false;
 
