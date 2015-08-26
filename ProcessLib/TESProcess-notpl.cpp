@@ -105,7 +105,7 @@ bool calculateError(Eigen::VectorXd* current_solution,
     auto const dmin = std::numeric_limits<double>::min();
     auto const deps = std::numeric_limits<double>::epsilon();
 
-    for (std::size_t i=0; i<N; ++i)
+    for (std::remove_const<decltype(N)>::type i=0; i<N; ++i)
     {
         // const double c = const_cast<Eigen::SparseMatrix<double>&>(current_solution).coeffRef(i,1);
         // const double p = const_cast<Eigen::SparseMatrix<double>&>(previous_solution).coeffRef(i,1);

@@ -275,9 +275,9 @@ solve()
     std::puts("------ initial values ----------");
     printGlobalVector(_x->getRawVector());
 
-    for (unsigned time_step = 0; time_step < 2; ++time_step)
+    for (unsigned time_step = 0; time_step * _materials._time_step < _materials._time_max; ++time_step)
     {
-        std::printf("=================== timestep %i ===================\n", time_step);
+        std::printf("=================== timestep %i === %g s ===================\n", time_step, (time_step+1)*_materials._time_step);
         *_x_prev_ts = *_x;
         // *_x_prev_iter = *_x;
 
