@@ -434,9 +434,11 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 	auto const L_xx = Eigen::MatrixXd::Identity(dim, dim)
 					  * _tortuosity * _poro * _rho_GR * _diffusion_coefficient_component;
 
+#if 0
 	std::cout << "L_pp: " << L_pp << std::endl;
 	std::cout << "L_TT: " << L_TT << std::endl;
 	std::cout << "L_xx: " << L_xx << std::endl;
+#endif
 
 	Eigen::MatrixXd L(dim*3, dim*3);
 
@@ -543,10 +545,12 @@ initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
     // _cpS = solid_isobaric_heat_capacity(_solid_density); // used only once
     // _H_vap = evaporation_enthalpy(_p, _T, _x); // used only once
 
+#if 0
     // TODO [CL] test inert.
     _reaction_rate[int_pt] = 0.0;
     if (int_pt == 0) DBUG("@@@ reaction_rate: %19.12g", _reaction_rate[int_pt]);
     return;
+#endif
 
     const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _rho_SR_dry);
     // DBUG("solid_density = %g", _solid_density);
@@ -555,21 +559,23 @@ initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
     auto const dCdt0 = _process->getMaterials()._adsorption->get_reaction_rate(_p_V, _T, _M_react, loading);
     auto const dCdt  = dCdt0 * exp(-k*_process->getMaterials()._time_step);
     auto const C_eq  = dCdt0 / k + loading;
-    if (int_pt == 0) DBUG("@@@ equilibrium loading: %19.12g\n", C_eq);
+    // if (int_pt == 0) DBUG("@@@ equilibrium loading: %19.12g\n", C_eq);
 
     auto const C_next = C_eq - dCdt / k;
 
     _reaction_rate[int_pt] = dCdt * _rho_SR_dry;
-    if (int_pt == 0) DBUG("@@@ reaction_rate: %19.12g", _reaction_rate[int_pt]);
+    // if (int_pt == 0) DBUG("@@@ reaction_rate: %19.12g", _reaction_rate[int_pt]);
 
     // _solid_density[int_pt] = _solid_density_prev_ts[int_pt]
     //                          + _reaction_rate[int_pt] * _process->getMaterials()._time_step;
 
     _solid_density[int_pt] = _rho_SR_dry * (1.0 + C_next);
+    /*
     if (int_pt == 0) {
         DBUG("@@@ solid_density: %19.12g", _solid_density[int_pt]);
         DBUG("@@@ current loading: %19.12g", C_next);
     }
+    */
 }
 
 
@@ -828,7 +834,7 @@ LADataNoTpl::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs
     localRhs->noalias() += *_rhs
                            + *_Mas * oldX/_process->getMaterials()._time_step;
 
-#if 1
+#if 0
     std::puts("### Element: ?");
     std::printf("Stiffness: \n");
     ogs5OutMat(*localA);

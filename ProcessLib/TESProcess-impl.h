@@ -348,8 +348,6 @@ operator()(typename GlobalSetup::VectorType& /*x_prev_ts*/, typename GlobalSetup
 {
     _global_assembler->setX(&x_new, _x_prev_ts.get());
 
-    // std::printf("@@@ %p %p\n", &x_new, _x_prev_ts.get());
-
     _A->setZero();
     MathLib::setMatrixSparsity(*_A, _node_adjacency_table);
     *_rhs = 0;   // This resets the whole vector.
@@ -370,14 +368,14 @@ operator()(typename GlobalSetup::VectorType& /*x_prev_ts*/, typename GlobalSetup
     // std::printf("---------- rhs -----------\n");
     // printGlobalVector(_rhs->getRawVector());
 
-    std::puts("------ rhs -------");
-    printGlobalVector(_rhs->getRawVector());
+    // std::puts("------ rhs -------");
+    // printGlobalVector(_rhs->getRawVector());
 
     typename GlobalSetup::LinearSolver linearSolver(*_A);
     linearSolver.solve(*_rhs, x_new);
 
-    std::puts("------ solution ----------");
-    printGlobalVector(x_new.getRawVector());
+    // std::puts("------ solution ----------");
+    // printGlobalVector(x_new.getRawVector());
 
     _materials._is_new_timestep = false;
 
