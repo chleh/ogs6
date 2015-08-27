@@ -17,6 +17,8 @@
 
 #include "logog/include/logog.hpp"
 
+#include "NumLib/TimeStepping/Algorithms/FixedTimeStepping.h"
+
 #include "TESProcess.h"
 
 
@@ -268,15 +270,21 @@ solve()
     picard.setMaxIterations(100);
 
 
+    NumLib::FixedTimeStepping timestepper(0.0, _time_max, _assembly_params._time_step);
+
+
     std::puts("------ initial values ----------");
     printGlobalVector(_x->getRawVector());
 
-    for (unsigned time_step = 0; time_step * _assembly_params._time_step < _time_max; ++time_step)
+    while (timestepper.next()) // skips zeroth timestep, but OK since end of first timestep is after first delta t
     {
-        std::printf("=================== timestep %i === %g s ===================\n", time_step, (time_step+1)*_assembly_params._time_step);
+        INFO("=================== timestep %i === %g s ===================",
+             timestepper.getTimeStep().current(), timestepper.getTimeStep().dt());
+
         *_x_prev_ts = *_x;
 
         _assembly_params._is_new_timestep = true;
+        _assembly_params._time_step = timestepper.getTimeStep().dt();
 
         auto cb = [this](typename GlobalSetup::VectorType& x_prev_iter,
                                  typename GlobalSetup::VectorType& x_curr)
@@ -291,10 +299,8 @@ solve()
             break;
         }
 
-        postTimestep(time_step, (time_step+1)*_assembly_params._time_step);
+        postTimestep(timestepper.getTimeStep().steps()-1, timestepper.getTimeStep().current());
     }
-
-
 }
 
 

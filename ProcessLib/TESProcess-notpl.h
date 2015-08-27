@@ -40,10 +40,10 @@ struct AssemblyParams
     const double _M_inert = M_N2; // N2
     const double _M_react = M_H2O;
 
-    const double   _initial_solid_density = 1382.36248218;
+    const double _initial_solid_density = 1382.36248218;
 
-    const double   _time_step = 0.5;
-    bool  _is_new_timestep = true;
+    double       _time_step = 0.5;
+    bool         _is_new_timestep = true;
 };
 
 
