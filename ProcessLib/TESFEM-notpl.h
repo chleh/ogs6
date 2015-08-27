@@ -24,13 +24,6 @@ namespace ProcessLib
 namespace TES
 {
 
-const unsigned NODAL_DOF = 3;
-const unsigned NODAL_DOF_2ND = 2; // loading or solid density, and reaction rate
-
-
-const double M_N2  = 0.028013;
-const double M_H2O = 0.018016;
-
 const double NONLINEAR_ERROR_TOLERANCE = 1e-6;
 
 
@@ -52,7 +45,8 @@ public:
             const double weight
             );
 
-    TESProcessInterface const* _process;
+    // TESProcessInterface const* _process;
+    AssemblyParams const* _AP;
 
     void init(unsigned num_int_pts);
 
@@ -86,24 +80,6 @@ private:
 
     std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
     std::vector<double> _reaction_rate_prev_ts;
-
-    double _fluid_specific_heat_source = 0.0;
-    double _cpG = 1012.0; // specific isobaric fluid heat capacity
-
-    Eigen::MatrixXd _solid_perm_tensor = Eigen::MatrixXd::Identity(3, 3) * 1.e-7; // TODO get dimensions
-    double _solid_specific_heat_source = 0.0;
-    double _solid_heat_cond = 0.4;
-    double _cpS = 880.0;    // specific isobaric solid heat capacity
-
-    double _tortuosity = 1.0;
-    double _diffusion_coefficient_component = 9.65e-2; // ???
-
-    double _poro = 0.7;
-
-    const double _rho_SR_dry = 1150.0;
-
-    double _M_inert = M_N2; // N2
-    double _M_react = M_H2O;
 
     // integration point values of unknowns
     double _p = 888.888; // gas pressure

@@ -380,20 +380,23 @@ Eigen::Matrix3d
 LADataNoTpl::
 getMassCoeffMatrix(const unsigned int_pt)
 {
-	double dxn_dxm = _M_inert * _M_react
-					 / square(_M_inert * _vapour_mass_fraction + _M_react * (1.0 - _vapour_mass_fraction));
+	double dxn_dxm = _AP->_M_inert * _AP->_M_react
+					 / square(_AP->_M_inert * _vapour_mass_fraction
+							  + _AP->_M_react * (1.0 - _vapour_mass_fraction));
 
-	const double M_pp = _poro/_p * _rho_GR;
-	const double M_pT = -_poro/_T *  _rho_GR;
-	const double M_px = (_M_react-_M_inert) * _p / (GAS_CONST * _T) * dxn_dxm * _poro;
+	const double M_pp = _AP->_poro/_p * _rho_GR;
+	const double M_pT = -_AP->_poro/_T *  _rho_GR;
+	const double M_px = (_AP->_M_react-_AP->_M_inert) * _p
+						/ (GAS_CONST * _T) * dxn_dxm * _AP->_poro;
 
-	const double M_Tp = -_poro;
-	const double M_TT = _poro * _rho_GR * _cpG + (1.0-_poro) * _solid_density[int_pt] * _cpS;
+	const double M_Tp = -_AP->_poro;
+	const double M_TT = _AP->_poro * _rho_GR * _AP->_cpG
+						+ (1.0-_AP->_poro) * _solid_density[int_pt] * _AP->_cpS;
 	const double M_Tx = 0.0;
 
 	const double M_xp = 0.0;
 	const double M_xT = 0.0;
-	const double M_xx = _poro * _rho_GR;
+	const double M_xx = _AP->_poro * _rho_GR;
 
 
 	Eigen::Matrix3d M;
@@ -412,10 +415,10 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 	const double eta_GR = fluid_viscosity(_p, _T, _vapour_mass_fraction);
 
 	const double lambda_F = fluid_heat_conductivity(_p, _T, _vapour_mass_fraction);
-	const double lambda_S = _solid_heat_cond;
+	const double lambda_S = _AP->_solid_heat_cond;
 
 	// TODO: k_rel
-	auto const L_pp = _solid_perm_tensor.block(0,0,dim,dim) * _rho_GR / eta_GR;
+	auto const L_pp = _AP->_solid_perm_tensor.block(0,0,dim,dim) * _rho_GR / eta_GR;
 
 	auto const L_pT = Eigen::MatrixXd::Zero(dim, dim);
 	auto const L_px = Eigen::MatrixXd::Zero(dim, dim);
@@ -424,7 +427,7 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 
 	// TODO: add zeolite part
 	auto const L_TT = Eigen::MatrixXd::Identity(dim, dim)
-					  * ( _poro * lambda_F + (1.0 - _poro) * lambda_S);
+					  * ( _AP->_poro * lambda_F + (1.0 - _AP->_poro) * lambda_S);
 
 	auto const L_Tx = Eigen::MatrixXd::Zero(dim, dim);
 
@@ -432,7 +435,7 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 	auto const L_xT = Eigen::MatrixXd::Zero(dim, dim);
 
 	auto const L_xx = Eigen::MatrixXd::Identity(dim, dim)
-					  * _tortuosity * _poro * _rho_GR * _diffusion_coefficient_component;
+					  * _AP->_tortuosity * _AP->_poro * _rho_GR * _AP->_diffusion_coefficient_component;
 
 	Eigen::MatrixXd L(dim*3, dim*3);
 
@@ -463,7 +466,7 @@ getAdvectionCoeffMatrix(const unsigned /*int_pt*/)
 
 	const double A_Tp = 0.0;
 
-	const double A_TT = _rho_GR * _cpG; // porosity?
+	const double A_TT = _rho_GR * _AP->_cpG; // porosity?
 	const double A_Tx = 0.0;
 
 	const double A_xp = 0.0;
@@ -496,7 +499,7 @@ getContentCoeffMatrix(const unsigned int_pt)
 
 	const double C_xp = 0.0;
 	const double C_xT = 0.0;
-	const double C_xx = (_poro - 1.0) * _reaction_rate[int_pt];
+	const double C_xx = (_AP->_poro - 1.0) * _reaction_rate[int_pt];
 
 
 	Eigen::Matrix3d C;
@@ -512,16 +515,16 @@ Eigen::Vector3d
 LADataNoTpl::
 getRHSCoeffVector(const unsigned int_pt)
 {
-	const double reaction_enthalpy = _process->getParams()._adsorption->get_enthalpy(_T, _p_V, _M_react);
+	const double reaction_enthalpy = _AP->_adsorption->get_enthalpy(_T, _p_V, _AP->_M_react);
 
-	const double rhs_p = (_poro - 1.0) * _reaction_rate[int_pt]; // TODO [CL] body force term
+	const double rhs_p = (_AP->_poro - 1.0) * _reaction_rate[int_pt]; // TODO [CL] body force term
 
-	const double rhs_T = _rho_GR * _poro * _fluid_specific_heat_source
-						 + (1.0 - _poro) * _reaction_rate[int_pt] * reaction_enthalpy
-						 + _solid_density[int_pt] * (1.0 - _poro) * _solid_specific_heat_source;
+	const double rhs_T = _rho_GR * _AP->_poro * _AP->_fluid_specific_heat_source
+						 + (1.0 - _AP->_poro) * _reaction_rate[int_pt] * reaction_enthalpy
+						 + _solid_density[int_pt] * (1.0 - _AP->_poro) * _AP->_solid_specific_heat_source;
 						 // TODO [CL] momentum production term
 
-	const double rhs_x = (_poro - 1.0) * _reaction_rate[int_pt]; // TODO [CL] what if x < 0.0
+	const double rhs_x = (_AP->_poro - 1.0) * _reaction_rate[int_pt]; // TODO [CL] what if x < 0.0
 
 
 	Eigen::Vector3d rhs;
@@ -536,16 +539,16 @@ getRHSCoeffVector(const unsigned int_pt)
 void LADataNoTpl::
 initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
 {
-    const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _rho_SR_dry);
+    const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _AP->_rho_SR_dry);
 
     const double k = 6.0e-3;
-    auto const dCdt0 = _process->getParams()._adsorption->get_reaction_rate(_p_V, _T, _M_react, loading);
-    auto const dCdt  = dCdt0 * exp(-k*_process->getParams()._time_step);
+    auto const dCdt0 = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading);
+    auto const dCdt  = dCdt0 * exp(-k*_AP->_time_step);
     auto const C_eq  = dCdt0 / k + loading;
     auto const C_next = C_eq - dCdt / k;
 
-    _reaction_rate[int_pt] = dCdt * _rho_SR_dry;
-    _solid_density[int_pt] = _rho_SR_dry * (1.0 + C_next);
+    _reaction_rate[int_pt] = dCdt * _AP->_rho_SR_dry;
+    _solid_density[int_pt] = _AP->_rho_SR_dry * (1.0 + C_next);
 }
 
 
@@ -579,10 +582,10 @@ preEachAssembleIntegrationPoint(
 
     // pre-compute certain properties
     _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
-    _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _M_react, _M_inert);
+    _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
 
 
-    if (_process->getParams()._is_new_timestep) {
+    if (_AP->_is_new_timestep) {
         initNewTimestep(int_pt, localX);
     }
 }
@@ -704,11 +707,11 @@ assembleIntegrationPoint(unsigned integration_point,
 void
 LADataNoTpl::init(const unsigned num_int_pts)
 {
-    _solid_density.resize(num_int_pts, _process->getParams()._initial_solid_density);
-    _solid_density_prev_ts.resize(num_int_pts, _process->getParams()._initial_solid_density);
+    _solid_density.resize(num_int_pts, _AP->_initial_solid_density);
+    _solid_density_prev_ts.resize(num_int_pts, _AP->_initial_solid_density);
 
-    _reaction_rate.resize(num_int_pts, _process->getParams()._initial_solid_density);
-    _reaction_rate_prev_ts.resize(num_int_pts, _process->getParams()._initial_solid_density);
+    _reaction_rate.resize(num_int_pts);
+    _reaction_rate_prev_ts.resize(num_int_pts);
 
     _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
     _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
@@ -738,9 +741,9 @@ void
 LADataNoTpl::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
                               Eigen::VectorXd const& oldX)
 {
-    localA->noalias() += *_Lap + *_Mas/_process->getParams()._time_step + *_Adv + *_Cnt;
+    localA->noalias() += *_Lap + *_Mas/_AP->_time_step + *_Adv + *_Cnt;
     localRhs->noalias() += *_rhs
-                           + *_Mas * oldX/_process->getParams()._time_step;
+                           + *_Mas * oldX/_AP->_time_step;
 
 #if 0
     std::puts("### Element: ?");

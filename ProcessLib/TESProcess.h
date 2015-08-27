@@ -101,6 +101,10 @@ private:
     MeshLib::NodeAdjacencyTable _node_adjacency_table;
 
 
+    // process parameters
+    const double   _time_max  = 2000;
+    const unsigned _output_every_nth_step = 50;
+
 
     // primary variables
     ProcessVariable* _process_vars[NODAL_DOF] = { nullptr, nullptr, nullptr };

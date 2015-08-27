@@ -97,7 +97,7 @@ TESProcess(MeshLib::Mesh& mesh,
         std::string rsys = config.get<std::string>("reactive_system");
         DBUG("reactive_system: %s", rsys.c_str());
 
-        _parameters._adsorption = Ads::Adsorption::newInstance(rsys);
+        _assembly_params._adsorption = Ads::Adsorption::newInstance(rsys);
     }
 }
 
@@ -270,12 +270,12 @@ solve()
     std::puts("------ initial values ----------");
     printGlobalVector(_x->getRawVector());
 
-    for (unsigned time_step = 0; time_step * _parameters._time_step < _parameters._time_max; ++time_step)
+    for (unsigned time_step = 0; time_step * _assembly_params._time_step < _time_max; ++time_step)
     {
-        std::printf("=================== timestep %i === %g s ===================\n", time_step, (time_step+1)*_parameters._time_step);
+        std::printf("=================== timestep %i === %g s ===================\n", time_step, (time_step+1)*_assembly_params._time_step);
         *_x_prev_ts = *_x;
 
-        _parameters._is_new_timestep = true;
+        _assembly_params._is_new_timestep = true;
 
         auto cb = [this](typename GlobalSetup::VectorType& x_prev_iter,
                                  typename GlobalSetup::VectorType& x_curr)
@@ -290,7 +290,7 @@ solve()
             break;
         }
 
-        postTimestep(time_step, (time_step+1)*_parameters._time_step);
+        postTimestep(time_step, (time_step+1)*_assembly_params._time_step);
     }
 
 
@@ -304,7 +304,7 @@ postTimestep(const unsigned timestep, const double time)
 {
     INFO("postprocessing timestep %i = %g s", timestep, time);
 
-    if (timestep % _parameters._output_every_nth_step != 0)
+    if (timestep % _output_every_nth_step != 0)
         return;
 
 
@@ -420,7 +420,7 @@ singlePicardIteration(typename GlobalSetup::VectorType& /*x_prev_iter*/,
     typename GlobalSetup::LinearSolver linearSolver(*_A);
     linearSolver.solve(*_rhs, x_curr);
 
-    _parameters._is_new_timestep = false;
+    _assembly_params._is_new_timestep = false;
 
 }
 
