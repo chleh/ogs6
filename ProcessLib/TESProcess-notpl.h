@@ -16,9 +16,10 @@ namespace TES
 struct Materials
 {
     Ads::Adsorption* _adsorption;
-    double _time_step = 0.5;
-    double _time_max  = 2000;
-    double _initial_solid_density = 1382.36248218;
+    const double   _time_step = 0.5;
+    const double   _time_max  = 2000;
+    const unsigned _output_every_nth_step = 50;
+    const double   _initial_solid_density = 1382.36248218;
     bool  _is_new_timestep = true;
 };
 

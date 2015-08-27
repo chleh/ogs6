@@ -283,10 +283,60 @@ solve()
             DBUG("timestep has not been accepted. cancelling.");
             break;
         }
+
+        postTimestep(time_step, (time_step+1)*_materials._time_step);
     }
 
 
 }
+
+
+template<typename GlobalSetup>
+void
+TESProcess<GlobalSetup>::
+postTimestep(const unsigned timestep, const double time)
+{
+    INFO("postprocessing timestep %i = %g s", timestep, time);
+
+    if (timestep % _materials._output_every_nth_step != 0)
+        return;
+
+
+    for (unsigned vi=0; vi!=NODAL_DOF; ++vi)
+    {
+        std::string const& property_name = _process_vars[vi]->getName();
+        DBUG("  process var %s", property_name.c_str());
+
+        // Get or create a property vector for results.
+        boost::optional<MeshLib::PropertyVector<double>&> result;
+
+        assert(_x->size() == NODAL_DOF * _mesh.getNNodes());
+        auto const N = _mesh.getNNodes();
+
+        if (_mesh.getProperties().hasPropertyVector(property_name))
+        {
+            result = _mesh.getProperties().template
+                getPropertyVector<double>(property_name);
+        }
+        else
+        {
+            result = _mesh.getProperties().template
+                createNewPropertyVector<double>(property_name,
+                    MeshLib::MeshItemType::Node);
+            result->resize(N);
+        }
+        assert(result && result->size() == N);
+
+        // Copy result
+        for (std::size_t i = 0; i < N; ++i)
+            (*result)[i] = (*_x)[vi*N+i]; // index depends on variable order!
+    }
+
+    // Write output file
+    FileIO::VtuInterface vtu_interface(&_mesh, vtkXMLWriter::Binary, true);
+    vtu_interface.writeToFile("out_" + std::to_string(timestep) + ".vtu");
+}
+
 
 template<typename GlobalSetup>
 void
@@ -347,7 +397,7 @@ operator()(typename GlobalSetup::VectorType& /*x_prev_ts*/, typename GlobalSetup
     _global_assembler->setX(&x_new, _x_prev_ts.get());
 
     _A->setZero();
-    MathLib::setMatrixSparsity(*_A, _node_adjacency_table);
+    MathLib::setMatrixSparsity(*_A, _node_adjacency_table); // TODO [CL] always required?
     *_rhs = 0;   // This resets the whole vector.
 
     // Call global assembler for each local assembly item.

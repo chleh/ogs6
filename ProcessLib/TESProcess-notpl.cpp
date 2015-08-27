@@ -152,7 +152,7 @@ bool calculateError(Eigen::VectorXd* current_solution,
         const double old_ts = materials->_time_step;
         const double new_ts = old_ts / 2.0;
         DBUG("some constraints were violated. reducing timestep from %g to %g", old_ts, new_ts);
-        materials->_time_step = new_ts;
+        // materials->_time_step = new_ts;
 
         return false;
     }

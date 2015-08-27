@@ -83,6 +83,8 @@ public:
     ~TESProcess();
 
 private:
+    void postTimestep(const unsigned timestep, const double time);
+
     using LocalAssembler = TES::LocalAssemblerDataInterface<
         typename GlobalSetup::MatrixType, typename GlobalSetup::VectorType>;
     using GlobalAssembler =
