@@ -75,6 +75,7 @@ private:
     // many values taken from zeolite-adsorption-benchmark-snap/start-at-0.99
 
 
+    // nodal quantities, secondary variables
     std::vector<double> _solid_density;
     std::vector<double> _solid_density_prev_ts;
 

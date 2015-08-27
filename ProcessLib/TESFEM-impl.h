@@ -63,7 +63,6 @@ init(MeshLib::Element const& e,
 
     // DBUG("local matrix size: %i", local_matrix_size);
 
-    // _data._process = process;
     _data._AP = & process->getAssemblyParams();
 
     _data.init(n_integration_points);

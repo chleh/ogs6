@@ -56,8 +56,9 @@ namespace TES
 template<typename GlobalSetup>
 TESProcess<GlobalSetup>::
 TESProcess(MeshLib::Mesh& mesh,
-        std::vector<ProcessVariable> const& variables,
-        ConfigTree const& config)
+           std::vector<ProcessVariable> const& variables,
+           std::vector<std::unique_ptr<ParameterBase>> const& /*parameters*/,
+           ConfigTree const& config)
     : Process(mesh)
 {
     DBUG("Create TESProcess.");

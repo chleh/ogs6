@@ -27,6 +27,8 @@
 #include "ProcessVariable.h"
 #include "Process.h"
 
+#include "Parameter.h"
+
 #include "TESProcess-notpl.h"
 #include "TESFEM.h"
 #include "TESFEM-notpl.h"
@@ -66,8 +68,9 @@ class TESProcess
 
 public:
     TESProcess(MeshLib::Mesh& mesh,
-            std::vector<ProcessVariable> const& variables,
-            ConfigTree const& config);
+               std::vector<ProcessVariable> const& variables,
+               std::vector<std::unique_ptr<ParameterBase>> const& parameters,
+               ConfigTree const& config);
 
     template <unsigned GlobalDim>
     void createLocalAssemblers();
