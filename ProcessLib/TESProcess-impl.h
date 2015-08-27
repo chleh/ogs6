@@ -13,6 +13,8 @@
 #include <cassert>
 #include <cstdio>
 
+#include "AssemblerLib/LocalToGlobalIndexMap.h"
+
 #include "MathLib/Nonlinear/Picard.h"
 
 #include "logog/include/logog.hpp"
@@ -159,8 +161,8 @@ createLocalAssemblers()
         DBUG("Initialize boundary conditions.");
         _process_vars[i]->initializeDirichletBCs(
                     process_var_mesh_node_searcher,
-                    _dirichlet_bc.global_ids, _dirichlet_bc.values,
-                    NODAL_DOF, i);
+                    _local_to_global_index_map->getMeshComponentMap(), i,
+                    _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
 
         //
@@ -253,14 +255,17 @@ solve()
     // set initial values
     for (unsigned i=0; i<NODAL_DOF; ++i)
     {
-        _process_vars[i]->setIC(*_x, NODAL_DOF, i);
+        _process_vars[i]->setIC(*_x, _local_to_global_index_map->getMeshComponentMap(), i);
     }
 
     // set initial values for secondary variables
     for (unsigned i=0; i<NODAL_DOF_2ND; ++i)
     {
         if (_secondary_process_vars[i])
-            _secondary_process_vars[i]->setIC(*_secondary_variables, NODAL_DOF_2ND, i);
+            _secondary_process_vars[i]->setIC(
+                        *_secondary_variables,
+                        _local_to_global_index_map_secondary->getMeshComponentMap(),
+                        i);
     }
 
 
@@ -299,7 +304,7 @@ solve()
             break;
         }
 
-        postTimestep(timestepper.getTimeStep().steps()-1, timestepper.getTimeStep().current());
+        postTimestep(timestepper.getTimeStep().steps(), timestepper.getTimeStep().current());
     }
 }
 
@@ -311,7 +316,7 @@ postTimestep(const unsigned timestep, const double time)
 {
     INFO("postprocessing timestep %i = %g s", timestep, time);
 
-    if (timestep % _output_every_nth_step != 0)
+    if ((timestep-1) % _output_every_nth_step != 0)
         return;
 
 
