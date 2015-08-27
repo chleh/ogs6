@@ -97,7 +97,7 @@ TESProcess(MeshLib::Mesh& mesh,
         std::string rsys = config.get<std::string>("reactive_system");
         DBUG("reactive_system: %s", rsys.c_str());
 
-        _materials._adsorption = Ads::Adsorption::newInstance(rsys);
+        _parameters._adsorption = Ads::Adsorption::newInstance(rsys);
     }
 }
 
@@ -270,12 +270,12 @@ solve()
     std::puts("------ initial values ----------");
     printGlobalVector(_x->getRawVector());
 
-    for (unsigned time_step = 0; time_step * _materials._time_step < _materials._time_max; ++time_step)
+    for (unsigned time_step = 0; time_step * _parameters._time_step < _parameters._time_max; ++time_step)
     {
-        std::printf("=================== timestep %i === %g s ===================\n", time_step, (time_step+1)*_materials._time_step);
+        std::printf("=================== timestep %i === %g s ===================\n", time_step, (time_step+1)*_parameters._time_step);
         *_x_prev_ts = *_x;
 
-        _materials._is_new_timestep = true;
+        _parameters._is_new_timestep = true;
 
         bool accepted = picard.solve(*this, *_x_prev_ts, *_x);
 
@@ -284,7 +284,7 @@ solve()
             break;
         }
 
-        postTimestep(time_step, (time_step+1)*_materials._time_step);
+        postTimestep(time_step, (time_step+1)*_parameters._time_step);
     }
 
 
@@ -298,7 +298,7 @@ postTimestep(const unsigned timestep, const double time)
 {
     INFO("postprocessing timestep %i = %g s", timestep, time);
 
-    if (timestep % _materials._output_every_nth_step != 0)
+    if (timestep % _parameters._output_every_nth_step != 0)
         return;
 
 
@@ -413,7 +413,7 @@ operator()(typename GlobalSetup::VectorType& /*x_prev_ts*/, typename GlobalSetup
     typename GlobalSetup::LinearSolver linearSolver(*_A);
     linearSolver.solve(*_rhs, x_new);
 
-    _materials._is_new_timestep = false;
+    _parameters._is_new_timestep = false;
 
 }
 

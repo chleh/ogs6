@@ -95,7 +95,7 @@ bool enforceConstraint(Eigen::VectorXd* vec,
 
 bool calculateError(Eigen::VectorXd* current_solution,
                     const Eigen::Ref<Eigen::VectorXd>& previous_solution,
-                    Materials* materials)
+                    ProcessParams* materials)
 {
     auto const& current_s = *current_solution;
     assert(current_s.size() == previous_solution.size());

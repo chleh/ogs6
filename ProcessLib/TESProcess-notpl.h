@@ -13,7 +13,7 @@ namespace TES
 {
 
 
-struct Materials
+struct ProcessParams
 {
     Ads::Adsorption* _adsorption;
     const double   _time_step = 0.5;
@@ -27,22 +27,22 @@ struct Materials
 class TESProcessInterface
 {
 public:
-    Materials& getMaterials() {
-        return _materials;
+    ProcessParams& getParams() {
+        return _parameters;
     }
-    Materials const& getMaterials() const {
-        return _materials;
+    ProcessParams const& getParams() const {
+        return _parameters;
     }
 
     virtual ~TESProcessInterface() = default;
 
 protected:
-    Materials _materials;
+    ProcessParams _parameters;
 };
 
 
 bool calculateError(Eigen::VectorXd* current_solution,
-                    const Eigen::Ref<Eigen::VectorXd>& previous_solution, Materials* materials);
+                    const Eigen::Ref<Eigen::VectorXd>& previous_solution, ProcessParams* materials);
 // bool calculateError(const Eigen::SparseMatrix<double>& current_solution,
 //                     const Eigen::SparseMatrix<double>& previous_solution);
 

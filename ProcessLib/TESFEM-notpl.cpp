@@ -512,7 +512,7 @@ Eigen::Vector3d
 LADataNoTpl::
 getRHSCoeffVector(const unsigned int_pt)
 {
-	const double reaction_enthalpy = _process->getMaterials()._adsorption->get_enthalpy(_T, _p_V, _M_react);
+	const double reaction_enthalpy = _process->getParams()._adsorption->get_enthalpy(_T, _p_V, _M_react);
 
 	const double rhs_p = (_poro - 1.0) * _reaction_rate[int_pt]; // TODO [CL] body force term
 
@@ -539,8 +539,8 @@ initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
     const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _rho_SR_dry);
 
     const double k = 6.0e-3;
-    auto const dCdt0 = _process->getMaterials()._adsorption->get_reaction_rate(_p_V, _T, _M_react, loading);
-    auto const dCdt  = dCdt0 * exp(-k*_process->getMaterials()._time_step);
+    auto const dCdt0 = _process->getParams()._adsorption->get_reaction_rate(_p_V, _T, _M_react, loading);
+    auto const dCdt  = dCdt0 * exp(-k*_process->getParams()._time_step);
     auto const C_eq  = dCdt0 / k + loading;
     auto const C_next = C_eq - dCdt / k;
 
@@ -582,7 +582,7 @@ preEachAssembleIntegrationPoint(
     _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _M_react, _M_inert);
 
 
-    if (_process->getMaterials()._is_new_timestep) {
+    if (_process->getParams()._is_new_timestep) {
         initNewTimestep(int_pt, localX);
     }
 }
@@ -704,11 +704,11 @@ assembleIntegrationPoint(unsigned integration_point,
 void
 LADataNoTpl::init(const unsigned num_int_pts)
 {
-    _solid_density.resize(num_int_pts, _process->getMaterials()._initial_solid_density);
-    _solid_density_prev_ts.resize(num_int_pts, _process->getMaterials()._initial_solid_density);
+    _solid_density.resize(num_int_pts, _process->getParams()._initial_solid_density);
+    _solid_density_prev_ts.resize(num_int_pts, _process->getParams()._initial_solid_density);
 
-    _reaction_rate.resize(num_int_pts, _process->getMaterials()._initial_solid_density);
-    _reaction_rate_prev_ts.resize(num_int_pts, _process->getMaterials()._initial_solid_density);
+    _reaction_rate.resize(num_int_pts, _process->getParams()._initial_solid_density);
+    _reaction_rate_prev_ts.resize(num_int_pts, _process->getParams()._initial_solid_density);
 
     _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
     _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
@@ -738,9 +738,9 @@ void
 LADataNoTpl::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
                               Eigen::VectorXd const& oldX)
 {
-    localA->noalias() += *_Lap + *_Mas/_process->getMaterials()._time_step + *_Adv + *_Cnt;
+    localA->noalias() += *_Lap + *_Mas/_process->getParams()._time_step + *_Adv + *_Cnt;
     localRhs->noalias() += *_rhs
-                           + *_Mas * oldX/_process->getMaterials()._time_step;
+                           + *_Mas * oldX/_process->getParams()._time_step;
 
 #if 0
     std::puts("### Element: ?");
