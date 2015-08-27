@@ -77,7 +77,6 @@ private:
     std::vector<ShapeMatrices> _shape_matrices;
     LADataNoTpl _data;
 
-    static const unsigned NODAL_DOF = 3;
     static const unsigned MAT_SIZE = ShapeFunction::NPOINTS * NODAL_DOF;
     using NodalMatrixType = Eigen::Matrix<double, MAT_SIZE, MAT_SIZE>;
     using NodalVectorType = Eigen::Matrix<double, MAT_SIZE, 1>;
