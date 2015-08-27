@@ -210,7 +210,7 @@ initialize()
     }
 
     _local_to_global_index_map.reset(
-        new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets));
+        new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets, _global_matrix_order));
 
     DBUG("Compute sparsity pattern");
     _node_adjacency_table.createTable(_mesh.getNodes());
@@ -319,6 +319,8 @@ postTimestep(const unsigned timestep, const double time)
     if ((timestep-1) % _output_every_nth_step != 0)
         return;
 
+    std::puts("---- solution ----");
+    printGlobalVector(_x->getRawVector());
 
     for (unsigned vi=0; vi!=NODAL_DOF; ++vi)
     {
@@ -345,9 +347,15 @@ postTimestep(const unsigned timestep, const double time)
         }
         assert(result && result->size() == N);
 
+
+        auto const& mcmap = _local_to_global_index_map->getMeshComponentMap();
         // Copy result
         for (std::size_t i = 0; i < N; ++i)
-            (*result)[i] = (*_x)[vi*N+i]; // index depends on variable order!
+        {
+            MeshLib::Location loc(_mesh.getID(), MeshLib::MeshItemType::Node, i);
+            auto const idx = mcmap.getGlobalIndex(loc, vi);
+            (*result)[i] = (*_x)[idx];
+        }
     }
 
     // Write output file
