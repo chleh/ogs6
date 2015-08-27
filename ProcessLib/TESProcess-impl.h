@@ -277,7 +277,13 @@ solve()
 
         _parameters._is_new_timestep = true;
 
-        bool accepted = picard.solve(*this, *_x_prev_ts, *_x);
+        auto cb = [this](typename GlobalSetup::VectorType& x_prev_iter,
+                                 typename GlobalSetup::VectorType& x_curr)
+        {
+            singlePicardIteration(x_prev_iter, x_curr);
+        };
+
+        bool accepted = picard.solve(cb, *_x_prev_ts, *_x);
 
         if (!accepted) {
             DBUG("timestep has not been accepted. cancelling.");
@@ -392,9 +398,10 @@ TESProcess<GlobalSetup>::
 template<typename GlobalSetup>
 void
 TESProcess<GlobalSetup>::
-operator()(typename GlobalSetup::VectorType& /*x_prev_ts*/, typename GlobalSetup::VectorType& x_new)
+singlePicardIteration(typename GlobalSetup::VectorType& /*x_prev_iter*/,
+                      typename GlobalSetup::VectorType& x_curr)
 {
-    _global_assembler->setX(&x_new, _x_prev_ts.get());
+    _global_assembler->setX(&x_curr, _x_prev_ts.get());
 
     _A->setZero();
     MathLib::setMatrixSparsity(*_A, _node_adjacency_table); // TODO [CL] always required?
@@ -411,7 +418,7 @@ operator()(typename GlobalSetup::VectorType& /*x_prev_ts*/, typename GlobalSetup
     MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
     typename GlobalSetup::LinearSolver linearSolver(*_A);
-    linearSolver.solve(*_rhs, x_new);
+    linearSolver.solve(*_rhs, x_curr);
 
     _parameters._is_new_timestep = false;
 

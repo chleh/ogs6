@@ -78,11 +78,11 @@ public:
 
     void post(std::string const& file_name);
 
-    void operator()(typename GlobalSetup::VectorType& x_old, typename GlobalSetup::VectorType& x_new);
-
     ~TESProcess();
 
 private:
+    void singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
+                               typename GlobalSetup::VectorType& x_curr);
     void postTimestep(const unsigned timestep, const double time);
 
     using LocalAssembler = TES::LocalAssemblerDataInterface<
