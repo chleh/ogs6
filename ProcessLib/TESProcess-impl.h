@@ -15,8 +15,6 @@
 
 #include "AssemblerLib/LocalToGlobalIndexMap.h"
 
-#include "MathLib/Nonlinear/Picard.h"
-
 #include "logog/include/logog.hpp"
 
 #include "NumLib/TimeStepping/Algorithms/FixedTimeStepping.h"
@@ -276,14 +274,7 @@ initialize()
         createLocalAssemblers<3>();
     else
         assert(false);
-}
 
-template<typename GlobalSetup>
-void
-TESProcess<GlobalSetup>::
-solve()
-{
-    DBUG("Solve TESProcess.");
 
     // set initial values
     for (unsigned i=0; i<NODAL_DOF; ++i)
@@ -301,53 +292,41 @@ solve()
                         i);
     }
 
-
-    MathLib::Nonlinear::Picard picard;
-    picard.setAbsTolerance(1e-1);
-    picard.setRelTolerance(1e-6);
-    picard.setMaxIterations(100);
-
-
-    NumLib::FixedTimeStepping timestepper(0.0, _time_max, _assembly_params._time_step);
-
-
     std::puts("------ initial values ----------");
     printGlobalVector(_x->getRawVector());
 
-    while (timestepper.next()) // skips zeroth timestep, but OK since end of first timestep is after first delta t
+    _picard.reset(new MathLib::Nonlinear::Picard);
+    _picard->setAbsTolerance(1e-1);
+    _picard->setRelTolerance(1e-6);
+    _picard->setMaxIterations(100);
+}
+
+template<typename GlobalSetup>
+bool TESProcess<GlobalSetup>::solve(const double delta_t)
+{
+    DBUG("Solve TESProcess.");
+
+    _assembly_params._time_step = delta_t;
+    _assembly_params._is_new_timestep = true;
+
+    *_x_prev_ts = *_x;
+
+    auto cb = [this](typename GlobalSetup::VectorType& x_prev_iter,
+                             typename GlobalSetup::VectorType& x_curr)
     {
-        INFO("=================== timestep %i === %g s ===================",
-             timestepper.getTimeStep().current(), timestepper.getTimeStep().dt());
+        singlePicardIteration(x_prev_iter, x_curr);
+    };
 
-        *_x_prev_ts = *_x;
-
-        _assembly_params._is_new_timestep = true;
-        _assembly_params._time_step = timestepper.getTimeStep().dt();
-
-        auto cb = [this](typename GlobalSetup::VectorType& x_prev_iter,
-                                 typename GlobalSetup::VectorType& x_curr)
-        {
-            singlePicardIteration(x_prev_iter, x_curr);
-        };
-
-        bool accepted = picard.solve(cb, *_x_prev_ts, *_x);
-
-        if (!accepted) {
-            DBUG("timestep has not been accepted. cancelling.");
-            break;
-        }
-
-        postTimestep(timestepper.getTimeStep().steps(), timestepper.getTimeStep().current());
-    }
+    return _picard->solve(cb, *_x_prev_ts, *_x);
 }
 
 
 template<typename GlobalSetup>
 void
 TESProcess<GlobalSetup>::
-postTimestep(const unsigned timestep, const double time)
+postTimestep(const std::string& file_name, const unsigned timestep)
 {
-    INFO("postprocessing timestep %i = %g s", timestep, time);
+    INFO("postprocessing timestep %i", timestep);
 
     if ((timestep-1) % _output_every_nth_step != 0)
         return;
@@ -393,7 +372,7 @@ postTimestep(const unsigned timestep, const double time)
 
     // Write output file
     FileIO::VtuInterface vtu_interface(&_mesh, vtkXMLWriter::Binary, true);
-    vtu_interface.writeToFile("out_" + std::to_string(timestep) + ".vtu");
+    vtu_interface.writeToFile(file_name);
 }
 
 
@@ -474,7 +453,6 @@ singlePicardIteration(typename GlobalSetup::VectorType& /*x_prev_iter*/,
     linearSolver.solve(*_rhs, x_curr);
 
     _assembly_params._is_new_timestep = false;
-
 }
 
 

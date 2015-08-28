@@ -20,6 +20,7 @@
 
 #include "MathLib/LinAlg/ApplyKnownSolution.h"
 #include "MathLib/LinAlg/SetMatrixSparsity.h"
+#include "MathLib/Nonlinear/Picard.h"
 
 #include "MeshGeoToolsLib/MeshNodeSearcher.h"
 #include "MeshLib/NodeAdjacencyTable.h"
@@ -75,18 +76,18 @@ public:
     template <unsigned GlobalDim>
     void createLocalAssemblers();
 
-    void initialize();
+    void initialize() override;
 
-    void solve();
+    bool solve(const double delta_t) override;
 
-    void post(std::string const& file_name);
+    void post(std::string const& file_name) override;
+    void postTimestep(std::string const& file_name, const unsigned timestep) override;
 
     ~TESProcess();
 
 private:
     void singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
                                typename GlobalSetup::VectorType& x_curr);
-    void postTimestep(const unsigned timestep, const double time);
 
     using LocalAssembler = TES::LocalAssemblerDataInterface<
         typename GlobalSetup::MatrixType, typename GlobalSetup::VectorType>;
@@ -103,6 +104,7 @@ private:
 
     MeshLib::NodeAdjacencyTable _node_adjacency_table;
 
+    std::unique_ptr<MathLib::Nonlinear::Picard> _picard;
 
     // process parameters
     const double   _time_max  = 2000;
