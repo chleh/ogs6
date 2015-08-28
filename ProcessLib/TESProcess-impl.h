@@ -51,6 +51,20 @@ find_variable(ConfigTree const& config,
     return &*variable;
 }
 
+#if 0
+template<typename Conf, typename InT, typename OutT>
+void parseParameter(Conf const& config,
+                    std::string const& param_name, OutT* (*builder)(InT const&), OutT*& target)
+{
+    InT in_value = config.template get<InT>(param_name);
+    // DBUG("reactive_system: %s", in_value.c_str());
+
+    target = builder(in_value);
+    // _assembly_params._adsorption = Ads::Adsorption::newInstance(rsys);
+}
+#endif
+
+
 namespace ProcessLib
 {
 
@@ -97,12 +111,31 @@ TESProcess(MeshLib::Mesh& mesh,
         }
     }
 
+#if 1
     // reactive system
     {
-        std::string rsys = config.get<std::string>("reactive_system");
+        auto rsys = config.get<std::string>("reactive_system");
         DBUG("reactive_system: %s", rsys.c_str());
 
         _assembly_params._adsorption = Ads::Adsorption::newInstance(rsys);
+    }
+#else
+    parseParameter(config, "reactive_system", Ads::Adsorption::newInstance, _assembly_params._adsorption);
+#endif
+
+    // matrix order
+    {
+        auto order = config.get<std::string>("global_matrix_order");
+        DBUG("global_matrix_order: %s", order.c_str());
+
+        if (order == "BY_COMPONENT")
+            _global_matrix_order = AssemblerLib::ComponentOrder::BY_COMPONENT;
+        else if (order == "BY_LOCATION")
+            _global_matrix_order = AssemblerLib::ComponentOrder::BY_LOCATION;
+        else {
+            ERR("unknown global matrix order `%s'", order.c_str());
+            std::abort();
+        }
     }
 }
 

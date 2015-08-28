@@ -108,7 +108,7 @@ private:
     const double   _time_max  = 2000;
     const unsigned _output_every_nth_step = 50;
 
-    const AssemblerLib::ComponentOrder _global_matrix_order =
+    AssemblerLib::ComponentOrder _global_matrix_order =
             AssemblerLib::ComponentOrder::BY_COMPONENT;
 
 
