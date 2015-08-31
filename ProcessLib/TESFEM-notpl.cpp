@@ -370,11 +370,14 @@ static double solid_specific_isobaric_heat_capacity(const double /*rho_SR*/)
 #endif
 
 
+
 namespace ProcessLib
 {
 
 namespace TES
 {
+
+
 
 Eigen::Matrix3d
 LADataNoTpl::
@@ -559,7 +562,7 @@ preEachAssembleIntegrationPoint(
 		const std::vector<double> &localX,
 		const VecRef &smN, const MatRef &smDNdx)
 {
-    auto const N = smDNdx.cols(); // number of integration points
+    auto const N = smDNdx.cols(); // number of mesh nodes
     // auto const D = smDNdx.rows(); // global dimension
 
     // interpolate primary variables

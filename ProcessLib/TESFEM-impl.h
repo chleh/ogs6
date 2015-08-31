@@ -16,6 +16,57 @@
 
 // #include "logog/include/logog.hpp"
 
+
+// see http://eigen.tuxfamily.org/dox-devel/group__LeastSquares.html
+enum class LinearLeastSquaresBy { SVD, QR, NormalEquation };
+const LinearLeastSquaresBy linear_least_squares = LinearLeastSquaresBy::NormalEquation;
+
+
+
+template <typename ShapeMat>
+Eigen::MatrixXd
+interpolateGaussPointToNode(
+		const std::vector<double>& gp_vals,
+		std::vector<ShapeMat> const& shapeFcts)
+{
+	// const std::vector<double>& gp_vals = _solid_density;
+	const unsigned nn = shapeFcts[0].N.rows(); // number of mesh nodes
+	// const unsigned nn = 5;
+	const unsigned ni = gp_vals.size();        // number of gauss points
+
+
+	Eigen::MatrixXd N(ni, nn);
+
+	for (unsigned gp=0; gp<ni; ++gp)
+	{
+		auto const& shapeFct = shapeFcts[gp].N;
+		assert(shapeFct.rows() == nn);
+
+		for (unsigned n=0; n<nn; ++n)
+		{
+			N(gp, n) = shapeFct(n);
+		}
+	}
+
+	const Eigen::Map<const Eigen::VectorXd> gpvs(gp_vals.data(), gp_vals.size());
+
+	switch (linear_least_squares)
+	{
+	case LinearLeastSquaresBy::NormalEquation:
+		return (N.transpose() * N).ldlt().solve(N.transpose() * gpvs);
+	default:
+		ERR("chosen linear least squares method not yet implemented.");
+	}
+
+	return Eigen::MatrixXd();
+}
+
+
+
+
+
+
+
 namespace ProcessLib
 {
 
@@ -106,6 +157,8 @@ assemble(std::vector<double> const& localX,
     // first timestep:
     const Eigen::Map<const Eigen::VectorXd> oldX(localXPrevTs.data(), localXPrevTs.size());
     _data.postEachAssemble(&_localA, &_localRhs, oldX);
+
+    interpolateGaussPointToNode(_data._solid_density, _shape_matrices);
 }
 
 
