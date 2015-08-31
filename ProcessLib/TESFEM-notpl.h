@@ -24,6 +24,8 @@ namespace ProcessLib
 namespace TES
 {
 
+enum class SecondaryVariables { SOLID_DENSITY, REACTION_RATE };
+
 const double NONLINEAR_ERROR_TOLERANCE = 1e-6;
 
 
@@ -54,12 +56,8 @@ public:
     void postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
                           const Eigen::VectorXd& oldX);
 
-    // nodal quantities, secondary variables
-    std::vector<double> _solid_density;
-    std::vector<double> _solid_density_prev_ts;
-
-    std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
-    std::vector<double> _reaction_rate_prev_ts;
+    std::vector<double> const&
+    getIntegrationPointValues(SecondaryVariables var) const;
 
 private:
     Eigen::Matrix3d getMassCoeffMatrix(const unsigned int_pt);
@@ -80,6 +78,14 @@ private:
             std::vector<double> const& localX);
 
     // many values taken from zeolite-adsorption-benchmark-snap/start-at-0.99
+
+
+    // nodal quantities, secondary variables
+    std::vector<double> _solid_density;
+    std::vector<double> _solid_density_prev_ts;
+
+    std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
+    std::vector<double> _reaction_rate_prev_ts;
 
     // integration point values of unknowns
     double _p = 888.888; // gas pressure

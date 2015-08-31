@@ -22,9 +22,6 @@ namespace ProcessLib
 namespace TES
 {
 
-
-enum class SecondaryVariables { SOLID_DENSITY, REACTION_RATE };
-
 class Extrapolatable
 {
 public:
@@ -53,9 +50,6 @@ public:
     virtual void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
                              AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const&) const = 0;
 };
-
-
-
 
 
 

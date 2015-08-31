@@ -370,14 +370,11 @@ static double solid_specific_isobaric_heat_capacity(const double /*rho_SR*/)
 #endif
 
 
-
 namespace ProcessLib
 {
 
 namespace TES
 {
-
-
 
 Eigen::Matrix3d
 LADataNoTpl::
@@ -657,6 +654,23 @@ ogs5OutVec(const LADataNoTpl::VecRef& vec)
         }
     }
     std::printf("\n");
+}
+
+
+std::vector<double> const&
+LADataNoTpl::
+getIntegrationPointValues(SecondaryVariables var) const
+{
+    switch (var)
+    {
+    case SecondaryVariables::REACTION_RATE:
+        return _reaction_rate;
+    case SecondaryVariables::SOLID_DENSITY:
+        return _solid_density;
+    }
+
+    // TODO: error!
+    return _reaction_rate;
 }
 
 
