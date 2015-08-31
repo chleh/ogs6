@@ -19,6 +19,8 @@
 
 #include "NumLib/TimeStepping/Algorithms/FixedTimeStepping.h"
 
+#include "Extrapolator.h"
+
 #include "TESProcess.h"
 
 
@@ -216,11 +218,8 @@ createLocalAssemblers()
         }
     }
 
-
-
     for (auto bc : _neumann_bcs)
         bc->initialize(_global_setup, *_A, *_rhs, _mesh.getDimension());
-
 }
 
 template<typename GlobalSetup>
@@ -265,6 +264,11 @@ initialize()
     _secondary_variables.reset(
                 _global_setup.createVector(
                     _local_to_global_index_map_secondary->dofSize()));
+
+    // for extrapolation of secondary variables
+    _all_mesh_subsets_single_component.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
+    _local_to_global_index_map_single_component.reset(
+                new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets_single_component));
 
     if (_mesh.getDimension()==1)
         createLocalAssemblers<1>();
@@ -369,6 +373,16 @@ postTimestep(const std::string& file_name, const unsigned timestep)
             (*result)[i] = (*_x)[idx];
         }
     }
+
+
+
+
+    Extrapolator<typename GlobalSetup::VectorType>
+            extrapolator(_x->size(), *_local_to_global_index_map_single_component);
+    extrapolator.execute(_global_setup, _local_assemblers, SecondaryVariables::REACTION_RATE);
+
+    // for (auto const& loc_asm : _local_assemblers)
+
 
     // Write output file
     FileIO::VtuInterface vtu_interface(&_mesh, vtkXMLWriter::Binary, true);

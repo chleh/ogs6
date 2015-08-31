@@ -16,7 +16,7 @@
 
 // #include "logog/include/logog.hpp"
 
-
+#if 0
 // see http://eigen.tuxfamily.org/dox-devel/group__LeastSquares.html
 enum class LinearLeastSquaresBy { SVD, QR, NormalEquation };
 const LinearLeastSquaresBy linear_least_squares = LinearLeastSquaresBy::NormalEquation;
@@ -62,7 +62,7 @@ interpolateGaussPointToNode(
 }
 
 
-
+#endif
 
 
 
@@ -158,7 +158,7 @@ assemble(std::vector<double> const& localX,
     const Eigen::Map<const Eigen::VectorXd> oldX(localXPrevTs.data(), localXPrevTs.size());
     _data.postEachAssemble(&_localA, &_localRhs, oldX);
 
-    interpolateGaussPointToNode(_data._solid_density, _shape_matrices);
+    // interpolateGaussPointToNode(_data._solid_density, _shape_matrices);
 }
 
 
@@ -178,6 +178,32 @@ addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
 {
     A.add(indices, _localA);
     rhs.add(indices.rows, _localRhs);
+}
+
+
+template <typename ShapeFunction_,
+          typename IntegrationMethod_,
+          typename GlobalMatrix,
+          typename GlobalVector,
+          unsigned GlobalDim>
+std::vector<double> const&
+LocalAssemblerData<ShapeFunction_,
+    IntegrationMethod_,
+    GlobalMatrix,
+    GlobalVector,
+    GlobalDim>::
+getIntegrationPointValues(SecondaryVariables var) const
+{
+    switch (var)
+    {
+    case SecondaryVariables::REACTION_RATE:
+        return _data._reaction_rate;
+    case SecondaryVariables::SOLID_DENSITY:
+        return _data._solid_density;
+    }
+
+    // TODO: error!
+    return _data._reaction_rate;
 }
 
 

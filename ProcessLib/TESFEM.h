@@ -22,8 +22,21 @@ namespace ProcessLib
 namespace TES
 {
 
+
+enum class SecondaryVariables { SOLID_DENSITY, REACTION_RATE };
+
+class Extrapolatable
+{
+public:
+    virtual Eigen::VectorXd const& getShapeMatrix(const unsigned integration_point) const = 0;
+
+    virtual std::vector<double> const& getIntegrationPointValues(SecondaryVariables var) const = 0;
+};
+
+
 template <typename GlobalMatrix, typename GlobalVector>
 class LocalAssemblerDataInterface
+        : public Extrapolatable
 {
 public:
     virtual ~LocalAssemblerDataInterface() = default;
@@ -40,6 +53,9 @@ public:
     virtual void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
                              AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const&) const = 0;
 };
+
+
+
 
 
 
@@ -72,6 +88,15 @@ public:
 
     void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
                      AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const& indices) const override;
+
+    Eigen::VectorXd const& getShapeMatrix(const unsigned integration_point) const override {
+        return _shape_matrices[integration_point].N;
+        // const auto& shp_mats = _shape_matrices[integration_point];
+        // return (_shape_matrices.data() + integration_point)->N;
+        // return shp_mats.N;
+    }
+
+    std::vector<double> const& getIntegrationPointValues(SecondaryVariables var) const override;
 
 private:
     std::vector<ShapeMatrices> _shape_matrices;
