@@ -338,7 +338,7 @@ postTimestep(const std::string& file_name, const unsigned timestep)
     std::puts("---- solution ----");
     printGlobalVector(_x->getRawVector());
 
-    for (unsigned vi=0; vi!=NODAL_DOF; ++vi)
+    auto add_primary_var = [this](const unsigned vi)
     {
         std::string const& property_name = _process_vars[vi]->getName();
         DBUG("  process var %s", property_name.c_str());
@@ -363,7 +363,6 @@ postTimestep(const std::string& file_name, const unsigned timestep)
         }
         assert(result && result->size() == N);
 
-
         auto const& mcmap = _local_to_global_index_map->getMeshComponentMap();
         // Copy result
         for (std::size_t i = 0; i < N; ++i)
@@ -372,14 +371,56 @@ postTimestep(const std::string& file_name, const unsigned timestep)
             auto const idx = mcmap.getGlobalIndex(loc, vi);
             (*result)[i] = (*_x)[idx];
         }
+    };
+
+    for (unsigned vi=0; vi!=NODAL_DOF; ++vi)
+    {
+        add_primary_var(vi);
     }
-
-
 
 
     Extrapolator<typename GlobalSetup::VectorType>
             extrapolator(_x->size(), *_local_to_global_index_map_single_component);
-    extrapolator.execute(_global_setup, _local_assemblers, SecondaryVariables::REACTION_RATE);
+
+    auto add_secondary_var = [this, &extrapolator]
+                             (SecondaryVariables const property, std::string const& property_name)
+    {
+        DBUG("  process var %s", property_name.c_str());
+
+        // Get or create a property vector for results.
+        boost::optional<MeshLib::PropertyVector<double>&> result;
+
+        assert(_x->size() == NODAL_DOF * _mesh.getNNodes());
+        auto const N = _mesh.getNNodes();
+
+        if (_mesh.getProperties().hasPropertyVector(property_name))
+        {
+            result = _mesh.getProperties().template
+                getPropertyVector<double>(property_name);
+        }
+        else
+        {
+            result = _mesh.getProperties().template
+                createNewPropertyVector<double>(property_name,
+                    MeshLib::MeshItemType::Node);
+            result->resize(N);
+        }
+        assert(result && result->size() == N);
+
+
+        extrapolator.execute(_global_setup, _local_assemblers, property);
+        auto const& nodal_values = extrapolator.getNodalValues().getRawVector();
+
+        // Copy result
+        for (std::size_t i = 0; i < N; ++i)
+        {
+            (*result)[i] = nodal_values[i];
+        }
+    };
+
+    add_secondary_var(SecondaryVariables::REACTION_RATE, "reaction_rate");
+    add_secondary_var(SecondaryVariables::SOLID_DENSITY, "solid_density");
+
 
     // for (auto const& loc_asm : _local_assemblers)
 
