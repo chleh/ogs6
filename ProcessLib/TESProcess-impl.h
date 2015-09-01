@@ -333,9 +333,6 @@ postTimestep(const std::string& file_name, const unsigned timestep)
 {
     INFO("postprocessing timestep %i", timestep);
 
-    if ((timestep-1) % _output_every_nth_step != 0)
-        return;
-
     std::puts("---- solution ----");
     printGlobalVector(_x->getRawVector());
 

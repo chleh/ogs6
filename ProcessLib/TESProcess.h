@@ -106,10 +106,6 @@ private:
 
     std::unique_ptr<MathLib::Nonlinear::Picard> _picard;
 
-    // process parameters
-    const double   _time_max  = 2000;
-    const unsigned _output_every_nth_step = 50;
-
     AssemblerLib::ComponentOrder _global_matrix_order =
             AssemblerLib::ComponentOrder::BY_COMPONENT;
 
