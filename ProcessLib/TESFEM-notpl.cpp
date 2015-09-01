@@ -16,6 +16,8 @@
 
 #include "logog/include/logog.hpp"
 
+#include "Util.h"
+
 #include "TESFEM-notpl.h"
 
 
@@ -557,28 +559,10 @@ LADataNoTpl::
 preEachAssembleIntegrationPoint(
 		const unsigned int_pt,
 		const std::vector<double> &localX,
-		const VecRef &smN, const MatRef &smDNdx)
+		const VecRef &smN, const MatRef & /*smDNdx*/)
 {
-    auto const N = smDNdx.cols(); // number of mesh nodes
-    // auto const D = smDNdx.rows(); // global dimension
-
-    // interpolate primary variables
-    {
-        double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_vapour_mass_fraction };
-
-        for (unsigned d=0; d<NODAL_DOF; ++d)
-        {
-            *int_pt_val[d] = 0.0;
-        }
-
-        for (unsigned d=0; d<NODAL_DOF; ++d)
-        {
-            for (unsigned n=0; n<N; ++n)
-            {
-                *int_pt_val[d] += localX[d*N+n] * smN(n);
-            }
-        }
-    }
+    double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_vapour_mass_fraction };
+    shapeFunctionInterpolate(localX, smN, NODAL_DOF, int_pt_val);
 
     // pre-compute certain properties
     _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
