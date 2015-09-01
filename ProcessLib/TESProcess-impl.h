@@ -19,7 +19,7 @@
 
 #include "NumLib/TimeStepping/Algorithms/FixedTimeStepping.h"
 
-#include "Extrapolator.h"
+#include "LocalLinearLeastSquaresExtrapolator.h"
 
 #include "TESProcess.h"
 
@@ -381,7 +381,7 @@ postTimestep(const std::string& file_name, const unsigned timestep)
 
     LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables,
             LocalAssembler>
-            extrapolator(_x->size(), *_local_to_global_index_map_single_component);
+            extrapolator(*_local_to_global_index_map_single_component);
 
     auto add_secondary_var = [this, &extrapolator]
                              (SecondaryVariables const property, std::string const& property_name)
@@ -419,7 +419,7 @@ postTimestep(const std::string& file_name, const unsigned timestep)
             }
         }
 
-        {
+        if (false) {
             DBUG("  process var %s residual", property_name.c_str());
             auto const& property_name_res = property_name + "_residual";
 
