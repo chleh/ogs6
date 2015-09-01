@@ -379,7 +379,8 @@ postTimestep(const std::string& file_name, const unsigned timestep)
     }
 
 
-    Extrapolator<typename GlobalSetup::VectorType>
+    LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables,
+            LocalAssembler>
             extrapolator(_x->size(), *_local_to_global_index_map_single_component);
 
     auto add_secondary_var = [this, &extrapolator]
