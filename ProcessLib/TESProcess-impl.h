@@ -125,6 +125,57 @@ TESProcess(MeshLib::Mesh& mesh,
         }
     }
 
+    // variables for output
+    {
+        auto const& out_vars = config.get_child_optional("output.variables");
+        if (out_vars)
+        {
+            auto const& out_vars_range = out_vars->equal_range("variable");
+            for (auto it = out_vars_range.first; it!=out_vars_range.second; ++it)
+            {
+                // auto const& out_var = it->first; //->second.get<std::string>("variable");
+                auto const& out_var = it->second.get_value<std::string>();
+
+                if (_output_variables.find(out_var) != _output_variables.cend())
+                {
+                    ERR("output variable `%s' specified twice.", out_var.c_str());
+                    std::abort();
+                }
+
+                auto pred = [&out_var](ProcessVariable const* pv) {
+                    return pv->getName() == out_var;
+                };
+
+                // check if process variable
+                auto const& pcs_var = std::find_if(
+                    _process_vars.cbegin(), _process_vars.cend(),
+                    pred);
+
+                if (pcs_var == _process_vars.cend())
+                {
+                    auto pred2 = [&out_var](std::pair<SecondaryVariables, std::string> const& p) {
+                        return p.second == out_var;
+                    };
+
+                    // check if secondary variable
+                    auto const& pcs_var2 = std::find_if(
+                        _secondary_process_vars.cbegin(), _secondary_process_vars.cend(),
+                        pred2);
+
+                    if (pcs_var2 == _secondary_process_vars.cend())
+                    {
+                        ERR("Output variable `%s' is neither a process variable nor a"
+                            " secondary variable", out_var.c_str());
+                        std::abort();
+                    }
+                }
+
+                DBUG("adding output variable `%s'", out_var.c_str());
+                _output_variables.insert(out_var);
+            }
+        }
+    }
+
 #if 1
     // reactive system
     {

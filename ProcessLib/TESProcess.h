@@ -12,6 +12,8 @@
 
 #include <memory>
 #include <vector>
+#include <set>
+#include <array>
 
 #include "AssemblerLib/LocalToGlobalIndexMap.h"
 #include "AssemblerLib/VectorMatrixAssembler.h"
@@ -111,7 +113,7 @@ private:
 
 
     // primary variables
-    ProcessVariable* _process_vars[NODAL_DOF] = { nullptr, nullptr, nullptr };
+    std::array<ProcessVariable*, NODAL_DOF> _process_vars; // ) = { nullptr, nullptr, nullptr };
     std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets;
 
     std::unique_ptr<typename GlobalSetup::MatrixType> _A;
@@ -127,6 +129,9 @@ private:
 
     // secondary variables
     std::vector<std::pair<SecondaryVariables, std::string>> _secondary_process_vars;
+
+    // output variables
+    std::set<std::string> _output_variables;
 
     std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets_single_component;
     std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map_single_component;
