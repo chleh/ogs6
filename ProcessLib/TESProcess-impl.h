@@ -377,6 +377,9 @@ postTimestep(const std::string& file_name, const unsigned timestep)
     auto add_primary_var = [this](const unsigned vi)
     {
         std::string const& property_name = _process_vars[vi]->getName();
+        if (_output_variables.find(property_name) == _output_variables.cend())
+            return;
+
         DBUG("  process var %s", property_name.c_str());
 
         // Get or create a property vector for results.
@@ -431,6 +434,9 @@ postTimestep(const std::string& file_name, const unsigned timestep)
                              (SecondaryVariables const property, std::string const& property_name)
     {
         {
+            if (_output_variables.find(property_name) == _output_variables.cend())
+                return;
+
             DBUG("  process var %s", property_name.c_str());
 
             // Get or create a property vector for results.
