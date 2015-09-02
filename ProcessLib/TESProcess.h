@@ -14,6 +14,7 @@
 #include <vector>
 #include <set>
 #include <array>
+#include <tuple>
 
 #include "AssemblerLib/LocalToGlobalIndexMap.h"
 #include "AssemblerLib/VectorMatrixAssembler.h"
@@ -128,7 +129,8 @@ private:
 
 
     // secondary variables
-    std::vector<std::pair<SecondaryVariables, std::string>> _secondary_process_vars;
+    std::vector<std::tuple<SecondaryVariables, std::string, unsigned> >
+    _secondary_process_vars;
 
     // output variables
     std::set<std::string> _output_variables;

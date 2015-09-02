@@ -111,17 +111,18 @@ TESProcess(MeshLib::Mesh& mesh,
         {
             auto add_secondary_variable =
                     [this, &proc_vars](
-                    std::string const& var, SecondaryVariables type)
+                    std::string const& var, SecondaryVariables type, unsigned num_components)
             {
                 auto variable = proc_vars->get_optional<std::string>(var);
                 if (variable)
                 {
-                    _secondary_process_vars.emplace_back(type, *variable);
+                    _secondary_process_vars.emplace_back(type, *variable, num_components);
                 }
             };
 
-            add_secondary_variable("solid_density", SecondaryVariables::SOLID_DENSITY);
-            add_secondary_variable("reaction_rate", SecondaryVariables::REACTION_RATE);
+            add_secondary_variable("solid_density", SecondaryVariables::SOLID_DENSITY, 1);
+            add_secondary_variable("reaction_rate", SecondaryVariables::REACTION_RATE, 1);
+            add_secondary_variable("velocity",      SecondaryVariables::VELOCITY,      _mesh.getDimension());
         }
     }
 
@@ -153,8 +154,8 @@ TESProcess(MeshLib::Mesh& mesh,
 
                 if (pcs_var == _process_vars.cend())
                 {
-                    auto pred2 = [&out_var](std::pair<SecondaryVariables, std::string> const& p) {
-                        return p.second == out_var;
+                    auto pred2 = [&out_var](std::tuple<SecondaryVariables, std::string, unsigned> const& p) {
+                        return std::get<1>(p) == out_var;
                     };
 
                     // check if secondary variable
@@ -432,7 +433,10 @@ postTimestep(const std::string& file_name, const unsigned timestep)
 #endif
 
     auto add_secondary_var = [this, &extrapolator]
-                             (SecondaryVariables const property, std::string const& property_name)
+                             (SecondaryVariables const property,
+                             std::string const& property_name,
+                             const unsigned num_components
+                             )
     {
         {
             if (_output_variables.find(property_name) == _output_variables.cend())
@@ -454,7 +458,8 @@ postTimestep(const std::string& file_name, const unsigned timestep)
             {
                 result = _mesh.getProperties().template
                     createNewPropertyVector<double>(property_name,
-                        MeshLib::MeshItemType::Node);
+                        MeshLib::MeshItemType::Node,
+                        num_components);
                 result->resize(N);
             }
             assert(result && result->size() == N);
@@ -504,9 +509,9 @@ postTimestep(const std::string& file_name, const unsigned timestep)
         }
     };
 
-    for (auto p : _secondary_process_vars)
+    for (auto const& p : _secondary_process_vars)
     {
-        add_secondary_var(p.first, p.second);
+        add_secondary_var(std::get<0>(p), std::get<1>(p), std::get<2>(p));
     }
 
 

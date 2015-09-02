@@ -648,8 +648,12 @@ getIntegrationPointValues(SecondaryVariables var) const
     {
     case SecondaryVariables::REACTION_RATE:
         return _reaction_rate;
+        break;
     case SecondaryVariables::SOLID_DENSITY:
         return _solid_density;
+        break;
+    case SecondaryVariables::VELOCITY:
+        return _velocity;
     }
 
     // TODO: error!
