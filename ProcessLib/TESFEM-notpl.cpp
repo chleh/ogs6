@@ -557,9 +557,9 @@ initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
 void
 LADataNoTpl::
 preEachAssembleIntegrationPoint(
-		const unsigned int_pt,
-		const std::vector<double> &localX,
-		const VecRef &smN, const MatRef & /*smDNdx*/)
+        const unsigned int_pt,
+        const std::vector<double> &localX,
+        const VecRef &smN, const MatRef& smDNdx)
 {
     double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_vapour_mass_fraction };
     shapeFunctionInterpolate(localX, smN, NODAL_DOF, int_pt_val);
@@ -567,7 +567,6 @@ preEachAssembleIntegrationPoint(
     // pre-compute certain properties
     _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
     _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
-
 
     if (_AP->_is_new_timestep) {
         initNewTimestep(int_pt, localX);
@@ -661,10 +660,10 @@ getIntegrationPointValues(SecondaryVariables var) const
 void
 LADataNoTpl::
 assembleIntegrationPoint(unsigned integration_point,
-		Eigen::MatrixXd* localA, Eigen::VectorXd* /*localRhs*/,
-		std::vector<double> const& localX,
-		const VecRef &smN, const MatRef &smDNdx, const double smDetJ,
-		const double weight)
+                         Eigen::MatrixXd* localA, Eigen::VectorXd* /*localRhs*/,
+                         std::vector<double> const& localX,
+                         const VecRef &smN, const MatRef &smDNdx, const double smDetJ,
+                         const double weight)
 {
     preEachAssembleIntegrationPoint(integration_point, localX, smN, smDNdx);
 
@@ -680,9 +679,21 @@ assembleIntegrationPoint(unsigned integration_point,
     auto const advCoeffMat     = getAdvectionCoeffMatrix(integration_point);
     auto const contentCoeffMat = getContentCoeffMatrix(integration_point);
 
+
+    // calculate velocity
+    assert(smDNdx.rows() == _velocity.cols() && smDNdx.cols() == _velocity.rows());
+
     // using auto for the type went terribly wrong!
-    Eigen::MatrixXd const velocity = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
+    Eigen::MatrixXd const velocity = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx
+                                     * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
     assert(velocity.cols() == 1 && velocity.rows() == D);
+
+    _velocity.block(integration_point, 0, D, 1).noalias() = velocity.transpose();
+
+
+    // using auto for the type went terribly wrong!
+    // Eigen::MatrixXd const velocity = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
+    // assert(velocity.cols() == 1 && velocity.rows() == D);
 
     for (unsigned r=0; r<NODAL_DOF; ++r)
     {
@@ -706,13 +717,15 @@ assembleIntegrationPoint(unsigned integration_point,
 
 
 void
-LADataNoTpl::init(const unsigned num_int_pts)
+LADataNoTpl::init(const unsigned num_int_pts, const unsigned dimension)
 {
     _solid_density.resize(num_int_pts, _AP->_initial_solid_density);
     _solid_density_prev_ts.resize(num_int_pts, _AP->_initial_solid_density);
 
     _reaction_rate.resize(num_int_pts);
-    _reaction_rate_prev_ts.resize(num_int_pts);
+    // _reaction_rate_prev_ts.resize(num_int_pts);
+
+    _velocity.resize(num_int_pts, dimension);
 
     _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
     _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));

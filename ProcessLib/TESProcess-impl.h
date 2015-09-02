@@ -368,6 +368,7 @@ template<typename GlobalSetup>
 void
 TESProcess<GlobalSetup>::
 postTimestep(const std::string& file_name, const unsigned timestep)
+// TODO [CL] remove second parameter
 {
     INFO("postprocessing timestep %i", timestep);
 

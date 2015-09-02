@@ -65,7 +65,7 @@ init(MeshLib::Element const& e,
 
     _data._AP = & process->getAssemblyParams();
 
-    _data.init(n_integration_points);
+    _data.init(n_integration_points, GlobalDim);
 }
 
 

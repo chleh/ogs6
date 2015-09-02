@@ -50,7 +50,7 @@ public:
     // TESProcessInterface const* _process;
     AssemblyParams const* _AP;
 
-    void init(unsigned num_int_pts);
+    void init(const unsigned num_int_pts, const unsigned dimension);
 
     void preEachAssemble();
     void postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
@@ -85,7 +85,9 @@ private:
     std::vector<double> _solid_density_prev_ts;
 
     std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
-    std::vector<double> _reaction_rate_prev_ts;
+    // std::vector<double> _reaction_rate_prev_ts; can be calculated from _solid_density_prev_ts
+
+    Eigen::MatrixXd _velocity; // row index: gauss point, column index: dimension x/y/z
 
     // integration point values of unknowns
     double _p = 888.888; // gas pressure
