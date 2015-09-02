@@ -25,6 +25,9 @@
 #include "TESProcess.h"
 
 
+namespace
+{
+
 template <class ConfigTree>
 static ProcessLib::ProcessVariable const*
 find_variable(ConfigTree const& config,
@@ -51,6 +54,9 @@ find_variable(ConfigTree const& config,
 
     return &*variable;
 }
+
+} // anonymous namespace
+
 
 #if 0
 template<typename Conf, typename InT, typename OutT>
@@ -100,15 +106,22 @@ TESProcess(MeshLib::Mesh& mesh,
 
     // secondary variables
     {
-        const std::string vars[NODAL_DOF_2ND] = { "solid_density" };
-
-        ConfigTree proc_vars = config.get_child("secondary_variables");
-
-        for (unsigned i=0; i<NODAL_DOF_2ND && i<1; ++i)
+        auto const& proc_vars = config.get_child_optional("secondary_variables");
+        if (proc_vars)
         {
-            auto variable = find_variable(proc_vars, vars[i], variables);
+            auto add_secondary_variable =
+                    [this, &proc_vars](
+                    std::string const& var, SecondaryVariables type)
+            {
+                auto variable = proc_vars->get_optional<std::string>(var);
+                if (variable)
+                {
+                    _secondary_process_vars.emplace_back(type, *variable);
+                }
+            };
 
-            _secondary_process_vars[i] = const_cast<ProcessVariable*>(variable);
+            add_secondary_variable("solid_density", SecondaryVariables::SOLID_DENSITY);
+            add_secondary_variable("reaction_rate", SecondaryVariables::REACTION_RATE);
         }
     }
 
@@ -433,11 +446,10 @@ postTimestep(const std::string& file_name, const unsigned timestep)
         }
     };
 
-    add_secondary_var(SecondaryVariables::REACTION_RATE, "reaction_rate");
-    add_secondary_var(SecondaryVariables::SOLID_DENSITY, "solid_density");
-
-
-    // for (auto const& loc_asm : _local_assemblers)
+    for (auto p : _secondary_process_vars)
+    {
+        add_secondary_var(p.first, p.second);
+    }
 
 
     // Write output file
