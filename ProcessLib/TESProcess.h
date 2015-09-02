@@ -127,9 +127,9 @@ private:
 
     // secondary variables
     ProcessVariable* _secondary_process_vars[NODAL_DOF_2ND] = { nullptr, nullptr };
-    std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets_secondary;
-    std::unique_ptr<typename GlobalSetup::VectorType> _secondary_variables;
-    std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map_secondary;
+    // std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets_secondary;
+    // std::unique_ptr<typename GlobalSetup::VectorType> _secondary_variables;
+    // std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map_secondary;
 
     std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets_single_component;
     std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map_single_component;

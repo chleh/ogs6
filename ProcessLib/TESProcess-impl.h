@@ -178,10 +178,6 @@ createLocalAssemblers()
     DBUG("Create global assembler.");
     _global_assembler.reset(
         new GlobalAssembler(*_A, *_rhs, *_local_to_global_index_map));
-    // _global_assembler->setX(_x.get(), _x_prev_ts.get());
-    _global_assembler->setSecondaryVariables(
-                _secondary_variables.get(),
-                _local_to_global_index_map_secondary.get());
 
     for (unsigned i=0; i<NODAL_DOF; ++i)
     {
@@ -254,18 +250,6 @@ initialize()
     _x_prev_ts.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
 
 
-    for (unsigned i=0; i<NODAL_DOF_2ND; ++i)
-    {
-        _all_mesh_subsets_secondary.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
-    }
-
-    _local_to_global_index_map_secondary.reset(
-        new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets_secondary));
-
-    _secondary_variables.reset(
-                _global_setup.createVector(
-                    _local_to_global_index_map_secondary->dofSize()));
-
     // for extrapolation of secondary variables
     _all_mesh_subsets_single_component.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
     _local_to_global_index_map_single_component.reset(
@@ -285,16 +269,6 @@ initialize()
     for (unsigned i=0; i<NODAL_DOF; ++i)
     {
         _process_vars[i]->setIC(*_x, _local_to_global_index_map->getMeshComponentMap(), i);
-    }
-
-    // set initial values for secondary variables
-    for (unsigned i=0; i<NODAL_DOF_2ND; ++i)
-    {
-        if (_secondary_process_vars[i])
-            _secondary_process_vars[i]->setIC(
-                        *_secondary_variables,
-                        _local_to_global_index_map_secondary->getMeshComponentMap(),
-                        i);
     }
 
     std::puts("------ initial values ----------");
@@ -377,16 +351,17 @@ postTimestep(const std::string& file_name, const unsigned timestep)
     }
 
 
+#if 0
     GlobalLinearLeastSquaresExtrapolator<
             typename GlobalSetup::MatrixType,
             typename GlobalSetup::VectorType, SecondaryVariables,
             LocalAssembler>
             extrapolator(*_local_to_global_index_map_single_component);
-    /*
+#else
     LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables,
             LocalAssembler>
             extrapolator(*_local_to_global_index_map_single_component);
-            */
+#endif
 
     auto add_secondary_var = [this, &extrapolator]
                              (SecondaryVariables const property, std::string const& property_name)
