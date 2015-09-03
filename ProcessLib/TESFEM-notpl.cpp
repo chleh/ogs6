@@ -559,7 +559,7 @@ LADataNoTpl::
 preEachAssembleIntegrationPoint(
         const unsigned int_pt,
         const std::vector<double> &localX,
-        const VecRef &smN, const MatRef& smDNdx)
+        const VecRef &smN, const MatRef& /*smDNdx*/)
 {
     double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_vapour_mass_fraction };
     shapeFunctionInterpolate(localX, smN, NODAL_DOF, int_pt_val);
@@ -652,8 +652,14 @@ getIntegrationPointValues(SecondaryVariables var) const
     case SecondaryVariables::SOLID_DENSITY:
         return _solid_density;
         break;
-    case SecondaryVariables::VELOCITY:
-        return _velocity;
+    case SecondaryVariables::VELOCITY_X:
+        return _velocity[0];
+    case SecondaryVariables::VELOCITY_Y:
+        assert(_velocity.size() >= 2);
+        return _velocity[1];
+    case SecondaryVariables::VELOCITY_Z:
+        assert(_velocity.size() >= 3);
+        return _velocity[2];
     }
 
     // TODO: error!
@@ -685,14 +691,17 @@ assembleIntegrationPoint(unsigned integration_point,
 
 
     // calculate velocity
-    assert(smDNdx.rows() == _velocity.cols() && smDNdx.cols() == _velocity.rows());
+    assert((unsigned) smDNdx.rows() == _velocity.size() && (unsigned) smDNdx.cols() == _velocity[0].size());
 
     // using auto for the type went terribly wrong!
     Eigen::MatrixXd const velocity = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx
                                      * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
     assert(velocity.cols() == 1 && velocity.rows() == D);
 
-    _velocity.block(integration_point, 0, D, 1).noalias() = velocity.transpose();
+    for (unsigned d=0; d<D; ++d)
+    {
+        _velocity[d][integration_point] = velocity(d, 1);
+    }
 
 
     // using auto for the type went terribly wrong!
@@ -729,7 +738,9 @@ LADataNoTpl::init(const unsigned num_int_pts, const unsigned dimension)
     _reaction_rate.resize(num_int_pts);
     // _reaction_rate_prev_ts.resize(num_int_pts);
 
-    _velocity.resize(num_int_pts, dimension);
+    // _velocity.resize(num_int_pts, dimension);
+    _velocity.resize(dimension);
+    for (auto& v : _velocity) v.resize(num_int_pts);
 
     _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
     _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
