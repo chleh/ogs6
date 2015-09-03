@@ -22,27 +22,27 @@ struct AssemblyParams
 {
     Ads::Adsorption* _adsorption;
 
-    const double _fluid_specific_heat_source = 0.0;
-    const double _cpG = 1012.0; // specific isobaric fluid heat capacity
+    double _fluid_specific_heat_source = 0.0;
+    double _cpG = 1.0; // specific isobaric fluid heat capacity
 
-    const Eigen::MatrixXd _solid_perm_tensor = Eigen::MatrixXd::Identity(3, 3) * 1.e-7; // TODO get dimensions
-    const double _solid_specific_heat_source = 0.0;
-    const double _solid_heat_cond = 0.4;
-    const double _cpS = 880.0;    // specific isobaric solid heat capacity
+    Eigen::MatrixXd _solid_perm_tensor = Eigen::MatrixXd::Constant(3, 3, 0.0); // TODO get dimensions
+    double _solid_specific_heat_source = 0.0;
+    double _solid_heat_cond = 1.0;
+    double _cpS = 1.0;    // specific isobaric solid heat capacity
 
-    const double _tortuosity = 1.0;
-    const double _diffusion_coefficient_component = 9.65e-2; // ???
+    double _tortuosity = 1.0;
+    double _diffusion_coefficient_component = 1.0; // ???
 
-    const double _poro = 0.7;
+    double _poro = 0.5;
 
-    const double _rho_SR_dry = 1150.0;
+    double _rho_SR_dry = 1000.0;
 
     const double _M_inert = M_N2; // N2
     const double _M_react = M_H2O;
 
-    const double _initial_solid_density = 1382.36248218;
+    double _initial_solid_density = 1000.0;
 
-    double       _time_step = 0.5;
+    double       _time_step = 1.0;
     bool         _is_new_timestep = true;
 };
 

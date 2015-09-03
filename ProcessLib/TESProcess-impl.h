@@ -179,6 +179,42 @@ TESProcess(MeshLib::Mesh& mesh,
         }
     }
 
+    std::vector<std::pair<const std::string, double*> > params{
+        { "fluid_specific_heat_source",            &_assembly_params._fluid_specific_heat_source },
+        { "fluid_specific_isobaric_heat_capacity", &_assembly_params._cpG },
+        // {  "solid_hydraulic_permeability",          &_assembly_params._solid_perm_tensor },
+        { "solid_specific_heat_source",            &_assembly_params._solid_specific_heat_source },
+        { "solid_heat_conductivity",               &_assembly_params._solid_heat_cond },
+        { "sold_specific_isobaric_heat_capacity",  &_assembly_params._cpS },
+        { "tortuosity",                            &_assembly_params._tortuosity },
+        { "diffusion_coefficient",                 &_assembly_params._diffusion_coefficient_component },
+        { "porosity",                              &_assembly_params._poro },
+        { "solid_density_dry",                     &_assembly_params._rho_SR_dry },
+        { "solid_density_initial",                 &_assembly_params._initial_solid_density }
+    };
+
+    for (auto const& p : params)
+    {
+        auto const par = config.get_optional<double>(p.first);
+        if (par) {
+            DBUG("setting parameter `%s' to value `%g'", p.first.c_str(), *par);
+            *p.second = *par;
+        }
+    }
+
+    // permeability
+    {
+        auto const par = config.get_optional<double>("solid_hydraulic_permeability");
+        if (par)
+        {
+            DBUG("setting parameter `solid_hydraulic_permeability' to isotropic value `%g'", *par);
+            const auto dim = _mesh.getDimension();
+            _assembly_params._solid_perm_tensor
+                    = Eigen::MatrixXd::Identity(dim, dim) * (*par);
+        }
+    }
+
+
 #if 1
     // reactive system
     {
