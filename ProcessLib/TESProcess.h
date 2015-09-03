@@ -111,6 +111,7 @@ private:
 
     AssemblerLib::ComponentOrder _global_matrix_order =
             AssemblerLib::ComponentOrder::BY_COMPONENT;
+    bool _output_residuals = false;
 
 
     // primary variables

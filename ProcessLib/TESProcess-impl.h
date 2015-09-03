@@ -477,7 +477,7 @@ postTimestep(const std::string& file_name, const unsigned timestep)
             }
         }
 
-        if (true) {
+        if (_output_residuals) {
             DBUG("  process var %s residual", property_name.c_str());
             auto const& property_name_res = property_name + "_residual";
 
