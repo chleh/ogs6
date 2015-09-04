@@ -695,6 +695,7 @@ assembleIntegrationPoint(unsigned integration_point,
 
     // using auto for the type went terribly wrong!
     Eigen::MatrixXd const velocity = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx
+                                     / _rho_GR
                                      * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
     assert(velocity.cols() == 1 && velocity.rows() == D);
 
