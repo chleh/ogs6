@@ -176,6 +176,12 @@ TESProcess(MeshLib::Mesh& mesh,
                 DBUG("adding output variable `%s'", out_var.c_str());
                 _output_variables.insert(out_var);
             }
+
+            auto const& out_resid = config.get_optional<bool>("output.output_extrapolation_residuals");
+            if (out_resid)
+            {
+                _output_residuals = *out_resid;
+            }
         }
     }
 
