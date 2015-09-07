@@ -564,9 +564,22 @@ preEachAssembleIntegrationPoint(
     double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_vapour_mass_fraction };
     shapeFunctionInterpolate(localX, smN, NODAL_DOF, int_pt_val);
 
+    /*
+    if (_p <= 0.0) _p = std::numeric_limits<double>::epsilon();
+    if (_T <= 0.0) _T = std::numeric_limits<double>::epsilon();
+    if (_vapour_mass_fraction < 0.0) _vapour_mass_fraction = 0.0;
+    else if (_vapour_mass_fraction > 1.0) _vapour_mass_fraction = 1.0;
+    */
+
+    assert(_p > 0.0);
+    assert(_T > 0.0);
+    assert(0.0 <= _vapour_mass_fraction && _vapour_mass_fraction <= 1.0);
+
     // pre-compute certain properties
     _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
     _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
+
+    // if (_p_V <= 0.0) _p_V = std::numeric_limits<double>::epsilon();
 
     if (_AP->_is_new_timestep) {
         initNewTimestep(int_pt, localX);
