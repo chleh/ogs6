@@ -37,9 +37,11 @@ double DensityLegacy::characteristic_curve(const double A) const
 
 	double W = curve_polyfrac(c, A); //cm^3/g
 
+	/*
 	if (W < 0.0) {
 		W = 0.0; // TODO [CL] debug output
 	}
+	*/
 
 	return W/1.e3; //m^3/kg
 }

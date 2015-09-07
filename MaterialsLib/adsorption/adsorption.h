@@ -21,16 +21,18 @@ enum class SolidReactiveSystem
 	Z13XBF_Nunez,
 	Z13XBF_Cook,
 	Z13XBF_Dubinin,
-	Z13XBF_100MPa
+	Z13XBF_100MPa,
+	Inert
 };
 
 class Adsorption
 {
-// static members
 public:
+// static members
 	static Adsorption* newInstance(SolidReactiveSystem rsys);
 	static Adsorption* newInstance(std::string const& rsys);
 
+	// TODO [CL] move those four methods to water properties class
 	static double get_evaporation_enthalpy(const double Tads);
 	static double get_equilibrium_vapour_pressure(const double Tads);
 	static double get_specific_heat_capacity(const double Tads); // TODO [CL] why unused?
@@ -41,17 +43,19 @@ public:
 // virtual members:
 	virtual ~Adsorption() {}
 
+	virtual double get_enthalpy(const double T_Ads, const double p_Ads, const double M_Ads) const;
+	virtual double get_reaction_rate(const double p_Ads, const double T_ads,
+									 const double M_Ads, const double loading) const;
+
+protected:
 	virtual double get_adsorbate_density(const double Tads) const = 0;
 	virtual double get_alphaT(const double Tads) const = 0;
 	virtual double characteristic_curve(const double A) const = 0;
 
-// "normal" members
-	double get_enthalpy(const double T_Ads, const double p_Ads, const double M_Ads) const;
+private:
+// non-virtual members
 	double get_potential(const double T_Ads, const double p_Ads, const double M_Ads) const;
 	double get_entropy(const double Tads, const double A) const;
-
-	double get_reaction_rate(const double p_Ads, const double T_ads,
-							 const double M_Ads, const double loading);
 };
 
 

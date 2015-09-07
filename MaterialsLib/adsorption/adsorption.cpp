@@ -11,6 +11,7 @@
 #include "density_hauer.h"
 #include "density_mette.h"
 #include "density_nunez.h"
+#include "density_inert.h"
 
 
 namespace Ads
@@ -75,7 +76,7 @@ double Adsorption::get_molar_fraction(double xm, double M_this, double M_other)
 
 
 double Adsorption::get_reaction_rate(const double p_Ads, const double T_Ads,
-									 const double M_Ads, const double loading)
+									 const double M_Ads, const double loading) const
 {
 	const double k_rate = 6.0e-3; //to be specified
 	// const double k_rate = 3.0e-3; //to be specified
@@ -112,6 +113,13 @@ double Adsorption::get_loading(const double rho_curr, const double rho_dry)
 double Adsorption::get_entropy(const double Tads, const double A) const
 {
 	const double epsilon = 1.0e-8;
+
+	/* // This change will also change simulation results.
+	const double W_p = characteristic_curve(A+epsilon);
+	const double W_m = characteristic_curve(A-epsilon);
+	const double dAdlnW = 2.0*epsilon/(log(W_p/W_m));
+	*/
+
 	const double dAdlnW = 2.0*epsilon/(log(characteristic_curve(A+epsilon)) - log(characteristic_curve(A-epsilon)));
 	return dAdlnW * get_alphaT(Tads);
 }
@@ -147,6 +155,8 @@ stringToReactiveSystem(std::string const& name, SolidReactiveSystem& rsys_out)
 		rsys_out = SolidReactiveSystem::Z13XBF_Mette;
 	else if (name == "Z13XBF_Nunez")
 		rsys_out = SolidReactiveSystem::Z13XBF_Nunez;
+	else if (name == "Inert")
+		rsys_out = SolidReactiveSystem::Inert;
 	else return false;
 
 	return true;
@@ -185,9 +195,11 @@ Adsorption* Adsorption::newInstance(const SolidReactiveSystem rsys)
 		return new DensityMette();
 	case SolidReactiveSystem::Z13XBF_Nunez:
 		return new DensityNunez();
-	default:
-		return nullptr;
+	case SolidReactiveSystem::Inert:
+		return new DensityInert();
 	}
+
+	return nullptr;
 }
 
 } // namespace Ads
