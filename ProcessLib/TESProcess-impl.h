@@ -22,6 +22,8 @@
 #include "LocalLinearLeastSquaresExtrapolator.h"
 #include "GlobalLinearLeastSquaresExtrapolator.h"
 
+#include "MathLib/LinAlg/VectorNorms.h"
+
 #include "TESProcess.h"
 
 
@@ -38,6 +40,7 @@ find_variable(ConfigTree const& config,
 
     auto variable = std::find_if(variables.cbegin(), variables.cend(),
             [&name](ProcessLib::ProcessVariable const& v) {
+                    DBUG("proc var `%s'", v.getName().c_str());
                 return v.getName() == name;
             });
 
@@ -247,6 +250,25 @@ TESProcess(MeshLib::Mesh& mesh,
             std::abort();
         }
     }
+
+    // debug output
+    {
+        auto param = config.get_optional<bool>("output_element_matrices");
+        if (param)
+        {
+            DBUG("output_element_matrices: %s", (*param) ? "true" : "false");
+
+            _assembly_params._output_element_matrices = *param;
+        }
+
+        param = config.get_optional<bool>("output_iteration_results");
+        if (param)
+        {
+            DBUG("output_iteration_results: %s", (*param) ? "true" : "false");
+
+            _output_iteration_results = *param;
+        }
+    }
 }
 
 template<typename GlobalSetup>
@@ -320,6 +342,7 @@ createLocalAssemblers()
                     _global_setup,
                     _integration_order,
                     *_local_to_global_index_map,
+                    i, NODAL_DOF,
                     *_mesh_subset_all_nodes);
         }
     }
@@ -362,7 +385,8 @@ initialize()
     // for extrapolation of secondary variables
     _all_mesh_subsets_single_component.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
     _local_to_global_index_map_single_component.reset(
-                new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets_single_component));
+                new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets_single_component, _global_matrix_order)
+                );
 
     if (_mesh.getDimension()==1)
         createLocalAssemblers<1>();
@@ -380,13 +404,16 @@ initialize()
         _process_vars[i]->setIC(*_x, _local_to_global_index_map->getMeshComponentMap(), i);
     }
 
+    /*
     std::puts("------ initial values ----------");
     printGlobalVector(_x->getRawVector());
+    */
 
     _picard.reset(new MathLib::Nonlinear::Picard);
     _picard->setAbsTolerance(1e-1);
     _picard->setRelTolerance(1e-6);
     _picard->setMaxIterations(100);
+    _picard->printErrors(true);
 }
 
 template<typename GlobalSetup>
@@ -412,13 +439,15 @@ bool TESProcess<GlobalSetup>::solve(const double delta_t)
 template<typename GlobalSetup>
 void
 TESProcess<GlobalSetup>::
-postTimestep(const std::string& file_name, const unsigned timestep)
+postTimestep(const std::string& file_name, const unsigned /*timestep*/)
 // TODO [CL] remove second parameter
 {
-    INFO("postprocessing timestep %i", timestep);
+    INFO("postprocessing timestep");
 
+    /*
     std::puts("---- solution ----");
     printGlobalVector(_x->getRawVector());
+    */
 
     auto add_primary_var = [this](const unsigned vi)
     {
@@ -633,15 +662,53 @@ singlePicardIteration(typename GlobalSetup::VectorType& /*x_prev_iter*/,
 
     // Call global assembler for each Neumann boundary local assembler.
     for (auto bc : _neumann_bcs)
-        bc->integrate(_global_setup);
+        bc->integrate(_global_setup, &x_curr, _x_prev_ts.get());
 
     // Apply known values from the Dirichlet boundary conditions.
     MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
+    if (_first_iter)
+    {
+        _A->write("matrix_A.txt");
+        _rhs->write("vector_rhs.txt");
+        _first_iter = false;
+    }
+
+    // double residual = MathLib::norm((*_A) * x_curr - (*_rhs), MathLib::VecNormType::INFINITY_N);
+    MathLib::EigenVector res_vec;
+    _A->multiply(x_curr, res_vec);
+    res_vec -= *_rhs;
+    double residual = MathLib::norm(res_vec, MathLib::VecNormType::INFINITY_N);
+    DBUG("residual of old solution with new matrix: %g", residual);
+
+    // "preconditioner"
+    Eigen::VectorXd diag = _A->getRawMatrix().diagonal();
+
+    for (int i=0; i<diag.size(); ++i)
+    {
+        _A->getRawMatrix().row(i) /= diag[i];
+        _rhs->getRawVector()[i] /= diag[i];
+    }
+
+    // _A->getRawMatrix().rowwise() /= diag; //  = invDiag * _A->getRawMatrix();
+    // .cwiseQuotient(diag); //  = invDiag * _rhs->getRawVector();
+
+    _A->multiply(x_curr, res_vec);
+    res_vec -= *_rhs;
+    residual = MathLib::norm(res_vec, MathLib::VecNormType::INFINITY_N);
+    DBUG("residual of old solution with new matrix: %g", residual);
+
     typename GlobalSetup::LinearSolver linearSolver(*_A);
     linearSolver.solve(*_rhs, x_curr);
 
+    if (_output_iteration_results)
+    {
+        std::string fn = "tes_iter_" + std::to_string(_iteration) + ".vtu";
+        postTimestep(fn, 0);
+    }
+
     _assembly_params._is_new_timestep = false;
+    ++_iteration;
 }
 
 
