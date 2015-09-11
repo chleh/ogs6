@@ -250,9 +250,7 @@ void ProjectData::parseOutput(BaseLib::ConfigTreeNew const& output_config,
 	output_config.checkConfParam("type", "VTK");
 	DBUG("Parse output configuration:");
 
-	auto const file = output_config.getConfParam<std::string>("file");
-
-	_output_file_prefix = path + file;
+	_output.reset(ProcessLib::Output::newInstance(output_config, path));
 }
 
 void ProjectData::parseTimeStepping(BaseLib::ConfigTreeNew const& timestepping_config)
