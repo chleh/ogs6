@@ -44,6 +44,8 @@ struct AssemblyParams
 
     double       _time_step = 1.0;
     bool         _is_new_timestep = true;
+
+    bool _output_element_matrices = false;
 };
 
 

@@ -203,6 +203,7 @@ static double fluid_heat_conductivity_N2(double rho, double T)
 	const double eps = 138.08483e-23;
 	const double N_A = 6.02213E26;
 	const double R = 8.31434;
+	// const double R = GAS_CONST;
 	const double CCF = 4.173;             //mW/m/K
 
 	const double c1 = 0.3125;
@@ -420,38 +421,39 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 	const double lambda_S = _AP->_solid_heat_cond;
 
 	// TODO: k_rel
-	auto const L_pp = _AP->_solid_perm_tensor.block(0,0,dim,dim) * _rho_GR / eta_GR;
+	Eigen::MatrixXd L_pp = _AP->_solid_perm_tensor.block(0,0,dim,dim) * _rho_GR / eta_GR;
 
-	auto const L_pT = Eigen::MatrixXd::Zero(dim, dim);
-	auto const L_px = Eigen::MatrixXd::Zero(dim, dim);
+	Eigen::MatrixXd L_pT = Eigen::MatrixXd::Zero(dim, dim);
+	Eigen::MatrixXd L_px = Eigen::MatrixXd::Zero(dim, dim);
 
-	auto const L_Tp = Eigen::MatrixXd::Zero(dim, dim);
+	Eigen::MatrixXd L_Tp = Eigen::MatrixXd::Zero(dim, dim);
 
 	// TODO: add zeolite part
-	auto const L_TT = Eigen::MatrixXd::Identity(dim, dim)
+	Eigen::MatrixXd L_TT = Eigen::MatrixXd::Identity(dim, dim)
 					  * ( _AP->_poro * lambda_F + (1.0 - _AP->_poro) * lambda_S);
 
-	auto const L_Tx = Eigen::MatrixXd::Zero(dim, dim);
+	Eigen::MatrixXd L_Tx = Eigen::MatrixXd::Zero(dim, dim);
 
-	auto const L_xp = Eigen::MatrixXd::Zero(dim, dim);
-	auto const L_xT = Eigen::MatrixXd::Zero(dim, dim);
+	Eigen::MatrixXd L_xp = Eigen::MatrixXd::Zero(dim, dim);
+	Eigen::MatrixXd L_xT = Eigen::MatrixXd::Zero(dim, dim);
 
-	auto const L_xx = Eigen::MatrixXd::Identity(dim, dim)
-					  * _AP->_tortuosity * _AP->_poro * _rho_GR * _AP->_diffusion_coefficient_component;
+	Eigen::MatrixXd L_xx = Eigen::MatrixXd::Identity(dim, dim)
+						   * (_AP->_tortuosity * _AP->_poro * _rho_GR
+							  * _AP->_diffusion_coefficient_component);
 
 	Eigen::MatrixXd L(dim*3, dim*3);
 
-	L.block(0, 0, dim, dim) = L_pp;
-	L.block(0, 1, dim, dim) = L_pT;
-	L.block(0, 2, dim, dim) = L_px;
+	L.block(    0,     0, dim, dim) = L_pp;
+	L.block(    0,   dim, dim, dim) = L_pT;
+	L.block(    0, 2*dim, dim, dim) = L_px;
 
-	L.block(1, 0, dim, dim) = L_Tp;
-	L.block(1, 1, dim, dim) = L_TT;
-	L.block(1, 2, dim, dim) = L_Tx;
+	L.block(  dim,     0, dim, dim) = L_Tp;
+	L.block(  dim,   dim, dim, dim) = L_TT;
+	L.block(  dim, 2*dim, dim, dim) = L_Tx;
 
-	L.block(2, 0, dim, dim) = L_xp;
-	L.block(2, 1, dim, dim) = L_xT;
-	L.block(2, 2, dim, dim) = L_xx;
+	L.block(2*dim,     0, dim, dim) = L_xp;
+	L.block(2*dim,   dim, dim, dim) = L_xT;
+	L.block(2*dim, 2*dim, dim, dim) = L_xx;
 
 	return L;
 }
@@ -609,11 +611,11 @@ ogs5OutMat(const LADataNoTpl::MatRef& mat)
             switch (MATRIX_OUTPUT_FORMAT)
             {
             case MatOutType::OGS5:
-                std::printf(" %.12e", mat(r, c));
+                std::printf(" %.16e", mat(r, c));
                 break;
             case MatOutType::PYTHON:
                 if (c!=0) std::printf(",");
-                std::printf(" %19.12g", mat(r, c));
+                std::printf(" %23.16g", mat(r, c));
                 break;
             }
 
@@ -641,11 +643,11 @@ ogs5OutVec(const LADataNoTpl::VecRef& vec)
         {
         case MatOutType::OGS5:
             if (r!=0) std::printf("\n");
-            std::printf("| %.12e | ", vec[r]);
+            std::printf("| %.16e | ", vec[r]);
             break;
         case MatOutType::PYTHON:
             if (r!=0) std::printf(",\n");
-            std::printf("[ %19.12g ]", vec[r]);
+            std::printf("[ %23.16g ]", vec[r]);
             break;
         }
     }
@@ -707,29 +709,42 @@ assembleIntegrationPoint(unsigned integration_point,
     assert((unsigned) smDNdx.rows() == _velocity.size() && (unsigned) smDNdx.cols() == _velocity[0].size());
 
     // using auto for the type went terribly wrong!
-    Eigen::MatrixXd const velocity = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx
-                                     / _rho_GR
-                                     * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
-    assert(velocity.cols() == 1 && velocity.rows() == D);
+    // calculating grad_p not separately also went wrong!
+    Eigen::VectorXd const grad_p = smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
+    assert(grad_p.size() == D);
+    Eigen::VectorXd const velocity = - laplaceCoeffMat.block(0, 0, D, D) * grad_p
+                                     / _rho_GR;
+    assert(velocity.size() == D);
 
     for (unsigned d=0; d<D; ++d)
     {
-        _velocity[d][integration_point] = velocity(d, 1);
+        _velocity[d][integration_point] = velocity[d];
     }
 
+    Eigen::VectorXd const detJ_w_N = smDetJ * weight * smN;
+    Eigen::MatrixXd const detJ_w_N_NT = detJ_w_N * smN.transpose();
+    assert(detJ_w_N_NT.rows() == N && detJ_w_N_NT.cols() == N);
 
-    // using auto for the type went terribly wrong!
-    // Eigen::MatrixXd const velocity = - laplaceCoeffMat.block(0, 0, D, D) * smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
-    // assert(velocity.cols() == 1 && velocity.rows() == D);
+    Eigen::MatrixXd const vT_dNdx = velocity.transpose() * smDNdx;
+    assert(vT_dNdx.cols() == N && vT_dNdx.rows() == 1);
+    Eigen::MatrixXd const detJ_w_N_vT_dNdx = detJ_w_N * vT_dNdx;
+    assert(detJ_w_N_vT_dNdx.rows() == N && detJ_w_N_vT_dNdx.cols() == N);
 
     for (unsigned r=0; r<NODAL_DOF; ++r)
     {
         for (unsigned c=0; c<NODAL_DOF; ++c)
         {
-            _Lap->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smDNdx.transpose() * laplaceCoeffMat.block(D*r, D*c, D, D) * smDNdx;
-            _Mas->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * massCoeffMat(r, c) * smN.transpose();
-            _Adv->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * advCoeffMat(r, c) * velocity.transpose() * smDNdx;
-            _Cnt->block(N*r, N*c, N, N).noalias() += smDetJ * weight * smN * contentCoeffMat(r, c) * smN.transpose();
+            Eigen::MatrixXd tmp = smDetJ * weight * smDNdx.transpose();
+            assert(tmp.cols() == D && tmp.rows() == N);
+            tmp *= laplaceCoeffMat.block(D*r, D*c, D, D);
+            assert(tmp.cols() == D && tmp.rows() == N);
+            tmp *= smDNdx;
+            assert(tmp.cols() == N && tmp.rows() == N);
+
+            _Lap->block(N*r, N*c, N, N).noalias() += tmp;
+            _Mas->block(N*r, N*c, N, N).noalias() += detJ_w_N_NT      * massCoeffMat(r, c);
+            _Adv->block(N*r, N*c, N, N).noalias() += detJ_w_N_vT_dNdx * advCoeffMat(r, c);
+            _Cnt->block(N*r, N*c, N, N).noalias() += detJ_w_N_NT      * contentCoeffMat(r, c);
         }
     }
 
@@ -788,32 +803,45 @@ LADataNoTpl::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs
     localRhs->noalias() += *_rhs
                            + *_Mas * oldX/_AP->_time_step;
 
-#if 0
-    std::puts("### Element: ?");
-    std::printf("Stiffness: \n");
-    ogs5OutMat(*localA);
-    std::printf("\n");
+    if (_AP->_output_element_matrices)
+    {
+        std::puts("### Element: ?");
 
-    std::printf("\n---Mass matrix: \n");
-    ogs5OutMat(*_Mas);
-    std::printf("\n");
+        std::puts("---Velocity of water");
+        for (auto const& vs : _velocity)
+        {
+            std::printf("| ");
+            for (auto v : vs)
+            {
+                std::printf("%23.16e ", v);
+            }
+            std::printf("|\n");
+        }
 
-    std::printf("---Laplacian matrix: \n");
-    ogs5OutMat(*_Lap);
-    std::printf("\n");
+        std::printf("\nStiffness: \n");
+        ogs5OutMat(*localA);
+        std::printf("\n");
 
-    std::printf("---Advective matrix: \n");
-    ogs5OutMat(*_Adv);
-    std::printf("\n");
+        std::printf("\n---Mass matrix: \n");
+        ogs5OutMat(*_Mas);
+        std::printf("\n");
 
-    std::printf("---Content: \n");
-    ogs5OutMat(*_Cnt);
-    std::printf("\n");
+        std::printf("---Laplacian matrix: \n");
+        ogs5OutMat(*_Lap);
+        std::printf("\n");
 
-    std::printf("---RHS: \n");
-    ogs5OutVec(*localRhs);
-    std::printf("\n");
-#endif
+        std::printf("---Advective matrix: \n");
+        ogs5OutMat(*_Adv);
+        std::printf("\n");
+
+        std::printf("---Content: \n");
+        ogs5OutMat(*_Cnt);
+        std::printf("\n");
+
+        std::printf("---RHS: \n");
+        ogs5OutVec(*localRhs);
+        std::printf("\n");
+    }
 }
 
 } // namespace TES
