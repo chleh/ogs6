@@ -81,7 +81,8 @@ GLLSQ_solveLinearLeastSquares(Matrix const& mat, RHS const& rhs, Unknowns& unkno
     {
     case ProcessLib::LinearLeastSquaresBy::NormalEquation:
     {
-        DBUG("solving normal equation...");
+        ERR("solving normal equation... not yet implemented");
+        // DBUG("solving normal equation...");
         // unknowns = (mat.transpose() * mat).ldlt().solve(mat.transpose() * rhs);
         break;
     }

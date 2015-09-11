@@ -47,7 +47,7 @@ LLLSQ_extrapolateElement(
     {
     case LinearLeastSquaresBy::NormalEquation:
     {
-        DBUG("solving normal equation...");
+        // DBUG("solving normal equation...");
         Eigen::VectorXd elem_nodal_vals = (N.transpose() * N).ldlt().solve(N.transpose() * gpvs);
         nodal_vals.add(indices, elem_nodal_vals);
         counts.add(indices, 1.0);
