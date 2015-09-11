@@ -10,6 +10,9 @@
  *
  */
 
+#ifndef NDEBUG
+#include <fenv.h>
+#endif
 
 // ThirdParty/tclap
 #include "tclap/CmdLine.h"
@@ -29,6 +32,10 @@
 
 int main(int argc, char *argv[])
 {
+#ifndef NDEBUG
+	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
+#endif
+
 	// Parse CLI arguments.
 	TCLAP::CmdLine cmd("OpenGeoSys-6 software.\n"
 			"Copyright (c) 2012-2016, OpenGeoSys Community "
