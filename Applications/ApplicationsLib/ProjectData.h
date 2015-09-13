@@ -141,10 +141,10 @@ public:
 		return _processes.end();
 	}
 
-	std::string const&
-	getOutputFilePrefix() const
+	ProcessLib::Output const&
+	getOutputControl() const
 	{
-		return _output_file_prefix;
+		return *_output;
 	}
 
 	NumLib::ITimeStepAlgorithm const& getTimeStepper() const
