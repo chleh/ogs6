@@ -2,7 +2,7 @@
 
 #include "Eigen/SparseQR"
 
-#include "Util.h"
+#include "NumLib/Function/Interpolation.h"
 
 #include "GlobalLinearLeastSquaresExtrapolator.h"
 
@@ -58,13 +58,13 @@ GLLSQ_calculateResiudalElement(LocalAssembler const* loc_asm, VariableEnum var,
 
     double residual = 0.0;
     double gp_val_extrapol = 0.0;
-    double* gp_val_extrapol2[1] = { &gp_val_extrapol };
+    std::array<double*, 1> gp_val_extrapol2 = { &gp_val_extrapol };
 
     for (unsigned gp=0; gp<ni; ++gp)
     {
-        ProcessLib::shapeFunctionInterpolate(
+        NumLib::shapeFunctionInterpolate(
                     nodal_vals_element, loc_asm->getShapeMatrix(gp),
-                    1, gp_val_extrapol2);
+                    gp_val_extrapol2);
         auto const& ax_m_b = gp_val_extrapol - gp_vals[gp];
         residual += ax_m_b * ax_m_b;
     }
