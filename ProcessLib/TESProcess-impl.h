@@ -19,8 +19,8 @@
 
 #include "NumLib/TimeStepping/Algorithms/FixedTimeStepping.h"
 
-#include "LocalLinearLeastSquaresExtrapolator.h"
-#include "GlobalLinearLeastSquaresExtrapolator.h"
+#include "NumLib/Extrapolation/LocalLinearLeastSquaresExtrapolator.h"
+#include "NumLib/Extrapolation/GlobalLinearLeastSquaresExtrapolator.h"
 
 #include "MathLib/LinAlg/VectorNorms.h"
 
@@ -401,7 +401,7 @@ initialize()
     // set initial values
     for (unsigned i=0; i<NODAL_DOF; ++i)
     {
-        _process_vars[i]->setIC(*_x, _local_to_global_index_map->getMeshComponentMap(), i);
+        setInitialConditions(*_process_vars[i], i);
     }
 
     /*
@@ -414,6 +414,23 @@ initialize()
     _picard->setRelTolerance(1e-6);
     _picard->setMaxIterations(100);
     _picard->printErrors(true);
+}
+
+template<typename GlobalSetup>
+void TESProcess<GlobalSetup>::
+setInitialConditions(ProcessVariable const& variable, std::size_t component_id)
+{
+    std::size_t const n = _mesh.getNNodes();
+    for (std::size_t i = 0; i < n; ++i)
+    {
+        MeshLib::Location const l(_mesh.getID(),
+                                  MeshLib::MeshItemType::Node, i);
+        std::size_t const global_index =
+            _local_to_global_index_map->getGlobalIndex(
+                l, component_id);
+        _x->set(global_index,
+               variable.getInitialConditionValue(*_mesh.getNode(i)));
+    }
 }
 
 template<typename GlobalSetup>

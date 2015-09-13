@@ -16,9 +16,9 @@
 
 #include "logog/include/logog.hpp"
 
-#include "Util.h"
-
 #include "TESFEM-notpl.h"
+
+#include "NumLib/Function/Interpolation.h"
 
 
 const double GAS_CONST = 8.3144621;
@@ -563,8 +563,9 @@ preEachAssembleIntegrationPoint(
         const std::vector<double> &localX,
         const VecRef &smN, const MatRef& /*smDNdx*/)
 {
-    double* int_pt_val[NODAL_DOF] = { &_p, &_T, &_vapour_mass_fraction };
-    shapeFunctionInterpolate(localX, smN, NODAL_DOF, int_pt_val);
+    std::array<double*, NODAL_DOF> int_pt_val = { &_p, &_T, &_vapour_mass_fraction };
+
+    NumLib::shapeFunctionInterpolate(localX, smN, int_pt_val);
 
     /*
     if (_p <= 0.0) _p = std::numeric_limits<double>::epsilon();

@@ -86,6 +86,8 @@ public:
     void post(std::string const& file_name) override;
     void postTimestep(std::string const& file_name, const unsigned timestep) override;
 
+    void setInitialConditions(ProcessVariable const& variable, std::size_t component_id);
+
     ~TESProcess();
 
 private:

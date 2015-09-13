@@ -81,8 +81,7 @@ LocalAssemblerData<ShapeFunction_,
     GlobalVector,
     GlobalDim>::
 assemble(std::vector<double> const& localX,
-         std::vector<double> const& localXPrevTs,
-         std::vector<double> const& /*localSecondaryVariables*/)
+         std::vector<double> const& localXPrevTs)
 {
 
     _localA.setZero();
