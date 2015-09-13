@@ -30,19 +30,44 @@ void solveProcesses(ProjectData &project)
 {
 	INFO("Solve processes.");
 
-	std::string const out_pref = project.getOutputFilePrefix();
-
 	auto &time_stepper = project.getTimeStepper();
+	auto &output_control = project.getOutputControl();
 
-	while (time_stepper.next())  // skips zeroth timestep, but OK since end of
-	                             // first timestep is after first delta t
+	std::string const out_pref = output_control.getFilePrefix();
+
+	auto do_output = [out_pref](unsigned pcs, ProcessLib::Process* p, unsigned ts)
 	{
+		std::string const output_file_name =
+				out_pref + "_pcs_" + std::to_string(pcs)
+				+ "_ts_" + std::to_string(ts)
+				+ ".vtu";
+		DBUG("output to %s", output_file_name.c_str());
+		// auto const& p = _processes[pcs];
+		p->postTimestep(output_file_name, ts);
+	};
+
+	{
+		unsigned i = 0;  // process counter, used to distinguish output files
+		for (auto p = project.processesBegin(); p != project.processesEnd();
+			 ++p)
+		{
+			do_output(i, *p, 0);
+		}
+	}
+
+	bool output_timestep = false;
+
+	while (time_stepper.next()) // skips zeroth timestep, but OK since end of first timestep is after first delta t
+	{
+
 		const auto dt = time_stepper.getTimeStep().dt();
 		const auto current_time = time_stepper.getTimeStep().current();
 		const auto timestep = time_stepper.getTimeStep().steps();
 
+		output_timestep = output_control.doOutput(timestep);
+
 		INFO("=================== timestep %i === %g s ===================",
-		     timestep, current_time);
+			 timestep, current_time);
 
 		bool accepted = true;
 
@@ -52,23 +77,36 @@ void solveProcesses(ProjectData &project)
 		{
 			accepted = accepted && (*p)->solve(dt);
 
-			if (!accepted)
-			{
+			if (!accepted) {
 				ERR("Timestep has not been accepted. Aborting.");
 				break;
 			}
 
-			std::string const output_file_name =
-			    out_pref + "_pcs_" + std::to_string(i) + "_ts_" +
-			    std::to_string(timestep) + ".vtu";
-			(*p)->postTimestep(output_file_name, timestep);
+			if (output_timestep)
+			{
+				do_output(i, *p, timestep);
+			}
 
 			++i;
 		}
 
-		if (!accepted)
-			break;
+		if (!accepted) break;
 	}
+
+	// output result of last timestep if not done automatically
+	if (!output_timestep)
+	{
+		const auto timestep = time_stepper.getTimeStep().steps();
+
+		unsigned i = 0;  // process counter, used to distinguish output files
+		for (auto p = project.processesBegin(); p != project.processesEnd();
+			 ++p)
+		{
+			do_output(i, *p, timestep);
+		}
+	}
+
+
 }
 
 int main(int argc, char *argv[])
@@ -129,8 +167,6 @@ int main(int argc, char *argv[])
 	{
 		(*p_it)->initialize();
 	}
-
-	std::string const output_file_name(project->getOutputFilePrefix() + ".vtu");
 
 	solveProcesses(*project);
 
