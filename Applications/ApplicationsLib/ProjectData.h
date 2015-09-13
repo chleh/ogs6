@@ -25,6 +25,7 @@
 #include "ProcessLib/Process.h"
 #include "ProcessLib/Parameter.h"
 #include "ProcessLib/GroundwaterFlowProcess-fwd.h"
+#include "ProcessLib/TESProcess-fwd.h"
 
 namespace MeshLib {
 	class Mesh;
