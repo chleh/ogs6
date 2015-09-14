@@ -124,3 +124,5 @@ foreach(mesh_size 1e1)
 		DATA line_${mesh_size}_neumann.prj line_1_line_${mesh_size}.vtu line_1.gml
 	)
 endforeach()
+
+include(Tests_CL.cmake)
