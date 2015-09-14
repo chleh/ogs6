@@ -166,3 +166,5 @@ else()
 			cube_1e3_neumann_pcs_0_ts_1_2.vtu
 	)
 endif()
+
+include(Tests_CL.cmake)
