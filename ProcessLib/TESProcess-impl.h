@@ -268,6 +268,14 @@ TESProcess(MeshLib::Mesh& mesh,
 
             _output_iteration_results = *param;
         }
+
+        param = config.get_optional<bool>("output_global_matrix");
+        if (param)
+        {
+            DBUG("output_global_matrix: %s", (*param) ? "true" : "false");
+
+            _output_global_matrix = *param;
+        }
     }
 }
 
@@ -684,10 +692,12 @@ singlePicardIteration(typename GlobalSetup::VectorType& /*x_prev_iter*/,
     // Apply known values from the Dirichlet boundary conditions.
     MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
-    if (_first_iter)
+    if (_first_iter && _output_global_matrix)
     {
-        _A->write("matrix_A.txt");
-        _rhs->write("vector_rhs.txt");
+        // TODO [CL] Those files will be written to the working directory.
+        //           Relative path needed.
+        _A->write("global_matrix.txt");
+        _rhs->write("global_rhs.txt");
         _first_iter = false;
     }
 
