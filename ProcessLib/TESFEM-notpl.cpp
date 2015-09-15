@@ -543,16 +543,31 @@ getRHSCoeffVector(const unsigned int_pt)
 void LADataNoTpl::
 initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
 {
+    // This implementation only works if it is called only once per timestep,
+    // not once per iteration!
+
     const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _AP->_rho_SR_dry);
 
-    const double k = 6.0e-3;
-    auto const dCdt0 = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading);
-    auto const dCdt  = dCdt0 * exp(-k*_AP->_time_step);
-    auto const C_eq  = dCdt0 / k + loading;
-    auto const C_next = C_eq - dCdt / k;
+    auto const dCdt = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading);
 
-    _reaction_rate[int_pt] = dCdt * _AP->_rho_SR_dry;
-    _solid_density[int_pt] = _AP->_rho_SR_dry * (1.0 + C_next);
+    auto              qR = dCdt * _AP->_rho_SR_dry;
+    auto const delta_rho = qR * _AP->_time_step;          // solid density change in this timestep
+    auto const     rho_V = M_H2O * _p_V / GAS_CONST / _T; // vapour density
+
+    const double rate_factor = 20.0;
+
+    if (delta_rho > rate_factor * rho_V) {
+        // all vapour will be sucked up in this time step
+        // => limit reaction rate
+        // DBUG("limiting reaction rate %g --> %g", qR, qR * rho_V / delta_rho);
+        qR *= rate_factor * rho_V / delta_rho;
+    }
+
+    // dCdt = qR / _AP->_rho_SR_dry;
+
+    _reaction_rate[int_pt] = qR;
+    _solid_density[int_pt] += qR * _AP->_time_step;
+    // _solid_density[int_pt] = _AP->_rho_SR_dry * (1.0 + C_next);
 }
 
 
@@ -567,12 +582,13 @@ preEachAssembleIntegrationPoint(
 
     NumLib::shapeFunctionInterpolate(localX, smN, int_pt_val);
 
-    /*
-    if (_p <= 0.0) _p = std::numeric_limits<double>::epsilon();
-    if (_T <= 0.0) _T = std::numeric_limits<double>::epsilon();
-    if (_vapour_mass_fraction < 0.0) _vapour_mass_fraction = 0.0;
-    else if (_vapour_mass_fraction > 1.0) _vapour_mass_fraction = 1.0;
-    */
+    //*
+    if (_p < 1.0) _p = 1.0;
+    if (_T < 274.0) _T = 274.0;
+    else if (_T > 600.0) _T = 600.0;
+    if (_vapour_mass_fraction < 1e-6) _vapour_mass_fraction = 1e-6;
+    else if (_vapour_mass_fraction > 1.0 - 1e-6) _vapour_mass_fraction = 1.0 - 1e-6;
+    //*/
 
     assert(_p > 0.0);
     assert(_T > 0.0);
