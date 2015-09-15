@@ -24,6 +24,18 @@ AddTest(
 )
 
 
+# inhomogeneous initial temperature distribution, relaxation to equilibrium
+AddTest(
+	NAME TESProcess-1D-1-100elem-inhom-IC
+	PATH Parabolic/TES_1D
+	EXECUTABLE_ARGS line_1-100elem-inhom-IC.prj
+	WRAPPER ../../../../../ogs6-data-mine/ogs-wrapper.sh
+	# TESTER vtkdiff
+	# DIFF_DATA line_0.1_dirichlet_pcs_0_ts_1.vtu D1_left_bottom_N1_right Result
+	DATA dummy
+)
+
+
 # This test checks that
 # * Neumann BCs are put to the right component
 AddTest(
