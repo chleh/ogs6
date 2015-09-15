@@ -84,7 +84,8 @@ double Adsorption::get_reaction_rate(const double p_Ads, const double T_Ads,
 	// const double k_rate = 3.0e-3; //to be specified
 
 	const double A = get_potential(T_Ads, p_Ads, M_Ads);
-	const double C_eq = get_adsorbate_density(T_Ads) * characteristic_curve(A);
+	double C_eq = get_adsorbate_density(T_Ads) * characteristic_curve(A);
+	if (C_eq < 0.0) C_eq = 0.0;
 
 	// return 0.0; // TODO [CL] for testing only
 
@@ -138,13 +139,19 @@ double Adsorption::get_entropy(const double Tads, const double A) const
 {
 	const double epsilon = 1.0e-8;
 
-	/* // This change will also change simulation results.
+	//* // This change will also change simulation results.
 	const double W_p = characteristic_curve(A+epsilon);
 	const double W_m = characteristic_curve(A-epsilon);
 	const double dAdlnW = 2.0*epsilon/(log(W_p/W_m));
-	*/
+	// */
 
-	const double dAdlnW = 2.0*epsilon/(log(characteristic_curve(A+epsilon)) - log(characteristic_curve(A-epsilon)));
+	if (W_p <= 0.0 || W_m <= 0.0)
+	{
+		ERR("characteristic curve in negative region (W-, W+): %g, %g", W_m, W_p);
+		return 0.0;
+	}
+
+	// const double dAdlnW = 2.0*epsilon/(log(characteristic_curve(A+epsilon)) - log(characteristic_curve(A-epsilon)));
 	return dAdlnW * get_alphaT(Tads);
 }
 
