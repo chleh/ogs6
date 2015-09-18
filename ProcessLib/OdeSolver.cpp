@@ -28,7 +28,9 @@ public:
 
     void setIC(const double t0, double const*const y0);
 
-    void solve(Function f, const double t );
+    void solve(Function f, const double t);
+
+    double const* getSolution() const { return NV_DATA_S(_y); }
 
     ~CVodeSolverImpl();
 
@@ -165,9 +167,13 @@ void CVodeSolverInternal::solve(Function f, const double t)
 	_impl->solve(f, t);
 }
 
+double const* CVodeSolverInternal::getSolution() const
+{
+	return _impl->getSolution();
+}
+
 CVodeSolverInternal::~CVodeSolverInternal()
 {
-    DBUG("CVodeSolverInternal releasing memory");
     delete _impl;
 }
 

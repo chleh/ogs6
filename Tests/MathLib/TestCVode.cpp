@@ -13,6 +13,8 @@
 #include "MaterialsLib/adsorption/adsorption.h"
 #include "ProcessLib/OdeSolver.h"
 
+#include <cstdio>
+
 using namespace ProcessLib::Ode;
 using namespace Ads;
 
@@ -46,14 +48,17 @@ TEST(MathLibCVodeTest, ZeoliteAdsorption)
 
     ads = Adsorption::newInstance(SolidReactiveSystem::Z13XBF_Hauer);
 
-    CVodeSolver ode_solver;
+    ConcreteOdeSolver<2, CVodeSolverInternal> ode_solver;
 
-    ode_solver.init(NEQ);
+    ode_solver.init();
     ode_solver.setTolerance(1e-8, 1e-6);
 
-    double const ic[] = { pV, C };
-    ode_solver.setIC(0.0, ic);
+    // double const ic[] = { pV, C };
+    ode_solver.setIC(0.0, { pV, C });
 
     ode_solver.solve(f, 0.00001);
 
+    double const* y = ode_solver.getSolution();
+
+    std::printf("pV: %g, C: %g\n", y[0], y[1]);
 }
