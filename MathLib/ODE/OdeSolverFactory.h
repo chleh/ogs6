@@ -43,6 +43,10 @@ public:
     double const* getSolution() const override {
         return Implementation::getSolution();
     }
+
+    double getTime() const override {
+        return Implementation::getTime();
+    }
 };
 
 

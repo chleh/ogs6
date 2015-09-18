@@ -29,6 +29,7 @@ public:
     virtual unsigned getNumEquations() const { return NumEquations; }
 
     virtual double const* getSolution() const = 0;
+    virtual double getTime() const = 0;
 
     virtual ~OdeSolver() = default;
 };

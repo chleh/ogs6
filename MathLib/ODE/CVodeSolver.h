@@ -25,9 +25,10 @@ protected:
 
     void setIC(const double t0, double const*const y0);
 
-    void solve(Function f, const double t);
+    void solve(Function f, const double t_end);
 
     double const* getSolution() const;
+    double getTime() const;
 
     ~CVodeSolverInternal();
 private:

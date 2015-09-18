@@ -25,9 +25,10 @@ public:
 
     void setIC(const double t0, double const*const y0);
 
-    void solve(Function f, const double t);
+    void solve(Function f, const double t_end);
 
     double const* getSolution() const { return NV_DATA_S(_y); }
+    double getTime() const { return _t; }
 
     ~CVodeSolverImpl();
 
@@ -86,7 +87,7 @@ void CVodeSolverImpl::setIC(const double t0, double const*const y0)
     _t = t0;
 }
 
-void CVodeSolverImpl::solve(Function f, const double t)
+void CVodeSolverImpl::solve(Function f, const double t_end)
 {
 	auto f_wrapped
 			= [](const realtype t, const N_Vector y, N_Vector ydot, void* f)
@@ -110,8 +111,9 @@ void CVodeSolverImpl::solve(Function f, const double t)
 	flag = CVDense(_cvode_mem, _num_equations);
 	// if (check_flag(&flag, "CVDense", 1)) return(1);
 
-	realtype t_end;
-	flag = CVode(_cvode_mem, t, _y, &t_end, CV_NORMAL);
+	realtype t_reached;
+	flag = CVode(_cvode_mem, t_end, _y, &t_reached, CV_NORMAL);
+	_t = t_reached;
 	// std::cout << "result at time " << t << " is " << NV_Ith_S(y,0) << std::endl;
 	if (flag != CV_SUCCESS) {
 		// std::cerr << "ERROR at " << __FUNCTION__ << ":" << __LINE__ << std::endl;
@@ -159,14 +161,19 @@ void CVodeSolverInternal::setIC(const double t0, double const*const y0)
     _impl->setIC(t0, y0);
 }
 
-void CVodeSolverInternal::solve(Function f, const double t)
+void CVodeSolverInternal::solve(Function f, const double t_end)
 {
-	_impl->solve(f, t);
+	_impl->solve(f, t_end);
 }
 
 double const* CVodeSolverInternal::getSolution() const
 {
 	return _impl->getSolution();
+}
+
+double CVodeSolverInternal::getTime() const
+{
+	return _impl->getTime();
 }
 
 CVodeSolverInternal::~CVodeSolverInternal()
