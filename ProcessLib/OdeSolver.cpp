@@ -9,6 +9,8 @@ extern "C"
 #include <sundials/sundials_types.h> /* definition of type realtype */
 }
 
+#include "logog/include/logog.hpp"
+
 namespace ProcessLib
 {
 
@@ -134,37 +136,38 @@ CVodeSolverImpl::~CVodeSolverImpl()
 
 
 
-CVodeSolver::CVodeSolver()
+CVodeSolverInternal::CVodeSolverInternal()
     : _impl(new CVodeSolverImpl)
 {}
 
-void CVodeSolver::init(const unsigned num_equations)
+void CVodeSolverInternal::init(const unsigned num_equations)
 {
     _impl->init(num_equations);
 }
 
-void CVodeSolver::setTolerance(const double *abstol, const double reltol)
+void CVodeSolverInternal::setTolerance(const double *abstol, const double reltol)
 {
     _impl->setTolerance(abstol, reltol);
 }
 
-void CVodeSolver::setTolerance(const double abstol, const double reltol)
+void CVodeSolverInternal::setTolerance(const double abstol, const double reltol)
 {
     _impl->setTolerance(abstol, reltol);
 }
 
-void CVodeSolver::setIC(const double t0, double const*const y0)
+void CVodeSolverInternal::setIC(const double t0, double const*const y0)
 {
     _impl->setIC(t0, y0);
 }
 
-void CVodeSolver::solve(Function f, const double t)
+void CVodeSolverInternal::solve(Function f, const double t)
 {
 	_impl->solve(f, t);
 }
 
-CVodeSolver::~CVodeSolver()
+CVodeSolverInternal::~CVodeSolverInternal()
 {
+    DBUG("CVodeSolverInternal releasing memory");
     delete _impl;
 }
 
