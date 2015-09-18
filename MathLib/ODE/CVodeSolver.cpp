@@ -1,5 +1,3 @@
-#include "OdeSolver.h"
-
 extern "C"
 {
 #include <cvode/cvode.h>             /* prototypes for CVODE fcts., consts. */
@@ -11,10 +9,10 @@ extern "C"
 
 #include "logog/include/logog.hpp"
 
-namespace ProcessLib
-{
+#include "OdeSolver.h"
+#include "CVodeSolver.h"
 
-namespace Ode
+namespace MathLib
 {
 
 class CVodeSolverImpl
@@ -177,6 +175,5 @@ CVodeSolverInternal::~CVodeSolverInternal()
     delete _impl;
 }
 
-}
+} // namespace MathLib
 
-}
