@@ -15,7 +15,37 @@ namespace ProcessLib
 namespace Ode
 {
 
-void CVodeSolver::init(const unsigned num_equations)
+class CVodeSolverImpl
+{
+public:
+    CVodeSolverImpl() = default;
+    void init(const unsigned num_equations);
+
+    void setTolerance(const double* abstol, const double reltol);
+    void setTolerance(const double abstol, const double reltol);
+
+    void setIC(const double t0, double const*const y0);
+
+    void solve(Function f, const double t );
+
+    ~CVodeSolverImpl();
+
+private:
+    N_Vector _y = nullptr;
+    N_Vector _ydot = nullptr;
+
+    realtype _t;
+
+    N_Vector _abstol = nullptr;
+    realtype _reltol;
+
+    unsigned _num_equations;
+    void*    _cvode_mem;
+
+};
+
+
+void CVodeSolverImpl::init(const unsigned num_equations)
 {
     _y      = N_VNew_Serial(num_equations);
     _ydot   = N_VNew_Serial(num_equations);
@@ -25,7 +55,7 @@ void CVodeSolver::init(const unsigned num_equations)
     _cvode_mem = CVodeCreate(CV_ADAMS, CV_FUNCTIONAL);
 }
 
-void CVodeSolver::setTolerance(const double *abstol, const double reltol)
+void CVodeSolverImpl::setTolerance(const double *abstol, const double reltol)
 {
     for (unsigned i=0; i<_num_equations; ++i)
     {
@@ -35,7 +65,7 @@ void CVodeSolver::setTolerance(const double *abstol, const double reltol)
     _reltol = reltol;
 }
 
-void CVodeSolver::setTolerance(const double abstol, const double reltol)
+void CVodeSolverImpl::setTolerance(const double abstol, const double reltol)
 {
     for (unsigned i=0; i<_num_equations; ++i)
     {
@@ -45,7 +75,7 @@ void CVodeSolver::setTolerance(const double abstol, const double reltol)
     _reltol = reltol;
 }
 
-void CVodeSolver::setIC(const double t0, double const*const y0)
+void CVodeSolverImpl::setIC(const double t0, double const*const y0)
 {
     for (unsigned i=0; i<_num_equations; ++i)
     {
@@ -55,7 +85,7 @@ void CVodeSolver::setIC(const double t0, double const*const y0)
     _t = t0;
 }
 
-void CVodeSolver::solve(Function f, const double t)
+void CVodeSolverImpl::solve(Function f, const double t)
 {
 	auto f_wrapped
 			= [](const realtype t, const N_Vector y, N_Vector ydot, void* f)
@@ -87,7 +117,7 @@ void CVodeSolver::solve(Function f, const double t)
 	}
 }
 
-CVodeSolver::~CVodeSolver()
+CVodeSolverImpl::~CVodeSolverImpl()
 {
     if (_y) {
         N_VDestroy_Serial(_y);
@@ -99,6 +129,43 @@ CVodeSolver::~CVodeSolver()
     {
         CVodeFree(&_cvode_mem);
     }
+}
+
+
+
+
+CVodeSolver::CVodeSolver()
+    : _impl(new CVodeSolverImpl)
+{}
+
+void CVodeSolver::init(const unsigned num_equations)
+{
+    _impl->init(num_equations);
+}
+
+void CVodeSolver::setTolerance(const double *abstol, const double reltol)
+{
+    _impl->setTolerance(abstol, reltol);
+}
+
+void CVodeSolver::setTolerance(const double abstol, const double reltol)
+{
+    _impl->setTolerance(abstol, reltol);
+}
+
+void CVodeSolver::setIC(const double t0, double const*const y0)
+{
+    _impl->setIC(t0, y0);
+}
+
+void CVodeSolver::solve(Function f, const double t)
+{
+	_impl->solve(f, t);
+}
+
+CVodeSolver::~CVodeSolver()
+{
+    delete _impl;
 }
 
 }
