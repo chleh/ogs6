@@ -9,7 +9,6 @@ extern "C"
 
 #include "logog/include/logog.hpp"
 
-#include "OdeSolver.h"
 #include "CVodeSolver.h"
 
 namespace MathLib

@@ -1,6 +1,7 @@
-#pragma once
+#ifndef MATHLIB_CVODESOLVER_H
+#define MATHLIB_CVODESOLVER_H
 
-#include "OdeSolver.h"
+#include "declarations.h"
 
 namespace MathLib
 {
@@ -34,3 +35,5 @@ private:
 };
 
 } // namespace MathLib
+
+#endif // MATHLIB_CVODESOLVER_H
