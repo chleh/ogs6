@@ -22,11 +22,12 @@ public:
     virtual void setTolerance(const Arr& abstol, const double reltol) = 0;
     virtual void setTolerance(const double abstol, const double reltol) = 0;
 
-    virtual void setIC(const double t0, const Arr& y0) = 0;
-
     virtual void setFunction(Function f, JacobianFunction df) = 0;
 
-    virtual void solve(const double t ) = 0;
+    virtual void setIC(const double t0, const Arr& y0) = 0;
+
+    virtual void preSolve() = 0;
+    virtual void solve(const double t) = 0;
 
     virtual unsigned getNumEquations() const { return NumEquations; }
 

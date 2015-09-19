@@ -37,10 +37,11 @@ public:
     void setTolerance(const double* abstol, const double reltol);
     void setTolerance(const double abstol, const double reltol);
 
-    void setIC(const double t0, double const*const y0);
-
     void setFunction(Function f, JacobianFunction df);
 
+    void setIC(const double t0, double const*const y0);
+
+    void preSolve();
     void solve(const double t_end);
 
     double const* getSolution() const { return NV_DATA_S(_y); }
@@ -110,7 +111,7 @@ void CVodeSolverImpl::setIC(const double t0, double const*const y0)
     _t = t0;
 }
 
-void CVodeSolverImpl::solve(const double t_end)
+void CVodeSolverImpl::preSolve()
 {
 	assert(_data.f != nullptr && "ode function y'=f(t,y) was not provided");
 
@@ -155,9 +156,12 @@ void CVodeSolverImpl::solve(const double t_end)
 		flag = CVDlsSetDenseJacFn(_cvode_mem, df_wrapped);
 		// if (check_flag(&flag, "CVDlsSetDenseJacFn", 1)) return(1);
 	}
+}
 
+void CVodeSolverImpl::solve(const double t_end)
+{
 	realtype t_reached;
-	flag = CVode(_cvode_mem, t_end, _y, &t_reached, CV_NORMAL);
+	int flag = CVode(_cvode_mem, t_end, _y, &t_reached, CV_NORMAL);
 	_t = t_reached;
 	// std::cout << "result at time " << t << " is " << NV_Ith_S(y,0) << std::endl;
 	if (flag != CV_SUCCESS) {
@@ -209,6 +213,11 @@ void CVodeSolverInternal::setFunction(Function f, JacobianFunction df)
 void CVodeSolverInternal::setIC(const double t0, double const*const y0)
 {
     _impl->setIC(t0, y0);
+}
+
+void CVodeSolverInternal::preSolve()
+{
+    _impl->preSolve();
 }
 
 void CVodeSolverInternal::solve(const double t_end)
