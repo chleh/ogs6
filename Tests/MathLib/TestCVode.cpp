@@ -11,11 +11,12 @@
 #include <array>
 
 #include "MaterialsLib/adsorption/adsorption.h"
-#include "ProcessLib/OdeSolver.h"
+#include "MathLib/ODE/CVodeSolver.h"
+#include "MathLib/ODE/OdeSolver.h"
+#include "MathLib/ODE/OdeSolverFactory.h"
 
 #include <cstdio>
 
-using namespace ProcessLib::Ode;
 using namespace Ads;
 
 const unsigned NEQ = 2; // number of equations
@@ -26,19 +27,55 @@ const double T = 303.15; // K
 const double R = 8.314;  // J/mol/K
 const double M = 0.018;  // kg/mol
 const double phi = 0.4;
-const double rho_SR0 = 1150.0; // kg/m^3
+const double rho_SR0 = 1160.0; // kg/m^3
 // const double k = 6e-3;   // s^-1
 
 Adsorption* ads;
 
 
-void f(const double, double const*const y, double *const ydot)
+bool f_zeolite(const double, double const*const y, double *const ydot)
 {
     const double pV = y[0];
     const double C  = y[1];
-    ydot[1] = ads->get_reaction_rate(pV, T, M, C);
-    ydot[0] = -R*T/M/phi * (1.0-phi) * rho_SR0 * ydot[1];
+
+    // std::printf("pV: %14.7g, C: %14.7g\n", pV, C);
+
+    // if (0.0 < pV && pV < 1e-6) pV = 1e-6;
+
+    if (pV >= 1.0) {
+        ydot[1] = ads->get_reaction_rate(pV, T, M, C);
+        ydot[0] = -R*T/M/phi * (1.0-phi) * rho_SR0 * ydot[1];
+        return true;
+    } else if (pV > 0.0) {
+        ydot[0] = ydot[1] = 0.0;
+        return true;
+    } else {
+        ydot[0] = ydot[1] = 0.0;
+        return false;
+    }
 }
+
+bool f(const double, double const*const y, double *const ydot)
+{
+    if (y[0] <= 0.0) return false;
+
+    ydot[0] = -15.0 * y[0];
+    return true;
+}
+
+bool df(const double /*t*/,
+        double const*const y,
+        double const*const /*ydot*/,
+        double *const jac,
+        MathLib::StorageOrder order)
+{
+    if (y[0] <= 0.0) return false;
+
+    MathLib::setMatrixValue(jac, 1, 1, order, 0, 0, -15.0);
+    // std::printf("jac: %g\n", *jac);
+    return true;
+}
+
 
 TEST(MathLibCVodeTest, ZeoliteAdsorption)
 {
@@ -48,17 +85,150 @@ TEST(MathLibCVodeTest, ZeoliteAdsorption)
 
     ads = Adsorption::newInstance(SolidReactiveSystem::Z13XBF_Hauer);
 
-    ConcreteOdeSolver<2, CVodeSolverInternal> ode_solver;
+    MathLib::CVodeSolverInternal::ConfigTree config;
+    config.put("linear_multistep_method", "BDF");
+    auto ode_solver = MathLib::createOdeSolver<2>(config);
 
-    ode_solver.init();
-    ode_solver.setTolerance(1e-8, 1e-6);
+    ode_solver->init();
+    ode_solver->setTolerance({ 1.0, 0.01 }, 1.0);
 
-    // double const ic[] = { pV, C };
-    ode_solver.setIC(0.0, { pV, C });
+    ode_solver->setFunction(f_zeolite, nullptr);
 
-    ode_solver.solve(f, 0.00001);
+    ode_solver->setIC(0.0, { pV, C });
 
-    double const* y = ode_solver.getSolution();
+    ode_solver->preSolve();
 
-    std::printf("pV: %g, C: %g\n", y[0], y[1]);
+    const double dt = 1e-4;
+
+    for (unsigned i=1; i<=10; ++i)
+    {
+        const double time = dt * i;
+
+        ode_solver->solve(time);
+
+        double const* y = ode_solver->getSolution();
+        double time_reached = ode_solver->getTime();
+
+        // std::printf("t: %g, pV: %g, C: %g\n", time_reached, y[0], y[1]);
+        std::printf("[ %23.16g, %23.16g, %13.16g ],\n", time_reached, y[0], y[1]);
+
+        ASSERT_NEAR(time, time_reached, std::numeric_limits<double>::epsilon());
+        // std::printf("time: %g\n", time_reached);
+    }
 }
+
+
+TEST(MathLibCVodeTest, Exponential)
+{
+    // initial values
+    const double y0 = 1.0;
+    const double t0 = 0.0;
+
+    MathLib::CVodeSolverInternal::ConfigTree config;
+    auto ode_solver = MathLib::createOdeSolver<1>(config);
+
+    ode_solver->init();
+    ode_solver->setTolerance(1e-8, 1e-6);
+
+    ode_solver->setFunction(f, nullptr);
+
+    ode_solver->setIC(t0, { y0 });
+
+    ode_solver->preSolve();
+
+    const double dt = 1e-1;
+
+    for (unsigned i=1; i<=10; ++i)
+    {
+        const double time = dt * i;
+
+        ode_solver->solve(time);
+
+        double const* y = ode_solver->getSolution();
+        double time_reached = ode_solver->getTime();
+
+        std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
+
+        ASSERT_NEAR(time, time_reached, std::numeric_limits<double>::epsilon());
+        // std::printf("time: %g\n", time_reached);
+    }
+}
+
+
+
+TEST(MathLibCVodeTest, ExponentialWithJacobian)
+{
+    // initial values
+    const double y0 = 1.0;
+    const double t0 = 0.0;
+
+    MathLib::CVodeSolverInternal::ConfigTree config;
+    auto ode_solver = MathLib::createOdeSolver<1>(config);
+
+    ode_solver->init();
+    ode_solver->setTolerance(1e-10, 1e-8);
+
+    ode_solver->setFunction(f, df);
+
+    ode_solver->setIC(t0, { y0 });
+
+    ode_solver->preSolve();
+
+    const double dt = 1e-1;
+
+    for (unsigned i=1; i<=10; ++i)
+    {
+        const double time = dt * i;
+
+        ode_solver->solve(time);
+
+        double const* y = ode_solver->getSolution();
+        double time_reached = ode_solver->getTime();
+
+        std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
+
+        ASSERT_NEAR(time, time_reached, std::numeric_limits<double>::epsilon());
+        // std::printf("time: %g\n", time_reached);
+    }
+}
+
+
+TEST(MathLibCVodeTest, ExponentialWithJacobianNewton)
+{
+    // initial values
+    const double y0 = 1.0;
+    const double t0 = 0.0;
+
+    MathLib::CVodeSolverInternal::ConfigTree config;
+    config.put("linear_multistep_method", "BDF");
+    config.put("nonlinear_solver_iteration", "Newton");
+
+    auto ode_solver = MathLib::createOdeSolver<1>(config);
+
+    ode_solver->init();
+    ode_solver->setTolerance(1e-6, 1e-6);
+
+    ode_solver->setFunction(f, df);
+
+    ode_solver->setIC(t0, { y0 });
+
+    ode_solver->preSolve();
+
+    const double dt = 1e-1;
+
+    for (unsigned i=1; i<=10; ++i)
+    {
+        const double time = dt * i;
+
+        ode_solver->solve(time);
+
+        double const* y = ode_solver->getSolution();
+        double time_reached = ode_solver->getTime();
+
+        std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
+
+        ASSERT_NEAR(time, time_reached, std::numeric_limits<double>::epsilon());
+        // std::printf("time: %g\n", time_reached);
+    }
+}
+
