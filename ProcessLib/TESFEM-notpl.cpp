@@ -25,7 +25,7 @@ const double GAS_CONST = 8.3144621;
 
 enum class MatOutType { OGS5, PYTHON };
 
-const MatOutType MATRIX_OUTPUT_FORMAT = MatOutType::OGS5;
+const MatOutType MATRIX_OUTPUT_FORMAT = MatOutType::PYTHON;
 
 
 
@@ -393,8 +393,8 @@ getMassCoeffMatrix(const unsigned int_pt)
 						/ (GAS_CONST * _T) * dxn_dxm * _AP->_poro;
 
 	const double M_Tp = -_AP->_poro;
-	const double M_TT = _AP->_poro * _rho_GR * _AP->_cpG
-						+ (1.0-_AP->_poro) * _solid_density[int_pt] * _AP->_cpS;
+	const double M_TT = _AP->_poro * _rho_GR * _AP->_cpG // TODO: vapour heat capacity
+						+ (1.0-_AP->_poro) * _solid_density[int_pt] * _AP->_cpS; // TODO: adsorbate heat capacity
 	const double M_Tx = 0.0;
 
 	const double M_xp = 0.0;
@@ -489,7 +489,7 @@ getAdvectionCoeffMatrix(const unsigned /*int_pt*/)
 
 Eigen::Matrix3d
 LADataNoTpl::
-getContentCoeffMatrix(const unsigned int_pt)
+getContentCoeffMatrix(const unsigned /*int_pt*/)
 {
 	const double C_pp = 0.0;
 	const double C_pT = 0.0;
@@ -503,7 +503,7 @@ getContentCoeffMatrix(const unsigned int_pt)
 
 	const double C_xp = 0.0;
 	const double C_xT = 0.0;
-	const double C_xx = (_AP->_poro - 1.0) * _reaction_rate[int_pt];
+	const double C_xx = (_AP->_poro - 1.0) * _qR;
 
 
 	Eigen::Matrix3d C;
@@ -521,14 +521,14 @@ getRHSCoeffVector(const unsigned int_pt)
 {
 	const double reaction_enthalpy = _AP->_adsorption->get_enthalpy(_T, _p_V, _AP->_M_react);
 
-	const double rhs_p = (_AP->_poro - 1.0) * _reaction_rate[int_pt]; // TODO [CL] body force term
+	const double rhs_p = (_AP->_poro - 1.0) * _qR; // TODO [CL] body force term
 
 	const double rhs_T = _rho_GR * _AP->_poro * _AP->_fluid_specific_heat_source
-						 + (1.0 - _AP->_poro) * _reaction_rate[int_pt] * reaction_enthalpy
+						 + (1.0 - _AP->_poro) * _qR * reaction_enthalpy
 						 + _solid_density[int_pt] * (1.0 - _AP->_poro) * _AP->_solid_specific_heat_source;
 						 // TODO [CL] momentum production term
 
-	const double rhs_x = (_AP->_poro - 1.0) * _reaction_rate[int_pt]; // TODO [CL] what if x < 0.0
+	const double rhs_x = (_AP->_poro - 1.0) * _qR; // TODO [CL] what if x < 0.0
 
 
 	Eigen::Vector3d rhs;
@@ -543,18 +543,15 @@ getRHSCoeffVector(const unsigned int_pt)
 void LADataNoTpl::
 initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
 {
-    // This implementation only works if it is called only once per timestep,
-    // not once per iteration!
-
     const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _AP->_rho_SR_dry);
 
     auto const dCdt = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading);
 
     auto              qR = dCdt * _AP->_rho_SR_dry;
-    auto const delta_rho = qR * _AP->_time_step;          // solid density change in this timestep
+    auto const delta_rho = qR * _AP->_delta_t;          // solid density change in this timestep
     auto const     rho_V = M_H2O * _p_V / GAS_CONST / _T; // vapour density
 
-    const double rate_factor = 20.0;
+    const double rate_factor = 1.0;
 
     if (delta_rho > rate_factor * rho_V) {
         // all vapour will be sucked up in this time step
@@ -563,10 +560,34 @@ initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
         qR *= rate_factor * rho_V / delta_rho;
     }
 
+    if (qR > 0.0 && _p_V < 100)
+    {
+        // qR = 0.0;
+    }
+
+    /*
+    // average reaction rate between this and the previous iteration
+    double average_qR = (_AP->_iteration_in_current_timestep < 2)
+            ? qR
+            : (0.5 * (qR + _reaction_rate[int_pt]));
+
+    _qR = average_qR; // this now only works if reaction rate is calculated in every timestep
+    */
+
+    _qR = qR;
+
+    /*
+    if ((average_qR < 0.0) != (_reaction_rate[int_pt] < 0.0)) {
+        // old and new reaction rates have different sign.
+        // let the reaction take a break of one iteration
+        average_qR = 0.0;
+    }
+    */
+
     // dCdt = qR / _AP->_rho_SR_dry;
 
     _reaction_rate[int_pt] = qR;
-    _solid_density[int_pt] += qR * _AP->_time_step;
+    _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + _qR * _AP->_delta_t;
     // _solid_density[int_pt] = _AP->_rho_SR_dry * (1.0 + C_next);
 }
 
@@ -600,7 +621,7 @@ preEachAssembleIntegrationPoint(
 
     // if (_p_V <= 0.0) _p_V = std::numeric_limits<double>::epsilon();
 
-    if (_AP->_is_new_timestep) {
+    if (true || _AP->_iteration_in_current_timestep == 0) {
         initNewTimestep(int_pt, localX);
     }
 }
@@ -782,7 +803,7 @@ LADataNoTpl::init(const unsigned num_int_pts, const unsigned dimension)
     _solid_density_prev_ts.resize(num_int_pts, _AP->_initial_solid_density);
 
     _reaction_rate.resize(num_int_pts);
-    // _reaction_rate_prev_ts.resize(num_int_pts);
+    _reaction_rate_prev_ts.resize(num_int_pts);
 
     // _velocity.resize(num_int_pts, dimension);
     _velocity.resize(dimension);
@@ -805,6 +826,12 @@ LADataNoTpl::init(const unsigned num_int_pts, const unsigned dimension)
 void
 LADataNoTpl::preEachAssemble()
 {
+    if (_AP->_iteration_in_current_timestep == 0)
+    {
+        _solid_density_prev_ts = _solid_density;
+        _reaction_rate_prev_ts = _reaction_rate;
+    }
+
     _Lap->setZero();
     _Mas->setZero();
     _Adv->setZero();
@@ -816,9 +843,9 @@ void
 LADataNoTpl::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
                               Eigen::VectorXd const& oldX)
 {
-    localA->noalias() += *_Lap + *_Mas/_AP->_time_step + *_Adv + *_Cnt;
+    localA->noalias() += *_Lap + *_Mas/_AP->_delta_t + *_Adv + *_Cnt;
     localRhs->noalias() += *_rhs
-                           + *_Mas * oldX/_AP->_time_step;
+                           + *_Mas * oldX/_AP->_delta_t;
 
     if (_AP->_output_element_matrices)
     {

@@ -141,10 +141,11 @@ private:
     std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets_single_component;
     std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map_single_component;
 
-    bool _first_iter = true;
     bool _output_global_matrix = false; ///< output global matrix/rhs at first iteration
     bool _output_iteration_results = false;
-    std::size_t _iteration = 0;
+
+    std::size_t _timestep = 0;
+    std::size_t _total_iteration = 0;
 };
 
 } // namespace TES

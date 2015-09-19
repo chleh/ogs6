@@ -17,6 +17,8 @@
 
 #include "TESProcess-notpl.h"
 
+#include "MathLib/ODE/OdeSolver.h"
+
 
 namespace ProcessLib
 {
@@ -86,7 +88,7 @@ private:
     std::vector<double> _solid_density_prev_ts;
 
     std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
-    // std::vector<double> _reaction_rate_prev_ts; can be calculated from _solid_density_prev_ts
+    std::vector<double> _reaction_rate_prev_ts; // could also be calculated from _solid_density_prev_ts
 
     std::vector<std::vector<double> > _velocity;
     // std::vector<double> _velocity_x;
@@ -102,12 +104,15 @@ private:
     // values do not change during the assembly of one integration point
     double _rho_GR = 888.888;
     double _p_V = 888.888; // vapour partial pressure
+    double _qR = 888.888;  // reaction rate, use this in assembly!!!
 
     std::unique_ptr<Eigen::MatrixXd> _Lap;
     std::unique_ptr<Eigen::MatrixXd> _Mas;
     std::unique_ptr<Eigen::MatrixXd> _Adv;
     std::unique_ptr<Eigen::MatrixXd> _Cnt;
     std::unique_ptr<Eigen::VectorXd> _rhs;
+
+    std::unique_ptr<MathLib::OdeSolver<2> > _ode_solver;
 };
 
 

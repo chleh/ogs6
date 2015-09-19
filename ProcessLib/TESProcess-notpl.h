@@ -42,8 +42,8 @@ struct AssemblyParams
 
     double _initial_solid_density = 1000.0;
 
-    double       _time_step = 1.0;
-    bool         _is_new_timestep = true;
+    double       _delta_t = 1.0;
+    unsigned     _iteration_in_current_timestep = 0;
 
     bool _output_element_matrices = false;
 };

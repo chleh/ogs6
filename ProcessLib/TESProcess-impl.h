@@ -446,10 +446,22 @@ bool TESProcess<GlobalSetup>::solve(const double delta_t)
 {
     DBUG("Solve TESProcess.");
 
-    _assembly_params._time_step = delta_t;
-    _assembly_params._is_new_timestep = true;
+    auto tmp = *_x;
+    if (_timestep != 0)
+    {
+        // this is at the beginning of a new timestep t+dt.
+        // _x         contains the solution of timstep t
+        // _x_prev_ts contains the solution of timstep t-dt
+        // get first estimate of _x at timestep t+dt by extrapolation using the last two timesteps.
+        *_x *= 1.0 + delta_t / _assembly_params._delta_t; // _assembly_params._delta_t is the old timestep
+        *_x_prev_ts *= delta_t / _assembly_params._delta_t;
+        *_x -= *_x_prev_ts;
+    }
+    *_x_prev_ts = tmp;
 
-    *_x_prev_ts = *_x;
+    _assembly_params._delta_t = delta_t;
+    _assembly_params._iteration_in_current_timestep = 0;
+    ++ _timestep;
 
     auto cb = [this](typename GlobalSetup::VectorType& x_prev_iter,
                              typename GlobalSetup::VectorType& x_curr)
@@ -692,13 +704,12 @@ singlePicardIteration(typename GlobalSetup::VectorType& /*x_prev_iter*/,
     // Apply known values from the Dirichlet boundary conditions.
     MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
-    if (_first_iter && _output_global_matrix)
+    if (_total_iteration == 0 && _output_global_matrix)
     {
         // TODO [CL] Those files will be written to the working directory.
         //           Relative path needed.
         _A->write("global_matrix.txt");
         _rhs->write("global_rhs.txt");
-        _first_iter = false;
     }
 
     // double residual = MathLib::norm((*_A) * x_curr - (*_rhs), MathLib::VecNormType::INFINITY_N);
@@ -723,19 +734,22 @@ singlePicardIteration(typename GlobalSetup::VectorType& /*x_prev_iter*/,
     _A->multiply(x_curr, res_vec);
     res_vec -= *_rhs;
     residual = MathLib::norm(res_vec, MathLib::VecNormType::INFINITY_N);
-    DBUG("residual of old solution with new matrix: %g", residual);
+    DBUG("residual of new solution with new matrix: %g", residual);
 
     typename GlobalSetup::LinearSolver linearSolver(*_A);
     linearSolver.solve(*_rhs, x_curr);
 
     if (_output_iteration_results)
     {
-        std::string fn = "tes_iter_" + std::to_string(_iteration) + ".vtu";
+        DBUG("output results of iteration %li", _total_iteration);
+        std::string fn = "tes_iter_" + std::to_string(_total_iteration) +
+                         + "_ts_" + std::to_string(_timestep)
+                         + "_" +    std::to_string(_assembly_params._iteration_in_current_timestep) + ".vtu";
         postTimestep(fn, 0);
     }
 
-    _assembly_params._is_new_timestep = false;
-    ++_iteration;
+    ++ _assembly_params._iteration_in_current_timestep;
+    ++_total_iteration;
 }
 
 
