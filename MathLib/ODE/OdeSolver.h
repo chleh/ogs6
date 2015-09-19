@@ -24,7 +24,9 @@ public:
 
     virtual void setIC(const double t0, const Arr& y0) = 0;
 
-    virtual void solve(Function f, const double t ) = 0;
+    virtual void setFunction(Function f) = 0;
+
+    virtual void solve(const double t ) = 0;
 
     virtual unsigned getNumEquations() const { return NumEquations; }
 

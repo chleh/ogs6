@@ -23,9 +23,11 @@ protected:
     void setTolerance(double const*const abstol, const double reltol);
     void setTolerance(const double abstol, const double reltol);
 
+    void setFunction(Function f);
+
     void setIC(const double t0, double const*const y0);
 
-    void solve(Function f, const double t_end);
+    void solve(const double t_end);
 
     double const* getSolution() const;
     double getTime() const;

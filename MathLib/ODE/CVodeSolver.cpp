@@ -25,7 +25,9 @@ public:
 
     void setIC(const double t0, double const*const y0);
 
-    void solve(Function f, const double t_end);
+    void setFunction(Function f);
+
+    void solve(const double t_end);
 
     double const* getSolution() const { return NV_DATA_S(_y); }
     double getTime() const { return _t; }
@@ -43,6 +45,8 @@ private:
 
     unsigned _num_equations;
     void*    _cvode_mem;
+
+    Function _f = nullptr;
 
 };
 
@@ -77,6 +81,11 @@ void CVodeSolverImpl::setTolerance(const double abstol, const double reltol)
     _reltol = reltol;
 }
 
+void CVodeSolverImpl::setFunction(Function f)
+{
+    _f = f;
+}
+
 void CVodeSolverImpl::setIC(const double t0, double const*const y0)
 {
     for (unsigned i=0; i<_num_equations; ++i)
@@ -87,7 +96,7 @@ void CVodeSolverImpl::setIC(const double t0, double const*const y0)
     _t = t0;
 }
 
-void CVodeSolverImpl::solve(Function f, const double t_end)
+void CVodeSolverImpl::solve(const double t_end)
 {
 	auto f_wrapped
 			= [](const realtype t, const N_Vector y, N_Vector ydot, void* f)
@@ -100,7 +109,7 @@ void CVodeSolverImpl::solve(Function f, const double t_end)
 	int flag = CVodeInit(_cvode_mem, f_wrapped, _t, _y);
 	// if (check_flag(&flag, "CVodeInit", 1)) return(1);
 
-	flag = CVodeSetUserData(_cvode_mem, (void*) f);
+	flag = CVodeSetUserData(_cvode_mem, (void*) _f);
 
 	/* Call CVodeSVtolerances to specify the scalar relative tolerance
 	 * and vector absolute tolerances */
@@ -156,14 +165,19 @@ void CVodeSolverInternal::setTolerance(const double abstol, const double reltol)
     _impl->setTolerance(abstol, reltol);
 }
 
+void CVodeSolverInternal::setFunction(Function f)
+{
+    _impl->setFunction(f);
+}
+
 void CVodeSolverInternal::setIC(const double t0, double const*const y0)
 {
     _impl->setIC(t0, y0);
 }
 
-void CVodeSolverInternal::solve(Function f, const double t_end)
+void CVodeSolverInternal::solve(const double t_end)
 {
-	_impl->solve(f, t_end);
+	_impl->solve(t_end);
 }
 
 double const* CVodeSolverInternal::getSolution() const

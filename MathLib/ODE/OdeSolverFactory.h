@@ -32,12 +32,16 @@ public:
         Implementation::setTolerance(abstol, reltol);
     }
 
+    void setFunction(Function f) override {
+        Implementation::setFunction(f);
+    }
+
     void setIC(const double t0, const Arr& y0) override {
         Implementation::setIC(t0, y0.data());
     }
 
-    void solve(Function f, const double t) override {
-        Implementation::solve(f, t);
+    void solve(const double t) override {
+        Implementation::solve(t);
     }
 
     double const* getSolution() const override {
