@@ -32,8 +32,8 @@ public:
         Implementation::setTolerance(abstol, reltol);
     }
 
-    void setFunction(Function f) override {
-        Implementation::setFunction(f);
+    void setFunction(Function f, JacobianFunction df) override {
+        Implementation::setFunction(f, df);
     }
 
     void setIC(const double t0, const Arr& y0) override {

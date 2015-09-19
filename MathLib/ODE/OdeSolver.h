@@ -24,7 +24,7 @@ public:
 
     virtual void setIC(const double t0, const Arr& y0) = 0;
 
-    virtual void setFunction(Function f) = 0;
+    virtual void setFunction(Function f, JacobianFunction df) = 0;
 
     virtual void solve(const double t ) = 0;
 

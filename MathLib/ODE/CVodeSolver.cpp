@@ -7,15 +7,29 @@ extern "C"
 #include <sundials/sundials_types.h> /* definition of type realtype */
 }
 
+#include <cassert>
+
 #include "logog/include/logog.hpp"
 
 #include "CVodeSolver.h"
+
+namespace
+{
+
+struct UserData
+{
+    MathLib::Function f = nullptr;
+    MathLib::JacobianFunction df = nullptr;
+};
+
+}
 
 namespace MathLib
 {
 
 class CVodeSolverImpl
 {
+    static_assert(std::is_same<realtype, double>::value, "cvode's realtype is not the same as double");
 public:
     CVodeSolverImpl() = default;
     void init(const unsigned num_equations);
@@ -25,7 +39,7 @@ public:
 
     void setIC(const double t0, double const*const y0);
 
-    void setFunction(Function f);
+    void setFunction(Function f, JacobianFunction df);
 
     void solve(const double t_end);
 
@@ -46,8 +60,7 @@ private:
     unsigned _num_equations;
     void*    _cvode_mem;
 
-    Function _f = nullptr;
-
+    UserData _data;
 };
 
 
@@ -81,9 +94,10 @@ void CVodeSolverImpl::setTolerance(const double abstol, const double reltol)
     _reltol = reltol;
 }
 
-void CVodeSolverImpl::setFunction(Function f)
+void CVodeSolverImpl::setFunction(Function f, JacobianFunction df)
 {
-    _f = f;
+    _data.f = f;
+    _data.df = df;
 }
 
 void CVodeSolverImpl::setIC(const double t0, double const*const y0)
@@ -98,10 +112,12 @@ void CVodeSolverImpl::setIC(const double t0, double const*const y0)
 
 void CVodeSolverImpl::solve(const double t_end)
 {
+	assert(_data.f != nullptr && "ode function y'=f(t,y) was not provided");
+
 	auto f_wrapped
-			= [](const realtype t, const N_Vector y, N_Vector ydot, void* f)
+			= [](const realtype t, const N_Vector y, N_Vector ydot, void* data)
 	{
-		((Function) f) (t, NV_DATA_S(y), NV_DATA_S(ydot));
+		((UserData*) data)->f(t, NV_DATA_S(y), NV_DATA_S(ydot));
 		return 0;
 	};
 
@@ -109,7 +125,7 @@ void CVodeSolverImpl::solve(const double t_end)
 	int flag = CVodeInit(_cvode_mem, f_wrapped, _t, _y);
 	// if (check_flag(&flag, "CVodeInit", 1)) return(1);
 
-	flag = CVodeSetUserData(_cvode_mem, (void*) _f);
+	flag = CVodeSetUserData(_cvode_mem, (void*) &_data);
 
 	/* Call CVodeSVtolerances to specify the scalar relative tolerance
 	 * and vector absolute tolerances */
@@ -119,6 +135,26 @@ void CVodeSolverImpl::solve(const double t_end)
 	/* Call CVDense to specify the CVDENSE dense linear solver */
 	flag = CVDense(_cvode_mem, _num_equations);
 	// if (check_flag(&flag, "CVDense", 1)) return(1);
+
+	if (_data.df)
+	{
+		auto df_wrapped
+				= [](const long /*N*/, const realtype t,
+				  const N_Vector y, const N_Vector ydot,
+				  const DlsMat jac, void* data,
+				  N_Vector /*tmp1*/, N_Vector /*tmp2*/, N_Vector /*tmp3*/
+				  ) -> int
+		{
+			// Caution: by calling the DENSE_COL() macro we assume that matrices
+			//          are stored contiguous in memory!
+			((UserData*) data)->df(t, NV_DATA_S(y), NV_DATA_S(ydot),
+								   DENSE_COL(jac, 0), StorageOrder::ColumnMajor);
+			return 1;
+		};
+
+		flag = CVDlsSetDenseJacFn(_cvode_mem, df_wrapped);
+		// if (check_flag(&flag, "CVDlsSetDenseJacFn", 1)) return(1);
+	}
 
 	realtype t_reached;
 	flag = CVode(_cvode_mem, t_end, _y, &t_reached, CV_NORMAL);
@@ -165,9 +201,9 @@ void CVodeSolverInternal::setTolerance(const double abstol, const double reltol)
     _impl->setTolerance(abstol, reltol);
 }
 
-void CVodeSolverInternal::setFunction(Function f)
+void CVodeSolverInternal::setFunction(Function f, JacobianFunction df)
 {
-    _impl->setFunction(f);
+    _impl->setFunction(f, df);
 }
 
 void CVodeSolverInternal::setIC(const double t0, double const*const y0)
