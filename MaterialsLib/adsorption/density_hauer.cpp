@@ -1,5 +1,22 @@
 #include "density_hauer.h"
 
+namespace
+{
+
+// NaX_Hauer_polyfrac_CC.pickle
+// date extracted 2015-06-23 15:38:35 file mtime 2015-06-23 15:19:19
+const double c[] = {
+	0.36490158988356747,	/* a0 */
+	-0.0013723270478333963,	/* a1 */
+	-0.0007655780628099964,	/* a2 */
+	-3.353324854315774e-08,	/* a3 */
+	5.424357157710913e-07,	/* a4 */
+	6.613430586648678e-10,	/* a5 */
+	-1.0300151379421499e-10	/* a6 */
+};
+
+}
+
 namespace Ads
 {
 
@@ -22,18 +39,6 @@ double DensityHauer::get_alphaT(const double Tads) const
 //Characteristic curve. Return W (A)
 double DensityHauer::characteristic_curve(const double A) const
 {
-	// NaX_Hauer_polyfrac_CC.pickle
-	// date extracted 2015-06-23 15:38:35 file mtime 2015-06-23 15:19:19
-	const double c[] = {
-	    0.36490158988356747,	/* a0 */
-	    -0.0013723270478333963,	/* a1 */
-	    -0.0007655780628099964,	/* a2 */
-	    -3.353324854315774e-08,	/* a3 */
-	    5.424357157710913e-07,	/* a4 */
-	    6.613430586648678e-10,	/* a5 */
-	    -1.0300151379421499e-10	/* a6 */
-	};
-
 	double W = curve_polyfrac(c, A); //cm^3/g
 
 	if (W < 0.0) {
@@ -41,6 +46,11 @@ double DensityHauer::characteristic_curve(const double A) const
 	}
 
 	return W/1.e3; //m^3/kg
+}
+
+double DensityHauer::d_characteristic_curve(const double A) const
+{
+	return d_curve_polyfrac(c, A);
 }
 
 }

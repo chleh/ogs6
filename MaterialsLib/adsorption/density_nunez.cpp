@@ -1,5 +1,22 @@
 #include "density_nunez.h"
 
+namespace
+{
+
+// NaX_Nunez_polyfrac_CC.pickle
+// date extracted 2015-06-23 15:38:35 file mtime 2015-06-23 15:19:34
+const double c[] = {
+	0.3631900485031771,		/* a0 */
+	-0.0014242280940080726,	/* a1 */
+	-0.0007751726942386291,	/* a2 */
+	2.1775655036811842e-08,	/* a3 */
+	5.488166913667265e-07,	/* a4 */
+	6.204064716725214e-10,	/* a5 */
+	-1.0345385018952998e-10	/* a6 */
+};
+
+}
+
 namespace Ads
 {
 
@@ -41,18 +58,6 @@ double DensityNunez::get_alphaT(const double Tads) const
 //Characteristic curve. Return W (A)
 double DensityNunez::characteristic_curve(const double A) const
 {
-	// NaX_Nunez_polyfrac_CC.pickle
-	// date extracted 2015-06-23 15:38:35 file mtime 2015-06-23 15:19:34
-	const double c[] = {
-	    0.3631900485031771,		/* a0 */
-	    -0.0014242280940080726,	/* a1 */
-	    -0.0007751726942386291,	/* a2 */
-	    2.1775655036811842e-08,	/* a3 */
-	    5.488166913667265e-07,	/* a4 */
-	    6.204064716725214e-10,	/* a5 */
-	    -1.0345385018952998e-10	/* a6 */
-	};
-
 	double W = curve_polyfrac(c, A); //cm^3/g
 
 	if (W < 0.0) {
@@ -60,6 +65,11 @@ double DensityNunez::characteristic_curve(const double A) const
 	}
 
 	return W/1.e3; //m^3/kg
+}
+
+double DensityNunez::d_characteristic_curve(const double A) const
+{
+	return d_curve_polyfrac(c, A);
 }
 
 }

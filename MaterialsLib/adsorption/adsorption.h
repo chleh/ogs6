@@ -1,11 +1,11 @@
 #ifndef ADSORPTION_H
 #define ADSORPTION_H
 
-#include "Eigen/Eigen"
+#include <array>
+#include <cmath>
 
 namespace Ads
 {
-
 
 const double GAS_CONST = 8.3144621;
 
@@ -44,13 +44,25 @@ public:
 	virtual ~Adsorption() {}
 
 	virtual double get_enthalpy(const double T_Ads, const double p_Ads, const double M_Ads) const;
-	virtual double get_reaction_rate(const double p_Ads, const double T_ads,
+	virtual double get_reaction_rate(const double p_Ads, const double T_Ads,
 									 const double M_Ads, const double loading) const;
+	/**
+	 * @brief get_d_reaction_rate
+	 * @param p_Ads
+	 * @param T_ads
+	 * @param M_Ads
+	 * @param loading
+	 * @param dqdr array containing the differentials wrt: p, T, C
+	 */
+	virtual void get_d_reaction_rate(const double p_Ads, const double T_Ads,
+									 const double M_Ads, const double loading,
+									 std::array<double, 3>& dqdr) const;
 
 protected:
 	virtual double get_adsorbate_density(const double Tads) const = 0;
 	virtual double get_alphaT(const double Tads) const = 0;
 	virtual double characteristic_curve(const double A) const = 0;
+	virtual double d_characteristic_curve(const double A) const = 0;
 
 private:
 // non-virtual members
@@ -75,6 +87,18 @@ inline double curve_polyfrac(const double* coeffs, const double x)
 	// Analytically the same, but numerically quite different
 	// return ( coeffs[0] + x * coeffs[2] + x*x * coeffs[4] + x*x*x * coeffs[6] )
 	//        / ( 1.0 + x * coeffs[1] + x*x * coeffs[3] + x*x*x * coeffs[5] );
+}
+
+inline double d_curve_polyfrac(const double* coeffs, const double x)
+{
+	const double x2 = x*x;
+	const double x3 = x2*x;
+	const double u  = coeffs[0] + coeffs[2] * x +     coeffs[4] * x2 +     coeffs[6] * x3;
+	const double du =             coeffs[2]     + 2.0*coeffs[4] * x  + 3.0*coeffs[6] * x2;
+	const double v  = 1.0 + coeffs[1] * x +     coeffs[3] * x2 +     coeffs[5] * x3;
+	const double dv =       coeffs[1]     + 2.0*coeffs[3] * x  + 3.0*coeffs[5] * x2;
+
+	return (du*v - u*dv) / v / v;
 }
 
 }

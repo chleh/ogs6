@@ -13,6 +13,9 @@
 #include "density_nunez.h"
 #include "density_inert.h"
 
+namespace {
+	const double k_rate = 6.0e-3; //to be specified
+}
 
 namespace Ads
 {
@@ -78,7 +81,6 @@ double Adsorption::get_molar_fraction(double xm, double M_this, double M_other)
 double Adsorption::get_reaction_rate(const double p_Ads, const double T_Ads,
 									 const double M_Ads, const double loading) const
 {
-	const double k_rate = 6.0e-3; //to be specified
 	// const double k_rate = 3.0e-3; //to be specified
 
 	const double A = get_potential(T_Ads, p_Ads, M_Ads);
@@ -88,6 +90,28 @@ double Adsorption::get_reaction_rate(const double p_Ads, const double T_Ads,
 
 	return k_rate * (C_eq - loading); //scaled with mass fraction
 									  // this the rate in terms of loading!
+}
+
+void Adsorption::get_d_reaction_rate(const double p_Ads, const double T_Ads,
+									 const double M_Ads, const double /*loading*/,
+									 std::array<double, 3> &dqdr) const
+{
+	const double A = get_potential(T_Ads, p_Ads, M_Ads);
+	const double p_S = get_equilibrium_vapour_pressure(T_Ads);
+	const double dAdT = GAS_CONST * log(p_S/p_Ads) / (M_Ads*1.e3);
+	const double dAdp = - GAS_CONST * T_Ads / M_Ads / p_Ads;
+
+	const double W = characteristic_curve(A);
+	const double dWdA = d_characteristic_curve(A);
+
+	const double rho_Ads = get_adsorbate_density(T_Ads);
+	const double drhodT = - rho_Ads * get_alphaT(T_Ads);
+
+	dqdr = std::array<double, 3>{{
+		rho_Ads*dWdA*dAdp,
+		drhodT*W + rho_Ads*dWdA*dAdT,
+		-k_rate
+	}};
 }
 
 

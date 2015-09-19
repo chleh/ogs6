@@ -1,5 +1,20 @@
 #include "density_legacy.h"
 
+namespace
+{
+
+//parameters from least squares fit (experimental data)
+const double c[] = { 0.34102920966608297,
+					 -0.0013106032830951296,
+					 -0.00060754147575378876,
+					 3.7843404172683339e-07,
+					 4.0107503869519016e-07,
+					 3.1274595098338057e-10,
+					 -7.610441241719489e-11
+				   };
+
+}
+
 namespace Ads
 {
 
@@ -25,16 +40,6 @@ double DensityLegacy::get_alphaT(const double Tads) const
 //Characteristic curve. Return W (A)
 double DensityLegacy::characteristic_curve(const double A) const
 {
-	//parameters from least squares fit (experimental data)
-	const double c[] = { 0.34102920966608297,
-	                     -0.0013106032830951296,
-	                     -0.00060754147575378876,
-	                     3.7843404172683339e-07,
-	                     4.0107503869519016e-07,
-	                     3.1274595098338057e-10,
-	                     -7.610441241719489e-11
-	                   };
-
 	double W = curve_polyfrac(c, A); //cm^3/g
 
 	/*
@@ -44,6 +49,11 @@ double DensityLegacy::characteristic_curve(const double A) const
 	*/
 
 	return W/1.e3; //m^3/kg
+}
+
+double DensityLegacy::d_characteristic_curve(const double A) const
+{
+	return d_curve_polyfrac(c, A);
 }
 
 }

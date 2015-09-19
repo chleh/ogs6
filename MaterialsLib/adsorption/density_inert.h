@@ -33,6 +33,10 @@ protected:
 	{
 		return A;
 	}
+	double d_characteristic_curve(const double /*A*/) const override
+	{
+		return 1.0;
+	}
 };
 
 }
