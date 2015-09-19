@@ -2,6 +2,7 @@
 #define MATHLIB_CVODESOLVER_H
 
 #include "declarations.h"
+#include "boost/property_tree/ptree.hpp"
 
 namespace MathLib
 {
@@ -16,8 +17,11 @@ class CVodeSolverImpl;
  */
 class CVodeSolverInternal
 {
+public:
+    using ConfigTree = boost::property_tree::ptree;
+
 protected:
-    CVodeSolverInternal();
+    CVodeSolverInternal(ConfigTree const& config);
     void init(const unsigned num_equations);
 
     void setTolerance(double const*const abstol, const double reltol);

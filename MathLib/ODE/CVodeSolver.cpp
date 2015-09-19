@@ -22,6 +22,39 @@ struct UserData
     MathLib::JacobianFunction df = nullptr;
 };
 
+void printStats(void* cvode_mem)
+{
+    long int nst, nfe, nsetups, nje, nfeLS, nni, ncfn, netf, nge;
+    int flag;
+
+    flag = CVodeGetNumSteps(cvode_mem, &nst);
+    // check_flag(&flag, "CVodeGetNumSteps", 1);
+    flag = CVodeGetNumRhsEvals(cvode_mem, &nfe);
+    // check_flag(&flag, "CVodeGetNumRhsEvals", 1);
+    flag = CVodeGetNumLinSolvSetups(cvode_mem, &nsetups);
+    // check_flag(&flag, "CVodeGetNumLinSolvSetups", 1);
+    flag = CVodeGetNumErrTestFails(cvode_mem, &netf);
+    // check_flag(&flag, "CVodeGetNumErrTestFails", 1);
+    flag = CVodeGetNumNonlinSolvIters(cvode_mem, &nni);
+    // check_flag(&flag, "CVodeGetNumNonlinSolvIters", 1);
+    flag = CVodeGetNumNonlinSolvConvFails(cvode_mem, &ncfn);
+    // check_flag(&flag, "CVodeGetNumNonlinSolvConvFails", 1);
+
+    flag = CVDlsGetNumJacEvals(cvode_mem, &nje);
+    // check_flag(&flag, "CVDlsGetNumJacEvals", 1);
+    flag = CVDlsGetNumRhsEvals(cvode_mem, &nfeLS);
+    // check_flag(&flag, "CVDlsGetNumRhsEvals", 1);
+
+    flag = CVodeGetNumGEvals(cvode_mem, &nge);
+    // check_flag(&flag, "CVodeGetNumGEvals", 1);
+
+    DBUG("\nFinal Statistics:");
+    DBUG("nst = %-6ld nfe  = %-6ld nsetups = %-6ld nfeLS = %-6ld nje = %ld",
+       nst, nfe, nsetups, nfeLS, nje);
+    DBUG("nni = %-6ld ncfn = %-6ld netf = %-6ld nge = %ld\n",
+       nni, ncfn, netf, nge);
+}
+
 }
 
 namespace MathLib
@@ -31,7 +64,7 @@ class CVodeSolverImpl
 {
     static_assert(std::is_same<realtype, double>::value, "cvode's realtype is not the same as double");
 public:
-    CVodeSolverImpl() = default;
+    CVodeSolverImpl(CVodeSolverInternal::ConfigTree const& config);
     void init(const unsigned num_equations);
 
     void setTolerance(const double* abstol, const double reltol);
@@ -62,7 +95,40 @@ private:
     void*    _cvode_mem;
 
     UserData _data;
+
+    int      _linear_multistep_method = CV_ADAMS;
+    int      _nonlinear_solver_iteration = CV_FUNCTIONAL;
 };
+
+
+CVodeSolverImpl::CVodeSolverImpl(const CVodeSolverInternal::ConfigTree &config)
+{
+    auto param = config.get_optional<std::string>("linear_multistep_method");
+    if (param)
+    {
+        DBUG("setting linear multistep method (config: %s)", param->c_str());
+
+        if      (*param == "Adams") { _linear_multistep_method = CV_ADAMS; }
+        else if (*param == "BDF")   { _linear_multistep_method = CV_BDF; }
+        else {
+            ERR("unknown linear multistep method: %s", param->c_str());
+            std::abort();
+        }
+    }
+
+    param = config.get_optional<std::string>("nonlinear_solver_iteration");
+    if (param)
+    {
+        DBUG("setting nonlinear solver iteration (config: %s)", param->c_str());
+
+        if      (*param == "Functional") { _nonlinear_solver_iteration = CV_FUNCTIONAL; }
+        else if (*param == "Newton")     { _nonlinear_solver_iteration = CV_NEWTON; }
+        else {
+            ERR("unknown nonlinear solver iteration: %s", param->c_str());
+            std::abort();
+        }
+    }
+}
 
 
 void CVodeSolverImpl::init(const unsigned num_equations)
@@ -72,7 +138,10 @@ void CVodeSolverImpl::init(const unsigned num_equations)
     _abstol = N_VNew_Serial(num_equations);
     _num_equations = num_equations;
 
-    _cvode_mem = CVodeCreate(CV_ADAMS, CV_FUNCTIONAL);
+    _cvode_mem = CVodeCreate(_linear_multistep_method, _nonlinear_solver_iteration);
+
+    assert(_cvode_mem != nullptr && _y != nullptr
+           && _abstol != nullptr && _ydot != nullptr);
 }
 
 void CVodeSolverImpl::setTolerance(const double *abstol, const double reltol)
@@ -117,13 +186,14 @@ void CVodeSolverImpl::preSolve()
 
 	auto f_wrapped
 			= [](const realtype t, const N_Vector y, N_Vector ydot, void* data)
+			  -> int
 	{
-		((UserData*) data)->f(t, NV_DATA_S(y), NV_DATA_S(ydot));
-		return 0;
+		bool successful = ((UserData*) data)->f(t, NV_DATA_S(y), NV_DATA_S(ydot));
+		return successful ? 0 : 1;
 	};
 
 
-	int flag = CVodeInit(_cvode_mem, f_wrapped, _t, _y);
+	int flag = CVodeInit(_cvode_mem, f_wrapped, _t, _y); // TODO: consider CVodeReInit()!
 	// if (check_flag(&flag, "CVodeInit", 1)) return(1);
 
 	flag = CVodeSetUserData(_cvode_mem, (void*) &_data);
@@ -148,9 +218,10 @@ void CVodeSolverImpl::preSolve()
 		{
 			// Caution: by calling the DENSE_COL() macro we assume that matrices
 			//          are stored contiguous in memory!
-			((UserData*) data)->df(t, NV_DATA_S(y), NV_DATA_S(ydot),
-								   DENSE_COL(jac, 0), StorageOrder::ColumnMajor);
-			return 1;
+			bool successful = ((UserData*) data)->df(
+								  t, NV_DATA_S(y), NV_DATA_S(ydot),
+								  DENSE_COL(jac, 0), StorageOrder::ColumnMajor);
+			return successful ? 0 : 1;
 		};
 
 		flag = CVDlsSetDenseJacFn(_cvode_mem, df_wrapped);
@@ -171,6 +242,8 @@ void CVodeSolverImpl::solve(const double t_end)
 
 CVodeSolverImpl::~CVodeSolverImpl()
 {
+    printStats(_cvode_mem);
+
     if (_y) {
         N_VDestroy_Serial(_y);
         N_VDestroy_Serial(_ydot);
@@ -186,8 +259,8 @@ CVodeSolverImpl::~CVodeSolverImpl()
 
 
 
-CVodeSolverInternal::CVodeSolverInternal()
-    : _impl(new CVodeSolverImpl)
+CVodeSolverInternal::CVodeSolverInternal(ConfigTree const& config)
+    : _impl(new CVodeSolverImpl(config))
 {}
 
 void CVodeSolverInternal::init(const unsigned num_equations)

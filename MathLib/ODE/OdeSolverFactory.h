@@ -2,12 +2,20 @@
 
 #include <memory>
 
+#include "boost/property_tree/ptree.hpp"
+
 #include "OdeSolver.h"
 
 #include "CVodeSolver.h"
 
 namespace MathLib
 {
+
+
+template <unsigned NumEquations>
+std::unique_ptr<OdeSolver<NumEquations> >
+createOdeSolver(const boost::property_tree::ptree& config);
+
 
 /**
  * ODE solver with a bounds-safe interface
@@ -55,14 +63,25 @@ public:
     double getTime() const override {
         return Implementation::getTime();
     }
+
+private:
+    /// instances of this class shall only be constructed by
+    /// the friend function listed below
+    ConcreteOdeSolver(typename Implementation::ConfigTree const& config)
+        : Implementation{config}
+    {}
+
+    friend std::unique_ptr<OdeSolver<NumEquations> >
+    createOdeSolver<NumEquations>(const boost::property_tree::ptree& config);
 };
 
 
 template <unsigned NumEquations>
-std::unique_ptr<OdeSolver<NumEquations> > createOdeSolver()
+std::unique_ptr<OdeSolver<NumEquations> >
+createOdeSolver(const boost::property_tree::ptree& config)
 {
     auto up = std::unique_ptr<OdeSolver<NumEquations> >();
-    auto p  = new ConcreteOdeSolver<NumEquations, CVodeSolverInternal>;
+    auto p  = new ConcreteOdeSolver<NumEquations, CVodeSolverInternal>(config);
     up.reset(p);
     return up;
 }

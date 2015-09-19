@@ -9,9 +9,9 @@ enum class StorageOrder { ColumnMajor, RowMajor };
 
 // maybe use Eigen::Map here
 // and use std::function
-typedef void (*Function)(const double t, double const*const y, double *const ydot);
+typedef bool (*Function)(const double t, double const*const y, double *const ydot);
 
-typedef void (*JacobianFunction)(const double t,
+typedef bool (*JacobianFunction)(const double t,
                                  double const*const y,
                                  double const*const ydot,
                                  double *const jac,
