@@ -10,13 +10,18 @@
 
 #include <array>
 
+#ifdef ZEOLITE
 #include "MaterialsLib/adsorption/adsorption.h"
+#endif
+
 #include "MathLib/ODE/CVodeSolver.h"
 #include "MathLib/ODE/OdeSolver.h"
 #include "MathLib/ODE/OdeSolverFactory.h"
 
 #include <cstdio>
 
+
+#ifdef ZEOLITE
 using namespace Ads;
 
 const unsigned NEQ = 2; // number of equations
@@ -55,6 +60,8 @@ bool f_zeolite(const double, double const*const y, double *const ydot)
     }
 }
 
+#endif
+
 bool f(const double, double const*const y, double *const ydot)
 {
     if (y[0] <= 0.0) return false;
@@ -77,6 +84,7 @@ bool df(const double /*t*/,
 }
 
 
+#ifdef ZEOLITE
 TEST(MathLibCVodeTest, ZeoliteAdsorption)
 {
     // initial values
@@ -116,6 +124,7 @@ TEST(MathLibCVodeTest, ZeoliteAdsorption)
         // std::printf("time: %g\n", time_reached);
     }
 }
+#endif
 
 
 TEST(MathLibCVodeTest, Exponential)
