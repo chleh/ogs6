@@ -37,6 +37,7 @@ public:
 	static double get_equilibrium_vapour_pressure(const double T_Ads);
 	static double get_specific_heat_capacity(const double T_Ads); // TODO [CL] why unused?
 	static double get_molar_fraction(double xm, double M_this, double M_other);
+	static double get_mass_fraction(double xn, double M_this, double M_other);
 
 	static double get_loading(const double rho_curr, const double rho_dry);
 

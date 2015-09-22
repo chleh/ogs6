@@ -78,6 +78,12 @@ double Adsorption::get_molar_fraction(double xm, double M_this, double M_other)
 }
 
 
+double Adsorption::get_mass_fraction(double xn, double M_this, double M_other)
+{
+	return M_this*xn/(M_this*xn + M_other*(1.0-xn));
+}
+
+
 double Adsorption::get_reaction_rate(const double p_Ads, const double T_Ads,
 									 const double M_Ads, const double loading) const
 {
