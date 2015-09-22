@@ -542,7 +542,7 @@ getRHSCoeffVector(const unsigned int_pt)
 
 
 void LADataNoTpl::
-initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
+initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
 {
     if (_AP->_iteration_in_current_timestep == 0)
     {
@@ -602,59 +602,9 @@ initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
             _reaction_rate[int_pt] = react_rate_R;
             _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
         }
-
-        _qR = _reaction_rate[int_pt];
     }
 
-    return;
-
-
-    const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _AP->_rho_SR_dry);
-
-    auto const dCdt = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading);
-
-    auto              qR = dCdt * _AP->_rho_SR_dry;
-    auto const delta_rho = qR * _AP->_delta_t;          // solid density change in this timestep
-    auto const     rho_V = M_H2O * _p_V / GAS_CONST / _T; // vapour density
-
-    const double rate_factor = 1.0;
-
-    if (delta_rho > rate_factor * rho_V) {
-        // all vapour will be sucked up in this time step
-        // => limit reaction rate
-        // DBUG("limiting reaction rate %g --> %g", qR, qR * rho_V / delta_rho);
-        qR *= rate_factor * rho_V / delta_rho;
-    }
-
-    if (qR > 0.0 && _p_V < 100)
-    {
-        // qR = 0.0;
-    }
-
-    /*
-    // average reaction rate between this and the previous iteration
-    double average_qR = (_AP->_iteration_in_current_timestep < 2)
-            ? qR
-            : (0.5 * (qR + _reaction_rate[int_pt]));
-
-    _qR = average_qR; // this now only works if reaction rate is calculated in every timestep
-    */
-
-    _qR = qR;
-
-    /*
-    if ((average_qR < 0.0) != (_reaction_rate[int_pt] < 0.0)) {
-        // old and new reaction rates have different sign.
-        // let the reaction take a break of one iteration
-        average_qR = 0.0;
-    }
-    */
-
-    // dCdt = qR / _AP->_rho_SR_dry;
-
-    _reaction_rate[int_pt] = qR;
-    _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + _qR * _AP->_delta_t;
-    // _solid_density[int_pt] = _AP->_rho_SR_dry * (1.0 + C_next);
+    _qR = _reaction_rate[int_pt];
 }
 
 
@@ -667,9 +617,9 @@ preEachAssembleIntegrationPoint(
 {
 #ifndef NDEBUG
     // fill local data with garbage to aid in debugging
-    _p = _T = _vapour_mass_fraction = -888.888;
-    _p_V = _rho_GR = -888.888;
-    _qR = 88888.88888;
+    _p = _T = _vapour_mass_fraction = std::numeric_limits<double>::quiet_NaN();
+    _p_V = _rho_GR = std::numeric_limits<double>::quiet_NaN();
+    _qR = std::numeric_limits<double>::quiet_NaN();
 #endif
 
     std::array<double*, NODAL_DOF> int_pt_val = { &_p, &_T, &_vapour_mass_fraction };
@@ -692,11 +642,7 @@ preEachAssembleIntegrationPoint(
     _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
     _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
 
-    // if (_p_V <= 0.0) _p_V = std::numeric_limits<double>::epsilon();
-
-    if (true || _AP->_iteration_in_current_timestep == 0) {
-        initNewTimestep(int_pt, localX);
-    }
+    initReaction(int_pt, localX);
 }
 
 

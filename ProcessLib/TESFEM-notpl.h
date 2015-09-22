@@ -76,7 +76,7 @@ private:
             MatRef const& smDNdx
             );
 
-    void initNewTimestep(
+    void initReaction(
             const unsigned int_pt,
             std::vector<double> const& localX);
 
