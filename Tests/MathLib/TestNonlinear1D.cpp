@@ -4,6 +4,9 @@
 
 #include "MathLib/Nonlinear/Root1D.h"
 
+namespace
+{
+
 double f(double x)
 {
     return x;
@@ -13,6 +16,8 @@ double f2(double x)
 {
     return x*x-1;
 }
+
+} // anonymous namespace
 
 
 TEST(MathLibNonlinear1DTest, Bisect)
