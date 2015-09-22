@@ -519,7 +519,7 @@ Eigen::Vector3d
 LADataNoTpl::
 getRHSCoeffVector(const unsigned int_pt)
 {
-	const double reaction_enthalpy = _AP->_adsorption->get_enthalpy(_T, _p_V, _AP->_M_react);
+	const double reaction_enthalpy = _AP->_adsorption->get_enthalpy(_p_V, _T, _AP->_M_react);
 
 	const double rhs_p = (_AP->_poro - 1.0) * _qR; // TODO [CL] body force term
 
