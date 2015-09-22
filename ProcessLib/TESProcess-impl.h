@@ -449,7 +449,7 @@ bool TESProcess<GlobalSetup>::solve(const double delta_t)
     DBUG("Solve TESProcess.");
 
     auto tmp = *_x;
-    if (false || _timestep != 0)
+    if (false && _timestep != 0)
     {
         // this probably cannot be applied with the current reaction scheme!
         // the reaction rate is extrapolated from the solution of the last timestep

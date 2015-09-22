@@ -553,7 +553,7 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
         // first get reaction rate from the given kinetics
         // this does not consider that vapour is actually sucked up into the zeolite
         const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
-        auto const react_rate_R = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
+        const double react_rate_R = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
                                   * _AP->_rho_SR_dry;
 
         // calculate density change
@@ -596,9 +596,20 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
             const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
             const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
             _reaction_rate[int_pt] = delta_rhoSR / _AP->_delta_t;
+            assert(_reaction_rate[int_pt] < react_rate_R);
             _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + delta_rhoSR;
 
-            DBUG("pV: %14.7g, delta pV: %14.7g, rhoSR: %14.7g, delta_rhoSR: %14.7g", _p_V, delta_pV, _solid_density[int_pt], delta_rhoSR);
+            DBUG("pV: %14.7g, delta pV: %14.7g, rhoSR: %14.7g, delta_rhoSR: %14.7g"
+                 ", xm: %14.7g, react_rate_R: %14.7g, react_rate_GG: %14.7g"
+                 ", kin rr: %14.7g",
+                 _p_V, delta_pV, _solid_density[int_pt], delta_rhoSR,
+                 _vapour_mass_fraction,
+                 react_rate_R, _reaction_rate[int_pt],
+                 _AP->_rho_SR_dry * _AP->_adsorption->get_reaction_rate(
+                     _p_V, _T, _AP->_M_react,
+                     Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry)
+                     )
+                 );
 
             _reaction_rate_indicator[int_pt] = 99.0; // 99 --> GG --> Gleichgewicht
         }
@@ -607,7 +618,7 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
             // in this case considering only the adsorption kintetics is sufficient,
             // and may be also more correct, since it really describes a kinetic.
 
-            // TODO [CL] maybe also alter _p_V, _vapour_mass_fraction
+            // TODO [CL] maybe also alter _p, _p_V, _vapour_mass_fraction
 
             _reaction_rate[int_pt] = react_rate_R;
             _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
@@ -621,6 +632,10 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
     }
 
     _qR = _reaction_rate[int_pt];
+    if (_qR < 0.0)
+    {
+        DBUG("negative reaction rate: %14.7g", _qR);
+    }
 }
 
 
