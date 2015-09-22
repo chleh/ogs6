@@ -31,7 +31,7 @@ FixedTimeStepping::FixedTimeStepping(double t0, double tn, double dt)
 : _t_initial(t0), _t_end(tn), _dt_vector(static_cast<std::size_t>(std::ceil((tn-t0)/dt)), dt), _ts_prev(t0), _ts_current(t0)
 {}
 
-FixedTimeStepping*
+std::unique_ptr<FixedTimeStepping>
 FixedTimeStepping::newInstance(BaseLib::ConfigTree const& config)
 {
     config.checkConfParam("type", "FixedTimeStepping");
@@ -40,7 +40,31 @@ FixedTimeStepping::newInstance(BaseLib::ConfigTree const& config)
     auto const t_end     = config.getConfParam<double>("t_end");
     auto const dt        = config.getConfParam<double>("dt");
 
-    return new FixedTimeStepping(t_initial, t_end, dt);
+    std::vector<double> timesteps;
+
+    auto const range = delta_ts->equal_range("pair");
+    for (auto it=range.first; it!=range.second; ++it)
+    {
+        auto count   = it->second.get_optional<std::size_t>("count");
+        auto delta_t = it->second.get_optional<double>("delta_t");
+
+        if (count && delta_t) {
+            if (*count == 0) {
+                ERR("<count> is zero.");
+                return nullptr;
+            }
+            if (*delta_t < 0.0) {
+                ERR("timestep <delta_t> is smaller than zero.");
+                return nullptr;
+            }
+            timesteps.resize(timesteps.size() + (*count), *delta_t);
+        } else {
+            ERR("<count> or <delta_t> missing in <pair>");
+            return nullptr;
+        }
+    }
+
+    return std::unique_ptr<FixedTimeStepping>(new FixedTimeStepping(*t_initial, *t_end, timesteps));
 }
 
 const TimeStep FixedTimeStepping::getTimeStep() const
