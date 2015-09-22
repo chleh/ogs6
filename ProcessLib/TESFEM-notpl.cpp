@@ -561,10 +561,16 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
         const double delta_rhoV   = - delta_rhoS;
         const double rho_V = _AP->_M_react * _p_V / GAS_CONST / _T * _AP->_poro;
 
-        if (-delta_rhoV > rho_V)
+        if (
+            -delta_rhoV > rho_V   // there would be more vapour sucked up than there currently is
+            || delta_rhoV > rho_V // there would be more vapour released than there currently is
+        )
         {
-            // in this case with the model only considering adsorption kinetics, the zeolite will adsorb more water than
-            // there actually is ==> limit adsorption, use equilibrium reaction
+            // these are the corner cases where the water adsorption/desorption behaviour of the zeolite
+            // controls the equilibrium to a great extent
+
+            // in this case with the model only considering adsorption kinetics, the zeolite will adsorb (or release) more water than
+            // there currently is ==> limit adsorption, use equilibrium reaction
 
             // function describing local equilibrium between vapour and zeolite loading
             // temperature is assumed to be constant
@@ -578,7 +584,9 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
 
             // range where to search for roots of f
             const double C_eq0 = _AP->_adsorption->get_equilibrium_loading(_p_V, _T, _AP->_M_react);
-            const double limit = (C_eq0 > loading) ? 1e-8 : _p; // TODO [CL] upper limit to equilibrium vapour pressure
+            const double limit = (C_eq0 > loading)
+                                 ? 1e-8
+                                 : Ads::Adsorption::get_equilibrium_vapour_pressure(_T);
 
             // search for roots
             auto rf = MathLib::Nonlinear::makeRegulaFalsi<MathLib::Nonlinear::Pegasus>(f, _p_V, limit);
@@ -596,8 +604,12 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
             const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
             const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
             _reaction_rate[int_pt] = delta_rhoSR / _AP->_delta_t;
-            assert(_reaction_rate[int_pt] < react_rate_R);
             _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + delta_rhoSR;
+
+            // verify that reaction rate from this model is always slower than from the kinetic model
+            // in the corner cases handled here
+            assert(react_rate_R <= 0.0 || _reaction_rate[int_pt] < react_rate_R);
+            assert(react_rate_R >= 0.0 || _reaction_rate[int_pt] > react_rate_R);
 
             DBUG("pV: %14.7g, delta pV: %14.7g, rhoSR: %14.7g, delta_rhoSR: %14.7g"
                  ", xm: %14.7g, react_rate_R: %14.7g, react_rate_GG: %14.7g"
