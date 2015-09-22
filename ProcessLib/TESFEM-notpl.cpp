@@ -546,6 +546,10 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
 {
     if (_AP->_iteration_in_current_timestep == 0)
     {
+        // CAUTION: this procedure calculates the reaction rate
+        // for the current timestep from the solution of the last timestep.
+        // i.e. the local variables in this calculation have to be the solution of the last timestep!!!
+
         // first get reaction rate from the given kinetics
         // this does not consider that vapour is actually sucked up into the zeolite
         const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
@@ -585,6 +589,8 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
             const double delta_pV = pV - _p_V;
             _p += delta_pV;
             _p_V = pV;
+            // set vapour mass fraction accordingly
+            _vapour_mass_fraction = Ads::Adsorption::get_mass_fraction(_p_V/_p, _AP->_M_react, _AP->_M_inert);
 
             // set solid density
             const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
@@ -599,9 +605,15 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
             // in this case considering only the adsorption kintetics is sufficient,
             // and may be also more correct, since it really describes a kinetic.
 
+            // TODO [CL] maybe also alter _p_V, _vapour_mass_fraction
+
             _reaction_rate[int_pt] = react_rate_R;
             _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
         }
+    }
+    else
+    {
+        // reaction rate does not change within a timestep
     }
 
     _qR = _reaction_rate[int_pt];
@@ -639,10 +651,11 @@ preEachAssembleIntegrationPoint(
     assert(0.0 <= _vapour_mass_fraction && _vapour_mass_fraction <= 1.0);
 
     // pre-compute certain properties
-    _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
     _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
 
     initReaction(int_pt, localX);
+
+    _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
 }
 
 
