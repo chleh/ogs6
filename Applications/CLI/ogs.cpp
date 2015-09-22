@@ -35,11 +35,13 @@ void solveProcesses(ProjectData &project)
 
 	std::string const out_pref = output_control.getFilePrefix();
 
-	auto do_output = [out_pref](unsigned pcs, ProcessLib::Process* p, unsigned ts)
+	auto do_output = [out_pref](unsigned pcs, ProcessLib::Process* p,
+					 unsigned ts, double current_time)
 	{
 		std::string const output_file_name =
 				out_pref + "_pcs_" + std::to_string(pcs)
 				+ "_ts_" + std::to_string(ts)
+				+ "_t_"  + std::to_string(current_time)
 				+ ".vtu";
 		DBUG("output to %s", output_file_name.c_str());
 		// auto const& p = _processes[pcs];
@@ -51,7 +53,7 @@ void solveProcesses(ProjectData &project)
 		for (auto p = project.processesBegin(); p != project.processesEnd();
 			 ++p)
 		{
-			do_output(i, *p, 0);
+			do_output(i, *p, 0, 0.0);
 		}
 	}
 
@@ -84,7 +86,7 @@ void solveProcesses(ProjectData &project)
 
 			if (output_timestep)
 			{
-				do_output(i, *p, timestep);
+				do_output(i, *p, timestep, current_time);
 			}
 
 			++i;
@@ -97,12 +99,13 @@ void solveProcesses(ProjectData &project)
 	if (!output_timestep)
 	{
 		const auto timestep = time_stepper.getTimeStep().steps();
+		const auto current_time = time_stepper.getTimeStep().current();
 
 		unsigned i = 0;  // process counter, used to distinguish output files
 		for (auto p = project.processesBegin(); p != project.processesEnd();
 			 ++p)
 		{
-			do_output(i, *p, timestep);
+			do_output(i, *p, timestep, current_time);
 		}
 	}
 
