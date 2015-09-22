@@ -22,14 +22,14 @@ const double c[] = {
 namespace Ads
 {
 
-double DensityConst::get_adsorbate_density(const double /*Tads*/) const
+double DensityConst::get_adsorbate_density(const double /*T_Ads*/) const
 {
 	return rho_water_Hauer(150.0+273.15);
 }
 
 
 //Thermal expansivity model for water found in the works of Hauer
-double DensityConst::get_alphaT(const double /*Tads*/) const
+double DensityConst::get_alphaT(const double /*T_Ads*/) const
 {
 	return 0.0;
 }

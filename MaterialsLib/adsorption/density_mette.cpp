@@ -19,21 +19,21 @@ const double c[] = {
 namespace Ads
 {
 
-double DensityMette::get_adsorbate_density(const double Tads) const
+double DensityMette::get_adsorbate_density(const double T_Ads) const
 {
 	const double T0 = 293.15;
 	const double rho0 = rho_water_Dean(T0);
 	const double alpha20 = alphaT_water_Dean(T0);
-	return rho0 / (1. + alpha20*(Tads-T0));
+	return rho0 / (1. + alpha20*(T_Ads-T0));
 }
 
 
 //Thermal expansivity model for water found in the works of Hauer
-double DensityMette::get_alphaT(const double Tads) const
+double DensityMette::get_alphaT(const double T_Ads) const
 {
 	const double T0 = 293.15;
 	const double alpha20 = alphaT_water_Dean(T0);
-	return alpha20 / (1. + alpha20 * (Tads-T0));
+	return alpha20 / (1. + alpha20 * (T_Ads-T0));
 }
 
 

@@ -20,16 +20,16 @@ const double c[] = {
 namespace Ads
 {
 
-double DensityCook::get_adsorbate_density(const double Tads) const
+double DensityCook::get_adsorbate_density(const double T_Ads) const
 {
-	return rho_water_Dean(Tads);
+	return rho_water_Dean(T_Ads);
 }
 
 
 //Thermal expansivity model for water found in the works of Hauer
-double DensityCook::get_alphaT(const double Tads) const
+double DensityCook::get_alphaT(const double T_Ads) const
 {
-	return alphaT_water_Dean(Tads);
+	return alphaT_water_Dean(T_Ads);
 }
 
 

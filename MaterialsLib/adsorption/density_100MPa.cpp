@@ -20,17 +20,17 @@ const double c[] = {
 namespace Ads
 {
 
-double Density100MPa::get_adsorbate_density(const double Tads) const
+double Density100MPa::get_adsorbate_density(const double T_Ads) const
 {
-	return -0.0013*Tads*Tads + 0.3529*Tads + 1049.2;
+	return -0.0013*T_Ads*T_Ads + 0.3529*T_Ads + 1049.2;
 }
 
 
 //Thermal expansivity model for water found in the works of Hauer
-double Density100MPa::get_alphaT(const double Tads) const
+double Density100MPa::get_alphaT(const double T_Ads) const
 {
-	const double rho    = -0.0013*Tads*Tads+0.3529*Tads+1049.2;
-	const double drhodT = -0.0026*Tads + 0.3529;
+	const double rho    = -0.0013*T_Ads*T_Ads+0.3529*T_Ads+1049.2;
+	const double drhodT = -0.0026*T_Ads + 0.3529;
 
 	return - drhodT / rho;
 }

@@ -8,16 +8,16 @@ namespace Ads
 class DensityCook : public Adsorption
 {
 public:
-	double get_adsorbate_density(const double Tads) const;
-	double get_alphaT(const double Tads) const;
+	double get_adsorbate_density(const double T_Ads) const;
+	double get_alphaT(const double T_Ads) const;
 	double characteristic_curve(const double A) const;
 	double d_characteristic_curve(const double A) const;
 };
 
 
-inline double rho_water_Dean(const double Tads)
+inline double rho_water_Dean(const double T_Ads)
 {
-	const double Tcel = Tads - 273.15;
+	const double Tcel = T_Ads - 273.15;
 	const double b[] = { 999.9,2.03E-02,-6.16E-03,2.26E-05,-4.68E-08 };
 	if (Tcel <= 100.) {
 		return b[0] + Tcel * (b[1] + Tcel * (b[2] + Tcel * (b[3] + Tcel * b[4]) ) );
@@ -29,9 +29,9 @@ inline double rho_water_Dean(const double Tads)
 	}
 }
 
-inline double alphaT_water_Dean(const double Tads)
+inline double alphaT_water_Dean(const double T_Ads)
 {
-	const double Tcel = Tads - 273.15;
+	const double Tcel = T_Ads - 273.15;
 	const double b[] = { 999.9,2.03E-02,-6.16E-03,2.26E-05,-4.68E-08 };
 	if (Tcel <= 100.) {
 		const double r = b[0] + Tcel * (b[1] + Tcel * (b[2] + Tcel * (b[3] + Tcel * b[4]) ) );

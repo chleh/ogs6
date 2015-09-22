@@ -33,17 +33,20 @@ public:
 	static Adsorption* newInstance(std::string const& rsys);
 
 	// TODO [CL] move those four methods to water properties class
-	static double get_evaporation_enthalpy(const double Tads);
-	static double get_equilibrium_vapour_pressure(const double Tads);
-	static double get_specific_heat_capacity(const double Tads); // TODO [CL] why unused?
+	static double get_evaporation_enthalpy(const double T_Ads);
+	static double get_equilibrium_vapour_pressure(const double T_Ads);
+	static double get_specific_heat_capacity(const double T_Ads); // TODO [CL] why unused?
 	static double get_molar_fraction(double xm, double M_this, double M_other);
 
 	static double get_loading(const double rho_curr, const double rho_dry);
 
+// non-virtual members
+	double get_equilibrium_loading(const double p_Ads, const double T_Ads, const double M_Ads);
+
 // virtual members:
 	virtual ~Adsorption() {}
 
-	virtual double get_enthalpy(const double T_Ads, const double p_Ads, const double M_Ads) const;
+	virtual double get_enthalpy(const double p_Ads, const double T_Ads, const double M_Ads) const;
 	virtual double get_reaction_rate(const double p_Ads, const double T_Ads,
 									 const double M_Ads, const double loading) const;
 	/**
@@ -59,15 +62,15 @@ public:
 									 std::array<double, 3>& dqdr) const;
 
 protected:
-	virtual double get_adsorbate_density(const double Tads) const = 0;
-	virtual double get_alphaT(const double Tads) const = 0;
+	virtual double get_adsorbate_density(const double T_Ads) const = 0;
+	virtual double get_alphaT(const double T_Ads) const = 0;
 	virtual double characteristic_curve(const double A) const = 0;
 	virtual double d_characteristic_curve(const double A) const = 0;
 
 private:
 // non-virtual members
-	double get_potential(const double T_Ads, const double p_Ads, const double M_Ads) const;
-	double get_entropy(const double Tads, const double A) const;
+	double get_potential(const double p_Ads, const double T_Ads, const double M_Ads) const;
+	double get_entropy(const double T_Ads, const double A) const;
 };
 
 

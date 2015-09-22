@@ -22,12 +22,12 @@ const double c[] = {
 namespace Ads
 {
 
-double DensityDubinin::get_adsorbate_density(const double Tads) const
+double DensityDubinin::get_adsorbate_density(const double T_Ads) const
 {
 	const double Tb = 373.1;
 
-	if (Tads < Tb) {
-		return rho_water_Dean(Tads);
+	if (T_Ads < Tb) {
+		return rho_water_Dean(T_Ads);
 	} else {
 		const double Tc = 647.3; //K
 		// const double rhoc = 322.; //kg/m^3
@@ -39,18 +39,18 @@ double DensityDubinin::get_adsorbate_density(const double Tads) const
 		const double M = M_H2O;
 		const double b = R * Tc/(8. * pc); //m^3/mol
 		const double rhom = M/b; //kg/m^3
-		const double rho = rhob - (rhob-rhom)/(Tc-Tb)*(Tads-Tb);
+		const double rho = rhob - (rhob-rhom)/(Tc-Tb)*(T_Ads-Tb);
 		return rho;
 	}
 }
 
 
 //Thermal expansivity model for water found in the works of Hauer
-double DensityDubinin::get_alphaT(const double Tads) const
+double DensityDubinin::get_alphaT(const double T_Ads) const
 {
 	const double Tb = 373.1;
-	if (Tads <= Tb) {
-		return alphaT_water_Dean(Tads);
+	if (T_Ads <= Tb) {
+		return alphaT_water_Dean(T_Ads);
 	} else {
 		//critical T and p
 		const double Tc = 647.3; //K
@@ -63,7 +63,7 @@ double DensityDubinin::get_alphaT(const double Tads) const
 		const double M = M_H2O;
 		const double b = R * Tc/(8. * pc); //m^3/mol
 		const double rhom = M/(b); //kg/m^3
-		const double rho = rhob - (rhob-rhom)/(Tc-Tb)*(Tads-Tb);
+		const double rho = rhob - (rhob-rhom)/(Tc-Tb)*(T_Ads-Tb);
 		return ((rhob-rhom)/(Tc-Tb)*1./rho);
 	}
 }
