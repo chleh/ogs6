@@ -96,15 +96,15 @@ private:
     // Eigen::MatrixXd _velocity; // row index: gauss point, column index: dimension x/y/z
 
     // integration point values of unknowns
-    double _p = 888.888; // gas pressure
-    double _T = 888.888; // temperature
-    double _vapour_mass_fraction = 0.5;     // fluid mass fraction of the second component
+    double _p = -888.888; // gas pressure
+    double _T = -888.888; // temperature
+    double _vapour_mass_fraction = -888.888;     // fluid mass fraction of the second component
 
     // temporary storage for some properties
     // values do not change during the assembly of one integration point
-    double _rho_GR = 888.888;
-    double _p_V = 888.888; // vapour partial pressure
-    double _qR = 888.888;  // reaction rate, use this in assembly!!!
+    double _rho_GR = -888.888;
+    double _p_V = -888.888; // vapour partial pressure
+    double _qR = 88888.88888;  // reaction rate, use this in assembly!!!
 
     std::unique_ptr<Eigen::MatrixXd> _Lap;
     std::unique_ptr<Eigen::MatrixXd> _Mas;

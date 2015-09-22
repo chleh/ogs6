@@ -665,6 +665,13 @@ preEachAssembleIntegrationPoint(
         const std::vector<double> &localX,
         const VecRef &smN, const MatRef& /*smDNdx*/)
 {
+#ifndef NDEBUG
+    // fill local data with garbage to aid in debugging
+    _p = _T = _vapour_mass_fraction = -888.888;
+    _p_V = _rho_GR = -888.888;
+    _qR = 88888.88888;
+#endif
+
     std::array<double*, NODAL_DOF> int_pt_val = { &_p, &_T, &_vapour_mass_fraction };
 
     NumLib::shapeFunctionInterpolate(localX, smN, int_pt_val);
