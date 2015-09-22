@@ -56,7 +56,7 @@ TYPED_TEST_CASE(RegulaFalsiTestZeolite, RegulaFalsiTypes);
 
 TYPED_TEST(RegulaFalsiTestZeolite, Zeolite)
 {
-    RegulaFalsi<TypeParam> rf(f, 1e-8, pV0);
+    auto rf = makeRegulaFalsi<TypeParam>(f, 1e-8, pV0);
 
     std::printf(" 0 -- x ~ %14.7g, range = %14.7g\n", rf.get_result(), rf.get_range());
 
@@ -69,7 +69,8 @@ TYPED_TEST(RegulaFalsiTestZeolite, Zeolite)
 
 TYPED_TEST(RegulaFalsiTestZeolite, Zeolite2)
 {
-    RegulaFalsi<TypeParam> rf(f2, 1e-8, pV0);
+    // auto rf = MakeRegulaFalsi<TypeParam>::create(f2, 1e-8, pV0);
+    auto rf = makeRegulaFalsi<TypeParam>(f2, 1e-8, pV0);
 
     std::printf(" 0 -- x ~ %14.7g, range = %14.7g\n", rf.get_result(), rf.get_range());
 
