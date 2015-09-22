@@ -599,6 +599,8 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
             _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + delta_rhoSR;
 
             DBUG("pV: %14.7g, delta pV: %14.7g, rhoSR: %14.7g, delta_rhoSR: %14.7g", _p_V, delta_pV, _solid_density[int_pt], delta_rhoSR);
+
+            _reaction_rate_indicator[int_pt] = 99.0; // 99 --> GG --> Gleichgewicht
         }
         else
         {
@@ -609,6 +611,8 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
 
             _reaction_rate[int_pt] = react_rate_R;
             _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
+
+            _reaction_rate_indicator[int_pt] = 0.0;
         }
     }
     else
@@ -745,6 +749,8 @@ getIntegrationPointValues(SecondaryVariables var) const
     case SecondaryVariables::VELOCITY_Z:
         assert(_velocity.size() >= 3);
         return _velocity[2];
+    case SecondaryVariables::REACTION_KINETIC_INDICATOR:
+        return _reaction_rate_indicator;
     }
 
     // TODO: error!
@@ -840,6 +846,8 @@ LADataNoTpl::init(const unsigned num_int_pts, const unsigned dimension)
     // _velocity.resize(num_int_pts, dimension);
     _velocity.resize(dimension);
     for (auto& v : _velocity) v.resize(num_int_pts);
+
+    _reaction_rate_indicator.resize(num_int_pts);
 
     _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
     _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));

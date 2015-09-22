@@ -27,7 +27,8 @@ namespace TES
 {
 
 enum class SecondaryVariables { SOLID_DENSITY, REACTION_RATE,
-                                VELOCITY_X, VELOCITY_Y, VELOCITY_Z };
+                                VELOCITY_X, VELOCITY_Y, VELOCITY_Z,
+                                REACTION_KINETIC_INDICATOR };
 
 const double NONLINEAR_ERROR_TOLERANCE = 1e-6;
 
@@ -94,6 +95,8 @@ private:
     // std::vector<double> _velocity_x;
     // std::vector<double> _velocity_x;
     // Eigen::MatrixXd _velocity; // row index: gauss point, column index: dimension x/y/z
+
+    std::vector<double> _reaction_rate_indicator;
 
     // integration point values of unknowns
     double _p = -888.888; // gas pressure

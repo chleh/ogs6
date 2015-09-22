@@ -128,6 +128,8 @@ TESProcess(MeshLib::Mesh& mesh,
             add_secondary_variable("velocity_x",    SecondaryVariables::VELOCITY_X,    1);
             if (_mesh.getDimension() >= 2) add_secondary_variable("velocity_y",    SecondaryVariables::VELOCITY_Y,    1);
             if (_mesh.getDimension() >= 3) add_secondary_variable("velocity_z",    SecondaryVariables::VELOCITY_Z,    1);
+
+            add_secondary_variable("reaction_kinetic_indicator", SecondaryVariables::REACTION_KINETIC_INDICATOR, 1);
         }
     }
 
