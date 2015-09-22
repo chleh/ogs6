@@ -546,41 +546,64 @@ initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
 {
     if (_AP->_iteration_in_current_timestep == 0)
     {
+        // first get reaction rate from the given kinetics
+        // this does not consider that vapour is actually sucked up into the zeolite
         const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
+        auto const react_rate_R = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
+                                  * _AP->_rho_SR_dry;
 
-        // function describing local equilibrium between vapour and zeolite loading
-        // temperature is assumed to be constant
-        auto f = [this, loading](double pV) -> double
+        // calculate density change
+        const double delta_rhoS = react_rate_R * _AP->_delta_t * (1.0 - _AP->_poro);
+        const double delta_rhoV   = - delta_rhoS;
+        const double rho_V = _AP->_M_react * _p_V / GAS_CONST / _T * _AP->_poro;
+
+        if (-delta_rhoV > rho_V)
         {
-            // pV0 := _pV
-            const double C_eq = _AP->_adsorption->get_equilibrium_loading(pV, _T, _AP->_M_react);
-            return (pV - _p_V) * _AP->_M_react / GAS_CONST / _T * _AP->_poro
-                    + (1.0-_AP->_poro) * (C_eq - loading) * _AP->_rho_SR_dry;
-        };
+            // in this case with the model only considering adsorption kinetics, the zeolite will adsorb more water than
+            // there actually is ==> limit adsorption, use equilibrium reaction
 
-        // range where to search for roots of f
-        const double C_eq0 = _AP->_adsorption->get_equilibrium_loading(_p_V, _T, _AP->_M_react);
-        const double limit = (C_eq0 > loading) ? 1e-8 : _p; // TODO [CL] upper limit to equilibrium vapour pressure
+            // function describing local equilibrium between vapour and zeolite loading
+            // temperature is assumed to be constant
+            auto f = [this, loading](double pV) -> double
+            {
+                // pV0 := _pV
+                const double C_eq = _AP->_adsorption->get_equilibrium_loading(pV, _T, _AP->_M_react);
+                return (pV - _p_V) * _AP->_M_react / GAS_CONST / _T * _AP->_poro
+                        + (1.0-_AP->_poro) * (C_eq - loading) * _AP->_rho_SR_dry;
+            };
 
-        // search for roots
-        auto rf = MathLib::Nonlinear::makeRegulaFalsi<MathLib::Nonlinear::Pegasus>(f, _p_V, limit);
-        rf.step(3);
+            // range where to search for roots of f
+            const double C_eq0 = _AP->_adsorption->get_equilibrium_loading(_p_V, _T, _AP->_M_react);
+            const double limit = (C_eq0 > loading) ? 1e-8 : _p; // TODO [CL] upper limit to equilibrium vapour pressure
 
-        // set vapour pressure
-        const double pV = rf.get_result();
-        const double delta_pV = pV - _p_V;
-        _p += delta_pV;
-        _p_V = pV;
+            // search for roots
+            auto rf = MathLib::Nonlinear::makeRegulaFalsi<MathLib::Nonlinear::Pegasus>(f, _p_V, limit);
+            rf.step(3);
 
+            // set vapour pressure
+            const double pV = rf.get_result();
+            const double delta_pV = pV - _p_V;
+            _p += delta_pV;
+            _p_V = pV;
 
-        // set solid density
-        const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
-        const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
-        _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + delta_rhoSR;
-        _reaction_rate[int_pt] = delta_rhoSR / _AP->_delta_t;
+            // set solid density
+            const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
+            const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
+            _reaction_rate[int_pt] = delta_rhoSR / _AP->_delta_t;
+            _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + delta_rhoSR;
 
+            DBUG("pV: %14.7g, delta pV: %14.7g, rhoSR: %14.7g, delta_rhoSR: %14.7g", _p_V, delta_pV, _solid_density[int_pt], delta_rhoSR);
+        }
+        else
+        {
+            // in this case considering only the adsorption kintetics is sufficient,
+            // and may be also more correct, since it really describes a kinetic.
 
-        DBUG("pV: %14.7g, delta pV: %14.7g, rhoSR: %14.7g, delta_rhoSR: %14.7g", _p_V, delta_pV, _solid_density[int_pt], delta_rhoSR);
+            _reaction_rate[int_pt] = react_rate_R;
+            _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
+        }
+
+        _qR = _reaction_rate[int_pt];
     }
 
     return;
