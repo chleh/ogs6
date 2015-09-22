@@ -49,7 +49,7 @@ TYPED_TEST_CASE(RegulaFalsiTest, RegulaFalsiTypes);
 
 TYPED_TEST(RegulaFalsiTest, QuadraticFunction)
 {
-    RegulaFalsi<TypeParam> rf(f2, -0.1, 1.1);
+    auto rf = makeRegulaFalsi<TypeParam>(f2, -0.1, 1.1);
 
     std::printf(" 0 -- x ~ %14.7g, range = %14.7g\n", rf.get_result(), rf.get_range());
 

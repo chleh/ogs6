@@ -67,13 +67,11 @@ private:
 };
 
 
-template<typename T>
-class RegulaFalsi : private T
+template<typename SubType, typename Function>
+class RegulaFalsi : private SubType
 {
 public:
-    typedef double (*const Function)(double);
-
-    RegulaFalsi(Function f, double a, double b)
+    RegulaFalsi(Function const& f, double a, double b)
         : _f(f), _a(a), _b(b), _fa(f(a)), _fb(f(b))
     {
         if (_fa == 0.0) {
@@ -104,7 +102,7 @@ public:
                 _b = c;
                 _fb = fc;
             } else {
-                const double m = T::get_m(_fa, _fb, fc);
+                const double m = SubType::get_m(_fa, _fb, fc);
                 _fa *= m;
                 _b = c;
                 _fb = fc;
@@ -125,9 +123,17 @@ public:
     double get_range() const { return std::fabs(_a - _b); }
 
 private:
-    const Function _f;
+    Function const& _f;
     double _a, _b, _fa, _fb;
 };
+
+
+template<typename SubType, typename Function, typename... Args>
+RegulaFalsi<SubType, Function>
+static makeRegulaFalsi(Function const& f, Args... args) {
+    return RegulaFalsi<SubType, Function>(f, args...);
+}
+
 
 class Unmodified {
 protected:
