@@ -18,6 +18,7 @@
 
 #include "TESFEM-notpl.h"
 
+#include "MathLib/Nonlinear/Root1D.h"
 #include "NumLib/Function/Interpolation.h"
 
 
@@ -543,6 +544,48 @@ getRHSCoeffVector(const unsigned int_pt)
 void LADataNoTpl::
 initNewTimestep(const unsigned int_pt, const std::vector<double> &/*localX*/)
 {
+    if (_AP->_iteration_in_current_timestep == 0)
+    {
+        const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
+
+        // function describing local equilibrium between vapour and zeolite loading
+        // temperature is assumed to be constant
+        auto f = [this, loading](double pV) -> double
+        {
+            // pV0 := _pV
+            const double C_eq = _AP->_adsorption->get_equilibrium_loading(pV, _T, _AP->_M_react);
+            return (pV - _p_V) * _AP->_M_react / GAS_CONST / _T * _AP->_poro
+                    + (1.0-_AP->_poro) * (C_eq - loading) * _AP->_rho_SR_dry;
+        };
+
+        // range where to search for roots of f
+        const double C_eq0 = _AP->_adsorption->get_equilibrium_loading(_p_V, _T, _AP->_M_react);
+        const double limit = (C_eq0 > loading) ? 1e-8 : _p; // TODO [CL] upper limit to equilibrium vapour pressure
+
+        // search for roots
+        auto rf = MathLib::Nonlinear::makeRegulaFalsi<MathLib::Nonlinear::Pegasus>(f, _p_V, limit);
+        rf.step(3);
+
+        // set vapour pressure
+        const double pV = rf.get_result();
+        const double delta_pV = pV - _p_V;
+        _p += delta_pV;
+        _p_V = pV;
+
+
+        // set solid density
+        const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
+        const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
+        _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + delta_rhoSR;
+        _reaction_rate[int_pt] = delta_rhoSR / _AP->_delta_t;
+
+
+        DBUG("pV: %14.7g, delta pV: %14.7g, rhoSR: %14.7g, delta_rhoSR: %14.7g", _p_V, delta_pV, _solid_density[int_pt], delta_rhoSR);
+    }
+
+    return;
+
+
     const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _AP->_rho_SR_dry);
 
     auto const dCdt = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading);
