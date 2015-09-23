@@ -91,12 +91,18 @@ private:
     std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
     std::vector<double> _reaction_rate_prev_ts; // could also be calculated from _solid_density_prev_ts
 
+    std::vector<bool>   _is_equilibrium_reaction;   ///< true if equilibrium reaction is used in this timestep
+
+    /** the value of p_V that the equilibrium reaction estimated
+     *  in the first iteration of this timestep */
+    std::vector<double> _estimated_vapour_pressure;
+
     std::vector<std::vector<double> > _velocity;
     // std::vector<double> _velocity_x;
     // std::vector<double> _velocity_x;
     // Eigen::MatrixXd _velocity; // row index: gauss point, column index: dimension x/y/z
 
-    std::vector<double> _reaction_rate_indicator;
+    std::vector<double> _reaction_rate_indicator; // TODO [CL] get rid of this
 
     // integration point values of unknowns
     double _p = -888.888; // gas pressure
