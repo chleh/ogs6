@@ -493,19 +493,22 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
     printGlobalVector(_x->getRawVector());
     */
 
-    auto add_primary_var = [this](const unsigned vi)
+    auto count = [](MeshLib::Mesh const& mesh, MeshLib::MeshItemType type) -> std::size_t
     {
-        std::string const& property_name = _process_vars[vi]->getName();
-        if (_output_variables.find(property_name) == _output_variables.cend())
-            return;
+        switch (type) {
+        case MeshLib::MeshItemType::Cell: return mesh.getNElements();
+        case MeshLib::MeshItemType::Node: return mesh.getNNodes();
+        default: break;
+        }
+        return 0;
+    };
 
-        DBUG("  process var %s", property_name.c_str());
-
+    auto get_or_create_mesh_property = [this, &count](std::string const& property_name, MeshLib::MeshItemType type)
+    {
         // Get or create a property vector for results.
         boost::optional<MeshLib::PropertyVector<double>&> result;
 
-        assert(_x->size() == NODAL_DOF * _mesh.getNNodes());
-        auto const N = _mesh.getNNodes();
+        auto const N = count(_mesh, type);
 
         if (_mesh.getProperties().hasPropertyVector(property_name))
         {
@@ -515,15 +518,28 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
         else
         {
             result = _mesh.getProperties().template
-                createNewPropertyVector<double>(property_name,
-                    MeshLib::MeshItemType::Node);
+                createNewPropertyVector<double>(property_name, type);
             result->resize(N);
         }
         assert(result && result->size() == N);
 
+        return result;
+    };
+
+    auto add_primary_var = [this, &get_or_create_mesh_property](const unsigned vi)
+    {
+        std::string const& property_name = _process_vars[vi]->getName();
+        if (_output_variables.find(property_name) == _output_variables.cend())
+            return;
+
+        DBUG("  process var %s", property_name.c_str());
+
+        auto result = get_or_create_mesh_property(property_name, MeshLib::MeshItemType::Node);
+        assert(result->size() == _mesh.getNNodes());
+
         auto const& mcmap = _local_to_global_index_map->getMeshComponentMap();
         // Copy result
-        for (std::size_t i = 0; i < N; ++i)
+        for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
         {
             MeshLib::Location loc(_mesh.getID(), MeshLib::MeshItemType::Node, i);
             auto const idx = mcmap.getGlobalIndex(loc, vi);
@@ -531,6 +547,7 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
         }
     };
 
+    assert(_x->size() == NODAL_DOF * _mesh.getNNodes());
     for (unsigned vi=0; vi!=NODAL_DOF; ++vi)
     {
         add_primary_var(vi);
@@ -549,44 +566,28 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             extrapolator(*_local_to_global_index_map_single_component);
 #endif
 
-    auto add_secondary_var = [this, &extrapolator]
+    auto add_secondary_var = [this, &extrapolator, &get_or_create_mesh_property]
                              (SecondaryVariables const property,
                              std::string const& property_name,
                              const unsigned num_components
                              )
     {
+        assert(num_components == 1); // TODO [CL] implement other cases
+
         {
             if (_output_variables.find(property_name) == _output_variables.cend())
                 return;
 
             DBUG("  process var %s", property_name.c_str());
 
-            // Get or create a property vector for results.
-            boost::optional<MeshLib::PropertyVector<double>&> result;
-
-            auto const N = _mesh.getNNodes();
-
-            if (_mesh.getProperties().hasPropertyVector(property_name))
-            {
-                result = _mesh.getProperties().template
-                    getPropertyVector<double>(property_name);
-            }
-            else
-            {
-                result = _mesh.getProperties().template
-                    createNewPropertyVector<double>(property_name,
-                        MeshLib::MeshItemType::Node,
-                        num_components);
-                result->resize(N);
-            }
-            assert(result && result->size() == N);
-
+            auto result = get_or_create_mesh_property(property_name, MeshLib::MeshItemType::Node);
+            assert(result->size() == _mesh.getNNodes());
 
             extrapolator.extrapolate(_local_assemblers, property);
             auto const& nodal_values = extrapolator.getNodalValues().getRawVector();
 
             // Copy result
-            for (std::size_t i = 0; i < N; ++i)
+            for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
             {
                 (*result)[i] = nodal_values[i];
             }
@@ -596,30 +597,14 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             DBUG("  process var %s residual", property_name.c_str());
             auto const& property_name_res = property_name + "_residual";
 
-            // Get or create a property vector for results.
-            boost::optional<MeshLib::PropertyVector<double>&> result;
-
-            auto const num_cells = _mesh.getNElements();
-
-            if (_mesh.getProperties().hasPropertyVector(property_name_res))
-            {
-                result = _mesh.getProperties().template
-                    getPropertyVector<double>(property_name_res);
-            }
-            else
-            {
-                result = _mesh.getProperties().template
-                    createNewPropertyVector<double>(property_name_res,
-                        MeshLib::MeshItemType::Cell);
-                result->resize(num_cells);
-            }
-            assert(result && result->size() == num_cells);
+            auto result = get_or_create_mesh_property(property_name_res, MeshLib::MeshItemType::Cell);
+            assert(result->size() == _mesh.getNElements());
 
             extrapolator.calculateResiduals(_local_assemblers, property);
             auto const& residuals = extrapolator.getElementResiduals();
 
             // Copy result
-            for (std::size_t i = 0; i < num_cells; ++i)
+            for (std::size_t i = 0; i < _mesh.getNElements(); ++i)
             {
                 (*result)[i] = residuals[i];
             }
