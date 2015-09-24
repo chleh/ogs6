@@ -35,12 +35,13 @@ struct Handles<N, FunctionArgument>
     }
 
     bool callJacobian(const double t, const double * const y, const double * const ydot,
-                      double * const jac, StorageOrder order) override
+                      double * const jac, BaseLib::StorageOrder order) override
     {
         if (df) return df(t,
                           BaseLib::ArrayRef<const double, N>{y},
                           BaseLib::ArrayRef<const double, N>{ydot},
-                          jac, order, *_data);
+                          BaseLib::MatrixRef<double, N, N>{jac, order},
+                          *_data);
         return true;
     }
 
@@ -76,12 +77,12 @@ struct Handles<N>
     }
 
     bool callJacobian(const double t, const double * const y, const double * const ydot,
-                      double * const jac, StorageOrder order) override
+                      double * const jac, BaseLib::StorageOrder order) override
     {
         if (df) return df(t,
                           BaseLib::ArrayRef<const double, N>{y},
                           BaseLib::ArrayRef<const double, N>{ydot},
-                          jac, order);
+                          BaseLib::MatrixRef<double, N, N>{jac, order});
         return true;
     }
 

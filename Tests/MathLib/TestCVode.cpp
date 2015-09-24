@@ -75,12 +75,12 @@ bool f(const double,
 bool df(const double /*t*/,
         BaseLib::ArrayRef<const double, 1> y,
         BaseLib::ArrayRef<const double, 1> /*ydot*/,
-        double *const jac,
-        MathLib::StorageOrder order)
+        BaseLib::MatrixRef<double, 1, 1> jac)
 {
     if (y[0] <= 0.0) return false;
 
-    MathLib::setMatrixValue(jac, 1, 1, order, 0, 0, -15.0);
+    jac(0, 0) = -15.0;
+
     // std::printf("jac: %g\n", *jac);
     return true;
 }
