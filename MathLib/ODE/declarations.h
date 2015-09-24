@@ -2,19 +2,24 @@
 
 #include<cassert>
 
+#include "BaseLib/ArrayRef.h"
+
 namespace MathLib
 {
 
 enum class StorageOrder { ColumnMajor, RowMajor };
 
 
-template<typename... FunctionArguments>
-using Function = bool (*)(const double t, double const*const y, double *const ydot, FunctionArguments&... arg);
+template<unsigned N, typename... FunctionArguments>
+using Function = bool (*)(const double t,
+                          BaseLib::ArrayRef<const double, N> y,
+                          BaseLib::ArrayRef<double, N> ydot,
+                          FunctionArguments&... arg);
 
-template<typename... FunctionArguments>
+template<unsigned N, typename... FunctionArguments>
 using JacobianFunction = bool (*)(const double t,
-                                  double const*const y,
-                                  double const*const ydot,
+                                  BaseLib::ArrayRef<const double, N> y,
+                                  BaseLib::ArrayRef<const double, N> ydot,
                                   double *const jac, // TODO: write matrix wrapper class
                                   StorageOrder order,
                                   FunctionArguments&... arg);
@@ -41,6 +46,7 @@ setMatrixValue(double* matrix,
 
 
 
+// This is an internal detail
 class FunctionHandles
 {
 public:
@@ -54,7 +60,9 @@ public:
             StorageOrder order
             ) = 0;
 
-    virtual bool hasJacobian() = 0;
+    virtual bool hasJacobian() const = 0;
+
+    virtual unsigned getNumEquations() const = 0;
 
     virtual ~FunctionHandles() = default;
 };

@@ -15,32 +15,43 @@ namespace detail
 {
 
 
-template<typename... FunctionArguments>
+template<unsigned N, typename... FunctionArguments>
 struct Handles;
 
-template<typename FunctionArgument>
-struct Handles<FunctionArgument>
+template<unsigned N, typename FunctionArgument>
+struct Handles<N, FunctionArgument>
         : public MathLib::FunctionHandles
 {
-    using Function = MathLib::Function<FunctionArgument>;
-    using JacobianFunction = MathLib::JacobianFunction<FunctionArgument>;
+    using Function = MathLib::Function<N, FunctionArgument>;
+    using JacobianFunction = MathLib::JacobianFunction<N, FunctionArgument>;
 
     bool call(const double t, const double * const y, double * const ydot) override
     {
-        if (f) return f(t, y, ydot, *_data);
+        if (f) return f(t,
+                        BaseLib::ArrayRef<const double, N>{y},
+                        BaseLib::ArrayRef<double, N>{ydot},
+                        *_data);
         return true;
     }
 
     bool callJacobian(const double t, const double * const y, const double * const ydot,
                       double * const jac, StorageOrder order) override
     {
-        if (df) return df(t, y, ydot, jac, order, *_data);
+        if (df) return df(t,
+                          BaseLib::ArrayRef<const double, N>{y},
+                          BaseLib::ArrayRef<const double, N>{ydot},
+                          jac, order, *_data);
         return true;
     }
 
-    bool hasJacobian() { return df != nullptr; }
+    bool hasJacobian() const override { return df != nullptr; }
 
-    void setArguments(FunctionArgument* arg) { _data = arg; }
+    unsigned getNumEquations() const override { return N; }
+
+    void setArguments(FunctionArgument* arg) {
+        assert(arg != nullptr);
+        _data = arg;
+    }
 
     Function f = nullptr;
     JacobianFunction df = nullptr;
@@ -49,26 +60,34 @@ private:
     FunctionArgument* _data = nullptr;
 };
 
-template<>
-struct Handles<> : public MathLib::FunctionHandles
+template<unsigned N>
+struct Handles<N>
+        : public MathLib::FunctionHandles
 {
-    using Function = MathLib::Function<>;
-    using JacobianFunction = MathLib::JacobianFunction<>;
+    using Function = MathLib::Function<N>;
+    using JacobianFunction = MathLib::JacobianFunction<N>;
 
     bool call(const double t, const double * const y, double * const ydot) override
     {
-        if (f) return f(t, y, ydot);
+        if (f) return f(t,
+                        BaseLib::ArrayRef<const double, N>{y},
+                        BaseLib::ArrayRef<double, N>{ydot});
         return true;
     }
 
     bool callJacobian(const double t, const double * const y, const double * const ydot,
                       double * const jac, StorageOrder order) override
     {
-        if (df) return df(t, y, ydot, jac, order);
+        if (df) return df(t,
+                          BaseLib::ArrayRef<const double, N>{y},
+                          BaseLib::ArrayRef<const double, N>{ydot},
+                          jac, order);
         return true;
     }
 
-    bool hasJacobian() { return df != nullptr; }
+    bool hasJacobian() const override { return df != nullptr; }
+
+    unsigned getNumEquations() const override { return N; }
 
     void setArguments() const {}
 
@@ -144,7 +163,7 @@ private:
         : Implementation{config}
     {}
 
-    detail::Handles<FunctionArguments...> _handles;
+    detail::Handles<NumEquations, FunctionArguments...> _handles;
 
     friend std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >
     createOdeSolver<NumEquations, FunctionArguments...>

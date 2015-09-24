@@ -161,6 +161,7 @@ void CVodeSolverImpl::setTolerance(const double abstol, const double reltol)
 void CVodeSolverImpl::setFunction(FunctionHandles* f)
 {
     _f = f;
+    assert(_num_equations == f->getNumEquations());
 }
 
 void CVodeSolverImpl::setIC(const double t0, double const*const y0)

@@ -16,8 +16,8 @@ class OdeSolver
 {
 public:
     using Arr = std::array<double, NumEquations>;
-    using Function = MathLib::Function<FunctionArguments...>;
-    using JacobianFunction = MathLib::JacobianFunction<FunctionArguments...>;
+    using Function = MathLib::Function<NumEquations, FunctionArguments...>;
+    using JacobianFunction = MathLib::JacobianFunction<NumEquations, FunctionArguments...>;
 
     virtual void init() = 0;
 
