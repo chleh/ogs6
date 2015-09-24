@@ -565,9 +565,10 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
         const double rho_V = _AP->_M_react * _p_V / GAS_CONST / _T * _AP->_poro;
 
         if (
+            _p_V < 0.05 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T) && (
             -delta_rhoV > rho_V   // there would be more vapour sucked up than there currently is
             || delta_rhoV > rho_V // there would be more vapour released than there currently is
-        )
+        ))
         {
             // these are the corner cases where the water adsorption/desorption behaviour of the zeolite
             // controls the equilibrium to a great extent
@@ -630,6 +631,14 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
             _is_equilibrium_reaction[int_pt] = true;
             _estimated_vapour_pressure[int_pt] = _p_V;
         }
+        else if (_p_V < 50.0 && react_rate_R > 0.0)
+        {
+            _reaction_rate[int_pt] = 0.0;
+            _solid_density[int_pt] = _solid_density_prev_ts[int_pt];
+
+            _reaction_rate_indicator[int_pt] = 0.0;
+            _is_equilibrium_reaction[int_pt] = false;
+        }
         else
         {
             // in this case considering only the adsorption kintetics is sufficient,
@@ -644,7 +653,8 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
             _is_equilibrium_reaction[int_pt] = false;
         }
     }
-    else if (_is_equilibrium_reaction[int_pt]
+    else if (
+             false && _is_equilibrium_reaction[int_pt]
              // && _AP->_iteration_in_current_timestep == 1
              )
     {
@@ -863,32 +873,42 @@ ogs5OutVec(const LADataNoTpl::VecRef& vec)
 }
 
 
-std::vector<double> const&
+std::shared_ptr<const std::vector<double> >
 LADataNoTpl::
 getIntegrationPointValues(SecondaryVariables var) const
 {
+    auto alias = [](std::vector<double> const& data)
+    {
+        // use shared_ptr's aliasing constructor
+        // this way the caller will get (unique) ownership of the dummy shared_ptr,
+        // but &data will not be deleted by the caller
+        return std::shared_ptr<const std::vector<double> >{
+                    std::shared_ptr<void>{}, // a dummy shared pointer
+                    &data
+        };
+    };
+
     switch (var)
     {
     case SecondaryVariables::REACTION_RATE:
-        return _reaction_rate;
+        return alias(_reaction_rate);
         break;
     case SecondaryVariables::SOLID_DENSITY:
-        return _solid_density;
+        return alias(_solid_density);
         break;
     case SecondaryVariables::VELOCITY_X:
-        return _velocity[0];
+        return alias(_velocity[0]);
     case SecondaryVariables::VELOCITY_Y:
         assert(_velocity.size() >= 2);
-        return _velocity[1];
+        return alias(_velocity[1]);
     case SecondaryVariables::VELOCITY_Z:
         assert(_velocity.size() >= 3);
-        return _velocity[2];
+        return alias(_velocity[2]);
     case SecondaryVariables::REACTION_KINETIC_INDICATOR:
-        return _reaction_rate_indicator;
+        return alias(_reaction_rate_indicator);
     }
 
-    // TODO: error!
-    return _reaction_rate;
+    return nullptr; // must not happen
 }
 
 
