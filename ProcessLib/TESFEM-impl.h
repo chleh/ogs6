@@ -155,6 +155,7 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
         // Thus, they can be handled inside _data
         return _data.getIntegrationPointValues(var);
 
+    // TODO [CL] the following cases could be better provided directly using nodal values without extrapolation
     case SecondaryVariables::VAPOUR_PARTIAL_PRESSURE:
     {
         IntegrationMethod_ integration_method(_integration_order);
@@ -228,7 +229,12 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
             NumLib::shapeFunctionInterpolate(nodal_vals, sm.N, Array{ &p, &T, &xm });
 
             auto const xn = AP._adsorption->get_molar_fraction(xm, AP._M_react, AP._M_inert);
-            Cs->push_back(AP._adsorption->get_equilibrium_loading(p * xn, T, AP._M_react));
+            auto const pV = p * xn;
+            if (pV < 0.0) {
+                Cs->push_back(0.0);
+            } else {
+                Cs->push_back(AP._adsorption->get_equilibrium_loading(pV, T, AP._M_react));
+            }
         }
 
         return Cs;

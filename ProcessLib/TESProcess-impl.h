@@ -566,9 +566,9 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             LocalAssembler>
             extrapolator(*_local_to_global_index_map_single_component);
 #else
-    NumLib::LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables,
-            LocalAssembler>
-            extrapolator(*_local_to_global_index_map_single_component);
+    std::unique_ptr<NumLib::Extrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler> > extrapolator(
+                new NumLib::LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler>
+                (*_local_to_global_index_map_single_component));
 #endif
 
     auto add_secondary_var = [this, &extrapolator, &get_or_create_mesh_property]
@@ -588,8 +588,8 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             auto result = get_or_create_mesh_property(property_name, MeshLib::MeshItemType::Node);
             assert(result->size() == _mesh.getNNodes());
 
-            extrapolator.extrapolate(*_x, _local_assemblers, property);
-            auto const& nodal_values = extrapolator.getNodalValues().getRawVector();
+            extrapolator->extrapolate(*_x, *_local_to_global_index_map, _local_assemblers, property);
+            auto const& nodal_values = extrapolator->getNodalValues().getRawVector();
 
             // Copy result
             for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
@@ -605,8 +605,8 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             auto result = get_or_create_mesh_property(property_name_res, MeshLib::MeshItemType::Cell);
             assert(result->size() == _mesh.getNElements());
 
-            extrapolator.calculateResiduals(*_x, _local_assemblers, property);
-            auto const& residuals = extrapolator.getElementResiduals();
+            extrapolator->calculateResiduals(*_x, *_local_to_global_index_map, _local_assemblers, property);
+            auto const& residuals = extrapolator->getElementResiduals();
 
             // Copy result
             for (std::size_t i = 0; i < _mesh.getNElements(); ++i)

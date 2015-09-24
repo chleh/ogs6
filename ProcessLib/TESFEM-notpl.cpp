@@ -654,8 +654,8 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
         }
     }
     else if (
-             false && _is_equilibrium_reaction[int_pt]
-             // && _AP->_iteration_in_current_timestep == 1
+             _is_equilibrium_reaction[int_pt]
+             && _AP->_iteration_in_current_timestep == 1
              )
     {
         // In the first iteration the equilibrium reaction has been used.
@@ -687,11 +687,13 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
         auto rf = MathLib::Nonlinear::makeRegulaFalsi<MathLib::Nonlinear::Pegasus>(f, _p_V, limit);
         rf.step(3);
 
+        const double damping = 0.5;
+
         // set vapour pressure
         const double pV = rf.get_result();
-        const double delta_pV = pV - _p_V;
-        _p += delta_pV;
-        _p_V = pV;
+        const double delta_pV = damping * (pV - _p_V);
+        _p   += delta_pV;
+        _p_V += delta_pV;
         // set vapour mass fraction accordingly
         _vapour_mass_fraction = Ads::Adsorption::get_mass_fraction(_p_V/_p, _AP->_M_react, _AP->_M_inert);
 
@@ -910,7 +912,7 @@ getIntegrationPointValues(SecondaryVariables var) const
         auto Cs = std::make_shared<std::vector<double> >();
         Cs->reserve(_solid_density.size());
 
-        for (auto rho_SR : _reaction_rate) {
+        for (auto rho_SR : _solid_density) {
             Cs->push_back(rho_SR / _AP->_rho_SR_dry - 1.0);
         }
 
