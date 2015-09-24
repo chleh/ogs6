@@ -62,7 +62,9 @@ bool f_zeolite(const double, double const*const y, double *const ydot)
 
 #endif
 
-bool f(const double, double const*const y, double *const ydot)
+bool f(const double,
+       BaseLib::ArrayRef<const double, 1> y,
+       BaseLib::ArrayRef<double, 1> ydot)
 {
     if (y[0] <= 0.0) return false;
 
@@ -71,8 +73,8 @@ bool f(const double, double const*const y, double *const ydot)
 }
 
 bool df(const double /*t*/,
-        double const*const y,
-        double const*const /*ydot*/,
+        BaseLib::ArrayRef<const double, 1> y,
+        BaseLib::ArrayRef<const double, 1> /*ydot*/,
         double *const jac,
         MathLib::StorageOrder order)
 {
@@ -89,7 +91,10 @@ struct ExtraData {
 };
 
 
-bool f_extra(const double, double const*const y, double *const ydot, ExtraData& data)
+bool f_extra(const double,
+             BaseLib::ArrayRef<const double, 1> y,
+             BaseLib::ArrayRef<double, 1> ydot,
+             ExtraData& data)
 {
     if (y[0] <= 0.0) return false;
 
