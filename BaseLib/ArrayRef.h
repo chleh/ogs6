@@ -35,8 +35,9 @@ public:
     ArrayRef(ArrayRef<T> const&) = default; // all copies of an instance will point to the __same__ data!
     ArrayRef(ArrayRef<T>&&) = default;      // move will actually copy this reference
 
-    ArrayRef<T>& operator=(ArrayRef<T> const&) = default; // all copies of an instance will point to the __same__ data!
-    ArrayRef<T>& operator=(ArrayRef<T> &&) = default;     // move will actually copy this reference
+    /* operator= might be confusing if used in actual code */
+    ArrayRef<T>& operator=(ArrayRef<T> const&) = default;
+    ArrayRef<T>& operator=(ArrayRef<T> &&) = default;
 
     iterator        begin()       { return _data; }
     const_iterator  begin() const { return _data; }
@@ -111,8 +112,9 @@ public:
     ArrayRef(ArrayRef<T, Size> const&) = default; // all copies of an instance will point to the __same__ data!
     ArrayRef(ArrayRef<T, Size>&&) = default;      // move will actually copy this reference
 
-    ArrayRef<T, Size>& operator=(ArrayRef<T, Size> const&) = default; // all copies of an instance will point to the __same__ data!
-    ArrayRef<T, Size>& operator=(ArrayRef<T, Size> &&) = default;     // move will actually copy this reference
+    /* operator= might be confusing if used in actual code */
+    ArrayRef<T, Size>& operator=(ArrayRef<T, Size> const&) = delete;  // all copies of an instance will point to the __same__ data!
+    ArrayRef<T, Size>& operator=(ArrayRef<T, Size> &&) = delete;      // move will actually copy this reference
 
     iterator        begin()       { return _data; }
     const_iterator  begin() const { return _data; }
