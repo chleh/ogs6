@@ -16,12 +16,6 @@ extern "C"
 namespace
 {
 
-struct UserData
-{
-    MathLib::Function f = nullptr;
-    MathLib::JacobianFunction df = nullptr;
-};
-
 void printStats(void* cvode_mem)
 {
     long int nst, nfe, nsetups, nje, nfeLS, nni, ncfn, netf, nge;
@@ -70,7 +64,7 @@ public:
     void setTolerance(const double* abstol, const double reltol);
     void setTolerance(const double abstol, const double reltol);
 
-    void setFunction(Function f, JacobianFunction df);
+    void setFunction(FunctionHandles* f);
 
     void setIC(const double t0, double const*const y0);
 
@@ -94,7 +88,7 @@ private:
     unsigned _num_equations;
     void*    _cvode_mem;
 
-    UserData _data;
+    FunctionHandles* _f;
 
     int      _linear_multistep_method = CV_ADAMS;
     int      _nonlinear_solver_iteration = CV_FUNCTIONAL;
@@ -164,10 +158,9 @@ void CVodeSolverImpl::setTolerance(const double abstol, const double reltol)
     _reltol = reltol;
 }
 
-void CVodeSolverImpl::setFunction(Function f, JacobianFunction df)
+void CVodeSolverImpl::setFunction(FunctionHandles* f)
 {
-    _data.f = f;
-    _data.df = df;
+    _f = f;
 }
 
 void CVodeSolverImpl::setIC(const double t0, double const*const y0)
@@ -182,13 +175,14 @@ void CVodeSolverImpl::setIC(const double t0, double const*const y0)
 
 void CVodeSolverImpl::preSolve()
 {
-	assert(_data.f != nullptr && "ode function y'=f(t,y) was not provided");
+	assert(_f != nullptr && "ode function handle was not provided");
 
 	auto f_wrapped
-			= [](const realtype t, const N_Vector y, N_Vector ydot, void* data)
+			= [](const realtype t, const N_Vector y, N_Vector ydot, void* function_handles)
 			  -> int
 	{
-		bool successful = ((UserData*) data)->f(t, NV_DATA_S(y), NV_DATA_S(ydot));
+		bool successful = static_cast<FunctionHandles*>(function_handles)
+						  ->call(t, NV_DATA_S(y), NV_DATA_S(ydot));
 		return successful ? 0 : 1;
 	};
 
@@ -196,7 +190,7 @@ void CVodeSolverImpl::preSolve()
 	int flag = CVodeInit(_cvode_mem, f_wrapped, _t, _y); // TODO: consider CVodeReInit()!
 	// if (check_flag(&flag, "CVodeInit", 1)) return(1);
 
-	flag = CVodeSetUserData(_cvode_mem, (void*) &_data);
+	flag = CVodeSetUserData(_cvode_mem, static_cast<void*>(_f));
 
 	/* Call CVodeSVtolerances to specify the scalar relative tolerance
 	 * and vector absolute tolerances */
@@ -207,18 +201,19 @@ void CVodeSolverImpl::preSolve()
 	flag = CVDense(_cvode_mem, _num_equations);
 	// if (check_flag(&flag, "CVDense", 1)) return(1);
 
-	if (_data.df)
+	if (_f->hasJacobian())
 	{
 		auto df_wrapped
 				= [](const long /*N*/, const realtype t,
 				  const N_Vector y, const N_Vector ydot,
-				  const DlsMat jac, void* data,
+				  const DlsMat jac, void* function_handles,
 				  N_Vector /*tmp1*/, N_Vector /*tmp2*/, N_Vector /*tmp3*/
 				  ) -> int
 		{
 			// Caution: by calling the DENSE_COL() macro we assume that matrices
-			//          are stored contiguous in memory!
-			bool successful = ((UserData*) data)->df(
+			//          are stored contiguously in memory!
+			bool successful = static_cast<FunctionHandles*>(function_handles)
+							  ->callJacobian(
 								  t, NV_DATA_S(y), NV_DATA_S(ydot),
 								  DENSE_COL(jac, 0), StorageOrder::ColumnMajor);
 			return successful ? 0 : 1;
@@ -278,9 +273,9 @@ void CVodeSolverInternal::setTolerance(const double abstol, const double reltol)
     _impl->setTolerance(abstol, reltol);
 }
 
-void CVodeSolverInternal::setFunction(Function f, JacobianFunction df)
+void CVodeSolverInternal::setFunction(FunctionHandles* f)
 {
-    _impl->setFunction(f, df);
+    _impl->setFunction(f);
 }
 
 void CVodeSolverInternal::setIC(const double t0, double const*const y0)

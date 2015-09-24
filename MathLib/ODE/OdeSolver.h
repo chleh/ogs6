@@ -11,18 +11,21 @@ namespace MathLib
 /**
  * ODE solver Interface
  */
-template<unsigned NumEquations>
+template<unsigned NumEquations, typename... FunctionArguments>
 class OdeSolver
 {
 public:
     using Arr = std::array<double, NumEquations>;
+    using Function = MathLib::Function<FunctionArguments...>;
+    using JacobianFunction = MathLib::JacobianFunction<FunctionArguments...>;
 
     virtual void init() = 0;
 
     virtual void setTolerance(const Arr& abstol, const double reltol) = 0;
     virtual void setTolerance(const double abstol, const double reltol) = 0;
 
-    virtual void setFunction(Function f, JacobianFunction df) = 0;
+    virtual void setFunction(Function f, JacobianFunction df,
+                             FunctionArguments*... args) = 0;
 
     virtual void setIC(const double t0, const Arr& y0) = 0;
 

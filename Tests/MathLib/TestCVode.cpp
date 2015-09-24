@@ -84,6 +84,20 @@ bool df(const double /*t*/,
 }
 
 
+struct ExtraData {
+    double value = 15.0;
+};
+
+
+bool f_extra(const double, double const*const y, double *const ydot, ExtraData& data)
+{
+    if (y[0] <= 0.0) return false;
+
+    ydot[0] = -data.value * y[0];
+    return true;
+}
+
+
 #ifdef ZEOLITE
 TEST(MathLibCVodeTest, ZeoliteAdsorption)
 {
@@ -140,6 +154,44 @@ TEST(MathLibCVodeTest, Exponential)
     ode_solver->setTolerance(1e-8, 1e-6);
 
     ode_solver->setFunction(f, nullptr);
+
+    ode_solver->setIC(t0, { y0 });
+
+    ode_solver->preSolve();
+
+    const double dt = 1e-1;
+
+    for (unsigned i=1; i<=10; ++i)
+    {
+        const double time = dt * i;
+
+        ode_solver->solve(time);
+
+        double const* y = ode_solver->getSolution();
+        double time_reached = ode_solver->getTime();
+
+        std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
+
+        ASSERT_NEAR(time, time_reached, std::numeric_limits<double>::epsilon());
+        // std::printf("time: %g\n", time_reached);
+    }
+}
+
+
+TEST(MathLibCVodeTest, ExponentialExtraData)
+{
+    // initial values
+    const double y0 = 1.0;
+    const double t0 = 0.0;
+
+    MathLib::CVodeSolverInternal::ConfigTree config;
+    auto ode_solver = MathLib::createOdeSolver<1, ExtraData>(config);
+
+    ode_solver->init();
+    ode_solver->setTolerance(1e-8, 1e-6);
+
+    ExtraData data;
+    ode_solver->setFunction(f_extra, nullptr, &data);
 
     ode_solver->setIC(t0, { y0 });
 

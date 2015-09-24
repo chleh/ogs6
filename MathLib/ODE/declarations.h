@@ -7,15 +7,18 @@ namespace MathLib
 
 enum class StorageOrder { ColumnMajor, RowMajor };
 
-// maybe use Eigen::Map here
-// and use std::function
-typedef bool (*Function)(const double t, double const*const y, double *const ydot);
 
-typedef bool (*JacobianFunction)(const double t,
-                                 double const*const y,
-                                 double const*const ydot,
-                                 double *const jac,
-                                 StorageOrder order);
+template<typename... FunctionArguments>
+using Function = bool (*)(const double t, double const*const y, double *const ydot, FunctionArguments&... arg);
+
+template<typename... FunctionArguments>
+using JacobianFunction = bool (*)(const double t,
+                                  double const*const y,
+                                  double const*const ydot,
+                                  double *const jac, // TODO: write matrix wrapper class
+                                  StorageOrder order,
+                                  FunctionArguments&... arg);
+
 
 inline void
 setMatrixValue(double* matrix,
@@ -35,6 +38,28 @@ setMatrixValue(double* matrix,
         break;
     }
 }
+
+
+
+class FunctionHandles
+{
+public:
+    virtual bool call(const double t, double const*const y, double *const ydot
+                      ) = 0;
+    virtual bool callJacobian(
+            const double t,
+            double const*const y,
+            double const*const ydot,
+            double *const jac,
+            StorageOrder order
+            ) = 0;
+
+    virtual bool hasJacobian() = 0;
+
+    virtual ~FunctionHandles() = default;
+};
+
+
 
 /*
 // TODO: values array always row majow?
