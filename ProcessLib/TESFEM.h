@@ -27,7 +27,8 @@ class Extrapolatable
 public:
     virtual Eigen::VectorXd const& getShapeMatrix(const unsigned integration_point) const = 0;
 
-    virtual std::vector<double> const& getIntegrationPointValues(SecondaryVariables var) const = 0;
+    virtual std::shared_ptr< const std::vector<double> >
+    getIntegrationPointValues(SecondaryVariables var) const = 0;
 };
 
 
@@ -88,7 +89,8 @@ public:
         // return shp_mats.N;
     }
 
-    std::vector<double> const& getIntegrationPointValues(SecondaryVariables var) const override;
+    std::shared_ptr<const std::vector<double> >
+    getIntegrationPointValues(SecondaryVariables var) const override;
 
 private:
     std::vector<ShapeMatrices> _shape_matrices;

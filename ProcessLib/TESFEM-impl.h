@@ -132,7 +132,7 @@ template <typename ShapeFunction_,
           typename GlobalMatrix,
           typename GlobalVector,
           unsigned GlobalDim>
-std::vector<double> const&
+std::shared_ptr<const std::vector<double> >
 LocalAssemblerData<ShapeFunction_,
     IntegrationMethod_,
     GlobalMatrix,

@@ -17,8 +17,6 @@
 
 #include "TESProcess-notpl.h"
 
-#include "MathLib/ODE/OdeSolver.h"
-
 
 namespace ProcessLib
 {
@@ -39,6 +37,7 @@ class LADataNoTpl
 public:
     typedef Eigen::Ref<const Eigen::MatrixXd> MatRef;
     typedef Eigen::Ref<const Eigen::VectorXd> VecRef;
+    typedef std::shared_ptr<std::vector<double> > SharedVector;
 
     void assembleIntegrationPoint(
             unsigned integration_point,
@@ -60,7 +59,7 @@ public:
     void postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
                           const Eigen::VectorXd& oldX);
 
-    std::vector<double> const&
+    std::shared_ptr<const std::vector<double> >
     getIntegrationPointValues(SecondaryVariables var) const;
 
 private:
@@ -120,8 +119,6 @@ private:
     std::unique_ptr<Eigen::MatrixXd> _Adv;
     std::unique_ptr<Eigen::MatrixXd> _Cnt;
     std::unique_ptr<Eigen::VectorXd> _rhs;
-
-    std::unique_ptr<MathLib::OdeSolver<2> > _ode_solver;
 };
 
 
