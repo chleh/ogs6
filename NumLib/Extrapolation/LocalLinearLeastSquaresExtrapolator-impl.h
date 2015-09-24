@@ -30,8 +30,7 @@ extrapolate(
 
     for (std::size_t i=0; i<loc_asms.size(); ++i)
     {
-        extrapolateElement(i,global_nodal_values, loc_asms[i], var, _local_to_global, _local_to_global[i].rows,
-                           _nodal_values, counts);
+        extrapolateElement(i,global_nodal_values, loc_asms[i], var, counts);
     }
 
     _nodal_values.componentwiseDivide(counts);
@@ -49,10 +48,7 @@ calculateResiduals(
     for (std::size_t i=0; i<loc_asms.size(); ++i)
     {
         _residuals[i] = calculateResiudalElement(
-                            i, global_nodal_values,
-                    loc_asms[i], var, _local_to_global, _local_to_global[i].rows,
-                    _nodal_values
-                    );
+                            i, global_nodal_values, loc_asms[i], var);
     }
 }
 
@@ -63,12 +59,10 @@ extrapolateElement(
         std::size_t index,
         GlobalVector const& global_nodal_values,
         LocalAssembler const* loc_asm, VariableEnum var,
-        AssemblerLib::LocalToGlobalIndexMap const& index_map,
-        AssemblerLib::LocalToGlobalIndexMap::LineIndex const& indices,
-        GlobalVector& nodal_vals, GlobalVector& counts
+        GlobalVector& counts
         )
 {
-    NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, index_map};
+    NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, _local_to_global};
 
     auto gp_vals = loc_asm->getIntegrationPointValues(var, nodal_dof);
 
@@ -96,9 +90,10 @@ extrapolateElement(
     {
     case LinearLeastSquaresBy::NormalEquation:
     {
+        auto const& indices = _local_to_global[index].rows;
         // DBUG("solving normal equation...");
         Eigen::VectorXd elem_nodal_vals = (N.transpose() * N).ldlt().solve(N.transpose() * gpvs);
-        nodal_vals.add(indices, elem_nodal_vals);
+        _nodal_values.add(indices, elem_nodal_vals);
         counts.add(indices, 1.0);
         break;
         // return (N.transpose() * N).ldlt().solve(N.transpose() * gpvs);
@@ -114,21 +109,20 @@ LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>:
 calculateResiudalElement(
         std::size_t index,
         GlobalVector const& global_nodal_values,
-        LocalAssembler const* loc_asm, VariableEnum var,
-        AssemblerLib::LocalToGlobalIndexMap const& index_map,
-        AssemblerLib::LocalToGlobalIndexMap::LineIndex const& indices,
-        GlobalVector const& nodal_vals)
+        LocalAssembler const* loc_asm, VariableEnum var)
 {
-    NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, index_map};
+    NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, _local_to_global};
 
     auto gp_vals = loc_asm->getIntegrationPointValues(var, nodal_dof);
     const unsigned ni = gp_vals->size();        // number of gauss points
+
+    const auto& indices = _local_to_global[index].rows;
 
     // filter nodal values of the current element
     std::vector<double> nodal_vals_element;
     nodal_vals_element.resize(indices.size());
     for (unsigned i=0; i<indices.size(); ++i) {
-        nodal_vals_element[i] = nodal_vals[indices[i]];
+        nodal_vals_element[i] = _nodal_values[indices[i]];
     }
 
     double residual = 0.0;

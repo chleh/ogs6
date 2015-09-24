@@ -38,18 +38,13 @@ private:
             std::size_t index,
             GlobalVector const& global_nodal_values,
             LocalAssembler const* loc_asm, VariableEnum var,
-            AssemblerLib::LocalToGlobalIndexMap const& index_map,
-            AssemblerLib::LocalToGlobalIndexMap::LineIndex const& indices,
-            GlobalVector& nodal_vals, GlobalVector& counts
+            GlobalVector& counts
             );
 
     double calculateResiudalElement(
             std::size_t index,
             GlobalVector const& global_nodal_values,
-            LocalAssembler const* loc_asm, VariableEnum var,
-            AssemblerLib::LocalToGlobalIndexMap const& index_map,
-            AssemblerLib::LocalToGlobalIndexMap::LineIndex const& indices,
-            GlobalVector const& nodal_vals);
+            LocalAssembler const* loc_asm, VariableEnum var);
 
     GlobalVector _nodal_values;
     GlobalVector _residuals;

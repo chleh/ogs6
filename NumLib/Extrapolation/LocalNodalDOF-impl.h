@@ -20,12 +20,13 @@ public:
         : _index{index}, _index_map{index_map}, _global_nodal_values{global_nodal_values}
     {}
 
+    // this function is very similar to my [CL] current implementation of VectorMatrixAssembler
     std::vector<double> getElementNodalValues() override
     {
         std::vector<double> localX;
-        auto const& indices = _index_map[_index];
+        auto const& indices = _index_map[_index].rows;
 
-        auto const element_dof = indices.rows.size();
+        auto const element_dof = indices.size();
 
         auto& mcmap = _index_map.getMeshComponentMap();
         auto const num_comp = mcmap.getNumComponents();
@@ -36,7 +37,7 @@ public:
         // no matter what the order of the global matrix is.
         for (unsigned c=0; c<num_comp; ++c)
         {
-            auto const idcs = mcmap.getIndicesForComponent(indices.rows, c);
+            auto const idcs = mcmap.getIndicesForComponent(indices, c);
             for (auto ip : idcs)
             {
                 localX.emplace_back(_global_nodal_values[ip]);
@@ -48,7 +49,24 @@ public:
 
     std::vector<double> getElementNodalValues(unsigned component) override
     {
-        return std::vector<double>{};
+        std::vector<double> localX;
+        auto const& indices = _index_map[_index].rows;
+
+        auto const element_dof = indices.size();
+
+        auto& mcmap = _index_map.getMeshComponentMap();
+        auto const num_comp = mcmap.getNumComponents();
+        assert(component < num_comp);
+
+        localX.reserve(element_dof/num_comp);
+
+        auto const idcs = mcmap.getIndicesForComponent(indices, component);
+        for (auto ip : idcs)
+        {
+            localX.emplace_back(_global_nodal_values[ip]);
+        }
+
+        return localX;
     }
 
 private:
