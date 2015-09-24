@@ -21,9 +21,11 @@ public:
     using LocalAssemblers = std::vector<LocalAssembler*>;
 
     virtual void extrapolate(
+            GlobalVector const& global_nodal_values,
             LocalAssemblers const& loc_asms, VariableEnum var) = 0;
 
     virtual void calculateResiduals(
+            GlobalVector const& global_nodal_values,
             LocalAssemblers const& loc_asms, VariableEnum var) = 0;
 
     virtual GlobalVector const& getNodalValues() const = 0;

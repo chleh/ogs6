@@ -20,9 +20,13 @@ public:
     {}
 
 
-    void extrapolate(LocalAssemblers const& loc_asms, VariableEnum var) override;
+    void extrapolate(
+            GlobalVector const& global_nodal_values,
+            LocalAssemblers const& loc_asms, VariableEnum var) override;
 
-    void calculateResiduals(LocalAssemblers const& loc_asms, VariableEnum var) override;
+    void calculateResiduals(
+            GlobalVector const& global_nodal_values,
+            LocalAssemblers const& loc_asms, VariableEnum var) override;
 
     GlobalVector const& getNodalValues() const override { return _nodal_values; }
 

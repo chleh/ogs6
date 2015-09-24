@@ -6,6 +6,7 @@
 
 #include "LocalLinearLeastSquaresExtrapolator.h"
 
+#include "LocalNodalDOF-impl.h"
 
 
 // see http://eigen.tuxfamily.org/dox-devel/group__LeastSquares.html
@@ -15,16 +16,21 @@ const LinearLeastSquaresBy linear_least_squares = LinearLeastSquaresBy::NormalEq
 
 namespace
 {
+
 template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>
 void
 LLLSQ_extrapolateElement(
+        std::size_t index,
+        GlobalVector const& global_nodal_values,
         LocalAssembler const* loc_asm, VariableEnum var,
+        AssemblerLib::LocalToGlobalIndexMap const& index_map,
         AssemblerLib::LocalToGlobalIndexMap::LineIndex const& indices,
         GlobalVector& nodal_vals, GlobalVector& counts
         )
 {
-    // auto const& shp_mats = loc_asm->getShapeMatrices();
-    auto gp_vals = loc_asm->getIntegrationPointValues(var);
+    NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, index_map};
+
+    auto gp_vals = loc_asm->getIntegrationPointValues(var, nodal_dof);
 
     const unsigned nn = loc_asm->getShapeMatrix(0).rows(); // number of mesh nodes
     // const unsigned nn = 5;
@@ -64,11 +70,17 @@ LLLSQ_extrapolateElement(
 
 template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>
 double
-calculateResiudalElement(LocalAssembler const* loc_asm, VariableEnum var,
+calculateResiudalElement(
+        std::size_t index,
+        GlobalVector const& global_nodal_values,
+        LocalAssembler const* loc_asm, VariableEnum var,
+        AssemblerLib::LocalToGlobalIndexMap const& index_map,
         AssemblerLib::LocalToGlobalIndexMap::LineIndex const& indices,
         GlobalVector const& nodal_vals)
 {
-    auto gp_vals = loc_asm->getIntegrationPointValues(var);
+    NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, index_map};
+
+    auto gp_vals = loc_asm->getIntegrationPointValues(var, nodal_dof);
     const unsigned ni = gp_vals->size();        // number of gauss points
 
     // filter nodal values of the current element
@@ -103,16 +115,17 @@ namespace NumLib
 template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>
 void
 LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>::
-extrapolate(LocalAssemblers const& loc_asms, VariableEnum var)
+extrapolate(
+        GlobalVector const& global_nodal_values,
+        LocalAssemblers const& loc_asms, VariableEnum var)
 {
     _nodal_values = 0.0;
-    // _counts = 0.0;
 
     GlobalVector counts(_nodal_values.size());
 
     for (std::size_t i=0; i<loc_asms.size(); ++i)
     {
-        LLLSQ_extrapolateElement(loc_asms[i], var, _local_to_global[i].rows,
+        LLLSQ_extrapolateElement(i,global_nodal_values, loc_asms[i], var, _local_to_global, _local_to_global[i].rows,
                            _nodal_values, counts);
     }
 
@@ -122,14 +135,17 @@ extrapolate(LocalAssemblers const& loc_asms, VariableEnum var)
 template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>
 void
 LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>::
-calculateResiduals(LocalAssemblers const& loc_asms, VariableEnum var)
+calculateResiduals(
+        GlobalVector const& global_nodal_values,
+        LocalAssemblers const& loc_asms, VariableEnum var)
 {
     _residuals.resize(loc_asms.size());
 
     for (std::size_t i=0; i<loc_asms.size(); ++i)
     {
         _residuals[i] = calculateResiudalElement(
-                    loc_asms[i], var, _local_to_global[i].rows,
+                            i, global_nodal_values,
+                    loc_asms[i], var, _local_to_global, _local_to_global[i].rows,
                     _nodal_values
                     );
     }
