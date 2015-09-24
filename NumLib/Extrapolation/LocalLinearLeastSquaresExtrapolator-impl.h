@@ -1,8 +1,11 @@
 #include "logog/include/logog.hpp"
 
+#include "Eigen/Core"
+
 #include "NumLib/Function/Interpolation.h"
 
 #include "LocalLinearLeastSquaresExtrapolator.h"
+
 
 
 // see http://eigen.tuxfamily.org/dox-devel/group__LeastSquares.html
@@ -21,11 +24,11 @@ LLLSQ_extrapolateElement(
         )
 {
     // auto const& shp_mats = loc_asm->getShapeMatrices();
-    auto const& gp_vals = loc_asm->getIntegrationPointValues(var);
+    auto gp_vals = loc_asm->getIntegrationPointValues(var);
 
     const unsigned nn = loc_asm->getShapeMatrix(0).rows(); // number of mesh nodes
     // const unsigned nn = 5;
-    const unsigned ni = gp_vals.size();        // number of gauss points
+    const unsigned ni = gp_vals->size();        // number of gauss points
 
 
     Eigen::MatrixXd N(ni, nn);
@@ -41,7 +44,7 @@ LLLSQ_extrapolateElement(
         }
     }
 
-    const Eigen::Map<const Eigen::VectorXd> gpvs(gp_vals.data(), gp_vals.size());
+    const Eigen::Map<const Eigen::VectorXd> gpvs(gp_vals->data(), gp_vals->size());
 
     switch (linear_least_squares)
     {
@@ -65,8 +68,8 @@ calculateResiudalElement(LocalAssembler const* loc_asm, VariableEnum var,
         AssemblerLib::LocalToGlobalIndexMap::LineIndex const& indices,
         GlobalVector const& nodal_vals)
 {
-    auto const& gp_vals = loc_asm->getIntegrationPointValues(var);
-    const unsigned ni = gp_vals.size();        // number of gauss points
+    auto gp_vals = loc_asm->getIntegrationPointValues(var);
+    const unsigned ni = gp_vals->size();        // number of gauss points
 
     // filter nodal values of the current element
     std::vector<double> nodal_vals_element;
@@ -84,7 +87,7 @@ calculateResiudalElement(LocalAssembler const* loc_asm, VariableEnum var,
         NumLib::shapeFunctionInterpolate(
                     nodal_vals_element, loc_asm->getShapeMatrix(gp),
                     gp_val_extrapol2);
-        auto const& ax_m_b = gp_val_extrapol - gp_vals[gp];
+        auto const& ax_m_b = gp_val_extrapol - (*gp_vals)[gp];
         residual += ax_m_b * ax_m_b;
     }
 
