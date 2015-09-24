@@ -77,16 +77,16 @@ template<typename Matrix, typename RHS, typename Unknowns>
 void
 GLLSQ_solveLinearLeastSquares(Matrix const& mat, RHS const& rhs, Unknowns& unknowns)
 {
-    switch(ProcessLib::linear_least_squares)
+    switch(NumLib::linear_least_squares)
     {
-    case ProcessLib::LinearLeastSquaresBy::NormalEquation:
+    case NumLib::LinearLeastSquaresBy::NormalEquation:
     {
         ERR("solving normal equation... not yet implemented");
         // DBUG("solving normal equation...");
         // unknowns = (mat.transpose() * mat).ldlt().solve(mat.transpose() * rhs);
         break;
     }
-    case ProcessLib::LinearLeastSquaresBy::QR:
+    case NumLib::LinearLeastSquaresBy::QR:
     {
         Eigen::SparseQR<Matrix, Eigen::COLAMDOrdering<int>> solver;
         solver.compute(mat);
@@ -100,7 +100,7 @@ GLLSQ_solveLinearLeastSquares(Matrix const& mat, RHS const& rhs, Unknowns& unkno
 } // anonymous namespace
 
 
-namespace ProcessLib
+namespace NumLib
 {
 
 template<typename GlobalMatrix, typename GlobalVector, typename VariableEnum, typename LocalAssembler>

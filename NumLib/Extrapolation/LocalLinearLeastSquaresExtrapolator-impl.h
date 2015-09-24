@@ -97,7 +97,7 @@ calculateResiudalElement(LocalAssembler const* loc_asm, VariableEnum var,
 } // anonymous namespace
 
 
-namespace ProcessLib
+namespace NumLib
 {
 
 template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>

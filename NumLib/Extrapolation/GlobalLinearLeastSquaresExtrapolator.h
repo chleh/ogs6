@@ -3,7 +3,7 @@
 
 #include "Extrapolator.h"
 
-namespace ProcessLib
+namespace NumLib
 {
 
 template<typename GlobalMatrix, typename GlobalVector,

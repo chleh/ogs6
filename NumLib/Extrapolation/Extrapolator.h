@@ -5,7 +5,7 @@
 
 #include "AssemblerLib/LocalToGlobalIndexMap.h"
 
-namespace ProcessLib
+namespace NumLib
 {
 
 

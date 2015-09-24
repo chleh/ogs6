@@ -3,7 +3,7 @@
 
 #include "Extrapolator.h"
 
-namespace ProcessLib
+namespace NumLib
 {
 
 template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>
