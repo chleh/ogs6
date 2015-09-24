@@ -77,23 +77,10 @@ template<typename Matrix, typename RHS, typename Unknowns>
 void
 GLLSQ_solveLinearLeastSquares(Matrix const& mat, RHS const& rhs, Unknowns& unknowns)
 {
-    switch(NumLib::linear_least_squares)
-    {
-    case NumLib::LinearLeastSquaresBy::NormalEquation:
-    {
-        ERR("solving normal equation... not yet implemented");
-        // DBUG("solving normal equation...");
-        // unknowns = (mat.transpose() * mat).ldlt().solve(mat.transpose() * rhs);
-        break;
-    }
-    case NumLib::LinearLeastSquaresBy::QR:
     {
         Eigen::SparseQR<Matrix, Eigen::COLAMDOrdering<int>> solver;
         solver.compute(mat);
         unknowns = solver.solve(rhs);
-    }
-    default:
-        ERR("chosen linear least squares method not yet implemented.");
     }
 }
 

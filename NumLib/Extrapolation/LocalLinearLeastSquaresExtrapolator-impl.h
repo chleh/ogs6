@@ -9,11 +9,6 @@
 #include "LocalNodalDOF-impl.h"
 
 
-// see http://eigen.tuxfamily.org/dox-devel/group__LeastSquares.html
-enum class LinearLeastSquaresBy { SVD, QR, NormalEquation };
-const LinearLeastSquaresBy linear_least_squares = LinearLeastSquaresBy::NormalEquation;
-
-
 namespace NumLib
 {
 
@@ -22,6 +17,7 @@ void
 LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>::
 extrapolate(
         GlobalVector const& global_nodal_values,
+        AssemblerLib::LocalToGlobalIndexMap const& global_nodal_values_map,
         LocalAssemblers const& loc_asms, VariableEnum var)
 {
     _nodal_values = 0.0;
@@ -30,7 +26,7 @@ extrapolate(
 
     for (std::size_t i=0; i<loc_asms.size(); ++i)
     {
-        extrapolateElement(i,global_nodal_values, loc_asms[i], var, counts);
+        extrapolateElement(i, global_nodal_values, global_nodal_values_map, loc_asms[i], var, counts);
     }
 
     _nodal_values.componentwiseDivide(counts);
@@ -41,6 +37,7 @@ void
 LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>::
 calculateResiduals(
         GlobalVector const& global_nodal_values,
+        AssemblerLib::LocalToGlobalIndexMap const& global_nodal_values_map,
         LocalAssemblers const& loc_asms, VariableEnum var)
 {
     _residuals.resize(loc_asms.size());
@@ -48,7 +45,7 @@ calculateResiduals(
     for (std::size_t i=0; i<loc_asms.size(); ++i)
     {
         _residuals[i] = calculateResiudalElement(
-                            i, global_nodal_values, loc_asms[i], var);
+                            i, global_nodal_values, global_nodal_values_map, loc_asms[i], var);
     }
 }
 
@@ -58,11 +55,12 @@ LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>:
 extrapolateElement(
         std::size_t index,
         GlobalVector const& global_nodal_values,
+        AssemblerLib::LocalToGlobalIndexMap const& global_nodal_values_map,
         LocalAssembler const* loc_asm, VariableEnum var,
         GlobalVector& counts
         )
 {
-    NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, _local_to_global};
+    NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, global_nodal_values_map};
 
     auto gp_vals = loc_asm->getIntegrationPointValues(var, nodal_dof);
 
@@ -86,20 +84,14 @@ extrapolateElement(
 
     const Eigen::Map<const Eigen::VectorXd> gpvs(gp_vals->data(), gp_vals->size());
 
-    switch (linear_least_squares)
-    {
-    case LinearLeastSquaresBy::NormalEquation:
     {
         auto const& indices = _local_to_global[index].rows;
         // DBUG("solving normal equation...");
         Eigen::VectorXd elem_nodal_vals = (N.transpose() * N).ldlt().solve(N.transpose() * gpvs);
         _nodal_values.add(indices, elem_nodal_vals);
         counts.add(indices, 1.0);
-        break;
+        // break;
         // return (N.transpose() * N).ldlt().solve(N.transpose() * gpvs);
-    }
-    default:
-        ERR("chosen linear least squares method not yet implemented.");
     }
 }
 
@@ -109,9 +101,10 @@ LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>:
 calculateResiudalElement(
         std::size_t index,
         GlobalVector const& global_nodal_values,
+        AssemblerLib::LocalToGlobalIndexMap const& global_nodal_values_map,
         LocalAssembler const* loc_asm, VariableEnum var)
 {
-    NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, _local_to_global};
+    NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, global_nodal_values_map};
 
     auto gp_vals = loc_asm->getIntegrationPointValues(var, nodal_dof);
     const unsigned ni = gp_vals->size();        // number of gauss points

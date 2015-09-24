@@ -22,10 +22,12 @@ public:
 
     void extrapolate(
             GlobalVector const& global_nodal_values,
+            AssemblerLib::LocalToGlobalIndexMap const& global_nodal_values_map,
             LocalAssemblers const& loc_asms, VariableEnum var) override;
 
     void calculateResiduals(
             GlobalVector const& global_nodal_values,
+            AssemblerLib::LocalToGlobalIndexMap const& global_nodal_values_map,
             LocalAssemblers const& loc_asms, VariableEnum var) override;
 
     GlobalVector const& getNodalValues() const override { return _nodal_values; }
@@ -37,6 +39,7 @@ private:
     void extrapolateElement(
             std::size_t index,
             GlobalVector const& global_nodal_values,
+            AssemblerLib::LocalToGlobalIndexMap const& global_nodal_values_map,
             LocalAssembler const* loc_asm, VariableEnum var,
             GlobalVector& counts
             );
@@ -44,6 +47,7 @@ private:
     double calculateResiudalElement(
             std::size_t index,
             GlobalVector const& global_nodal_values,
+            AssemblerLib::LocalToGlobalIndexMap const& global_nodal_values_map,
             LocalAssembler const* loc_asm, VariableEnum var);
 
     GlobalVector _nodal_values;
