@@ -130,6 +130,11 @@ TESProcess(MeshLib::Mesh& mesh,
             if (_mesh.getDimension() >= 3) add_secondary_variable("velocity_z",    SecondaryVariables::VELOCITY_Z,    1);
 
             add_secondary_variable("reaction_kinetic_indicator", SecondaryVariables::REACTION_KINETIC_INDICATOR, 1);
+
+            add_secondary_variable("vapour_partial_pressure", SecondaryVariables::VAPOUR_PARTIAL_PRESSURE, 1);
+            add_secondary_variable("relative_humidity",       SecondaryVariables::RELATIVE_HUMIDITY,       1);
+            add_secondary_variable("loading",                 SecondaryVariables::LOADING,                 1);
+            add_secondary_variable("equilibrium_loading",     SecondaryVariables::EQUILIBRIUM_LOADING,     1);
         }
     }
 
@@ -555,13 +560,13 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
 
 
 #if 0
-    GlobalLinearLeastSquaresExtrapolator<
+    NumLib::GlobalLinearLeastSquaresExtrapolator<
             typename GlobalSetup::MatrixType,
             typename GlobalSetup::VectorType, SecondaryVariables,
             LocalAssembler>
             extrapolator(*_local_to_global_index_map_single_component);
 #else
-    LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables,
+    NumLib::LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables,
             LocalAssembler>
             extrapolator(*_local_to_global_index_map_single_component);
 #endif
@@ -583,7 +588,7 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             auto result = get_or_create_mesh_property(property_name, MeshLib::MeshItemType::Node);
             assert(result->size() == _mesh.getNNodes());
 
-            extrapolator.extrapolate(_local_assemblers, property);
+            extrapolator.extrapolate(*_x, _local_assemblers, property);
             auto const& nodal_values = extrapolator.getNodalValues().getRawVector();
 
             // Copy result
@@ -600,7 +605,7 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             auto result = get_or_create_mesh_property(property_name_res, MeshLib::MeshItemType::Cell);
             assert(result->size() == _mesh.getNElements());
 
-            extrapolator.calculateResiduals(_local_assemblers, property);
+            extrapolator.calculateResiduals(*_x, _local_assemblers, property);
             auto const& residuals = extrapolator.getElementResiduals();
 
             // Copy result

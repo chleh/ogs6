@@ -24,9 +24,15 @@ namespace ProcessLib
 namespace TES
 {
 
-enum class SecondaryVariables { SOLID_DENSITY, REACTION_RATE,
-                                VELOCITY_X, VELOCITY_Y, VELOCITY_Z,
-                                REACTION_KINETIC_INDICATOR };
+enum class SecondaryVariables {
+    SOLID_DENSITY, REACTION_RATE,
+    VELOCITY_X, VELOCITY_Y, VELOCITY_Z,
+    REACTION_KINETIC_INDICATOR,
+    VAPOUR_PARTIAL_PRESSURE,
+    RELATIVE_HUMIDITY,
+    LOADING,
+    EQUILIBRIUM_LOADING
+};
 
 const double NONLINEAR_ERROR_TOLERANCE = 1e-6;
 

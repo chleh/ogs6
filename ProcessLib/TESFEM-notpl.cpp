@@ -892,10 +892,8 @@ getIntegrationPointValues(SecondaryVariables var) const
     {
     case SecondaryVariables::REACTION_RATE:
         return alias(_reaction_rate);
-        break;
     case SecondaryVariables::SOLID_DENSITY:
         return alias(_solid_density);
-        break;
     case SecondaryVariables::VELOCITY_X:
         return alias(_velocity[0]);
     case SecondaryVariables::VELOCITY_Y:
@@ -906,6 +904,24 @@ getIntegrationPointValues(SecondaryVariables var) const
         return alias(_velocity[2]);
     case SecondaryVariables::REACTION_KINETIC_INDICATOR:
         return alias(_reaction_rate_indicator);
+
+    case SecondaryVariables::LOADING:
+    {
+        auto Cs = std::make_shared<std::vector<double> >();
+        Cs->reserve(_solid_density.size());
+
+        for (auto rho_SR : _reaction_rate) {
+            Cs->push_back(rho_SR / _AP->_rho_SR_dry - 1.0);
+        }
+
+        return Cs;
+    }
+
+    case SecondaryVariables::VAPOUR_PARTIAL_PRESSURE:
+    case SecondaryVariables::RELATIVE_HUMIDITY:
+    case SecondaryVariables::EQUILIBRIUM_LOADING:
+        // not handled in this method
+        break;
     }
 
     return nullptr; // must not happen

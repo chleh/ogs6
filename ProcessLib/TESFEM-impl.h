@@ -13,6 +13,7 @@
 
 #include "NumLib/Fem/FiniteElement/TemplateIsoparametric.h"
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
+#include "NumLib/Function/Interpolation.h"
 
 // #include "logog/include/logog.hpp"
 
@@ -138,9 +139,104 @@ LocalAssemblerData<ShapeFunction_,
     GlobalMatrix,
     GlobalVector,
     GlobalDim>::
-getIntegrationPointValues(SecondaryVariables var) const
+getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_dof) const
 {
-    return _data.getIntegrationPointValues(var);
+
+    switch (var)
+    {
+    case SecondaryVariables::REACTION_RATE:
+    case SecondaryVariables::SOLID_DENSITY:
+    case SecondaryVariables::VELOCITY_X:
+    case SecondaryVariables::VELOCITY_Y:
+    case SecondaryVariables::VELOCITY_Z:
+    case SecondaryVariables::REACTION_KINETIC_INDICATOR:
+    case SecondaryVariables::LOADING:
+        // These cases do not need access to nodal values
+        // Thus, they can be handled inside _data
+        return _data.getIntegrationPointValues(var);
+
+    case SecondaryVariables::VAPOUR_PARTIAL_PRESSURE:
+    {
+        IntegrationMethod_ integration_method(_integration_order);
+        auto const n_integration_points = integration_method.getNPoints();
+
+        auto pVs = std::make_shared<std::vector<double> >();
+        pVs->reserve(n_integration_points);
+
+        auto const ps = nodal_dof.getElementNodalValues(0); // TODO [CL] use constants for DOF indices
+        auto const xs = nodal_dof.getElementNodalValues(2);
+
+        auto const& AP = *_data._AP;
+
+        for (auto const& sm : _shape_matrices)
+        {
+            double p, xm;
+
+            using Array = std::array<double*, 1>;
+            NumLib::shapeFunctionInterpolate(ps, sm.N, Array{ &p  });
+            NumLib::shapeFunctionInterpolate(xs, sm.N, Array{ &xm });
+
+            auto const xn = AP._adsorption->get_molar_fraction(xm, AP._M_react, AP._M_inert);
+            pVs->push_back(p * xn);
+        }
+
+        return pVs;
+    }
+    case SecondaryVariables::RELATIVE_HUMIDITY:
+    {
+        IntegrationMethod_ integration_method(_integration_order);
+        auto const n_integration_points = integration_method.getNPoints();
+
+        auto rhs = std::make_shared<std::vector<double> >();
+        rhs->reserve(n_integration_points);
+
+        auto const nodal_vals = nodal_dof.getElementNodalValues();
+
+        auto const& AP = *_data._AP;
+
+        for (auto const& sm : _shape_matrices)
+        {
+            double p, T, xm;
+
+            using Array = std::array<double*, 3>;
+            NumLib::shapeFunctionInterpolate(nodal_vals, sm.N, Array{ &p, &T, &xm });
+
+            auto const xn = AP._adsorption->get_molar_fraction(xm, AP._M_react, AP._M_inert);
+            auto const pS = AP._adsorption->get_equilibrium_vapour_pressure(T);
+            rhs->push_back(p * xn / pS);
+        }
+
+        return rhs;
+    }
+    case SecondaryVariables::EQUILIBRIUM_LOADING:
+    {
+        IntegrationMethod_ integration_method(_integration_order);
+        auto const n_integration_points = integration_method.getNPoints();
+
+        auto Cs = std::make_shared<std::vector<double> >();
+        Cs->reserve(n_integration_points);
+
+        auto const nodal_vals = nodal_dof.getElementNodalValues();
+
+        auto const& AP = *_data._AP;
+
+        for (auto const& sm : _shape_matrices)
+        {
+            double p, T, xm;
+
+            using Array = std::array<double*, 3>;
+            NumLib::shapeFunctionInterpolate(nodal_vals, sm.N, Array{ &p, &T, &xm });
+
+            auto const xn = AP._adsorption->get_molar_fraction(xm, AP._M_react, AP._M_inert);
+            Cs->push_back(AP._adsorption->get_equilibrium_loading(p * xn, T, AP._M_react));
+        }
+
+        return Cs;
+    }
+    }
+
+
+    return nullptr;
 }
 
 

@@ -16,6 +16,8 @@
 #include "TESFEM-notpl.h"
 #include "TESProcess-notpl.h"
 
+#include "NumLib/Extrapolation/LocalNodalDOF.h"
+
 namespace ProcessLib
 {
 
@@ -28,7 +30,7 @@ public:
     virtual Eigen::VectorXd const& getShapeMatrix(const unsigned integration_point) const = 0;
 
     virtual std::shared_ptr< const std::vector<double> >
-    getIntegrationPointValues(SecondaryVariables var) const = 0;
+    getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_dof) const = 0;
 };
 
 
@@ -90,7 +92,7 @@ public:
     }
 
     std::shared_ptr<const std::vector<double> >
-    getIntegrationPointValues(SecondaryVariables var) const override;
+    getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_dof) const override;
 
 private:
     std::vector<ShapeMatrices> _shape_matrices;
