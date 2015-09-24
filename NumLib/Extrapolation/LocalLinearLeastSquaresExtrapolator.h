@@ -33,6 +33,24 @@ public:
     GlobalVector const& getElementResiduals() const override { return _residuals; }
 
 private:
+
+    void extrapolateElement(
+            std::size_t index,
+            GlobalVector const& global_nodal_values,
+            LocalAssembler const* loc_asm, VariableEnum var,
+            AssemblerLib::LocalToGlobalIndexMap const& index_map,
+            AssemblerLib::LocalToGlobalIndexMap::LineIndex const& indices,
+            GlobalVector& nodal_vals, GlobalVector& counts
+            );
+
+    double calculateResiudalElement(
+            std::size_t index,
+            GlobalVector const& global_nodal_values,
+            LocalAssembler const* loc_asm, VariableEnum var,
+            AssemblerLib::LocalToGlobalIndexMap const& index_map,
+            AssemblerLib::LocalToGlobalIndexMap::LineIndex const& indices,
+            GlobalVector const& nodal_vals);
+
     GlobalVector _nodal_values;
     GlobalVector _residuals;
     AssemblerLib::LocalToGlobalIndexMap const& _local_to_global;

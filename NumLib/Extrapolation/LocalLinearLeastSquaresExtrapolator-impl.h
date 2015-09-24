@@ -14,12 +14,52 @@ enum class LinearLeastSquaresBy { SVD, QR, NormalEquation };
 const LinearLeastSquaresBy linear_least_squares = LinearLeastSquaresBy::NormalEquation;
 
 
-namespace
+namespace NumLib
 {
 
 template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>
 void
-LLLSQ_extrapolateElement(
+LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>::
+extrapolate(
+        GlobalVector const& global_nodal_values,
+        LocalAssemblers const& loc_asms, VariableEnum var)
+{
+    _nodal_values = 0.0;
+
+    GlobalVector counts(_nodal_values.size());
+
+    for (std::size_t i=0; i<loc_asms.size(); ++i)
+    {
+        extrapolateElement(i,global_nodal_values, loc_asms[i], var, _local_to_global, _local_to_global[i].rows,
+                           _nodal_values, counts);
+    }
+
+    _nodal_values.componentwiseDivide(counts);
+}
+
+template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>
+void
+LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>::
+calculateResiduals(
+        GlobalVector const& global_nodal_values,
+        LocalAssemblers const& loc_asms, VariableEnum var)
+{
+    _residuals.resize(loc_asms.size());
+
+    for (std::size_t i=0; i<loc_asms.size(); ++i)
+    {
+        _residuals[i] = calculateResiudalElement(
+                            i, global_nodal_values,
+                    loc_asms[i], var, _local_to_global, _local_to_global[i].rows,
+                    _nodal_values
+                    );
+    }
+}
+
+template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>
+void
+LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>::
+extrapolateElement(
         std::size_t index,
         GlobalVector const& global_nodal_values,
         LocalAssembler const* loc_asm, VariableEnum var,
@@ -70,6 +110,7 @@ LLLSQ_extrapolateElement(
 
 template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>
 double
+LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>::
 calculateResiudalElement(
         std::size_t index,
         GlobalVector const& global_nodal_values,
@@ -104,51 +145,6 @@ calculateResiudalElement(
     }
 
     return residual / ni;
-}
-
-} // anonymous namespace
-
-
-namespace NumLib
-{
-
-template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>
-void
-LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>::
-extrapolate(
-        GlobalVector const& global_nodal_values,
-        LocalAssemblers const& loc_asms, VariableEnum var)
-{
-    _nodal_values = 0.0;
-
-    GlobalVector counts(_nodal_values.size());
-
-    for (std::size_t i=0; i<loc_asms.size(); ++i)
-    {
-        LLLSQ_extrapolateElement(i,global_nodal_values, loc_asms[i], var, _local_to_global, _local_to_global[i].rows,
-                           _nodal_values, counts);
-    }
-
-    _nodal_values.componentwiseDivide(counts);
-}
-
-template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>
-void
-LocalLinearLeastSquaresExtrapolator<GlobalVector, VariableEnum, LocalAssembler>::
-calculateResiduals(
-        GlobalVector const& global_nodal_values,
-        LocalAssemblers const& loc_asms, VariableEnum var)
-{
-    _residuals.resize(loc_asms.size());
-
-    for (std::size_t i=0; i<loc_asms.size(); ++i)
-    {
-        _residuals[i] = calculateResiudalElement(
-                            i, global_nodal_values,
-                    loc_asms[i], var, _local_to_global, _local_to_global[i].rows,
-                    _nodal_values
-                    );
-    }
 }
 
 } // namespace ProcessLib
