@@ -15,6 +15,12 @@
 
 namespace {
 	const double k_rate = 6.0e-3; //to be specified
+
+	template <typename T>
+	T square(const T& v)
+	{
+		return v * v;
+	}
 }
 
 namespace Ads
@@ -81,6 +87,13 @@ double Adsorption::get_molar_fraction(double xm, double M_this, double M_other)
 double Adsorption::get_mass_fraction(double xn, double M_this, double M_other)
 {
 	return M_this*xn/(M_this*xn + M_other*(1.0-xn));
+}
+
+
+double Adsorption::d_molar_fraction(double xm, double M_this, double M_other)
+{
+	return M_other * M_this
+			/ square(M_other * xm + M_this * (1.0 - xm));
 }
 
 
