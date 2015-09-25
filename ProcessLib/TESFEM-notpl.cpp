@@ -542,7 +542,17 @@ getRHSCoeffVector(const unsigned int_pt)
 
 
 void LADataNoTpl::
-initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
+initReaction(
+        const unsigned int_pt, const std::vector<double>& localX)
+{
+    initReaction_localVapourUptakeStrategy(int_pt, localX);
+}
+
+
+
+void LADataNoTpl::
+initReaction_localVapourUptakeStrategy(
+        const unsigned int_pt, const std::vector<double> &/*localX*/)
 {
     if (_AP->_iteration_in_current_timestep == 0)
     {
@@ -627,7 +637,7 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
                      )
                  );
 
-            _reaction_rate_indicator[int_pt] = 99.0; // 99 --> GG --> Gleichgewicht
+            _reaction_rate_indicator[int_pt] = 100.0;
             _is_equilibrium_reaction[int_pt] = true;
             _estimated_vapour_pressure[int_pt] = _p_V;
         }
@@ -654,108 +664,87 @@ initReaction(const unsigned int_pt, const std::vector<double> &/*localX*/)
         }
     }
     else if (
-             _is_equilibrium_reaction[int_pt]
+             _is_equilibrium_reaction[int_pt]              // only correct the result of the equilibrium reaction
              && _AP->_iteration_in_current_timestep == 1
              )
     {
-        // In the first iteration the equilibrium reaction has been used.
-        // It does not consider in/outflux of vapour.
-        // Thus it might be necessary now to adapt the reaction rate to in/outflux.
-
-        // adjust reaction rate by adding the reaction rate of the inflow to the already calculated reaction rate
-
-        // current loading of this timestep
-        const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _AP->_rho_SR_dry);
-
-        // function describing local equilibrium between vapour and zeolite loading
-        // temperature is assumed to be constant
-        auto f = [this, loading](double pV) -> double
-        {
-            // pV0 := _p_V
-            const double C_eq = _AP->_adsorption->get_equilibrium_loading(pV, _T, _AP->_M_react);
-            return (pV - _p_V) * _AP->_M_react / GAS_CONST / _T * _AP->_poro
-                    + (1.0-_AP->_poro) * (C_eq - loading) * _AP->_rho_SR_dry;
-        };
-
-        // range where to search for roots of f
-        const double C_eq0 = _AP->_adsorption->get_equilibrium_loading(_p_V, _T, _AP->_M_react);
-        const double limit = (C_eq0 > loading)
-                             ? 1e-8
-                             : Ads::Adsorption::get_equilibrium_vapour_pressure(_T);
-
-        // search for roots
-        auto rf = MathLib::Nonlinear::makeRegulaFalsi<MathLib::Nonlinear::Pegasus>(f, _p_V, limit);
-        rf.step(3);
+        // try to correct the reaction rate calculated in the first timestep
 
         const double damping = 0.5;
 
-        // set vapour pressure
-        const double pV = rf.get_result();
-        const double delta_pV = damping * (pV - _p_V);
-        _p   += delta_pV;
-        _p_V += delta_pV;
-        // set vapour mass fraction accordingly
-        _vapour_mass_fraction = Ads::Adsorption::get_mass_fraction(_p_V/_p, _AP->_M_react, _AP->_M_inert);
+        // current loading in this timestep
+        const double loading = Ads::Adsorption::get_loading(_solid_density[int_pt], _AP->_rho_SR_dry);
 
-        // set solid density
-        const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
-        const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
+        const double react_rate_R = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
+                                  * _AP->_rho_SR_dry;
 
-        // add values to the reaction rate and solid density
-        _reaction_rate[int_pt] += delta_rhoSR / _AP->_delta_t;
-        _solid_density[int_pt] += delta_rhoSR;
+        // calculate density change
+        const double delta_rhoS = react_rate_R * _AP->_delta_t * (1.0 - _AP->_poro);
+        const double delta_rhoV = - delta_rhoS;
+        const double rho_V = _AP->_M_react * _p_V / GAS_CONST / _T * _AP->_poro;
 
-        // assert that reaction rate from this model is always slower than from the kinetic model
-        // in the corner cases handled here
-        // assert(react_rate_R <= 0.0 || _reaction_rate[int_pt] < react_rate_R);
-        // assert(react_rate_R >= 0.0 || _reaction_rate[int_pt] > react_rate_R);
-
-        /*
-        DBUG("pV: %14.7g, delta pV: %14.7g, rhoSR: %14.7g, delta_rhoSR: %14.7g"
-             ", xm: %14.7g, react_rate_R: %14.7g, react_rate_GG: %14.7g"
-             ", kin rr: %14.7g",
-             _p_V, delta_pV, _solid_density[int_pt], delta_rhoSR,
-             _vapour_mass_fraction,
-             react_rate_R, _reaction_rate[int_pt],
-             _AP->_rho_SR_dry * _AP->_adsorption->get_reaction_rate(
-                 _p_V, _T, _AP->_M_react,
-                 Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry)
-                 )
-             );
-             */
-
-
-
-
-
-
-        /*
-
-        // partial pressure change due to in/outflux
-        const double pV_delta = _p_V - _estimated_vapour_pressure[int_pt];
-        const double pV_delta_rate = pV_delta / _AP->_delta_t;
-
-        // loading "at the beginning" of this timestep
-        const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
-
-        auto f = [this, loading, pV_delta, pV_delta_rate](double pV) -> double
+        if (
+            _p_V < 0.05 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T) && (
+            -delta_rhoV > rho_V   // there would be more vapour sucked up than there currently is
+            || delta_rhoV > rho_V // there would be more vapour released than there currently is
+        ))
         {
-            // pV0 := _p_V
-            const double C_eq = _AP->_adsorption->get_equilibrium_loading(pV, _T, _AP->_M_react);
-            return (pV - _p_V) * _AP->_M_react / GAS_CONST / _T * _AP->_poro
-                    + (1.0-_AP->_poro) * (C_eq - loading) * _AP->_rho_SR_dry;
-        };
+            // try equilibrium reaction again
 
-        // range where to search for roots of f
-        const double C_eq0 = _AP->_adsorption->get_equilibrium_loading(_p_V, _T, _AP->_M_react);
-        const double limit = (C_eq0 > loading)
-                             ? 1e-8
-                             : Ads::Adsorption::get_equilibrium_vapour_pressure(_T);
+            // function describing local equilibrium between vapour and zeolite loading
+            // temperature is assumed to be constant
+            auto f = [this, loading](double pV) -> double
+            {
+                // pV0 := _p_V
+                const double C_eq = _AP->_adsorption->get_equilibrium_loading(pV, _T, _AP->_M_react);
+                return (pV - _p_V) * _AP->_M_react / GAS_CONST / _T * _AP->_poro
+                        + (1.0-_AP->_poro) * (C_eq - loading) * _AP->_rho_SR_dry;
+            };
 
-        // search for roots
-        auto rf = MathLib::Nonlinear::makeRegulaFalsi<MathLib::Nonlinear::Pegasus>(f, _p_V, limit);
-        rf.step(3);
-        */
+            // range where to search for roots of f
+            const double C_eq0 = _AP->_adsorption->get_equilibrium_loading(_p_V, _T, _AP->_M_react);
+            const double limit = (C_eq0 > loading)
+                                 ? 1e-8
+                                 : Ads::Adsorption::get_equilibrium_vapour_pressure(_T);
+
+            // search for roots
+            auto rf = MathLib::Nonlinear::makeRegulaFalsi<MathLib::Nonlinear::Pegasus>(f, _p_V, limit);
+            rf.step(3);
+
+            // set vapour pressure
+            const double pV = rf.get_result();
+            const double delta_pV = damping * (pV - _p_V);
+            _p   += delta_pV;
+            _p_V += delta_pV;
+            // set vapour mass fraction accordingly
+            _vapour_mass_fraction = Ads::Adsorption::get_mass_fraction(_p_V/_p, _AP->_M_react, _AP->_M_inert);
+
+            // set solid density
+            const double delta_rhoV  = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
+            const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
+
+            // add values to the reaction rate and solid density
+            _reaction_rate[int_pt] += delta_rhoSR / _AP->_delta_t;
+            _solid_density[int_pt] += delta_rhoSR;
+
+            _reaction_rate_indicator[int_pt] += 50.0;
+        }
+        else if (_p_V < 50.0 && react_rate_R > 0.0)
+        {
+            // do not correct in this case
+        }
+        else
+        {
+            // in this case considering only the adsorption kintetics is sufficient,
+            // and may be also more correct, since it really describes a kinetic.
+
+            // TODO [CL] maybe also alter _p, _p_V, _vapour_mass_fraction
+
+            _reaction_rate[int_pt] += damping * react_rate_R;
+            _solid_density[int_pt] += damping * react_rate_R * _AP->_delta_t;
+
+            _reaction_rate_indicator[int_pt] -= 50.0;
+        }
     }
     else
     {

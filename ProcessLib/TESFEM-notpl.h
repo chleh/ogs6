@@ -86,6 +86,10 @@ private:
             const unsigned int_pt,
             std::vector<double> const& localX);
 
+    void initReaction_localVapourUptakeStrategy(
+            const unsigned int_pt,
+            std::vector<double> const& localX);
+
     // many values taken from zeolite-adsorption-benchmark-snap/start-at-0.99
 
 
