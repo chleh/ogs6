@@ -52,6 +52,7 @@ public:
             std::vector<double> const& localX,
             VecRef const& smN,
             MatRef const& smDNdx,
+            MatRef const& smJ,
             const double smDetJ,
             const double weight
             );
@@ -79,18 +80,28 @@ private:
             const unsigned int_pt,
             std::vector<double> const& localX,
             VecRef const& smN,
-            MatRef const& smDNdx
+            MatRef const& smDNdx,
+            const MatRef& smJ,
+            const double smDetJ
             );
 
     void initReaction(
             const unsigned int_pt,
-            std::vector<double> const& localX);
+            std::vector<double> const& localX,
+            const MatRef& smDNdx,
+            const MatRef& smJ,
+            const double smDetJ);
 
-    void initReaction_localVapourUptakeStrategy(
+    void initReaction_localVapourUptakeStrategy(const unsigned int_pt);
+
+    void initReaction_localDiffusionStrategy(
             const unsigned int_pt,
-            std::vector<double> const& localX);
+            std::vector<double> const& localX,
+            const MatRef& smDNdx,
+            const MatRef& smJ,
+            const double smDetJ);
 
-    // many values taken from zeolite-adsorption-benchmark-snap/start-at-0.99
+    double estimateAdsorptionEquilibrium(const double p_V0, const double C0) const;
 
 
     // nodal quantities, secondary variables
@@ -107,8 +118,6 @@ private:
     std::vector<double> _estimated_vapour_pressure;
 
     std::vector<std::vector<double> > _velocity;
-    // std::vector<double> _velocity_x;
-    // std::vector<double> _velocity_x;
     // Eigen::MatrixXd _velocity; // row index: gauss point, column index: dimension x/y/z
 
     std::vector<double> _reaction_rate_indicator; // TODO [CL] get rid of this

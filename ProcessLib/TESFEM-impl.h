@@ -100,7 +100,7 @@ assemble(std::vector<double> const& localX,
         auto const weight = wp.getWeight();
 
         _data.assembleIntegrationPoint(ip, &_localA, &_localRhs, localX,
-                                       sm.N, sm.dNdx, sm.detJ, weight);
+                                       sm.N, sm.dNdx, sm.J, sm.detJ, weight);
     }
 
     // first timestep:

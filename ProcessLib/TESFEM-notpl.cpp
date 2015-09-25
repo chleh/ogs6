@@ -30,11 +30,6 @@ const MatOutType MATRIX_OUTPUT_FORMAT = MatOutType::PYTHON;
 
 
 
-template <typename T>
-T square(const T& v)
-{
-	return v * v;
-}
 
 
 #if 0
@@ -384,9 +379,8 @@ Eigen::Matrix3d
 LADataNoTpl::
 getMassCoeffMatrix(const unsigned int_pt)
 {
-	double dxn_dxm = _AP->_M_inert * _AP->_M_react
-					 / square(_AP->_M_inert * _vapour_mass_fraction
-							  + _AP->_M_react * (1.0 - _vapour_mass_fraction));
+	const double dxn_dxm = _AP->_adsorption->d_molar_fraction(
+							   _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
 
 	const double M_pp = _AP->_poro/_p * _rho_GR;
 	const double M_pT = -_AP->_poro/_T *  _rho_GR;
@@ -543,16 +537,169 @@ getRHSCoeffVector(const unsigned int_pt)
 
 void LADataNoTpl::
 initReaction(
-        const unsigned int_pt, const std::vector<double>& localX)
+        const unsigned int_pt, const std::vector<double>& localX,
+        const MatRef& smDNdx, const MatRef& smJ, const double smDetJ)
 {
-    initReaction_localVapourUptakeStrategy(int_pt, localX);
+    initReaction_localDiffusionStrategy(int_pt, localX, smDNdx, smJ, smDetJ);
 }
 
+
+void LADataNoTpl::
+initReaction_localDiffusionStrategy(const unsigned int_pt,
+                                    const std::vector<double> &localX,
+                                    const MatRef &smDNdx, const MatRef& smJ,
+                                    const double /*smDetJ*/
+                                    )
+{
+    if (_AP->_iteration_in_current_timestep == 0)
+    {
+        bool is_rate_set = false;
+
+        // loading "at the beginning" of this timestep
+        const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
+
+        const double react_rate_R = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
+                                  * _AP->_rho_SR_dry;
+
+        // calculate density change
+        const double delta_rhoS = react_rate_R * _AP->_delta_t * (1.0 - _AP->_poro);
+        const double delta_rhoV   = - delta_rhoS;
+        const double rho_V = _AP->_M_react * _p_V / GAS_CONST / _T * _AP->_poro;
+
+        if (
+            -delta_rhoV > rho_V   // there would be more vapour sucked up than there currently is
+            // || delta_rhoV > rho_V // there would be more vapour released than there currently is
+        )
+        {
+            // estimate how much vapour would be added to the system by diffusion
+
+            const auto dim = smDNdx.rows();
+            const auto nnodes = smDNdx.cols();
+
+            assert(smJ.rows() == dim && smJ.cols() == dim);
+            std::array<Eigen::VectorXd, 3> gradients;
+            for (auto& v : gradients) { v.resize(dim); }
+
+            NumLib::shapeFunctionInterpolateGradient(localX, smDNdx, gradients);
+
+            /*
+            std::printf("gradients p:");
+            for (auto p : gradients[0]) { std::printf(" %14.7g", p); }
+
+            std::printf("  T:");
+            for (auto p : gradients[1]) { std::printf(" %14.7g", p); }
+
+            std::printf("  xm:");
+            for (auto p : gradients[2]) { std::printf(" %14.7g", p); }
+            std::puts("");
+            */
+
+            auto const xn = _AP->_adsorption->get_molar_fraction(
+                                _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
+
+            auto const dxn_dxm = _AP->_adsorption->d_molar_fraction(
+                                     _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
+
+            // auto const elem_volume = smDetJ * nnodes;
+            // auto const elem_linear_extension = std::pow(elem_volume, 1.0/dim);
+            // DBUG("elem volume: %g, ext: %g", elem_volume, elem_linear_extension);
+
+            // diffusion current associated with p_V if temperature is assumed to be constant
+            Eigen::VectorXd const j_pV = - _AP->_diffusion_coefficient_component *
+                                         ( _p * dxn_dxm * gradients[2]
+                                         + xn * gradients[0] );
+            auto const j_pV_norm = j_pV.norm();
+
+            double delta_pV_diffusion = 0.0;
+            if (j_pV_norm != 0.0)
+            {
+                // TODO [CL] shouldn't nnodes be compensated for in smJ?
+                Eigen::VectorXd const delta_x_real = smJ * j_pV / j_pV_norm
+                                                     * std::pow(nnodes, 1.0/dim);
+                // DBUG("real delta x: %g", delta_x_real.norm());
+
+                delta_pV_diffusion = j_pV_norm / delta_x_real.norm() * _AP->_delta_t;
+
+                // DBUG("estimated delta_pV_diff: %14.7g, j_pV: %g",
+                //      delta_pV_diffusion, j_pV_norm);
+            }
+
+            const double delta_rhoV_diffusion = delta_pV_diffusion * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
+            assert (delta_rhoV_diffusion >= 0.0);
+
+            if (rho_V + delta_rhoV + delta_rhoV_diffusion < 0.0)
+            {
+                // in this case more water would be adsorbed than is there, even when considering diffusion
+                // try equilibrium reaction
+
+                auto const pV = estimateAdsorptionEquilibrium(_p_V + 0.5*delta_pV_diffusion, loading);
+
+                auto const delta_pV = pV - _p_V;
+                _p += delta_pV;
+                _p_V = pV;
+                // set vapour mass fraction accordingly
+                _vapour_mass_fraction = Ads::Adsorption::get_mass_fraction(_p_V/_p, _AP->_M_react, _AP->_M_inert);
+
+                // set solid density
+                const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
+                const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
+                _reaction_rate[int_pt] = delta_rhoSR / _AP->_delta_t;
+                _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + delta_rhoSR;
+
+                // DBUG("too much reaction: %14.7g + %14.7g + %14.7g < 0.0; dpV_diff: %14.7g", rho_V, delta_rhoV, delta_rhoV_diffusion, delta_pV_diffusion);
+
+                _reaction_rate_indicator[int_pt] = 100.0;
+                _is_equilibrium_reaction[int_pt] = false;
+
+                is_rate_set = true;
+            }
+        }
+
+
+        if (!is_rate_set) // default case, used if reaction rate from the kinetic model should be used unmodified
+        {
+            _reaction_rate[int_pt] = react_rate_R;
+            _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
+
+            _reaction_rate_indicator[int_pt] = 0.0;
+            _is_equilibrium_reaction[int_pt] = false;
+
+            // TODO [CL] maybe also update p_V and p
+        }
+    } // first iteration
+
+    _qR = _reaction_rate[int_pt];
+}
+
+
+double LADataNoTpl::estimateAdsorptionEquilibrium(const double p_V0, const double C0) const
+{
+    auto f = [this, p_V0, C0](double pV) -> double
+    {
+        // pV0 := _p_V
+        const double C_eq = _AP->_adsorption->get_equilibrium_loading(pV, _T, _AP->_M_react);
+        return (pV - p_V0) * _AP->_M_react / GAS_CONST / _T * _AP->_poro
+                + (1.0-_AP->_poro) * (C_eq - C0) * _AP->_rho_SR_dry;
+    };
+
+    // range where to search for roots of f
+    const double C_eq0 = _AP->_adsorption->get_equilibrium_loading(p_V0, _T, _AP->_M_react);
+    const double limit = (C_eq0 > C0)
+                         ? 1e-8
+                         : Ads::Adsorption::get_equilibrium_vapour_pressure(_T);
+
+    // search for roots
+    auto rf = MathLib::Nonlinear::makeRegulaFalsi<MathLib::Nonlinear::Pegasus>(f, p_V0, limit);
+    rf.step(3);
+
+    // set vapour pressure
+    return rf.get_result();
+}
 
 
 void LADataNoTpl::
 initReaction_localVapourUptakeStrategy(
-        const unsigned int_pt, const std::vector<double> &/*localX*/)
+        const unsigned int_pt)
 {
     if (_AP->_iteration_in_current_timestep == 0)
     {
@@ -752,10 +899,6 @@ initReaction_localVapourUptakeStrategy(
     }
 
     _qR = _reaction_rate[int_pt];
-    if (_qR < 0.0)
-    {
-        DBUG("negative reaction rate: %14.7g", _qR);
-    }
 }
 
 
@@ -764,7 +907,9 @@ LADataNoTpl::
 preEachAssembleIntegrationPoint(
         const unsigned int_pt,
         const std::vector<double> &localX,
-        const VecRef &smN, const MatRef& /*smDNdx*/)
+        const VecRef &smN, const MatRef& smDNdx,
+        const MatRef& smJ,
+        const double smDetJ)
 {
 #ifndef NDEBUG
     // fill local data with garbage to aid in debugging
@@ -792,7 +937,7 @@ preEachAssembleIntegrationPoint(
     // pre-compute certain properties
     _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
 
-    initReaction(int_pt, localX);
+    initReaction(int_pt, localX, smDNdx, smJ, smDetJ);
 
     _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
 }
@@ -924,10 +1069,12 @@ LADataNoTpl::
 assembleIntegrationPoint(unsigned integration_point,
                          Eigen::MatrixXd* localA, Eigen::VectorXd* /*localRhs*/,
                          std::vector<double> const& localX,
-                         const VecRef &smN, const MatRef &smDNdx, const double smDetJ,
+                         const VecRef &smN, const MatRef &smDNdx,
+                         MatRef const& smJ,
+                         const double smDetJ,
                          const double weight)
 {
-    preEachAssembleIntegrationPoint(integration_point, localX, smN, smDNdx);
+    preEachAssembleIntegrationPoint(integration_point, localX, smN, smDNdx, smJ, smDetJ);
 
     auto const N = smDNdx.cols(); // number of integration points
     auto const D = smDNdx.rows(); // global dimension: 1, 2 or 3
