@@ -566,68 +566,75 @@ initReaction_localDiffusionStrategy(const unsigned int_pt,
         const double delta_rhoV   = - delta_rhoS;
         const double rho_V = _AP->_M_react * _p_V / GAS_CONST / _T * _AP->_poro;
 
-        if (
-            -delta_rhoV > rho_V   // there would be more vapour sucked up than there currently is
-            // || delta_rhoV > rho_V // there would be more vapour released than there currently is
-        )
+        // hard limit of 5% relative humidity for check if equilibrium reaction should be used
+        if (_p_V < 0.05 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
         {
-            // estimate how much vapour would be added to the system by diffusion
+            bool do_equilibrium_reaction = false;
 
-            const auto dim = smDNdx.rows();
-            const auto nnodes = smDNdx.cols();
+            if (delta_rhoV > rho_V) // there would be more vapour released than there currently is
+            {
+                do_equilibrium_reaction = true;
+            }
+            else if (-delta_rhoV > rho_V) // there would be more vapour sucked up than there currently is
+            {
+                // estimate how much vapour would be added to the system by diffusion
 
-            assert(smJ.rows() == dim && smJ.cols() == dim);
-            std::array<Eigen::VectorXd, 3> gradients;
-            for (auto& v : gradients) { v.resize(dim); }
+                const auto dim = smDNdx.rows();
+                const auto nnodes = smDNdx.cols();
 
-            NumLib::shapeFunctionInterpolateGradient(localX, smDNdx, gradients);
+                assert(smJ.rows() == dim && smJ.cols() == dim);
+                std::array<Eigen::VectorXd, 3> gradients;
+                for (auto& v : gradients) { v.resize(dim); }
 
-            /*
-            std::printf("gradients p:");
-            for (auto p : gradients[0]) { std::printf(" %14.7g", p); }
+                NumLib::shapeFunctionInterpolateGradient(localX, smDNdx, gradients);
 
-            std::printf("  T:");
-            for (auto p : gradients[1]) { std::printf(" %14.7g", p); }
+                /*
+                std::printf("gradients p:");
+                for (auto p : gradients[0]) { std::printf(" %14.7g", p); }
 
-            std::printf("  xm:");
-            for (auto p : gradients[2]) { std::printf(" %14.7g", p); }
-            std::puts("");
-            */
+                std::printf("  T:");
+                for (auto p : gradients[1]) { std::printf(" %14.7g", p); }
 
-            auto const xn = _AP->_adsorption->get_molar_fraction(
-                                _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
+                std::printf("  xm:");
+                for (auto p : gradients[2]) { std::printf(" %14.7g", p); }
+                std::puts("");
+                */
 
-            auto const dxn_dxm = _AP->_adsorption->d_molar_fraction(
-                                     _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
+                auto const xn = _AP->_adsorption->get_molar_fraction(
+                                    _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
 
-            // TODO [CL] shouldn't nnodes be compensated for in smJDetJ?
-            auto const elem_volume = smDetJ * nnodes;
-            auto const elem_linear_extension = std::pow(elem_volume, 1.0/dim);
-            // DBUG("elem volume: %g, ext: %g", elem_volume, elem_linear_extension);
+                auto const dxn_dxm = _AP->_adsorption->d_molar_fraction(
+                                         _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
 
-            // diffusion current associated with p_V if temperature is assumed to be constant
-            Eigen::VectorXd const j_pV = - _AP->_diffusion_coefficient_component *
-                                         ( _p * dxn_dxm * gradients[2]
-                                         + xn * gradients[0] );
-            auto const j_pV_norm = j_pV.norm() // ordinary component
-                                   + _AP->_diffusion_coefficient_component
-                                   * _p_V / elem_linear_extension; // artificial component
+                // TODO [CL] shouldn't nnodes be compensated for in smJDetJ?
+                auto const elem_volume = smDetJ * nnodes;
+                auto const elem_linear_extension = std::pow(elem_volume, 1.0/dim);
+                // DBUG("elem volume: %g, ext: %g", elem_volume, elem_linear_extension);
 
-            auto const delta_pV_diffusion = j_pV_norm / elem_linear_extension * _AP->_delta_t;
+                // diffusion current associated with p_V if temperature is assumed to be constant
+                Eigen::VectorXd const j_pV = - _AP->_diffusion_coefficient_component *
+                                             ( _p * dxn_dxm * gradients[2]
+                                             + xn * gradients[0] );
+                auto const j_pV_norm = j_pV.norm();
 
-            // DBUG("estimated delta_pV_diff: %14.7g, j_pV: %g",
-            //      delta_pV_diffusion, j_pV_norm);
+                auto const delta_pV_diffusion = j_pV_norm / elem_linear_extension * _AP->_delta_t;
+
+                // DBUG("estimated delta_pV_diff: %14.7g, j_pV: %g",
+                //      delta_pV_diffusion, j_pV_norm);
 
 
-            const double delta_rhoV_diffusion = delta_pV_diffusion * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
-            assert (delta_rhoV_diffusion >= 0.0);
+                const double delta_rhoV_diffusion = delta_pV_diffusion * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
+                assert (delta_rhoV_diffusion >= 0.0);
 
-            if (rho_V + delta_rhoV + delta_rhoV_diffusion < 0.0)
+                do_equilibrium_reaction = (rho_V + delta_rhoV + delta_rhoV_diffusion < 0.0);
+            }
+
+            if (do_equilibrium_reaction)
             {
                 // in this case more water would be adsorbed than is there, even when considering diffusion
                 // try equilibrium reaction
 
-                auto const pV0 = _p_V + 0.1*delta_pV_diffusion;
+                auto const pV0 = _p_V;
                 auto const pV = estimateAdsorptionEquilibrium(pV0, loading);
 
                 auto const delta_pV = pV - pV0;
