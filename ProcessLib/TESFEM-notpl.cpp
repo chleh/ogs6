@@ -632,9 +632,10 @@ initReaction_localDiffusionStrategy(const unsigned int_pt,
                 // in this case more water would be adsorbed than is there, even when considering diffusion
                 // try equilibrium reaction
 
-                auto const pV = estimateAdsorptionEquilibrium(_p_V + 0.5*delta_pV_diffusion, loading);
+                auto const pV0 = _p_V + 0.1*delta_pV_diffusion;
+                auto const pV = estimateAdsorptionEquilibrium(pV0, loading);
 
-                auto const delta_pV = pV - _p_V;
+                auto const delta_pV = pV - pV0;
                 _p += delta_pV;
                 _p_V = pV;
                 // set vapour mass fraction accordingly
