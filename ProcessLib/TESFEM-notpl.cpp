@@ -548,7 +548,7 @@ void LADataNoTpl::
 initReaction_localDiffusionStrategy(const unsigned int_pt,
                                     const std::vector<double> &localX,
                                     const MatRef &smDNdx, const MatRef& smJ,
-                                    const double /*smDetJ*/
+                                    const double smDetJ
                                     )
 {
     if (_AP->_iteration_in_current_timestep == 0)
@@ -600,29 +600,24 @@ initReaction_localDiffusionStrategy(const unsigned int_pt,
             auto const dxn_dxm = _AP->_adsorption->d_molar_fraction(
                                      _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
 
-            // auto const elem_volume = smDetJ * nnodes;
-            // auto const elem_linear_extension = std::pow(elem_volume, 1.0/dim);
+            // TODO [CL] shouldn't nnodes be compensated for in smJDetJ?
+            auto const elem_volume = smDetJ * nnodes;
+            auto const elem_linear_extension = std::pow(elem_volume, 1.0/dim);
             // DBUG("elem volume: %g, ext: %g", elem_volume, elem_linear_extension);
 
             // diffusion current associated with p_V if temperature is assumed to be constant
             Eigen::VectorXd const j_pV = - _AP->_diffusion_coefficient_component *
                                          ( _p * dxn_dxm * gradients[2]
                                          + xn * gradients[0] );
-            auto const j_pV_norm = j_pV.norm();
+            auto const j_pV_norm = j_pV.norm() // ordinary component
+                                   + _AP->_diffusion_coefficient_component
+                                   * _p_V / elem_linear_extension; // artificial component
 
-            double delta_pV_diffusion = 0.0;
-            if (j_pV_norm != 0.0)
-            {
-                // TODO [CL] shouldn't nnodes be compensated for in smJ?
-                Eigen::VectorXd const delta_x_real = smJ * j_pV / j_pV_norm
-                                                     * std::pow(nnodes, 1.0/dim);
-                // DBUG("real delta x: %g", delta_x_real.norm());
+            auto const delta_pV_diffusion = j_pV_norm / elem_linear_extension * _AP->_delta_t;
 
-                delta_pV_diffusion = j_pV_norm / delta_x_real.norm() * _AP->_delta_t;
+            // DBUG("estimated delta_pV_diff: %14.7g, j_pV: %g",
+            //      delta_pV_diffusion, j_pV_norm);
 
-                // DBUG("estimated delta_pV_diff: %14.7g, j_pV: %g",
-                //      delta_pV_diffusion, j_pV_norm);
-            }
 
             const double delta_rhoV_diffusion = delta_pV_diffusion * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
             assert (delta_rhoV_diffusion >= 0.0);
