@@ -556,113 +556,127 @@ initReaction_localDiffusionStrategy(const unsigned int_pt,
         bool is_rate_set = false;
 
         // loading "at the beginning" of this timestep
-        const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
+        auto const loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
 
-        const double react_rate_R = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
+        auto const react_rate_kinR = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
                                   * _AP->_rho_SR_dry;
 
-        // calculate density change
-        const double delta_rhoS = react_rate_R * _AP->_delta_t * (1.0 - _AP->_poro);
-        const double delta_rhoV   = - delta_rhoS;
-        const double rho_V = _AP->_M_react * _p_V / GAS_CONST / _T * _AP->_poro;
+        // calculate density change for the kinetic reaction
+        auto const delta_rhoS_kin = react_rate_kinR * _AP->_delta_t * (1.0 - _AP->_poro);
+        auto const delta_rhoV_kin = - delta_rhoS_kin;
+        auto const rho_V = _AP->_M_react * _p_V / GAS_CONST / _T * _AP->_poro;
 
-        // hard limit of 5% relative humidity for check if equilibrium reaction should be used
-        if (_p_V < 0.05 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
+        bool do_equilibrium_reaction = false;
+        if (delta_rhoV_kin > rho_V) // there would be more vapour released than there currently is
         {
-            bool do_equilibrium_reaction = false;
+            do_equilibrium_reaction = true;
+        }
+        else if (-delta_rhoV_kin > rho_V) // there would be more vapour sucked up than there currently is
+        {
+            // estimate how much vapour would be added to the system by diffusion
 
-            if (delta_rhoV > rho_V) // there would be more vapour released than there currently is
+            auto const dim = smDNdx.rows();
+            auto const nnodes = smDNdx.cols();
+
+            assert(smJ.rows() == dim && smJ.cols() == dim);
+            std::array<Eigen::VectorXd, 3> gradients;
+            for (auto& v : gradients) { v.resize(dim); }
+
+            NumLib::shapeFunctionInterpolateGradient(localX, smDNdx, gradients);
+
+            auto const xn = _AP->_adsorption->get_molar_fraction(
+                                _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
+
+            auto const dxn_dxm = _AP->_adsorption->d_molar_fraction(
+                                     _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
+
+            // TODO [CL] shouldn't nnodes be compensated for in smJDetJ?
+            auto const elem_volume = smDetJ * nnodes;
+            auto const elem_linear_extension = std::pow(elem_volume, 1.0/dim);
+            // DBUG("elem volume: %g, ext: %g", elem_volume, elem_linear_extension);
+
+            // diffusion current associated with p_V if temperature is assumed to be constant
+            Eigen::VectorXd const j_pV = - _AP->_diffusion_coefficient_component *
+                                         ( _p * dxn_dxm * gradients[2]
+                                         + xn * gradients[0] );
+            auto const j_pV_norm = j_pV.norm();
+
+            auto const delta_pV_diffusion = j_pV_norm / elem_linear_extension * _AP->_delta_t;
+
+            // DBUG("estimated delta_pV_diff: %14.7g, j_pV: %g",
+            //      delta_pV_diffusion, j_pV_norm);
+
+
+            auto const delta_rhoV_diffusion = delta_pV_diffusion * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
+            assert (delta_rhoV_diffusion >= 0.0);
+
+            auto const rho_V_missing = - (rho_V + delta_rhoV_kin + delta_rhoV_diffusion);
+
+            if (rho_V_missing > 0.0)
             {
-                do_equilibrium_reaction = true;
-            }
-            else if (-delta_rhoV > rho_V) // there would be more vapour sucked up than there currently is
-            {
-                // estimate how much vapour would be added to the system by diffusion
+                // there is not enough vapour there, even when taking diffusion into account
 
-                const auto dim = smDNdx.rows();
-                const auto nnodes = smDNdx.cols();
-
-                assert(smJ.rows() == dim && smJ.cols() == dim);
-                std::array<Eigen::VectorXd, 3> gradients;
-                for (auto& v : gradients) { v.resize(dim); }
-
-                NumLib::shapeFunctionInterpolateGradient(localX, smDNdx, gradients);
-
-                /*
-                std::printf("gradients p:");
-                for (auto p : gradients[0]) { std::printf(" %14.7g", p); }
-
-                std::printf("  T:");
-                for (auto p : gradients[1]) { std::printf(" %14.7g", p); }
-
-                std::printf("  xm:");
-                for (auto p : gradients[2]) { std::printf(" %14.7g", p); }
-                std::puts("");
-                */
-
-                auto const xn = _AP->_adsorption->get_molar_fraction(
-                                    _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
-
-                auto const dxn_dxm = _AP->_adsorption->d_molar_fraction(
-                                         _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
-
-                // TODO [CL] shouldn't nnodes be compensated for in smJDetJ?
-                auto const elem_volume = smDetJ * nnodes;
-                auto const elem_linear_extension = std::pow(elem_volume, 1.0/dim);
-                // DBUG("elem volume: %g, ext: %g", elem_volume, elem_linear_extension);
-
-                // diffusion current associated with p_V if temperature is assumed to be constant
-                Eigen::VectorXd const j_pV = - _AP->_diffusion_coefficient_component *
-                                             ( _p * dxn_dxm * gradients[2]
-                                             + xn * gradients[0] );
-                auto const j_pV_norm = j_pV.norm();
-
-                auto const delta_pV_diffusion = j_pV_norm / elem_linear_extension * _AP->_delta_t;
-
-                // DBUG("estimated delta_pV_diff: %14.7g, j_pV: %g",
-                //      delta_pV_diffusion, j_pV_norm);
-
-
-                const double delta_rhoV_diffusion = delta_pV_diffusion * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
-                assert (delta_rhoV_diffusion >= 0.0);
-
-                do_equilibrium_reaction = (rho_V + delta_rhoV + delta_rhoV_diffusion < 0.0);
-            }
-
-            if (do_equilibrium_reaction)
-            {
-                // in this case more water would be adsorbed than is there, even when considering diffusion
-                // try equilibrium reaction
-
+                // interpolate between kinetic reaction and equlibrium reaction
                 auto const pV0 = _p_V;
                 auto const pV = estimateAdsorptionEquilibrium(pV0, loading);
 
                 auto const delta_pV = pV - pV0;
-                _p += delta_pV;
-                _p_V = pV;
-                // set vapour mass fraction accordingly
-                _vapour_mass_fraction = Ads::Adsorption::get_mass_fraction(_p_V/_p, _AP->_M_react, _AP->_M_inert);
 
                 // set solid density
-                const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
-                const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
-                _reaction_rate[int_pt] = delta_rhoSR / _AP->_delta_t;
-                _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + delta_rhoSR;
+                auto const delta_rhoS_eq  = -delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
+                assert(delta_rhoS_eq > 0.0);
+                auto theta = 1.0 - rho_V_missing / (delta_rhoS_kin - delta_rhoS_eq);
+                theta *= 0.5 * theta;
 
-                // DBUG("too much reaction: %14.7g + %14.7g + %14.7g < 0.0; dpV_diff: %14.7g", rho_V, delta_rhoV, delta_rhoV_diffusion, delta_pV_diffusion);
+                assert(0.0 <= theta && theta <= 1.0); // first assertion is guaranteed by above if-clause
 
-                _reaction_rate_indicator[int_pt] = 100.0;
+                auto const react_rate_eqR = delta_rhoS_eq / (1.0 - _AP->_poro);
+                auto const react_rate_R = theta * react_rate_kinR + (1.0 - theta) * react_rate_eqR;
+
+                _reaction_rate[int_pt] = react_rate_R;
+                _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
+
+                _reaction_rate_indicator[int_pt] = 100.0 * (1.0 - theta);
                 _is_equilibrium_reaction[int_pt] = false;
 
                 is_rate_set = true;
+
+                // assert((1.0-theta)*rho_missing )
             }
         }
 
 
-        if (!is_rate_set) // default case, used if reaction rate from the kinetic model should be used unmodified
+        if (do_equilibrium_reaction)
         {
-            _reaction_rate[int_pt] = react_rate_R;
-            _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
+            // in this case more water would be adsorbed than is there, even when considering diffusion
+            // try equilibrium reaction
+
+            auto const pV0 = _p_V;
+            auto const pV = estimateAdsorptionEquilibrium(pV0, loading);
+
+            auto const delta_pV = pV - pV0;
+            _p += delta_pV;
+            _p_V = pV;
+            // set vapour mass fraction accordingly
+            _vapour_mass_fraction = Ads::Adsorption::get_mass_fraction(_p_V/_p, _AP->_M_react, _AP->_M_inert);
+
+            // set solid density
+            auto const delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
+            auto const delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
+            _reaction_rate[int_pt] = delta_rhoSR / _AP->_delta_t;
+            _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + delta_rhoSR;
+
+            // DBUG("too much reaction: %14.7g + %14.7g + %14.7g < 0.0; dpV_diff: %14.7g", rho_V, delta_rhoV, delta_rhoV_diffusion, delta_pV_diffusion);
+
+            _reaction_rate_indicator[int_pt] = 100.0;
+            _is_equilibrium_reaction[int_pt] = false;
+
+            is_rate_set = true;
+        }
+        else if (!is_rate_set) // default case, used if reaction rate from the kinetic model should be used unmodified
+        {
+            _reaction_rate[int_pt] = react_rate_kinR;
+            _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_kinR * _AP->_delta_t;
 
             _reaction_rate_indicator[int_pt] = 0.0;
             _is_equilibrium_reaction[int_pt] = false;
