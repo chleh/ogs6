@@ -540,7 +540,8 @@ initReaction(
         const unsigned int_pt, const std::vector<double>& localX,
         const MatRef& smDNdx, const MatRef& smJ, const double smDetJ)
 {
-    initReaction_localDiffusionStrategy(int_pt, localX, smDNdx, smJ, smDetJ);
+    // initReaction_localDiffusionStrategy(int_pt, localX, smDNdx, smJ, smDetJ);
+    initReaction_simpleStrategy(int_pt);
 }
 
 
@@ -711,6 +712,38 @@ double LADataNoTpl::estimateAdsorptionEquilibrium(const double p_V0, const doubl
 
     // set vapour pressure
     return rf.get_result();
+}
+
+
+void LADataNoTpl::
+initReaction_simpleStrategy(const unsigned int_pt)
+{
+    if (_AP->_iteration_in_current_timestep == 0)
+    {
+        const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
+
+        double react_rate_R = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
+                              * _AP->_rho_SR_dry;
+
+        if (
+            (_p_V < 500.0 || _p_V < 0.05 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
+            && react_rate_R > 0.0)
+        {
+            react_rate_R = 0.0;
+            _reaction_rate_indicator[int_pt] = 100.0;
+        }
+        else
+        {
+            _reaction_rate_indicator[int_pt] = 0.0;
+        }
+
+        _reaction_rate[int_pt] = react_rate_R;
+        _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
+
+        _is_equilibrium_reaction[int_pt] = false;
+    }
+
+    _qR = _reaction_rate[int_pt];
 }
 
 

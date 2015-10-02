@@ -101,6 +101,8 @@ private:
             const MatRef& smJ,
             const double smDetJ);
 
+    void initReaction_simpleStrategy(const unsigned int_pt);
+
     double estimateAdsorptionEquilibrium(const double p_V0, const double C0) const;
 
 
