@@ -103,6 +103,8 @@ private:
 
     void initReaction_simpleStrategy(const unsigned int_pt);
 
+    void initReaction_readjustEquilibriumLoadingStrategy(const unsigned int_pt);
+
     double estimateAdsorptionEquilibrium(const double p_V0, const double C0) const;
 
 
@@ -112,6 +114,9 @@ private:
 
     std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
     std::vector<double> _reaction_rate_prev_ts; // could also be calculated from _solid_density_prev_ts
+
+    std::vector<double> _equilibrium_loading;
+    std::vector<double> _equilibrium_loading_prev_ts;
 
     std::vector<bool>   _is_equilibrium_reaction;   ///< true if equilibrium reaction is used in this timestep
 

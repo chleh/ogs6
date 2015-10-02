@@ -21,14 +21,18 @@
 #include "MathLib/Nonlinear/Root1D.h"
 #include "NumLib/Function/Interpolation.h"
 
-
+namespace
+{
 const double GAS_CONST = 8.3144621;
 
 enum class MatOutType { OGS5, PYTHON };
 
 const MatOutType MATRIX_OUTPUT_FORMAT = MatOutType::PYTHON;
 
+const double EQ_LOADING_FIRST_TS = -1.0;
 
+const double RATE_CONSTANT = 6.e-3;
+}
 
 
 
@@ -541,7 +545,8 @@ initReaction(
         const MatRef& smDNdx, const MatRef& smJ, const double smDetJ)
 {
     // initReaction_localDiffusionStrategy(int_pt, localX, smDNdx, smJ, smDetJ);
-    initReaction_simpleStrategy(int_pt);
+    // initReaction_simpleStrategy(int_pt);
+    initReaction_readjustEquilibriumLoadingStrategy(int_pt);
 }
 
 
@@ -741,6 +746,54 @@ initReaction_simpleStrategy(const unsigned int_pt)
         _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
 
         _is_equilibrium_reaction[int_pt] = false;
+    }
+
+    _qR = _reaction_rate[int_pt];
+}
+
+
+void LADataNoTpl::
+initReaction_readjustEquilibriumLoadingStrategy(const unsigned int_pt)
+{
+    const double C_eq_curr = _AP->_adsorption->get_equilibrium_loading(_p_V, _T, _AP->_M_react);
+    _equilibrium_loading[int_pt] = C_eq_curr;
+
+    double C_eq_prev = _equilibrium_loading_prev_ts[int_pt];
+    if (_AP->_iteration_in_current_timestep == 0 && C_eq_prev != EQ_LOADING_FIRST_TS) {
+        // first iteration in first timestep: init equilibrium loading at previous timestep
+        C_eq_prev = C_eq_curr;
+        _equilibrium_loading_prev_ts[int_pt] = C_eq_prev;
+    }
+
+    const double C_0 = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
+
+    const double dt   = _AP->_delta_t;
+    const double c_1  = C_0 - C_eq_prev + (C_eq_curr - C_eq_prev) / RATE_CONSTANT / dt;
+    const double C    = c_1 * std::exp(-RATE_CONSTANT*dt) + C_eq_prev
+                        + (1.0 - 1.0/RATE_CONSTANT/dt) * (C_eq_curr - C_eq_prev);
+    const double Cdot = - RATE_CONSTANT * c_1 * std::exp(-RATE_CONSTANT*dt) + (C_eq_curr - C_eq_prev) / dt;
+
+    if (_p_V < 0.05 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
+    {
+        // _solid_density[int_pt] stays constant
+        _reaction_rate[int_pt] = 0.0;
+    }
+    else if ((C_eq_prev < C && C < C_eq_curr)
+        || (C_eq_prev > C && C > C_eq_curr))
+    {
+        _solid_density[int_pt] = (1.0 + C) * _AP->_rho_SR_dry;
+        _reaction_rate[int_pt] = 0.5 * (C - C_0) * _AP->_rho_SR_dry / dt
+                                 + 0.5 * _reaction_rate[int_pt];
+    }
+    else
+    {
+        DBUG("C_eq_prev %14.7g, C_prev %14.7g, C_eq_curr %14.7g, C %14.7g",
+             C_eq_prev, _solid_density_prev_ts[int_pt]/_AP->_rho_SR_dry - 1.0,
+             C_eq_curr, C);
+
+        _solid_density[int_pt] = (1.0 + C) * _AP->_rho_SR_dry;
+        _reaction_rate[int_pt] = Cdot * _AP->_rho_SR_dry;
+
     }
 
     _qR = _reaction_rate[int_pt];
@@ -1210,6 +1263,10 @@ LADataNoTpl::init(const unsigned num_int_pts, const unsigned dimension)
     _is_equilibrium_reaction.resize(num_int_pts);
     _estimated_vapour_pressure.resize(num_int_pts);
 
+    _equilibrium_loading.resize(num_int_pts);
+    _equilibrium_loading_prev_ts.resize(
+                num_int_pts, EQ_LOADING_FIRST_TS); // TODO [CL] provide separate "first assembly" method
+
     _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
     _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
     _Adv.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
@@ -1231,6 +1288,7 @@ LADataNoTpl::preEachAssemble()
     {
         _solid_density_prev_ts = _solid_density;
         _reaction_rate_prev_ts = _reaction_rate;
+        _equilibrium_loading_prev_ts = _equilibrium_loading;
     }
 
     _Lap->setZero();
