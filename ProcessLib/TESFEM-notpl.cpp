@@ -773,12 +773,15 @@ initReaction_readjustEquilibriumLoadingStrategy(const unsigned int_pt)
                         + (1.0 - 1.0/RATE_CONSTANT/dt) * (C_eq_curr - C_eq_prev);
     const double Cdot = - RATE_CONSTANT * c_1 * std::exp(-RATE_CONSTANT*dt) + (C_eq_curr - C_eq_prev) / dt;
 
-    if (_p_V < 0.05 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
+#if 0
+    if (_p_V < 0.025 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
     {
         // _solid_density[int_pt] stays constant
         _reaction_rate[int_pt] = 0.0;
     }
-    else if ((C_eq_prev < C && C < C_eq_curr)
+    else
+#endif
+    if ((C_eq_prev < C && C < C_eq_curr)
         || (C_eq_prev > C && C > C_eq_curr))
     {
         _solid_density[int_pt] = (1.0 + C) * _AP->_rho_SR_dry;

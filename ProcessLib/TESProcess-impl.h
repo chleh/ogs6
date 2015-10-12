@@ -682,7 +682,7 @@ TESProcess<GlobalSetup>::
 template<typename GlobalSetup>
 void
 TESProcess<GlobalSetup>::
-singlePicardIteration(typename GlobalSetup::VectorType& /*x_prev_iter*/,
+singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
                       typename GlobalSetup::VectorType& x_curr)
 {
     _global_assembler->setX(&x_curr, _x_prev_ts.get());
@@ -735,6 +735,80 @@ singlePicardIteration(typename GlobalSetup::VectorType& /*x_prev_iter*/,
 
     typename GlobalSetup::LinearSolver linearSolver(*_A);
     linearSolver.solve(*_rhs, x_curr);
+
+
+    // assert that no component is smaller than some lower bound
+
+    const std::array<double, 3> bounds = { 1.0, 100.0, 1e-6 }; // lower bounds for p, T, x
+
+    auto alpha = [](double xnew, double xold, double xmin) // computes the damping coefficient
+    {
+        // assert (xold >= xmin);
+        return std::max(0.0, (xold - xmin) / (xold - xnew));
+    };
+
+    std::array<double, 3> damping_coeffs = { 1.0, 1.0, 1.0 };
+    bool do_damping = false;
+    const double pre_damp = 0.75;
+    const double min_damp = 0.1;
+
+    switch(_global_matrix_order)
+    {
+    case AssemblerLib::ComponentOrder::BY_COMPONENT:
+    {
+        for (std::size_t i=0; i<x_curr.size(); i+=3)
+        {
+            for (std::size_t d=0; d<NODAL_DOF; ++d)
+            {
+                if (x_curr[i+d] < bounds[d]) {
+                    damping_coeffs[d] = std::min(damping_coeffs[d], alpha(x_curr[i+d], x_prev_iter[i+d], bounds[d]));
+                    do_damping = true;
+                }
+            }
+        }
+
+        if (do_damping)
+        {
+            auto const damping_coeff =
+                    std::max(min_damp, pre_damp * *std::min_element(damping_coeffs.cbegin(), damping_coeffs.cend()));
+            DBUG("doing damping with coeff %g", damping_coeff);
+
+            for (unsigned i=0; i<x_curr.size(); ++i)
+            {
+                x_curr[i] = (1.0-damping_coeff) * x_prev_iter[i] + damping_coeff * x_curr[i];
+            }
+        }
+        break;
+    }
+    case AssemblerLib::ComponentOrder::BY_LOCATION:
+    {
+        for (std::size_t d=0; d<NODAL_DOF; ++d)
+        {
+            for (std::size_t i=0; i<x_curr.size(); i+=3)
+            {
+                if (x_curr[i+d] < bounds[d]) {
+                    damping_coeffs[d] = std::min(damping_coeffs[d], alpha(x_curr[i+d], x_prev_iter[i+d], bounds[d]));
+                    do_damping = true;
+                }
+            }
+        }
+
+        if (do_damping)
+        {
+            auto const damping_coeff =
+                    std::max(min_damp, pre_damp * *std::min_element(damping_coeffs.cbegin(), damping_coeffs.cend()));
+            DBUG("doing damping with coeff %g", damping_coeff);
+
+            for (unsigned i=0; i<x_curr.size(); ++i)
+            {
+                x_curr[i] = (1.0-damping_coeff) * x_prev_iter[i] + damping_coeff * x_curr[i];
+            }
+        }
+        break;
+    }
+    }
+
+    //
 
     if (_output_iteration_results)
     {
