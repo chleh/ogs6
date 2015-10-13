@@ -22,27 +22,27 @@ struct AssemblyParams
 {
     Ads::Adsorption* _adsorption;
 
-    double _fluid_specific_heat_source = 0.0;
-    double _cpG = 1.0; // specific isobaric fluid heat capacity
+    double _fluid_specific_heat_source = std::numeric_limits<double>::quiet_NaN();
+    double _cpG = std::numeric_limits<double>::quiet_NaN(); // specific isobaric fluid heat capacity
 
-    Eigen::MatrixXd _solid_perm_tensor = Eigen::MatrixXd::Constant(3, 3, 0.0); // TODO get dimensions
-    double _solid_specific_heat_source = 0.0;
-    double _solid_heat_cond = 1.0;
-    double _cpS = 1.0;    // specific isobaric solid heat capacity
+    Eigen::MatrixXd _solid_perm_tensor = Eigen::MatrixXd::Constant(3, 3, std::numeric_limits<double>::quiet_NaN()); // TODO get dimensions
+    double _solid_specific_heat_source = std::numeric_limits<double>::quiet_NaN();
+    double _solid_heat_cond = std::numeric_limits<double>::quiet_NaN();
+    double _cpS = std::numeric_limits<double>::quiet_NaN();    // specific isobaric solid heat capacity
 
-    double _tortuosity = 1.0;
-    double _diffusion_coefficient_component = 1.0; // ???
+    double _tortuosity = std::numeric_limits<double>::quiet_NaN();
+    double _diffusion_coefficient_component = std::numeric_limits<double>::quiet_NaN(); // ???
 
-    double _poro = 0.5;
+    double _poro = std::numeric_limits<double>::quiet_NaN();
 
-    double _rho_SR_dry = 1000.0;
+    double _rho_SR_dry = std::numeric_limits<double>::quiet_NaN();
 
     const double _M_inert = M_N2; // N2
     const double _M_react = M_H2O;
 
-    double _initial_solid_density = 1000.0;
+    double _initial_solid_density = std::numeric_limits<double>::quiet_NaN();
 
-    double       _delta_t = 1.0;
+    double       _delta_t = std::numeric_limits<double>::quiet_NaN();
     unsigned     _iteration_in_current_timestep = 0;
 
     bool _output_element_matrices = false;
