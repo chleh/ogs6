@@ -51,6 +51,9 @@ public:
 
     virtual void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
                              AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const&) const = 0;
+
+    virtual bool checkBounds(std::vector<double> const& localX,
+                             std::vector<double> const& localX_pts) = 0;
 };
 
 
@@ -90,6 +93,9 @@ public:
         // return (_shape_matrices.data() + integration_point)->N;
         // return shp_mats.N;
     }
+
+    bool checkBounds(std::vector<double> const& localX,
+                     std::vector<double> const& localX_pts);
 
     std::shared_ptr<const std::vector<double> >
     getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_dof) const override;

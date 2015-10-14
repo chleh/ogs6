@@ -69,6 +69,8 @@ public:
     std::shared_ptr<const std::vector<double> >
     getIntegrationPointValues(SecondaryVariables var) const;
 
+    double reaction_damping_factor = 1.0;
+
 private:
     Eigen::Matrix3d getMassCoeffMatrix(const unsigned int_pt);
     Eigen::MatrixXd getLaplaceCoeffMatrix(const unsigned int_pt, const unsigned dim);
@@ -132,6 +134,9 @@ private:
     std::vector<double> _reaction_rate_indicator; // TODO [CL] get rid of this
 
     bool is_var_out_of_bounds = false;
+
+    // bool this_is_repeated = false;
+    // bool last_was_repeated = false;
 
     // integration point values of unknowns
     double _p = -888.888; // gas pressure

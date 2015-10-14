@@ -46,6 +46,8 @@ struct AssemblyParams
     unsigned     _iteration_in_current_timestep = 0;
 
     bool _output_element_matrices = false;
+
+    bool _previous_iteration_accepted = true;
 };
 
 

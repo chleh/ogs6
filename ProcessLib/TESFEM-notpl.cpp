@@ -810,6 +810,7 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
 {
     if (_vapour_mass_fraction <= 0.0)
     {
+        assert(false);
         _reaction_rate[int_pt] *= 0.5;
         is_var_out_of_bounds = true;
 
@@ -836,7 +837,10 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
             _reaction_rate_indicator[int_pt] = 0.0;
         }
 
-        _reaction_rate[int_pt] = react_rate_R;
+        _reaction_rate[int_pt] =
+                (reaction_damping_factor > 1e-3)
+                ? reaction_damping_factor * react_rate_R
+                : 0.0;
         _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
 
         _is_equilibrium_reaction[int_pt] = false;
@@ -1335,6 +1339,11 @@ LADataNoTpl::preEachAssemble()
         _solid_density_prev_ts = _solid_density;
         _reaction_rate_prev_ts = _reaction_rate;
         _equilibrium_loading_prev_ts = _equilibrium_loading;
+
+        if (_AP->_previous_iteration_accepted)
+        {
+            reaction_damping_factor = std::sqrt(reaction_damping_factor);
+        }
     }
 
     _Lap->setZero();

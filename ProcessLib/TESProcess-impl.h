@@ -685,141 +685,178 @@ TESProcess<GlobalSetup>::
 singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
                       typename GlobalSetup::VectorType& x_curr)
 {
-    _global_assembler->setX(&x_curr, _x_prev_ts.get());
+    bool iteration_accepted = false;
+    unsigned num_try = 0;
 
-    _A->setZero();
-    MathLib::setMatrixSparsity(*_A, _node_adjacency_table); // TODO [CL] always required?
-    *_rhs = 0;   // This resets the whole vector.
-
-    // Call global assembler for each local assembly item.
-    _global_setup.execute(*_global_assembler, _local_assemblers);
-
-    // Call global assembler for each Neumann boundary local assembler.
-    for (auto bc : _neumann_bcs)
-        bc->integrate(_global_setup, &x_curr, _x_prev_ts.get());
-
-    // Apply known values from the Dirichlet boundary conditions.
-    MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
-
-    if (_total_iteration == 0 && _output_global_matrix)
+    do
     {
-        // TODO [CL] Those files will be written to the working directory.
-        //           Relative path needed.
-        _A->write("global_matrix.txt");
-        _rhs->write("global_rhs.txt");
-    }
+        _global_assembler->setX(&x_curr, _x_prev_ts.get());
 
-    // double residual = MathLib::norm((*_A) * x_curr - (*_rhs), MathLib::VecNormType::INFINITY_N);
-    MathLib::EigenVector res_vec;
-    _A->multiply(x_curr, res_vec);
-    res_vec -= *_rhs;
-    double residual = MathLib::norm(res_vec, MathLib::VecNormType::INFINITY_N);
-    DBUG("residual of old solution with new matrix: %g", residual);
+        _A->setZero();
+        MathLib::setMatrixSparsity(*_A, _node_adjacency_table); // TODO [CL] always required?
+        *_rhs = 0;   // This resets the whole vector.
 
-    // "preconditioner"
-    Eigen::VectorXd diag = _A->getRawMatrix().diagonal();
+        // Call global assembler for each local assembly item.
+        _global_setup.execute(*_global_assembler, _local_assemblers);
 
-    for (int i=0; i<diag.size(); ++i)
-    {
-        _A->getRawMatrix().row(i) /= diag[i];
-        _rhs->getRawVector()[i] /= diag[i];
-    }
+        // Call global assembler for each Neumann boundary local assembler.
+        for (auto bc : _neumann_bcs)
+            bc->integrate(_global_setup, &x_curr, _x_prev_ts.get());
 
-    // _A->getRawMatrix().rowwise() /= diag; //  = invDiag * _A->getRawMatrix();
-    // .cwiseQuotient(diag); //  = invDiag * _rhs->getRawVector();
+        // Apply known values from the Dirichlet boundary conditions.
+        MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
-    _A->multiply(x_curr, res_vec);
-    res_vec -= *_rhs;
-    residual = MathLib::norm(res_vec, MathLib::VecNormType::INFINITY_N);
-    DBUG("residual of new solution with new matrix: %g", residual);
+        if (_total_iteration == 0 && _output_global_matrix)
+        {
+            // TODO [CL] Those files will be written to the working directory.
+            //           Relative path needed.
+            _A->write("global_matrix.txt");
+            _rhs->write("global_rhs.txt");
+        }
 
-    typename GlobalSetup::LinearSolver linearSolver(*_A);
-    linearSolver.solve(*_rhs, x_curr);
+        // double residual = MathLib::norm((*_A) * x_curr - (*_rhs), MathLib::VecNormType::INFINITY_N);
+        MathLib::EigenVector res_vec;
+        _A->multiply(x_curr, res_vec);
+        res_vec -= *_rhs;
+        double residual = MathLib::norm(res_vec, MathLib::VecNormType::INFINITY_N);
+        DBUG("residual of old solution with new matrix: %g", residual);
 
+        // "preconditioner"
+        Eigen::VectorXd diag = _A->getRawMatrix().diagonal();
+
+        for (int i=0; i<diag.size(); ++i)
+        {
+            _A->getRawMatrix().row(i) /= diag[i];
+            _rhs->getRawVector()[i] /= diag[i];
+        }
+
+        // _A->getRawMatrix().rowwise() /= diag; //  = invDiag * _A->getRawMatrix();
+        // .cwiseQuotient(diag); //  = invDiag * _rhs->getRawVector();
+
+        _A->multiply(x_curr, res_vec);
+        res_vec -= *_rhs;
+        residual = MathLib::norm(res_vec, MathLib::VecNormType::INFINITY_N);
+        DBUG("residual of new solution with new matrix: %g", residual);
+
+        typename GlobalSetup::LinearSolver linearSolver(*_A);
+        linearSolver.solve(*_rhs, x_curr);
+
+        auto& ga = *_global_assembler;
+        bool check_passed = true;
+
+        auto check_variable_bounds
+        = [&ga, &check_passed](
+          std::size_t id, LocalAssembler* const loc_asm)
+        {
+            DBUG("%lu", id);
+
+            std::vector<double> localX;
+            std::vector<double> localX_pts;
+            ga.getLocalNodalValues(id, localX, localX_pts);
+
+            if (!loc_asm->checkBounds(localX, localX_pts)) check_passed = false;
+        };
+
+        _global_setup.execute(check_variable_bounds, _local_assemblers);
 
 #if 0
-    // assert that no component is smaller than some lower bound
+        // assert that no component is smaller than some lower bound
 
-    const std::array<double, 3> bounds = { 1.0, 100.0, 1e-6 }; // lower bounds for p, T, x
+        const std::array<double, 3> bounds = { 1.0, 100.0, 1e-6 }; // lower bounds for p, T, x
 
-    auto alpha = [](double xnew, double xold, double xmin) // computes the damping coefficient
-    {
-        // assert (xold >= xmin);
-        return std::max(0.0, (xold - xmin) / (xold - xnew));
-    };
-
-    std::array<double, 3> damping_coeffs = { 1.0, 1.0, 1.0 };
-    bool do_damping = false;
-    const double pre_damp = 0.75;
-    const double min_damp = 0.1;
-
-    switch(_global_matrix_order)
-    {
-    case AssemblerLib::ComponentOrder::BY_COMPONENT:
-    {
-        for (std::size_t i=0; i<x_curr.size(); i+=3)
+        auto alpha = [](double xnew, double xold, double xmin) // computes the damping coefficient
         {
-            for (std::size_t d=0; d<NODAL_DOF; ++d)
-            {
-                if (x_curr[i+d] < bounds[d]) {
-                    damping_coeffs[d] = std::min(damping_coeffs[d], alpha(x_curr[i+d], x_prev_iter[i+d], bounds[d]));
-                    do_damping = true;
-                }
-            }
-        }
+            // assert (xold >= xmin);
+            return std::max(0.0, (xold - xmin) / (xold - xnew));
+        };
 
-        if (do_damping)
+        std::array<double, 3> damping_coeffs = { 1.0, 1.0, 1.0 };
+        bool do_damping = false;
+        const double pre_damp = 0.75;
+        const double min_damp = 0.1;
+
+        switch(_global_matrix_order)
         {
-            auto const damping_coeff =
-                    std::max(min_damp, pre_damp * *std::min_element(damping_coeffs.cbegin(), damping_coeffs.cend()));
-            DBUG("doing damping with coeff %g", damping_coeff);
-
-            for (unsigned i=0; i<x_curr.size(); ++i)
-            {
-                x_curr[i] = (1.0-damping_coeff) * x_prev_iter[i] + damping_coeff * x_curr[i];
-            }
-        }
-        break;
-    }
-    case AssemblerLib::ComponentOrder::BY_LOCATION:
-    {
-        for (std::size_t d=0; d<NODAL_DOF; ++d)
+        case AssemblerLib::ComponentOrder::BY_COMPONENT:
         {
             for (std::size_t i=0; i<x_curr.size(); i+=3)
             {
-                if (x_curr[i+d] < bounds[d]) {
-                    damping_coeffs[d] = std::min(damping_coeffs[d], alpha(x_curr[i+d], x_prev_iter[i+d], bounds[d]));
-                    do_damping = true;
+                for (std::size_t d=0; d<NODAL_DOF; ++d)
+                {
+                    if (x_curr[i+d] < bounds[d]) {
+                        damping_coeffs[d] = std::min(damping_coeffs[d], alpha(x_curr[i+d], x_prev_iter[i+d], bounds[d]));
+                        do_damping = true;
+                    }
                 }
             }
-        }
 
-        if (do_damping)
-        {
-            auto const damping_coeff =
-                    std::max(min_damp, pre_damp * *std::min_element(damping_coeffs.cbegin(), damping_coeffs.cend()));
-            DBUG("doing damping with coeff %g", damping_coeff);
-
-            for (unsigned i=0; i<x_curr.size(); ++i)
+            if (do_damping)
             {
-                x_curr[i] = (1.0-damping_coeff) * x_prev_iter[i] + damping_coeff * x_curr[i];
+                auto const damping_coeff =
+                        std::max(min_damp, pre_damp * *std::min_element(damping_coeffs.cbegin(), damping_coeffs.cend()));
+                DBUG("doing damping with coeff %g", damping_coeff);
+
+                for (unsigned i=0; i<x_curr.size(); ++i)
+                {
+                    x_curr[i] = (1.0-damping_coeff) * x_prev_iter[i] + damping_coeff * x_curr[i];
+                }
             }
+            break;
         }
-        break;
-    }
-    }
+        case AssemblerLib::ComponentOrder::BY_LOCATION:
+        {
+            for (std::size_t d=0; d<NODAL_DOF; ++d)
+            {
+                for (std::size_t i=0; i<x_curr.size(); i+=3)
+                {
+                    if (x_curr[i+d] < bounds[d]) {
+                        damping_coeffs[d] = std::min(damping_coeffs[d], alpha(x_curr[i+d], x_prev_iter[i+d], bounds[d]));
+                        do_damping = true;
+                    }
+                }
+            }
+
+            if (do_damping)
+            {
+                auto const damping_coeff =
+                        std::max(min_damp, pre_damp * *std::min_element(damping_coeffs.cbegin(), damping_coeffs.cend()));
+                DBUG("doing damping with coeff %g", damping_coeff);
+
+                for (unsigned i=0; i<x_curr.size(); ++i)
+                {
+                    x_curr[i] = (1.0-damping_coeff) * x_prev_iter[i] + damping_coeff * x_curr[i];
+                }
+            }
+            break;
+        }
+        }
 #endif
 
-    //
+        if (_output_iteration_results)
+        {
+            DBUG("output results of iteration %li", _total_iteration);
+            std::string fn = "tes_iter_" + std::to_string(_total_iteration) +
+                             + "_ts_" + std::to_string(_timestep)
+                             + "_" +    std::to_string(_assembly_params._iteration_in_current_timestep)
+                             + "_" +    std::to_string(num_try)
+                             + ".vtu";
+            postTimestep(fn, 0);
+        }
 
-    if (_output_iteration_results)
-    {
-        DBUG("output results of iteration %li", _total_iteration);
-        std::string fn = "tes_iter_" + std::to_string(_total_iteration) +
-                         + "_ts_" + std::to_string(_timestep)
-                         + "_" +    std::to_string(_assembly_params._iteration_in_current_timestep) + ".vtu";
-        postTimestep(fn, 0);
+        if (!check_passed)
+        {
+            x_curr = x_prev_iter;
+        }
+
+        iteration_accepted = check_passed;
+        _assembly_params._previous_iteration_accepted = iteration_accepted;
+
+        ++num_try;
     }
+    while(! iteration_accepted);
+
+    DBUG("ts %lu iteration %lu (%lu) try %u accepted", _timestep, _total_iteration,
+         _assembly_params._iteration_in_current_timestep, num_try);
 
     ++ _assembly_params._iteration_in_current_timestep;
     ++_total_iteration;

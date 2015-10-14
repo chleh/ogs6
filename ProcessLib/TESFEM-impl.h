@@ -246,6 +246,54 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
 }
 
 
+template <typename ShapeFunction_,
+          typename IntegrationMethod_,
+          typename GlobalMatrix,
+          typename GlobalVector,
+          unsigned GlobalDim>
+bool
+LocalAssemblerData<ShapeFunction_,
+    IntegrationMethod_,
+    GlobalMatrix,
+    GlobalVector,
+    GlobalDim>::
+checkBounds(std::vector<double> const& localX,
+            const std::vector<double>& localX_pts)
+{
+    double alpha = 1.0;
+
+    const std::size_t xmV_idx = NODAL_DOF - 1;
+    const double min_xmV = 1e-6;
+
+    for (std::size_t i=0; i<localX.size(); i+=NODAL_DOF)
+    {
+        auto const xnew = localX[i+xmV_idx];
+        if (xnew < min_xmV)
+        {
+            auto const xold = localX_pts[i+xmV_idx];
+            const auto a = xold / (xold - xnew);
+            if (a<alpha) DBUG("xo %g, xn %g, a %g", xold, xnew, a);
+            alpha = std::min(alpha, a);
+        }
+    }
+
+    if (alpha == 1.0) {
+        /*if (_data._AP->_previous_iteration_accepted
+            && _data._AP->_iteration_in_current_timestep == 0)
+        {
+            DBUG("increasing damping factor");
+            _data.reaction_damping_factor = std::sqrt(_data.reaction_damping_factor);
+        }*/
+    } else {
+        _data.reaction_damping_factor *= std::min(alpha, 0.5);
+    }
+
+    DBUG("new damping factor: %g", _data.reaction_damping_factor);
+
+    return alpha == 1.0;
+}
+
+
 }   // namespace TES
 }   // namespace ProcessLib
 
