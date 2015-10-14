@@ -105,6 +105,8 @@ private:
 
     void initReaction_readjustEquilibriumLoadingStrategy(const unsigned int_pt);
 
+    void initReaction_slowDownUndershootStrategy(const unsigned int_pt);
+
     double estimateAdsorptionEquilibrium(const double p_V0, const double C0) const;
 
 
@@ -128,6 +130,8 @@ private:
     // Eigen::MatrixXd _velocity; // row index: gauss point, column index: dimension x/y/z
 
     std::vector<double> _reaction_rate_indicator; // TODO [CL] get rid of this
+
+    bool is_var_out_of_bounds = false;
 
     // integration point values of unknowns
     double _p = -888.888; // gas pressure

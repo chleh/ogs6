@@ -546,7 +546,8 @@ initReaction(
 {
     // initReaction_localDiffusionStrategy(int_pt, localX, smDNdx, smJ, smDetJ);
     // initReaction_simpleStrategy(int_pt);
-    initReaction_readjustEquilibriumLoadingStrategy(int_pt);
+    // initReaction_readjustEquilibriumLoadingStrategy(int_pt);
+    initReaction_slowDownUndershootStrategy(int_pt);
 }
 
 
@@ -803,6 +804,48 @@ initReaction_readjustEquilibriumLoadingStrategy(const unsigned int_pt)
 }
 
 
+void
+LADataNoTpl::
+initReaction_slowDownUndershootStrategy(const unsigned int_pt)
+{
+    if (_vapour_mass_fraction <= 0.0)
+    {
+        _reaction_rate[int_pt] *= 0.5;
+        is_var_out_of_bounds = true;
+
+        _vapour_mass_fraction = 0.0005;
+        _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
+    }
+
+    if (_AP->_iteration_in_current_timestep == 0)
+    {
+        const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
+
+        double react_rate_R = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
+                              * _AP->_rho_SR_dry;
+
+        if (
+            (_p_V < 100.0 || _p_V < 0.025 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
+            && react_rate_R > 0.0)
+        {
+            react_rate_R = 0.0;
+            _reaction_rate_indicator[int_pt] = 100.0;
+        }
+        else
+        {
+            _reaction_rate_indicator[int_pt] = 0.0;
+        }
+
+        _reaction_rate[int_pt] = react_rate_R;
+        _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
+
+        _is_equilibrium_reaction[int_pt] = false;
+    }
+
+    _qR = _reaction_rate[int_pt];
+}
+
+
 void LADataNoTpl::
 initReaction_localVapourUptakeStrategy(
         const unsigned int_pt)
@@ -1028,7 +1071,12 @@ preEachAssembleIntegrationPoint(
 
     NumLib::shapeFunctionInterpolate(localX, smN, int_pt_val);
 
-    //*
+    // pre-compute certain properties
+    _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
+
+    initReaction(int_pt, localX, smDNdx, smJ, smDetJ);
+
+    /*
     if (_p < 1.0) _p = 1.0;
     if (_T < 274.0) _T = 274.0;
     else if (_T > 600.0) _T = 600.0;
@@ -1039,11 +1087,6 @@ preEachAssembleIntegrationPoint(
     assert(_p > 0.0);
     assert(_T > 0.0);
     assert(0.0 <= _vapour_mass_fraction && _vapour_mass_fraction <= 1.0);
-
-    // pre-compute certain properties
-    _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
-
-    initReaction(int_pt, localX, smDNdx, smJ, smDetJ);
 
     _rho_GR = fluid_density(_p, _T, _vapour_mass_fraction);
 }

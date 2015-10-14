@@ -737,6 +737,7 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
     linearSolver.solve(*_rhs, x_curr);
 
 
+#if 0
     // assert that no component is smaller than some lower bound
 
     const std::array<double, 3> bounds = { 1.0, 100.0, 1e-6 }; // lower bounds for p, T, x
@@ -807,6 +808,7 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
         break;
     }
     }
+#endif
 
     //
 
