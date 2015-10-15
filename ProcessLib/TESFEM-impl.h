@@ -286,17 +286,14 @@ checkBounds(std::vector<double> const& localX,
 
     assert (alpha > 0.0);
 
-    if (alpha == 1.0) {
-        /*if (_data._AP->_previous_iteration_accepted
-            && _data._AP->_iteration_in_current_timestep == 0)
-        {
-            DBUG("increasing damping factor");
-            _data.reaction_damping_factor = std::sqrt(_data.reaction_damping_factor);
-        }*/
-    } else {
-        _data.reaction_damping_factor
-                = std::min(alpha, 0.5)
-                  * std::min(1.0, _data.reaction_damping_factor);
+    if (alpha != 1.0)
+    {
+        if (_data._AP->_number_of_try_of_iteration <=2) {
+            _data.reaction_damping_factor *= sqrt(std::min(alpha, 0.5));
+                                            // * sqrt(_data.reaction_damping_factor);
+        } else {
+            _data.reaction_damping_factor *= std::min(alpha, 0.5);
+        }
     }
 
     DBUG("new damping factor: %g", _data.reaction_damping_factor);

@@ -691,6 +691,8 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
 
     do
     {
+        _assembly_params._number_of_try_of_iteration = num_try;
+
         _global_assembler->setX(&x_curr, _x_prev_ts.get());
 
         _A->setZero();
@@ -850,14 +852,13 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
         }
 
         iteration_accepted = check_passed;
-        _assembly_params._previous_iteration_accepted = iteration_accepted;
 
         ++num_try;
     }
     while(! iteration_accepted);
 
     DBUG("ts %lu iteration %lu (%lu) try %u accepted", _timestep, _total_iteration,
-         _assembly_params._iteration_in_current_timestep, num_try);
+         _assembly_params._iteration_in_current_timestep, num_try-1);
 
     ++ _assembly_params._iteration_in_current_timestep;
     ++_total_iteration;

@@ -47,7 +47,7 @@ struct AssemblyParams
 
     bool _output_element_matrices = false;
 
-    bool _previous_iteration_accepted = true;
+    unsigned _number_of_try_of_iteration = 0;
 };
 
 

@@ -1338,13 +1338,15 @@ LADataNoTpl::preEachAssemble()
 {
     if (_AP->_iteration_in_current_timestep == 0)
     {
-        if (_AP->_previous_iteration_accepted)
+        if (_AP->_number_of_try_of_iteration == 0)
         {
             _solid_density_prev_ts = _solid_density;
             _reaction_rate_prev_ts = _reaction_rate;
             _equilibrium_loading_prev_ts = _equilibrium_loading;
 
-            reaction_damping_factor = std::sqrt(reaction_damping_factor);
+            reaction_damping_factor = std::min(
+                std::sqrt(reaction_damping_factor),
+                10.0*reaction_damping_factor);
         }
         else
         {
