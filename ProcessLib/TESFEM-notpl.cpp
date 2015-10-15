@@ -837,10 +837,11 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
             _reaction_rate_indicator[int_pt] = 0.0;
         }
 
-        _reaction_rate[int_pt] =
-                (reaction_damping_factor > 1e-3)
-                ? reaction_damping_factor * react_rate_R
-                : 0.0;
+        react_rate_R = (reaction_damping_factor > 1e-3)
+                       ? reaction_damping_factor * react_rate_R
+                       : 0.0;
+
+        _reaction_rate[int_pt] = react_rate_R;
         _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
 
         _is_equilibrium_reaction[int_pt] = false;
@@ -1209,6 +1210,7 @@ getIntegrationPointValues(SecondaryVariables var) const
     case SecondaryVariables::VAPOUR_PARTIAL_PRESSURE:
     case SecondaryVariables::RELATIVE_HUMIDITY:
     case SecondaryVariables::EQUILIBRIUM_LOADING:
+    case SecondaryVariables::REACTION_DAMPING_FACTOR:
         // not handled in this method
         break;
     }
@@ -1336,13 +1338,17 @@ LADataNoTpl::preEachAssemble()
 {
     if (_AP->_iteration_in_current_timestep == 0)
     {
-        _solid_density_prev_ts = _solid_density;
-        _reaction_rate_prev_ts = _reaction_rate;
-        _equilibrium_loading_prev_ts = _equilibrium_loading;
-
         if (_AP->_previous_iteration_accepted)
         {
+            _solid_density_prev_ts = _solid_density;
+            _reaction_rate_prev_ts = _reaction_rate;
+            _equilibrium_loading_prev_ts = _equilibrium_loading;
+
             reaction_damping_factor = std::sqrt(reaction_damping_factor);
+        }
+        else
+        {
+            _solid_density = _solid_density_prev_ts;
         }
     }
 

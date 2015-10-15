@@ -135,6 +135,7 @@ TESProcess(MeshLib::Mesh& mesh,
             add_secondary_variable("relative_humidity",       SecondaryVariables::RELATIVE_HUMIDITY,       1);
             add_secondary_variable("loading",                 SecondaryVariables::LOADING,                 1);
             add_secondary_variable("equilibrium_loading",     SecondaryVariables::EQUILIBRIUM_LOADING,     1);
+            add_secondary_variable("reaction_damping_factor", SecondaryVariables::REACTION_DAMPING_FACTOR, 1);
         }
     }
 
@@ -741,24 +742,6 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
         typename GlobalSetup::LinearSolver linearSolver(*_A);
         linearSolver.solve(*_rhs, x_curr);
 
-        auto& ga = *_global_assembler;
-        bool check_passed = true;
-
-        auto check_variable_bounds
-        = [&ga, &check_passed](
-          std::size_t id, LocalAssembler* const loc_asm)
-        {
-            DBUG("%lu", id);
-
-            std::vector<double> localX;
-            std::vector<double> localX_pts;
-            ga.getLocalNodalValues(id, localX, localX_pts);
-
-            if (!loc_asm->checkBounds(localX, localX_pts)) check_passed = false;
-        };
-
-        _global_setup.execute(check_variable_bounds, _local_assemblers);
-
 #if 0
         // assert that no component is smaller than some lower bound
 
@@ -842,6 +825,24 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
                              + ".vtu";
             postTimestep(fn, 0);
         }
+
+        auto& ga = *_global_assembler;
+        bool check_passed = true;
+
+        auto check_variable_bounds
+        = [&ga, &check_passed](
+          std::size_t id, LocalAssembler* const loc_asm)
+        {
+            DBUG("%lu", id);
+
+            std::vector<double> localX;
+            std::vector<double> localX_pts;
+            ga.getLocalNodalValues(id, localX, localX_pts);
+
+            if (!loc_asm->checkBounds(localX, localX_pts)) check_passed = false;
+        };
+
+        _global_setup.execute(check_variable_bounds, _local_assemblers);
 
         if (!check_passed)
         {

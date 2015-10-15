@@ -239,6 +239,13 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
 
         return Cs;
     }
+    case SecondaryVariables::REACTION_DAMPING_FACTOR:
+    {
+        auto alphas = std::make_shared<std::vector<double> >();
+        alphas->resize(_shape_matrices.size(), _data.reaction_damping_factor);
+
+        return alphas;
+    }
     }
 
 
@@ -277,6 +284,8 @@ checkBounds(std::vector<double> const& localX,
         }
     }
 
+    assert (alpha > 0.0);
+
     if (alpha == 1.0) {
         /*if (_data._AP->_previous_iteration_accepted
             && _data._AP->_iteration_in_current_timestep == 0)
@@ -285,7 +294,9 @@ checkBounds(std::vector<double> const& localX,
             _data.reaction_damping_factor = std::sqrt(_data.reaction_damping_factor);
         }*/
     } else {
-        _data.reaction_damping_factor *= std::min(alpha, 0.5);
+        _data.reaction_damping_factor
+                = std::min(alpha, 0.5)
+                  * std::min(1.0, _data.reaction_damping_factor);
     }
 
     DBUG("new damping factor: %g", _data.reaction_damping_factor);
