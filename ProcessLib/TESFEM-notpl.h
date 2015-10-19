@@ -53,14 +53,38 @@ struct TrafoLog
     /// used in local assembly.
     static double x(const double y) { return std::exp(y); }
 
-    // static double y(const double x) { return std::log(x); }
-
     /// Derivative of the "physical" variable x w.r.t y.
     /// the argument is x!
     static double dxdy(const double x) { return x; }
 };
 
-typedef TrafoLog Trafo;
+struct TrafoIdentity
+{
+    static const bool constrained = false;
+
+    /// Converts global matrix entry to "physical" variable
+    /// used in local assembly.
+    static double x(const double y) { return y; }
+
+    /// Derivative of the "physical" variable x w.r.t y.
+    /// the argument is x!
+    constexpr static double dxdy(const double /*x*/) { return 1.0; }
+};
+
+struct TrafoTanh
+{
+    static const bool constrained = true;
+
+    /// Converts global matrix entry to "physical" variable
+    /// used in local assembly.
+    static double x(const double y) { return 0.5 * std::tanh(y) + 0.5; }
+
+    /// Derivative of the "physical" variable x w.r.t y.
+    /// the argument is x!
+    constexpr static double dxdy(const double x) { return 2.0*x*(1.0-x); }
+};
+
+typedef TrafoIdentity Trafo;
 
 
 class LADataNoTpl

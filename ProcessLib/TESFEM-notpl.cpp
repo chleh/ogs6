@@ -735,7 +735,7 @@ initReaction_simpleStrategy(const unsigned int_pt)
                               * _AP->_rho_SR_dry;
 
         if (
-            (_p_V < 500.0 || _p_V < 0.05 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
+            (_p_V < 100.0 || _p_V < 0.025 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
             && react_rate_R > 0.0)
         {
             react_rate_R = 0.0;
