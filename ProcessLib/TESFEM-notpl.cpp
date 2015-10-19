@@ -35,7 +35,6 @@ const double RATE_CONSTANT = 6.e-3;
 }
 
 
-
 #if 0
 static double fluid_specific_isobaric_heat_capacity(
 		const double /*p*/, const double /*T*/, const double /*x*/)
@@ -389,7 +388,8 @@ getMassCoeffMatrix(const unsigned int_pt)
 	const double M_pp = _AP->_poro/_p * _rho_GR;
 	const double M_pT = -_AP->_poro/_T *  _rho_GR;
 	const double M_px = (_AP->_M_react-_AP->_M_inert) * _p
-						/ (GAS_CONST * _T) * dxn_dxm * _AP->_poro;
+						/ (GAS_CONST * _T) * dxn_dxm * _AP->_poro
+						* Trafo::dxdy(_vapour_mass_fraction);
 
 	const double M_Tp = -_AP->_poro;
 	const double M_TT = _AP->_poro * _rho_GR * _AP->_cpG // TODO: vapour heat capacity
@@ -398,7 +398,8 @@ getMassCoeffMatrix(const unsigned int_pt)
 
 	const double M_xp = 0.0;
 	const double M_xT = 0.0;
-	const double M_xx = _AP->_poro * _rho_GR;
+	const double M_xx = _AP->_poro * _rho_GR
+						* Trafo::dxdy(_vapour_mass_fraction);
 
 
 	Eigen::Matrix3d M;
@@ -438,7 +439,9 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 
 	Eigen::MatrixXd L_xx = Eigen::MatrixXd::Identity(dim, dim)
 						   * (_AP->_tortuosity * _AP->_poro * _rho_GR
-							  * _AP->_diffusion_coefficient_component);
+							  * _AP->_diffusion_coefficient_component
+							  * Trafo::dxdy(_vapour_mass_fraction)
+							  );
 
 	Eigen::MatrixXd L(dim*3, dim*3);
 
@@ -474,7 +477,8 @@ getAdvectionCoeffMatrix(const unsigned /*int_pt*/)
 
 	const double A_xp = 0.0;
 	const double A_xT = 0.0;
-	const double A_xx = _rho_GR; // porosity?
+	const double A_xx = _rho_GR
+						* Trafo::dxdy(_vapour_mass_fraction); // porosity?
 
 
 	Eigen::Matrix3d A;
@@ -503,7 +507,6 @@ getContentCoeffMatrix(const unsigned /*int_pt*/)
 	const double C_xp = 0.0;
 	const double C_xT = 0.0;
 	const double C_xx = (_AP->_poro - 1.0) * _qR;
-
 
 	Eigen::Matrix3d C;
 	C << C_pp, C_pT, C_px,
@@ -1075,6 +1078,8 @@ preEachAssembleIntegrationPoint(
     std::array<double*, NODAL_DOF> int_pt_val = { &_p, &_T, &_vapour_mass_fraction };
 
     NumLib::shapeFunctionInterpolate(localX, smN, int_pt_val);
+
+    _vapour_mass_fraction = Trafo::x(_vapour_mass_fraction);
 
     // pre-compute certain properties
     _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);

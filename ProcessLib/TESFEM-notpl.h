@@ -38,6 +38,30 @@ enum class SecondaryVariables {
 const double NONLINEAR_ERROR_TOLERANCE = 1e-6;
 
 
+/**
+ * y ... variable in global matrix
+ * x ... "physical" process variable in local assembly
+ *
+ * x = exp(y), dx = dx/dy * dy
+ * dx/dy = exp(y) = x
+ */
+struct TrafoLog
+{
+    static const bool constrained = true;
+
+    /// Converts global matrix entry to "physical" variable
+    /// used in local assembly.
+    static double x(const double y) { return std::exp(y); }
+
+    // static double y(const double x) { return std::log(x); }
+
+    /// Derivative of the "physical" variable x w.r.t y.
+    /// the argument is x!
+    static double dxdy(const double x) { return x; }
+};
+
+typedef TrafoLog Trafo;
+
 
 class LADataNoTpl
 {
@@ -111,7 +135,6 @@ private:
     void initReaction_slowDownUndershootStrategy(const unsigned int_pt);
 
     double estimateAdsorptionEquilibrium(const double p_V0, const double C0) const;
-
 
     // nodal quantities, secondary variables
     std::vector<double> _solid_density;

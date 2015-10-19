@@ -177,6 +177,8 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
             NumLib::shapeFunctionInterpolate(ps, sm.N, Array{ &p  });
             NumLib::shapeFunctionInterpolate(xs, sm.N, Array{ &xm });
 
+            xm = Trafo::x(xm);
+
             auto const xn = AP._adsorption->get_molar_fraction(xm, AP._M_react, AP._M_inert);
             pVs->push_back(p * xn);
         }
@@ -201,6 +203,8 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
 
             using Array = std::array<double*, 3>;
             NumLib::shapeFunctionInterpolate(nodal_vals, sm.N, Array{ &p, &T, &xm });
+
+            xm = Trafo::x(xm);
 
             auto const xn = AP._adsorption->get_molar_fraction(xm, AP._M_react, AP._M_inert);
             auto const pS = AP._adsorption->get_equilibrium_vapour_pressure(T);
@@ -227,6 +231,8 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
 
             using Array = std::array<double*, 3>;
             NumLib::shapeFunctionInterpolate(nodal_vals, sm.N, Array{ &p, &T, &xm });
+
+            xm = Trafo::x(xm);
 
             auto const xn = AP._adsorption->get_molar_fraction(xm, AP._M_react, AP._M_inert);
             auto const pV = p * xn;

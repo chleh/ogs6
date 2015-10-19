@@ -374,6 +374,13 @@ initialize()
 {
     DBUG("Initialize TESProcess.");
 
+    // TODO [CL]: Warning message
+    /*
+    if (LOGARITHMIC_VAPOUR_MASS_FRACTION)
+        INFO("Vapour mass fraction is taken logarithmically!"
+             " Consider that for initial and boundary conditions as well as for output.");
+             */
+
     DBUG("Construct dof mappings.");
     // Create single component dof in every of the mesh's nodes.
     _mesh_subset_all_nodes = new MeshLib::MeshSubset(_mesh, &_mesh.getNodes());
@@ -828,27 +835,33 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
             postTimestep(fn, 0);
         }
 
-        auto& ga = *_global_assembler;
         bool check_passed = true;
 
-        auto check_variable_bounds
-        = [&ga, &check_passed](
-          std::size_t id, LocalAssembler* const loc_asm)
+        if (!Trafo::constrained)
         {
-            DBUG("%lu", id);
+            // bounds checking only has to happen if the vapour mass fraction is non-logarithmic.
 
-            std::vector<double> localX;
-            std::vector<double> localX_pts;
-            ga.getLocalNodalValues(id, localX, localX_pts);
+            auto& ga = *_global_assembler;
 
-            if (!loc_asm->checkBounds(localX, localX_pts)) check_passed = false;
-        };
+            auto check_variable_bounds
+            = [&ga, &check_passed](
+              std::size_t id, LocalAssembler* const loc_asm)
+            {
+                DBUG("%lu", id);
 
-        _global_setup.execute(check_variable_bounds, _local_assemblers);
+                std::vector<double> localX;
+                std::vector<double> localX_pts;
+                ga.getLocalNodalValues(id, localX, localX_pts);
 
-        if (!check_passed)
-        {
-            x_curr = x_prev_iter;
+                if (!loc_asm->checkBounds(localX, localX_pts)) check_passed = false;
+            };
+
+            _global_setup.execute(check_variable_bounds, _local_assemblers);
+
+            if (!check_passed)
+            {
+                x_curr = x_prev_iter;
+            }
         }
 
         iteration_accepted = check_passed;
