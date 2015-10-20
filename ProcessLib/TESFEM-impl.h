@@ -275,16 +275,24 @@ checkBounds(std::vector<double> const& localX,
 {
     double alpha = 1.0;
 
-    const std::size_t xmV_idx = NODAL_DOF - 1;
     const double min_xmV = 1e-6;
+    const std::size_t nnodes = localX.size() / NODAL_DOF;
+    const std::size_t xmV_offset = (NODAL_DOF - 1)*nnodes;
 
-    for (std::size_t i=0; i<localX.size(); i+=NODAL_DOF)
+    for (std::size_t i=0; i<nnodes; ++i)
     {
-        auto const xnew = localX[i+xmV_idx];
+        auto const xnew = localX[xmV_offset+i];
         if (xnew < min_xmV)
         {
-            auto const xold = localX_pts[i+xmV_idx];
+            auto const xold = localX_pts[i+xmV_offset];
             const auto a = xold / (xold - xnew);
+            if (a<alpha) DBUG("xo %g, xn %g, a %g", xold, xnew, a);
+            alpha = std::min(alpha, a);
+        }
+        else if (xnew > 1.0)
+        {
+            auto const xold = localX_pts[i+xmV_offset];
+            const auto a = xold / (xnew - xold);
             if (a<alpha) DBUG("xo %g, xn %g, a %g", xold, xnew, a);
             alpha = std::min(alpha, a);
         }

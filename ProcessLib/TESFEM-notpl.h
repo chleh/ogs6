@@ -158,6 +158,9 @@ private:
 
     void initReaction_slowDownUndershootStrategy(const unsigned int_pt);
 
+    /// returns estimated equilibrium vapour pressure
+    /// based on a local (i.e. no diffusion/advection) balance
+    /// of adsorbate loading and vapour partial pressure
     double estimateAdsorptionEquilibrium(const double p_V0, const double C0) const;
 
     // nodal quantities, secondary variables

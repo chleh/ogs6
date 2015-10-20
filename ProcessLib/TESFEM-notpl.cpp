@@ -811,15 +811,7 @@ void
 LADataNoTpl::
 initReaction_slowDownUndershootStrategy(const unsigned int_pt)
 {
-    if (_vapour_mass_fraction <= 0.0)
-    {
-        assert(false);
-        _reaction_rate[int_pt] *= 0.5;
-        is_var_out_of_bounds = true;
-
-        _vapour_mass_fraction = 0.0005;
-        _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
-    }
+    assert(_AP->_number_of_try_of_iteration < 10);
 
     if (_AP->_iteration_in_current_timestep == 0)
     {
@@ -832,8 +824,10 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
             (_p_V < 100.0 || _p_V < 0.025 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
             && react_rate_R > 0.0)
         {
+            // disable reaction for very dry conditions
             react_rate_R = 0.0;
             _reaction_rate_indicator[int_pt] = 100.0;
+            // TODO [CL]: make local vapour pressure estimation here
         }
         else
         {
@@ -843,6 +837,28 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
         react_rate_R = (reaction_damping_factor > 1e-3)
                        ? reaction_damping_factor * react_rate_R
                        : 0.0;
+
+        if (
+            (_p_V < 250.0 || _p_V < 0.5 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
+            && react_rate_R > 0.0)
+        {
+            if (_AP->_number_of_try_of_iteration == 0)
+            {
+                // zeroth try in zeroth iteration: _p_V and loading are the values
+                // at the end of the previous timestep
+                const double pV_eq = estimateAdsorptionEquilibrium(_p_V, loading);
+                const double delta_pV = pV_eq - _p_V;
+                const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
+                const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
+
+                // make shure reaction is not slower than allowed by local
+                if (std::abs(delta_rhoSR/_AP->_delta_t) > std::abs(react_rate_R))
+                {
+                    react_rate_R = delta_rhoSR/_AP->_delta_t;
+                    _reaction_rate_indicator[int_pt] = 50.0;
+                }
+            }
+        }
 
         _reaction_rate[int_pt] = react_rate_R;
         _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
