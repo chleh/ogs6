@@ -288,6 +288,7 @@ checkBounds(std::vector<double> const& localX,
             const auto a = xold / (xold - xnew);
             if (a<alpha) DBUG("xo %g, xn %g, a %g", xold, xnew, a);
             alpha = std::min(alpha, a);
+            _data.bounds_violation[i] = true;
         }
         else if (xnew > 1.0)
         {
@@ -295,6 +296,11 @@ checkBounds(std::vector<double> const& localX,
             const auto a = xold / (xnew - xold);
             if (a<alpha) DBUG("xo %g, xn %g, a %g", xold, xnew, a);
             alpha = std::min(alpha, a);
+            _data.bounds_violation[i] = true;
+        }
+        else
+        {
+            _data.bounds_violation[i] = false;
         }
     }
 

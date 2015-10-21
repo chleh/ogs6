@@ -119,6 +119,7 @@ public:
     getIntegrationPointValues(SecondaryVariables var) const;
 
     double reaction_damping_factor = 1.0;
+    std::vector<bool> bounds_violation;
 
 private:
     Eigen::Matrix3d getMassCoeffMatrix(const unsigned int_pt);

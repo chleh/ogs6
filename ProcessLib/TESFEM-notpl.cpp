@@ -813,58 +813,93 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
 {
     assert(_AP->_number_of_try_of_iteration < 10);
 
-    if (_AP->_iteration_in_current_timestep == 0)
+    const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
+
+    double react_rate_R = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
+                          * _AP->_rho_SR_dry;
+
+    _reaction_rate_indicator[int_pt] = 0.0;
+
+    // set reaction rate based on current damping factor
+    react_rate_R = (reaction_damping_factor > 1e-3)
+                   ? reaction_damping_factor * react_rate_R
+                   : 0.0;
+
+    if (_p_V < 0.01 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T)
+        && react_rate_R > 0.0)
     {
-        const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
+        react_rate_R = 0.0;
+        _reaction_rate_indicator[int_pt] = -100.0;
+    }
+    else if (_p_V < 100.0 || _p_V < 0.05 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
+    {
+        // use equilibrium reaction for dry regime
 
-        double react_rate_R = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
-                              * _AP->_rho_SR_dry;
+        // in the case of zeroth try in zeroth iteration: _p_V and loading are the values
+        // at the end of the previous timestep
 
-        if (
-            (_p_V < 100.0 || _p_V < 0.025 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
-            && react_rate_R > 0.0)
+        const double pV_eq = estimateAdsorptionEquilibrium(_p_V, loading);
+        // TODO [CL]: it would be more correct to subtract pV from the previous timestep here
+        const double delta_pV = pV_eq - _p_V;
+        const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
+        const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
+        double react_rate_R2 = delta_rhoSR/_AP->_delta_t;
+
+        if (bounds_violation[int_pt])
         {
-            // disable reaction for very dry conditions
-            react_rate_R = 0.0;
+            react_rate_R2 *= 0.5;
+        }
+
+        // 0th try: make sure reaction is not slower than allowed by local estimation
+        // nth try: make sure reaction is not made faster by local estimation
+        if (
+            (_AP->_number_of_try_of_iteration == 0
+             && std::abs(react_rate_R2) > std::abs(react_rate_R))
+            ||
+            (_AP->_number_of_try_of_iteration != 0
+             && std::abs(react_rate_R2) < std::abs(react_rate_R))
+            )
+        {
+            react_rate_R = react_rate_R2;
             _reaction_rate_indicator[int_pt] = 100.0;
-            // TODO [CL]: make local vapour pressure estimation here
+        }
+    }
+
+    // smooth out readjustment of reaction rate
+    if (_AP->_iteration_in_current_timestep > 3)
+    {
+        if (_AP->_iteration_in_current_timestep <= 8)
+        {
+            // update reaction rate for for five iterations
+            const auto N = _AP->_iteration_in_current_timestep - 3;
+
+            // take average s.t. does not oscillate so much
+            react_rate_R = 1.0 / (1.0+N) * (N*_reaction_rate[int_pt] + 1.0 * react_rate_R);
         }
         else
         {
-            _reaction_rate_indicator[int_pt] = 0.0;
+            // afterwards no update anymore
+            react_rate_R = _reaction_rate[int_pt];
         }
-
-        react_rate_R = (reaction_damping_factor > 1e-3)
-                       ? reaction_damping_factor * react_rate_R
-                       : 0.0;
-
-        if (
-            (_p_V < 250.0 || _p_V < 0.5 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
-            && react_rate_R > 0.0)
-        {
-            if (_AP->_number_of_try_of_iteration == 0)
-            {
-                // zeroth try in zeroth iteration: _p_V and loading are the values
-                // at the end of the previous timestep
-                const double pV_eq = estimateAdsorptionEquilibrium(_p_V, loading);
-                const double delta_pV = pV_eq - _p_V;
-                const double delta_rhoV = delta_pV * _AP->_M_react / GAS_CONST / _T * _AP->_poro;
-                const double delta_rhoSR = delta_rhoV / (_AP->_poro - 1.0);
-
-                // make shure reaction is not slower than allowed by local
-                if (std::abs(delta_rhoSR/_AP->_delta_t) > std::abs(react_rate_R))
-                {
-                    react_rate_R = delta_rhoSR/_AP->_delta_t;
-                    _reaction_rate_indicator[int_pt] = 50.0;
-                }
-            }
-        }
-
-        _reaction_rate[int_pt] = react_rate_R;
-        _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
-
-        _is_equilibrium_reaction[int_pt] = false;
     }
+
+    if (_AP->_number_of_try_of_iteration > 0)
+    {
+        // assert that within tries reaction does not get faster
+        // (e.g. due to switch equilibrium reaction <--> kinetic reaction)
+
+        // factor of 0.9*N: in fact, even slow down reaction over tries
+        const double r = std::pow(0.9, _AP->_number_of_try_of_iteration)
+                         *_reaction_rate[int_pt];
+        if (std::abs(react_rate_R) > std::abs(r)) {
+            react_rate_R = r;
+        }
+    }
+
+    _reaction_rate[int_pt] = react_rate_R;
+    _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
+
+    _is_equilibrium_reaction[int_pt] = false;
 
     _qR = _reaction_rate[int_pt];
 }
@@ -1339,6 +1374,8 @@ LADataNoTpl::init(const unsigned num_int_pts, const unsigned dimension)
     _equilibrium_loading.resize(num_int_pts);
     _equilibrium_loading_prev_ts.resize(
                 num_int_pts, EQ_LOADING_FIRST_TS); // TODO [CL] provide separate "first assembly" method
+
+    bounds_violation.resize(num_int_pts, false);
 
     _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
     _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
