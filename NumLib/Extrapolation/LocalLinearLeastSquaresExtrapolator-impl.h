@@ -85,13 +85,12 @@ extrapolateElement(
     const Eigen::Map<const Eigen::VectorXd> gpvs(gp_vals->data(), gp_vals->size());
 
     {
-        auto const& indices = _local_to_global[index].rows;
-        // DBUG("solving normal equation...");
+        // TODO: now always zeroth component is used
+        auto const& indices = _local_to_global(index, 0).rows;
+
         Eigen::VectorXd elem_nodal_vals = (N.transpose() * N).ldlt().solve(N.transpose() * gpvs);
         _nodal_values.add(indices, elem_nodal_vals);
         counts.add(indices, 1.0);
-        // break;
-        // return (N.transpose() * N).ldlt().solve(N.transpose() * gpvs);
     }
 }
 
@@ -109,7 +108,8 @@ calculateResiudalElement(
     auto gp_vals = loc_asm->getIntegrationPointValues(var, nodal_dof);
     const unsigned ni = gp_vals->size();        // number of gauss points
 
-    const auto& indices = _local_to_global[index].rows;
+    // TODO: now always zeroth component is used
+    const auto& indices = _local_to_global(index, 0).rows;
 
     // filter nodal values of the current element
     std::vector<double> nodal_vals_element;

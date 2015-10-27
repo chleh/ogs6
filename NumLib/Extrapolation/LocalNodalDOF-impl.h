@@ -24,20 +24,14 @@ public:
     std::vector<double> getElementNodalValues() override
     {
         std::vector<double> localX;
-        auto const& indices = _index_map[_index].rows;
-
-        auto const element_dof = indices.size();
-
-        auto& mcmap = _index_map.getMeshComponentMap();
-        auto const num_comp = mcmap.getNumComponents();
-
-        localX.reserve(element_dof);
+        auto const num_comp = _index_map.getNumComponents();
 
         // The local matrix will always be ordered by component,
         // no matter what the order of the global matrix is.
         for (unsigned c=0; c<num_comp; ++c)
         {
-            auto const idcs = mcmap.getIndicesForComponent(indices, c);
+            auto const idcs = _index_map(_index, c).rows;
+            localX.reserve(localX.size() + idcs.size());
             for (auto ip : idcs)
             {
                 localX.emplace_back(_global_nodal_values[ip]);
@@ -50,17 +44,9 @@ public:
     std::vector<double> getElementNodalValues(unsigned component) override
     {
         std::vector<double> localX;
-        auto const& indices = _index_map[_index].rows;
 
-        auto const element_dof = indices.size();
-
-        auto& mcmap = _index_map.getMeshComponentMap();
-        auto const num_comp = mcmap.getNumComponents();
-        assert(component < num_comp);
-
-        localX.reserve(element_dof/num_comp);
-
-        auto const idcs = mcmap.getIndicesForComponent(indices, component);
+        auto const idcs = _index_map(_index, component).rows;
+        localX.reserve(idcs.size());
         for (auto ip : idcs)
         {
             localX.emplace_back(_global_nodal_values[ip]);

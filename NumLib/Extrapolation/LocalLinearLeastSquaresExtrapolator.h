@@ -11,7 +11,8 @@ class LocalLinearLeastSquaresExtrapolator
         : public Extrapolator<GlobalVector, VariableEnum, LocalAssembler>
 {
 public:
-    using LocalAssemblers = typename Extrapolator<GlobalVector, VariableEnum, LocalAssembler>::LocalAssemblers;
+    using LocalAssemblers = typename Extrapolator<GlobalVector, VariableEnum, LocalAssembler>
+                                     ::LocalAssemblers;
 
     explicit LocalLinearLeastSquaresExtrapolator(
             AssemblerLib::LocalToGlobalIndexMap const& local_to_global)

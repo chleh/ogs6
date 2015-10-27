@@ -114,7 +114,7 @@ extrapolate(LocalAssemblers const& loc_asms, VariableEnum var)
 
     for (std::size_t i=0; i<loc_asms.size(); ++i)
     {
-        GLLSQ_gatherElementData(loc_asms[i], var, _local_to_global[i].rows,
+        GLLSQ_gatherElementData(loc_asms[i], var, _local_to_global(i,0).rows,
                           mat, _integration_point_values, start_row);
     }
 
@@ -133,7 +133,7 @@ calculateResiduals(LocalAssemblers const& loc_asms, VariableEnum var)
     for (std::size_t ei=0; ei<loc_asms.size(); ++ei)
     {
         _residuals[ei] = GLLSQ_calculateResiudalElement(
-                    loc_asms[ei], var, _local_to_global[ei].rows,
+                    loc_asms[ei], var, _local_to_global(ei,0).rows,
                     _nodal_values
                     );
     }
