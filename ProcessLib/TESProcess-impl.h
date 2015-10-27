@@ -338,7 +338,7 @@ createLocalAssemblers()
         DBUG("Initialize boundary conditions.");
         _process_vars[i]->initializeDirichletBCs(
                     process_var_mesh_node_searcher,
-                    _local_to_global_index_map->getMeshComponentMap(), i,
+                    *_local_to_global_index_map, i,
                     _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
 
@@ -358,7 +358,7 @@ createLocalAssemblers()
                     _global_setup,
                     _integration_order,
                     *_local_to_global_index_map,
-                    i, NODAL_DOF,
+                    i,
                     *_mesh_subset_all_nodes);
         }
     }
@@ -550,12 +550,11 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
         auto result = get_or_create_mesh_property(property_name, MeshLib::MeshItemType::Node);
         assert(result->size() == _mesh.getNNodes());
 
-        auto const& mcmap = _local_to_global_index_map->getMeshComponentMap();
         // Copy result
         for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
         {
             MeshLib::Location loc(_mesh.getID(), MeshLib::MeshItemType::Node, i);
-            auto const idx = mcmap.getGlobalIndex(loc, vi);
+            auto const idx = _local_to_global_index_map->getGlobalIndex(loc, vi);
             (*result)[i] = (*_x)[idx];
         }
     };
@@ -574,9 +573,10 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             LocalAssembler>
             extrapolator(*_local_to_global_index_map_single_component);
 #else
-    std::unique_ptr<NumLib::Extrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler> > extrapolator(
-                new NumLib::LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler>
-                (*_local_to_global_index_map_single_component));
+    using ExtrapolatorIntf = NumLib::Extrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler>;
+    using ExtrapolatorImpl = NumLib::LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler>;
+    std::unique_ptr<ExtrapolatorIntf>
+            extrapolator(new ExtrapolatorImpl(*_local_to_global_index_map_single_component));
 #endif
 
     auto add_secondary_var = [this, &extrapolator, &get_or_create_mesh_property]
@@ -703,7 +703,7 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
         _global_assembler->setX(&x_curr, _x_prev_ts.get());
 
         _A->setZero();
-        MathLib::setMatrixSparsity(*_A, _node_adjacency_table); // TODO [CL] always required?
+        // MathLib::setMatrixSparsity(*_A, _node_adjacency_table); // TODO [CL] that call crashes
         *_rhs = 0;   // This resets the whole vector.
 
         // Call global assembler for each local assembly item.
