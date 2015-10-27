@@ -17,7 +17,7 @@
 #include <iomanip>
 #endif
 
-#include <Eigen/Eigen>
+#include <Eigen/Sparse>
 
 namespace MathLib
 {
