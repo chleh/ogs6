@@ -46,6 +46,16 @@ public:
         _x_prev_ts = x_prev_ts;
     }
 
+
+    void getLocalNodalValues(std::size_t const id,
+                             std::vector<double>& localX,
+                             std::vector<double>& localX_prev_ts) const
+    {
+        std::vector<GlobalIndexType> indices;
+        getLocalNodalValuesIndices(id, localX, localX_prev_ts, indices);
+    }
+
+
     /// Executes local assembler for the given mesh item and adds the result
     /// into the global matrix and vector.
     /// The positions in the global matrix/vector are taken from
@@ -55,9 +65,35 @@ public:
     void operator()(std::size_t const id,
         LocalAssembler_* const local_assembler) const
     {
+        std::vector<double> localX;
+        std::vector<double> localX_pts;
+        std::vector<GlobalIndexType> indices;
+
+        if (_x != nullptr)
+        {
+            getLocalNodalValuesIndices(id, localX, localX_pts, indices);
+        }
+
+        LocalToGlobalIndexMap::RowColumnIndices const r_c_indices(
+                    indices, indices);
+
+        local_assembler->assemble(localX, localX_pts);
+        local_assembler->addToGlobal(_A, _rhs, r_c_indices);
+    }
+
+private:
+    void getLocalNodalValuesIndices(
+            std::size_t const id,
+            std::vector<double>& localX,
+            std::vector<double>& localX_prev_ts,
+            std::vector<GlobalIndexType>& indices
+            ) const
+    {
+        assert(_x != nullptr && _x_prev_ts != nullptr
+               && _x->size() == _x_prev_ts->size());
         assert(_data_pos.size() > id);
 
-        std::vector<GlobalIndexType> indices;
+        indices.clear();
 
         // Local matrices and vectors will always be ordered by component,
         // no matter what the order of the global matrix is.
@@ -68,23 +104,14 @@ public:
             indices.insert(indices.end(), idcs.begin(), idcs.end());
         }
 
-        std::vector<double> localX;
-        std::vector<double> localX_pts;
-
-        if (_x)         localX.reserve(indices.size());
-        if (_x_prev_ts) localX_pts.reserve(indices.size());
+        localX.reserve(indices.size());
+        localX_prev_ts.reserve(indices.size());
 
         for (auto i : indices)
         {
-            if (_x)         localX.emplace_back(_x->get(i));
-            if (_x_prev_ts) localX_pts.emplace_back(_x_prev_ts->get(i));
+            localX.emplace_back(_x->get(i));
+            localX_pts.emplace_back(_x_prev_ts->get(i));
         }
-
-        LocalToGlobalIndexMap::RowColumnIndices const r_c_indices(
-                    indices, indices);
-
-        local_assembler->assemble(localX, localX_pts);
-        local_assembler->addToGlobal(_A, _rhs, r_c_indices);
     }
 
 protected:
