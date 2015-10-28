@@ -103,7 +103,7 @@ public:
 
 private:
     std::vector<ShapeMatrices> _shape_matrices;
-    LADataNoTpl<DataTraitsDynamic> _data;
+    LADataNoTpl<DataTraits<double>> _data;
 
     static const unsigned MAT_SIZE = ShapeFunction::NPOINTS * NODAL_DOF;
     using NodalMatrixType = Eigen::Matrix<double, MAT_SIZE, MAT_SIZE>;

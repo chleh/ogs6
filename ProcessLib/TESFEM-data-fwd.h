@@ -18,7 +18,7 @@ namespace ProcessLib
 namespace TES
 {
 
-extern template class LADataNoTpl<DataTraitsDynamic>;
+extern template class LADataNoTpl<DataTraits<int> >;
 
 }
 

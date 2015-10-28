@@ -93,6 +93,15 @@ struct DataTraitsDynamic
     using Vector = Eigen::VectorXd;
 };
 
+struct DataTraitsFixed
+{
+    using Matrix = Eigen::MatrixXd;
+    using Vector = Eigen::VectorXd;
+};
+
+template<typename A>
+using DataTraits = DataTraitsDynamic;
+
 
 template<typename Traits>
 class LADataNoTpl
