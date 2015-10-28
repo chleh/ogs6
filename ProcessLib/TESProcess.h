@@ -35,7 +35,7 @@
 
 #include "TESProcess-notpl.h"
 #include "TESFEM.h"
-#include "TESFEM-notpl.h"
+#include "TESFEM-data.h"
 
 
 namespace MeshLib
