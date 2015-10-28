@@ -556,8 +556,8 @@ template<typename Traits>
 void
 LADataNoTpl<Traits>::
 initReaction(
-        const unsigned int_pt, const std::vector<double>& localX,
-        const MatRef& smDNdx, const MatRef& smJ, const double smDetJ)
+        const unsigned int_pt, const std::vector<double>& /*localX*/,
+        const MatRef& /*smDNdx*/, const MatRef& /*smJ*/, const double /*smDetJ*/)
 {
     // initReaction_localDiffusionStrategy(int_pt, localX, smDNdx, smJ, smDetJ);
     // initReaction_simpleStrategy(int_pt);

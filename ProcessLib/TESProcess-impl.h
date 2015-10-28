@@ -582,7 +582,11 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
     auto add_secondary_var = [this, &extrapolator, &get_or_create_mesh_property]
                              (SecondaryVariables const property,
                              std::string const& property_name,
+                         #ifndef NDEBUG
                              const unsigned num_components
+                         #else
+                             const unsigned /*num_components*/
+                         #endif
                              )
     {
         assert(num_components == 1); // TODO [CL] implement other cases
