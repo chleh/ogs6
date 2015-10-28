@@ -87,18 +87,25 @@ struct TrafoTanh
 typedef TrafoIdentity Trafo;
 
 
-template<typename A>
+struct DataTraitsDynamic
+{
+    using Matrix = Eigen::MatrixXd;
+    using Vector = Eigen::VectorXd;
+};
+
+
+template<typename Traits>
 class LADataNoTpl
 {
 public:
-    typedef Eigen::Ref<const Eigen::MatrixXd> MatRef;
-    typedef Eigen::Ref<const Eigen::VectorXd> VecRef;
+    typedef Eigen::Ref<const typename Traits::Matrix> MatRef;
+    typedef Eigen::Ref<const typename Traits::Vector> VecRef;
     typedef std::shared_ptr<std::vector<double> > SharedVector;
 
     void assembleIntegrationPoint(
             unsigned integration_point,
-            Eigen::MatrixXd* localA,
-            Eigen::VectorXd* localRhs,
+            typename Traits::Matrix* localA,
+            typename Traits::Vector* localRhs,
             std::vector<double> const& localX,
             VecRef const& smN,
             MatRef const& smDNdx,
@@ -113,8 +120,8 @@ public:
     void init(const unsigned num_int_pts, const unsigned dimension);
 
     void preEachAssemble();
-    void postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
-                          const Eigen::VectorXd& oldX);
+    void postEachAssemble(typename Traits::Matrix* localA, typename Traits::Vector* localRhs,
+                          const typename Traits::Vector& oldX);
 
     std::shared_ptr<const std::vector<double> >
     getIntegrationPointValues(SecondaryVariables var) const;
@@ -124,7 +131,7 @@ public:
 
 private:
     Eigen::Matrix3d getMassCoeffMatrix(const unsigned int_pt);
-    Eigen::MatrixXd getLaplaceCoeffMatrix(const unsigned int_pt, const unsigned dim);
+    typename Traits::Matrix getLaplaceCoeffMatrix(const unsigned int_pt, const unsigned dim);
     Eigen::Matrix3d getAdvectionCoeffMatrix(const unsigned int_pt);
     Eigen::Matrix3d getContentCoeffMatrix(const unsigned int_pt);
     Eigen::Vector3d getRHSCoeffVector(const unsigned int_pt);
@@ -182,7 +189,7 @@ private:
     std::vector<double> _estimated_vapour_pressure;
 
     std::vector<std::vector<double> > _velocity;
-    // Eigen::MatrixXd _velocity; // row index: gauss point, column index: dimension x/y/z
+    // typename Traits::Matrix _velocity; // row index: gauss point, column index: dimension x/y/z
 
     std::vector<double> _reaction_rate_indicator; // TODO [CL] get rid of this
 
@@ -202,21 +209,21 @@ private:
     double _p_V = -888.888; // vapour partial pressure
     double _qR = 88888.88888;  // reaction rate, use this in assembly!!!
 
-    std::unique_ptr<Eigen::MatrixXd> _Lap;
-    std::unique_ptr<Eigen::MatrixXd> _Mas;
-    std::unique_ptr<Eigen::MatrixXd> _Adv;
-    std::unique_ptr<Eigen::MatrixXd> _Cnt;
-    std::unique_ptr<Eigen::VectorXd> _rhs;
+    std::unique_ptr<typename Traits::Matrix> _Lap;
+    std::unique_ptr<typename Traits::Matrix> _Mas;
+    std::unique_ptr<typename Traits::Matrix> _Adv;
+    std::unique_ptr<typename Traits::Matrix> _Cnt;
+    std::unique_ptr<typename Traits::Vector> _rhs;
 };
 
 
-template <typename A>
+template <typename Traits>
 void
-ogs5OutVec(const typename LADataNoTpl<A>::VecRef& vec);
+ogs5OutVec(const typename LADataNoTpl<Traits>::VecRef& vec);
 
-template <typename A>
+template <typename Traits>
 void
-ogs5OutMat(const typename LADataNoTpl<A>::MatRef& vec);
+ogs5OutMat(const typename LADataNoTpl<Traits>::MatRef& vec);
 
 
 } // namespace TES

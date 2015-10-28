@@ -381,9 +381,9 @@ namespace ProcessLib
 namespace TES
 {
 
-template<typename A>
+template<typename Traits>
 Eigen::Matrix3d
-LADataNoTpl<A>::
+LADataNoTpl<Traits>::
 getMassCoeffMatrix(const unsigned int_pt)
 {
 	const double dxn_dxm = _AP->_adsorption->d_molar_fraction(
@@ -415,9 +415,9 @@ getMassCoeffMatrix(const unsigned int_pt)
 }
 
 
-template<typename A>
-Eigen::MatrixXd
-LADataNoTpl<A>::
+template<typename Traits>
+typename Traits::Matrix
+LADataNoTpl<Traits>::
 getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 {
 	const double eta_GR = fluid_viscosity(_p, _T, _vapour_mass_fraction);
@@ -425,30 +425,32 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 	const double lambda_F = fluid_heat_conductivity(_p, _T, _vapour_mass_fraction);
 	const double lambda_S = _AP->_solid_heat_cond;
 
+	using Mat = typename Traits::Matrix;
+
 	// TODO: k_rel
-	Eigen::MatrixXd L_pp = _AP->_solid_perm_tensor.block(0,0,dim,dim) * _rho_GR / eta_GR;
+	Mat L_pp = _AP->_solid_perm_tensor.block(0,0,dim,dim) * _rho_GR / eta_GR;
 
-	Eigen::MatrixXd L_pT = Eigen::MatrixXd::Zero(dim, dim);
-	Eigen::MatrixXd L_px = Eigen::MatrixXd::Zero(dim, dim);
+	Mat L_pT = Mat::Zero(dim, dim);
+	Mat L_px = Mat::Zero(dim, dim);
 
-	Eigen::MatrixXd L_Tp = Eigen::MatrixXd::Zero(dim, dim);
+	Mat L_Tp = Mat::Zero(dim, dim);
 
 	// TODO: add zeolite part
-	Eigen::MatrixXd L_TT = Eigen::MatrixXd::Identity(dim, dim)
+	Mat L_TT = Mat::Identity(dim, dim)
 					  * ( _AP->_poro * lambda_F + (1.0 - _AP->_poro) * lambda_S);
 
-	Eigen::MatrixXd L_Tx = Eigen::MatrixXd::Zero(dim, dim);
+	Mat L_Tx = Mat::Zero(dim, dim);
 
-	Eigen::MatrixXd L_xp = Eigen::MatrixXd::Zero(dim, dim);
-	Eigen::MatrixXd L_xT = Eigen::MatrixXd::Zero(dim, dim);
+	Mat L_xp = Mat::Zero(dim, dim);
+	Mat L_xT = Mat::Zero(dim, dim);
 
-	Eigen::MatrixXd L_xx = Eigen::MatrixXd::Identity(dim, dim)
-						   * (_AP->_tortuosity * _AP->_poro * _rho_GR
-							  * _AP->_diffusion_coefficient_component
-							  * Trafo::dxdy(_vapour_mass_fraction)
-							  );
+	Mat L_xx = Mat::Identity(dim, dim)
+			   * (_AP->_tortuosity * _AP->_poro * _rho_GR
+				  * _AP->_diffusion_coefficient_component
+				  * Trafo::dxdy(_vapour_mass_fraction)
+				  );
 
-	Eigen::MatrixXd L(dim*3, dim*3);
+	Mat L(dim*3, dim*3);
 
 	L.block(    0,     0, dim, dim) = L_pp;
 	L.block(    0,   dim, dim, dim) = L_pT;
@@ -466,9 +468,9 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 }
 
 
-template<typename A_>
+template<typename Traits>
 Eigen::Matrix3d
-LADataNoTpl<A_>::
+LADataNoTpl<Traits>::
 getAdvectionCoeffMatrix(const unsigned /*int_pt*/)
 {
 	const double A_pp = 0.0;
@@ -496,9 +498,9 @@ getAdvectionCoeffMatrix(const unsigned /*int_pt*/)
 }
 
 
-template<typename A>
+template<typename Traits>
 Eigen::Matrix3d
-LADataNoTpl<A>::
+LADataNoTpl<Traits>::
 getContentCoeffMatrix(const unsigned /*int_pt*/)
 {
 	const double C_pp = 0.0;
@@ -524,9 +526,9 @@ getContentCoeffMatrix(const unsigned /*int_pt*/)
 }
 
 
-template<typename A>
+template<typename Traits>
 Eigen::Vector3d
-LADataNoTpl<A>::
+LADataNoTpl<Traits>::
 getRHSCoeffVector(const unsigned int_pt)
 {
 	const double reaction_enthalpy = _AP->_adsorption->get_enthalpy(_p_V, _T, _AP->_M_react);
@@ -550,9 +552,9 @@ getRHSCoeffVector(const unsigned int_pt)
 }
 
 
-template<typename A>
+template<typename Traits>
 void
-LADataNoTpl<A>::
+LADataNoTpl<Traits>::
 initReaction(
         const unsigned int_pt, const std::vector<double>& localX,
         const MatRef& smDNdx, const MatRef& smJ, const double smDetJ)
@@ -564,8 +566,8 @@ initReaction(
 }
 
 
-template<typename A>
-void LADataNoTpl<A>::
+template<typename Traits>
+void LADataNoTpl<Traits>::
 initReaction_localDiffusionStrategy(const unsigned int_pt,
                                     const std::vector<double> &localX,
                                     const MatRef &smDNdx, const MatRef& smJ,
@@ -600,7 +602,7 @@ initReaction_localDiffusionStrategy(const unsigned int_pt,
             auto const nnodes = smDNdx.cols();
 
             assert(smJ.rows() == dim && smJ.cols() == dim);
-            std::array<Eigen::VectorXd, 3> gradients;
+            std::array<typename Traits::Vector, 3> gradients;
             for (auto& v : gradients) { v.resize(dim); }
 
             NumLib::shapeFunctionInterpolateGradient(localX, smDNdx, gradients);
@@ -617,7 +619,7 @@ initReaction_localDiffusionStrategy(const unsigned int_pt,
             // DBUG("elem volume: %g, ext: %g", elem_volume, elem_linear_extension);
 
             // diffusion current associated with p_V if temperature is assumed to be constant
-            Eigen::VectorXd const j_pV = - _AP->_diffusion_coefficient_component *
+            typename Traits::Vector const j_pV = - _AP->_diffusion_coefficient_component *
                                          ( _p * dxn_dxm * gradients[2]
                                          + xn * gradients[0] );
             auto const j_pV_norm = j_pV.norm();
@@ -710,8 +712,8 @@ initReaction_localDiffusionStrategy(const unsigned int_pt,
 }
 
 
-template<typename A>
-double LADataNoTpl<A>::
+template<typename Traits>
+double LADataNoTpl<Traits>::
 estimateAdsorptionEquilibrium(const double p_V0, const double C0) const
 {
     auto f = [this, p_V0, C0](double pV) -> double
@@ -737,8 +739,8 @@ estimateAdsorptionEquilibrium(const double p_V0, const double C0) const
 }
 
 
-template<typename A>
-void LADataNoTpl<A>::
+template<typename Traits>
+void LADataNoTpl<Traits>::
 initReaction_simpleStrategy(const unsigned int_pt)
 {
     if (_AP->_iteration_in_current_timestep == 0)
@@ -770,8 +772,8 @@ initReaction_simpleStrategy(const unsigned int_pt)
 }
 
 
-template<typename A>
-void LADataNoTpl<A>::
+template<typename Traits>
+void LADataNoTpl<Traits>::
 initReaction_readjustEquilibriumLoadingStrategy(const unsigned int_pt)
 {
     const double C_eq_curr = _AP->_adsorption->get_equilibrium_loading(_p_V, _T, _AP->_M_react);
@@ -822,9 +824,9 @@ initReaction_readjustEquilibriumLoadingStrategy(const unsigned int_pt)
 }
 
 
-template<typename A>
+template<typename Traits>
 void
-LADataNoTpl<A>::
+LADataNoTpl<Traits>::
 initReaction_slowDownUndershootStrategy(const unsigned int_pt)
 {
     assert(_AP->_number_of_try_of_iteration < 10);
@@ -921,8 +923,8 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
 }
 
 
-template<typename A>
-void LADataNoTpl<A>::
+template<typename Traits>
+void LADataNoTpl<Traits>::
 initReaction_localVapourUptakeStrategy(
         const unsigned int_pt)
 {
@@ -1127,9 +1129,9 @@ initReaction_localVapourUptakeStrategy(
 }
 
 
-template<typename A>
+template<typename Traits>
 void
-LADataNoTpl<A>::
+LADataNoTpl<Traits>::
 preEachAssembleIntegrationPoint(
         const unsigned int_pt,
         const std::vector<double> &localX,
@@ -1171,9 +1173,9 @@ preEachAssembleIntegrationPoint(
 }
 
 
-template<typename A>
+template<typename Traits>
 void
-ogs5OutMat(const typename LADataNoTpl<A>::MatRef& mat)
+ogs5OutMat(const typename LADataNoTpl<Traits>::MatRef& mat)
 {
     for (unsigned r=0; r<mat.rows(); ++r)
     {
@@ -1218,9 +1220,9 @@ ogs5OutMat(const typename LADataNoTpl<A>::MatRef& mat)
 }
 
 
-template<typename A>
+template<typename Traits>
 void
-ogs5OutVec(const typename LADataNoTpl<A>::VecRef& vec)
+ogs5OutVec(const typename LADataNoTpl<Traits>::VecRef& vec)
 {
     for (unsigned r=0; r<vec.size(); ++r)
     {
@@ -1240,9 +1242,9 @@ ogs5OutVec(const typename LADataNoTpl<A>::VecRef& vec)
 }
 
 
-template<typename A>
+template<typename Traits>
 std::shared_ptr<const std::vector<double> >
-LADataNoTpl<A>::
+LADataNoTpl<Traits>::
 getIntegrationPointValues(SecondaryVariables var) const
 {
     auto alias = [](std::vector<double> const& data)
@@ -1297,11 +1299,11 @@ getIntegrationPointValues(SecondaryVariables var) const
 }
 
 
-template<typename A>
+template<typename Traits>
 void
-LADataNoTpl<A>::
+LADataNoTpl<Traits>::
 assembleIntegrationPoint(unsigned integration_point,
-                         Eigen::MatrixXd* localA, Eigen::VectorXd* /*localRhs*/,
+                         typename Traits::Matrix* localA, typename Traits::Vector* /*localRhs*/,
                          std::vector<double> const& localX,
                          const VecRef &smN, const MatRef &smDNdx,
                          MatRef const& smJ,
@@ -1328,9 +1330,9 @@ assembleIntegrationPoint(unsigned integration_point,
 
     // using auto for the type went terribly wrong!
     // calculating grad_p not separately also went wrong!
-    Eigen::VectorXd const grad_p = smDNdx * Eigen::Map<const Eigen::VectorXd>(localX.data(), N);
+    typename Traits::Vector const grad_p = smDNdx * Eigen::Map<const typename Traits::Vector>(localX.data(), N);
     assert(grad_p.size() == D);
-    Eigen::VectorXd const velocity = - laplaceCoeffMat.block(0, 0, D, D) * grad_p
+    typename Traits::Vector const velocity = - laplaceCoeffMat.block(0, 0, D, D) * grad_p
                                      / _rho_GR;
     assert(velocity.size() == D);
 
@@ -1339,20 +1341,20 @@ assembleIntegrationPoint(unsigned integration_point,
         _velocity[d][integration_point] = velocity[d];
     }
 
-    Eigen::VectorXd const detJ_w_N = smDetJ * weight * smN;
-    Eigen::MatrixXd const detJ_w_N_NT = detJ_w_N * smN.transpose();
+    typename Traits::Vector const detJ_w_N = smDetJ * weight * smN;
+    typename Traits::Matrix const detJ_w_N_NT = detJ_w_N * smN.transpose();
     assert(detJ_w_N_NT.rows() == N && detJ_w_N_NT.cols() == N);
 
-    Eigen::MatrixXd const vT_dNdx = velocity.transpose() * smDNdx;
+    typename Traits::Matrix const vT_dNdx = velocity.transpose() * smDNdx;
     assert(vT_dNdx.cols() == N && vT_dNdx.rows() == 1);
-    Eigen::MatrixXd const detJ_w_N_vT_dNdx = detJ_w_N * vT_dNdx;
+    typename Traits::Matrix const detJ_w_N_vT_dNdx = detJ_w_N * vT_dNdx;
     assert(detJ_w_N_vT_dNdx.rows() == N && detJ_w_N_vT_dNdx.cols() == N);
 
     for (unsigned r=0; r<NODAL_DOF; ++r)
     {
         for (unsigned c=0; c<NODAL_DOF; ++c)
         {
-            Eigen::MatrixXd tmp = smDetJ * weight * smDNdx.transpose();
+            typename Traits::Matrix tmp = smDetJ * weight * smDNdx.transpose();
             assert(tmp.cols() == D && tmp.rows() == N);
             tmp *= laplaceCoeffMat.block(D*r, D*c, D, D);
             assert(tmp.cols() == D && tmp.rows() == N);
@@ -1376,9 +1378,9 @@ assembleIntegrationPoint(unsigned integration_point,
 }
 
 
-template<typename A>
+template<typename Traits>
 void
-LADataNoTpl<A>::init(const unsigned num_int_pts, const unsigned dimension)
+LADataNoTpl<Traits>::init(const unsigned num_int_pts, const unsigned dimension)
 {
     _solid_density.resize(num_int_pts, _AP->_initial_solid_density);
     _solid_density_prev_ts.resize(num_int_pts, _AP->_initial_solid_density);
@@ -1401,11 +1403,11 @@ LADataNoTpl<A>::init(const unsigned num_int_pts, const unsigned dimension)
 
     bounds_violation.resize(num_int_pts, false);
 
-    _Lap.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _Mas.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _Adv.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _Cnt.reset(new Eigen::MatrixXd(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _rhs.reset(new Eigen::VectorXd(num_int_pts*NODAL_DOF));
+    _Lap.reset(new typename Traits::Matrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _Mas.reset(new typename Traits::Matrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _Adv.reset(new typename Traits::Matrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _Cnt.reset(new typename Traits::Matrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _rhs.reset(new typename Traits::Vector(num_int_pts*NODAL_DOF));
 
     _Lap->setZero();
     _Mas->setZero();
@@ -1415,9 +1417,9 @@ LADataNoTpl<A>::init(const unsigned num_int_pts, const unsigned dimension)
 }
 
 
-template<typename A>
+template<typename Traits>
 void
-LADataNoTpl<A>::preEachAssemble()
+LADataNoTpl<Traits>::preEachAssemble()
 {
     if (_AP->_iteration_in_current_timestep == 0)
     {
@@ -1445,11 +1447,11 @@ LADataNoTpl<A>::preEachAssemble()
 }
 
 
-template<typename A>
+template<typename Traits>
 void
-LADataNoTpl<A>
-::postEachAssemble(Eigen::MatrixXd* localA, Eigen::VectorXd* localRhs,
-                   Eigen::VectorXd const& oldX)
+LADataNoTpl<Traits>
+::postEachAssemble(typename Traits::Matrix* localA, typename Traits::Vector* localRhs,
+                   typename Traits::Vector const& oldX)
 {
     localA->noalias() += *_Lap + *_Mas/_AP->_delta_t + *_Adv + *_Cnt;
     localRhs->noalias() += *_rhs
@@ -1471,27 +1473,27 @@ LADataNoTpl<A>
         }
 
         std::printf("\nStiffness: \n");
-        ogs5OutMat<A>(*localA);
+        ogs5OutMat<Traits>(*localA);
         std::printf("\n");
 
         std::printf("\n---Mass matrix: \n");
-        ogs5OutMat<A>(*_Mas);
+        ogs5OutMat<Traits>(*_Mas);
         std::printf("\n");
 
         std::printf("---Laplacian matrix: \n");
-        ogs5OutMat<A>(*_Lap);
+        ogs5OutMat<Traits>(*_Lap);
         std::printf("\n");
 
         std::printf("---Advective matrix: \n");
-        ogs5OutMat<A>(*_Adv);
+        ogs5OutMat<Traits>(*_Adv);
         std::printf("\n");
 
         std::printf("---Content: \n");
-        ogs5OutMat<A>(*_Cnt);
+        ogs5OutMat<Traits>(*_Cnt);
         std::printf("\n");
 
         std::printf("---RHS: \n");
-        ogs5OutVec<A>(*localRhs);
+        ogs5OutVec<Traits>(*localRhs);
         std::printf("\n");
     }
 }

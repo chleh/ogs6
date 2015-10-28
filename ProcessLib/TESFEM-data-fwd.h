@@ -12,6 +12,16 @@
 
 #include "TESFEM-data.h"
 
-extern template class ProcessLib::TES::LADataNoTpl<int>;
+namespace ProcessLib
+{
+
+namespace TES
+{
+
+extern template class LADataNoTpl<DataTraitsDynamic>;
+
+}
+
+}
 
 #endif  // PROCESS_LIB_TESFEM_DATA_FWD_H_

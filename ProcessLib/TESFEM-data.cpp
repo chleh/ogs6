@@ -19,7 +19,7 @@ namespace ProcessLib
 namespace TES
 {
 
-template class ProcessLib::TES::LADataNoTpl<int>;
+template class LADataNoTpl<DataTraitsDynamic>;
 
 }
 
