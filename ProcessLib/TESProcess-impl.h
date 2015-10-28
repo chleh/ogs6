@@ -716,6 +716,7 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
         // Apply known values from the Dirichlet boundary conditions.
         MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
+#ifndef NDEBUG
         if (_total_iteration == 0 && _output_global_matrix)
         {
             // TODO [CL] Those files will be written to the working directory.
@@ -723,6 +724,7 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
             _A->write("global_matrix.txt");
             _rhs->write("global_rhs.txt");
         }
+#endif
 
         // double residual = MathLib::norm((*_A) * x_curr - (*_rhs), MathLib::VecNormType::INFINITY_N);
         MathLib::EigenVector res_vec;
