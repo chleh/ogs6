@@ -27,7 +27,7 @@ namespace TES
 class Extrapolatable
 {
 public:
-    virtual Eigen::VectorXd const& getShapeMatrix(const unsigned integration_point) const = 0;
+    virtual Eigen::VectorXd getShapeMatrix(const unsigned integration_point) const = 0;
 
     virtual std::shared_ptr< const std::vector<double> >
     getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_dof) const = 0;
@@ -87,7 +87,8 @@ public:
     void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
                      AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const& indices) const override;
 
-    Eigen::VectorXd const& getShapeMatrix(const unsigned integration_point) const override {
+    Eigen::VectorXd
+    getShapeMatrix(const unsigned integration_point) const override {
         return _shape_matrices[integration_point].N;
         // const auto& shp_mats = _shape_matrices[integration_point];
         // return (_shape_matrices.data() + integration_point)->N;
