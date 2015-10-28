@@ -87,6 +87,7 @@ struct TrafoTanh
 typedef TrafoIdentity Trafo;
 
 
+template<typename A>
 class LADataNoTpl
 {
 public:
@@ -209,11 +210,13 @@ private:
 };
 
 
+template <typename A>
 void
-ogs5OutVec(const LADataNoTpl::VecRef& vec);
+ogs5OutVec(const typename LADataNoTpl<A>::VecRef& vec);
 
+template <typename A>
 void
-ogs5OutMat(const LADataNoTpl::MatRef& vec);
+ogs5OutMat(const typename LADataNoTpl<A>::MatRef& vec);
 
 
 } // namespace TES
