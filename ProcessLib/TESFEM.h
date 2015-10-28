@@ -103,16 +103,26 @@ public:
 
 private:
     std::vector<ShapeMatrices> _shape_matrices;
-    LADataNoTpl<DataTraits<double>> _data;
+
+    using DT = DataTraits<ShapeMatricesType, ShapeFunction::NPOINTS, NODAL_DOF, GlobalDim>;
+
+    LADataNoTpl<DT> _data;
+
+    using NodalMatrixType = typename DT::LocalMatrix;
+    using NodalVectorType = typename DT::LocalVector;
 
     static const unsigned MAT_SIZE = ShapeFunction::NPOINTS * NODAL_DOF;
-    using NodalMatrixType = Eigen::Matrix<double, MAT_SIZE, MAT_SIZE>;
-    using NodalVectorType = Eigen::Matrix<double, MAT_SIZE, 1>;
+    // using NodalMatrixType = Eigen::Matrix<double, MAT_SIZE, MAT_SIZE>;
+    // using NodalVectorType = Eigen::Matrix<double, MAT_SIZE, 1>;
 
     // std::unique_ptr<NodalMatrixType> _localA;
     // std::unique_ptr<NodalVectorType> _localRhs;
-    Eigen::MatrixXd _localA;
-    Eigen::VectorXd _localRhs;
+    static_assert(std::is_same<NodalMatrixType, typename DT::LocalMatrix>::value,
+                  "local matrix and data traits matrix do not coincide");
+    static_assert(std::is_same<NodalVectorType, typename DT::LocalVector>::value,
+                  "local vector and data traits vector do not coincide");
+    NodalMatrixType _localA;
+    NodalVectorType _localRhs;
 
     unsigned _integration_order = 2;
 };

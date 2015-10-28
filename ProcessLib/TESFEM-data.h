@@ -16,7 +16,7 @@
 #include <Eigen/Eigen>
 
 #include "TESProcess-notpl.h"
-
+#include "NumLib/Fem/ShapeMatrixPolicy.h"
 
 namespace ProcessLib
 {
@@ -91,16 +91,39 @@ struct DataTraitsDynamic
 {
     using Matrix = Eigen::MatrixXd;
     using Vector = Eigen::VectorXd;
+
+    using LocalMatrix = Eigen::MatrixXd;
+    using LocalVector = Eigen::VectorXd;
+
+    using LaplaceMatrix = Eigen::MatrixXd;
 };
 
+template<typename ShpPol, unsigned NIntPts, unsigned NodalDOF, unsigned Dim>
 struct DataTraitsFixed
 {
-    using Matrix = Eigen::MatrixXd;
-    using Vector = Eigen::VectorXd;
+    template<int N, int M>
+    using Mat = typename ShpPol::template MatrixType<N, M>;
+    template<int N>
+    using Vec = typename ShpPol::template VectorType<N>;
+
+    using Matrix = Mat<NIntPts*NodalDOF, NIntPts*NodalDOF>;
+    using Vector = Vec<NIntPts*NodalDOF>;
+
+    using LocalMatrix = Matrix;
+    using LocalVector = Vector;
+
+    using LaplaceMatrix = Mat<Dim*NodalDOF, Dim*NodalDOF>;
 };
 
-template<typename A>
+#ifndef EIGEN_DYNAMIC_SHAPE_MATRICES
+template<typename ShpPol, unsigned NIntPts, unsigned NodalDOF, unsigned Dim>
+using DataTraits = DataTraitsFixed<ShpPol, NIntPts, NodalDOF, Dim>;
+static_assert(EIGEN_DYNAMIC_SHAPE_MATRICES_FLAG == 0, "inconsistent use of macros");
+#else
+template<typename ShpPol, unsigned NIntPts, unsigned NodalDOF, unsigned Dim>
 using DataTraits = DataTraitsDynamic;
+static_assert(EIGEN_DYNAMIC_SHAPE_MATRICES_FLAG == 1, "inconsistent use of macros");
+#endif
 
 
 template<typename Traits>
@@ -113,8 +136,8 @@ public:
 
     void assembleIntegrationPoint(
             unsigned integration_point,
-            typename Traits::Matrix* localA,
-            typename Traits::Vector* localRhs,
+            typename Traits::Matrix const& localA,
+            typename Traits::Vector const& localRhs,
             std::vector<double> const& localX,
             VecRef const& smN,
             MatRef const& smDNdx,
@@ -129,7 +152,7 @@ public:
     void init(const unsigned num_int_pts, const unsigned dimension);
 
     void preEachAssemble();
-    void postEachAssemble(typename Traits::Matrix* localA, typename Traits::Vector* localRhs,
+    void postEachAssemble(typename Traits::Matrix& localA, typename Traits::Vector& localRhs,
                           const typename Traits::Vector& oldX);
 
     std::shared_ptr<const std::vector<double> >
@@ -140,7 +163,7 @@ public:
 
 private:
     Eigen::Matrix3d getMassCoeffMatrix(const unsigned int_pt);
-    typename Traits::Matrix getLaplaceCoeffMatrix(const unsigned int_pt, const unsigned dim);
+    typename Traits::LaplaceMatrix getLaplaceCoeffMatrix(const unsigned int_pt, const unsigned dim);
     Eigen::Matrix3d getAdvectionCoeffMatrix(const unsigned int_pt);
     Eigen::Matrix3d getContentCoeffMatrix(const unsigned int_pt);
     Eigen::Vector3d getRHSCoeffVector(const unsigned int_pt);
@@ -238,5 +261,11 @@ ogs5OutMat(const typename LADataNoTpl<Traits>::MatRef& vec);
 } // namespace TES
 
 } // namespace ProcessLib
+
+
+#ifndef EIGEN_DYNAMIC_SHAPE_MATRICES
+#include "TESFEM-data-impl.h"
+#endif
+
 
 #endif // PROCESS_LIB_TES_FEM_NOTPL_H_
