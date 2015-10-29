@@ -62,111 +62,165 @@ static double fluid_density(const double p, const double T, const double x)
 	return p / (GAS_CONST * T) * (M1*xn + M0*(1.0-xn));;
 }
 
-static double fluid_viscosity_N2(double rho, const double T)
+
+
+template<int i>
+inline double mypow(const double x)
 {
-	const double rho_c = 314;             // [kg/m3]
-	const double CVF = 14.058;            // [1e-3 Pa-s]
-
-	const double sigma = 0.36502496e-09;
-	const double k = 1.38062e-23;
-	const double eps = 138.08483e-23;
-	const double c1 = 0.3125;
-	const double c2 = 2.0442e-49;
-
-	double A[5],C[5];
-
-	A[0] = 0.46649;
-	A[1] = -0.57015;
-	A[2] = 0.19164;
-	A[3] = -0.03708;
-	A[4] = 0.00241;
-
-	C[0] = -20.09997;
-	C[1] = 3.4376416;
-	C[2] = -1.4470051;
-	C[3] = -0.027766561;
-	C[4] = -0.21662362;
-
-	const double T_star = T * k / eps;
-	rho = rho / rho_c;
-
-	double Omega = 0.0;
-	for (unsigned i = 0; i < 5; i++)
-		Omega += A[i] * std::pow(log(T_star),i);
-
-	Omega = exp (Omega);
-
-	//eta in [Pa*s]
-	const double eta_0 = c1 * sqrt(c2 * T) / (sigma * sigma * Omega);
-
-	double sum = 0.0;
-	for (unsigned i = 2; i < 5; i++)
-		sum = sum + C[i] * std::pow(rho, i-1);
-
-	//
-	const double eta_r = CVF * 1e-6 * (C[0] / (rho - C[1]) + C[0] / C[1] + sum);
-
-	return eta_0 + eta_r;               // [Pa*s]
+    const double p = mypow<(i>>1)>(x);
+    return (i&1) ? p*p*x : p*p;
 }
 
-static double fluid_viscosity_H2O(double rho, double T)
+template<>
+inline double mypow<0>(const double /*x*/)
 {
-	double my,my_0,my_1;
-	double H[4],h[6][7];
-	double sum1 = 0,sum2 = 0,sum3 = 0;
-	int i,j;
+    return 1.0;
+}
 
-	T = T / 647.096;
-	rho = rho / 322.0;
+template<>
+inline double mypow<1>(const double x)
+{
+    return x;
+}
 
-	H[0] = 1.67752;
-	H[1] = 2.20462;
-	H[2] = 0.6366564;
-	H[3] = -0.241605;
+template<>
+inline double mypow<2>(const double x)
+{
+    return x*x;
+}
 
-	for (i = 0; i < 6; i++)
-		for (j = 0; j < 7; j++)
-			h[i][j] = 0;
-	h[0][0] = 0.520094000;
-	h[1][0] = 0.085089500;
-	h[2][0] = -1.083740000;
-	h[3][0] = -0.289555000;
-	h[0][1] = 0.222531000;
-	h[1][1] = 0.999115000;
-	h[2][1] = 1.887970000;
-	h[3][1] = 1.266130000;
-	h[5][1] = 0.120573000;
-	h[0][2] = -0.281378000;
-	h[1][2] = -0.906851000;
-	h[2][2] = -0.772479000;
-	h[3][2] = -0.489837000;
-	h[4][2] = -0.257040000;
-	h[0][3] = 0.161913000;
-	h[1][3] = 0.257399000;
-	h[0][4] = -0.032537200;
-	h[3][4] = 0.069845200;
-	h[4][5] = 0.008721020;
-	h[3][6] = -0.004356730;
-	h[5][6] = -0.000593264;
 
-	for(i = 0; i < 4; i++)
-		sum1 = sum1 + (H[i] / std::pow(T,i));
 
-	my_0 = 100 * sqrt(T) / sum1;
-
-	for(i = 0; i < 6; i++)
+struct FluidViscosityN2
+{
+	static double get(double rho, double T)
 	{
-		for (j = 0; j < 7; j++)
-			sum3 = sum3 + h[i][j] * std::pow(rho - 1,j);
-		sum2 = sum2 + std::pow(1 / T - 1,i) * sum3;
-		sum3 = 0;
+        const double rho_c = 314;             // [kg/m3]
+        const double CVF = 14.058;            // [1e-3 Pa-s]
+
+        const double sigma = 0.36502496e-09;
+        const double k = 1.38062e-23;
+        const double eps = 138.08483e-23;
+        const double c1 = 0.3125;
+        const double c2 = 2.0442e-49;
+
+        const double T_star = T * k / eps;
+        rho = rho / rho_c;
+
+        double Omega = loop1_term<0>(T_star);
+        Omega += loop1_term<1>(T_star);
+        Omega += loop1_term<2>(T_star);
+        Omega += loop1_term<3>(T_star);
+        Omega += loop1_term<4>(T_star);
+
+        Omega = std::exp (Omega);
+
+        //eta in [Pa*s]
+        const double eta_0 = c1 * std::sqrt(c2 * T) / (sigma * sigma * Omega);
+
+        double sum = loop2_term<2>(rho);
+        sum += loop2_term<3>(rho);
+        sum += loop2_term<4>(rho);
+
+        //
+        const double eta_r = CVF * 1e-6 * (C[0] / (rho - C[1]) + C[0] / C[1] + sum);
+
+        return eta_0 + eta_r;               // [Pa*s]
 	}
 
-	my_1 = exp(rho * sum2);
+private:
+	template<unsigned i>
+	static double loop1_term(double T_star)
+	{
+		return A[i] * mypow<i>(log(T_star));
+	}
 
-	my = (my_0 * my_1) / 1e6;
-	return my;
-}
+	template<unsigned i>
+	static double loop2_term(double rho)
+	{
+		return C[i] * mypow<i-1>(rho);
+	}
+
+	static constexpr double A[5] = { 0.46649, -0.57015, 0.19164, -0.03708, 0.00241 };
+	static constexpr double C[5] = { -20.09997, 3.4376416, -1.4470051, -0.027766561, -0.21662362 };
+};
+
+
+struct FluidViscosityH2O
+{
+	static double get(double rho, double T)
+	{
+		double my,my_0,my_1;
+		double H[4];
+
+		T = T / 647.096;
+		rho = rho / 322.0;
+
+		H[0] = 1.67752;
+		H[1] = 2.20462;
+		H[2] = 0.6366564;
+		H[3] = -0.241605;
+
+		double h[6][7] = { 0.0 };
+		h[0][0] = 0.520094000;
+		h[1][0] = 0.085089500;
+		h[2][0] = -1.083740000;
+		h[3][0] = -0.289555000;
+		h[0][1] = 0.222531000;
+		h[1][1] = 0.999115000;
+		h[2][1] = 1.887970000;
+		h[3][1] = 1.266130000;
+		h[5][1] = 0.120573000;
+		h[0][2] = -0.281378000;
+		h[1][2] = -0.906851000;
+		h[2][2] = -0.772479000;
+		h[3][2] = -0.489837000;
+		h[4][2] = -0.257040000;
+		h[0][3] = 0.161913000;
+		h[1][3] = 0.257399000;
+		h[0][4] = -0.032537200;
+		h[3][4] = 0.069845200;
+		h[4][5] = 0.008721020;
+		h[3][6] = -0.004356730;
+		h[5][6] = -0.000593264;
+
+		double sum1 = H[0] / mypow<0>(T);
+		sum1 += H[1] / mypow<1>(T);
+		sum1 += H[2] / mypow<2>(T);
+		sum1 += H[3] / mypow<3>(T);
+
+		my_0 = 100 * std::sqrt(T) / sum1;
+
+		double sum2 = inner_loop<0>(rho, T, h);
+		sum2 += inner_loop<1>(rho, T, h);
+		sum2 += inner_loop<2>(rho, T, h);
+		sum2 += inner_loop<3>(rho, T, h);
+		sum2 += inner_loop<4>(rho, T, h);
+		sum2 += inner_loop<5>(rho, T, h);
+
+		my_1 = std::exp(rho * sum2);
+
+		my = (my_0 * my_1) / 1e6;
+		return my;
+	}
+
+private:
+	template <int i>
+	static double inner_loop(const double rho, const double T, const double (&h)[6][7])
+	{
+		const double base = rho - 1.0;
+
+		double sum3 = h[i][0] * mypow<0>(base);
+		sum3 += h[i][1] * mypow<1>(base);
+		sum3 += h[i][2] * mypow<2>(base);
+		sum3 += h[i][3] * mypow<3>(base);
+		sum3 += h[i][4] * mypow<4>(base);
+		sum3 += h[i][5] * mypow<5>(base);
+		sum3 += h[i][6] * mypow<6>(base);
+
+		return mypow<i>(1 / T - 1) * sum3;
+	}
+};
 
 static double fluid_viscosity(const double p, const double T, const double x)
 {
@@ -177,17 +231,22 @@ static double fluid_viscosity(const double p, const double T, const double x)
 
 	//reactive component
 	const double x0 = M0*x/(M0*x + M1*(1.0-x)); //mass in mole fraction
-	const double V0 = fluid_viscosity_H2O(M1*p/(GAS_CONST*T), T);
+	const double V0 = FluidViscosityH2O::get(M1*p/(GAS_CONST*T), T);
 	//inert component
 	const double x1 = 1.0 - x0;
-	const double V1 = fluid_viscosity_N2(M0*p/(GAS_CONST*T), T);
+	const double V1 = FluidViscosityN2::get(M0*p/(GAS_CONST*T), T);
 
 	const double M0_over_M1 (M1/M0); //reactive over inert
 	const double V0_over_V1 (V0/V1);
 
-	const double phi_12 =   (1.0 + sqrt(V0_over_V1) * pow(1.0/M0_over_M1, 0.25))
-						  * (1.0 + sqrt(V0_over_V1) * pow(1.0/M0_over_M1, 0.25))
-						  / pow(8.0*(1.0+M0_over_M1),0.5);
+	const double phi_12 = mypow<2>(1.0 + std::sqrt(V0_over_V1) * std::pow(1.0/M0_over_M1, 0.25))
+						  / std::sqrt(8.0*(1.0+M0_over_M1));
+
+	/*
+	const double phi_12 =   (1.0 + std::sqrt(V0_over_V1) * std::pow(1.0/M0_over_M1, 0.25))
+						  * (1.0 + std::sqrt(V0_over_V1) * std::pow(1.0/M0_over_M1, 0.25))
+						  / std::pow(8.0*(1.0+M0_over_M1),0.5);
+						  */
 	const double phi_21 = phi_12 * M0_over_M1 / V0_over_V1;
 
 	return V0*x0 / (x0 + x1 * phi_12)
@@ -245,9 +304,9 @@ static double fluid_heat_conductivity_N2(double rho, double T)
 
 	// dilute heat conductivity
 	for (i = 0; i < 7; i++)
-		sum = sum + f[i] * pow(T,(i - 3));
-	const double temp (exp ((f[8] / T)) - 1);
-	c_v0 = R * (sum + ((f[7] * (f[8] / T) * (f[8] / T) * (exp((f[8] / T)))) / (temp * temp) - 1));
+		sum = sum + f[i] * std::pow(T,(i - 3));
+	const double temp (std::exp ((f[8] / T)) - 1);
+	c_v0 = R * (sum + ((f[7] * (f[8] / T) * (f[8] / T) * (std::exp((f[8] / T)))) / (temp * temp) - 1));
 	sum = 0;
 
 	double cvint;
@@ -256,10 +315,10 @@ static double fluid_heat_conductivity_N2(double rho, double T)
 	// dilute gas viscosity
 	for (i = 0; i < 5; i++)
 		Omega = Omega + A[i] * std::pow(log(T_star),i);
-	Omega = exp (Omega);
+	Omega = std::exp (Omega);
 
 	//eta in [Pa*s]
-	eta_0 = 1e6 * (c1 * sqrt(c2 * T) / (sigma * sigma * Omega));
+	eta_0 = 1e6 * (c1 * std::sqrt(c2 * T) / (sigma * sigma * Omega));
 
 	F = eta_0 * k * N_A / (M * 1000);
 
@@ -316,22 +375,22 @@ static double fluid_heat_conductivity_H2O(double rho, double T)
 	for (i = 0; i < 4; i++)
 		sum1 = sum1 + a[i] * std::pow(T,i);
 
-	lamda_0 = sqrt(T) * sum1;
-	lamda_1 = b[0] + b[1] * rho + b[2] * exp(B[0] * (rho + B[1]) * (rho + B[1]));
+	lamda_0 = std::sqrt(T) * sum1;
+	lamda_1 = b[0] + b[1] * rho + b[2] * std::exp(B[0] * (rho + B[1]) * (rho + B[1]));
 
 	dT = fabs(T - 1) + C[3];
-	Q = 2 + (C[4] / pow(dT,3. / 5.));
+	Q = 2 + (C[4] / std::pow(dT,3. / 5.));
 
 	if (T >= 1)
 		S = 1 / dT;
 	else
-		S = C[5] / pow(dT,3. / 5.);
+		S = C[5] / std::pow(dT,3. / 5.);
 
 	lamda_2 =
 	        (d[0] /
-	         std::pow(T, 10) + d[1]) * std::pow(rho,9. / 5.) * exp(C[0] * (1 - pow(rho,14. / 5.)))
-	        + d[2]* S* std::pow(rho,Q) * exp((Q / (1. + Q)) * (1 - std::pow(rho,(1. + Q))))
-	        + d[3] * exp(C[1] * pow(T,3. / 2.) + C[2] / std::pow(rho,5));
+	         mypow<10>(T) + d[1]) * std::pow(rho,9. / 5.) * std::exp(C[0] * (1 - std::pow(rho,14. / 5.)))
+	        + d[2]* S * std::pow(rho,Q) * std::exp((Q / (1. + Q)) * (1 - std::pow(rho,(1. + Q))))
+	        + d[3] * std::exp(C[1] * std::pow(T,3. / 2.) + C[2] / mypow<5>(rho));
 
 	lamda = (lamda_0 + lamda_1 + lamda_2); // lamda in [W/m/K]
 
@@ -354,13 +413,13 @@ static double fluid_heat_conductivity(const double p, const double T, const doub
 	const double k1 = fluid_heat_conductivity_N2(M0*p/(GAS_CONST*T), T);
 
 	const double M1_over_M2 = M1/M0; //reactive over inert
-	const double V1_over_V2 = fluid_viscosity_H2O(M1*p/(GAS_CONST*T), T)
-							/ fluid_viscosity_N2 (M0*p/(GAS_CONST*T), T);
+	const double V1_over_V2 = FluidViscosityH2O::get(M1*p/(GAS_CONST*T), T)
+							/ FluidViscosityN2::get(M0*p/(GAS_CONST*T), T);
 	const double L1_over_L2 = V1_over_V2 / M1_over_M2;
 
-	const double phi_12 =   (1.0 + pow(L1_over_L2, 0.5) * pow(M1_over_M2, -0.25))
-						  * (1.0 + pow(V1_over_V2, 0.5) * pow(M1_over_M2, -0.25))
-						  / pow(8.0 * (1.0 + M1_over_M2), 0.5);
+	const double phi_12 =   (1.0 + std::sqrt(L1_over_L2) * std::pow(M1_over_M2, -0.25))
+						  * (1.0 + std::sqrt(V1_over_V2) * std::pow(M1_over_M2, -0.25))
+						  / std::sqrt(8.0 * (1.0 + M1_over_M2));
 	const double phi_21 = phi_12 * M1_over_M2 / V1_over_V2;
 
 	return k0*x0 / (x0+x1*phi_12) + k1*x1 / (x1+x0*phi_21);
