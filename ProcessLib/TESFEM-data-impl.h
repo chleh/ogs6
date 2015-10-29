@@ -425,7 +425,7 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 	const double lambda_F = fluid_heat_conductivity(_p, _T, _vapour_mass_fraction);
 	const double lambda_S = _AP->_solid_heat_cond;
 
-	using Mat = typename Traits::Matrix;
+	using Mat = typename Traits::MatrixDimDim;
 
 	// TODO: k_rel
 	Mat L_pp = _AP->_solid_perm_tensor.block(0,0,dim,dim) * _rho_GR / eta_GR;
@@ -555,9 +555,10 @@ getRHSCoeffVector(const unsigned int_pt)
 template<typename Traits>
 void
 LADataNoTpl<Traits>::
-initReaction(
-        const unsigned int_pt, const std::vector<double>& /*localX*/,
-        const MatRef& /*smDNdx*/, const MatRef& /*smJ*/, const double /*smDetJ*/)
+initReaction(const unsigned int_pt, const std::vector<double>& /*localX*/,
+             const typename Traits::ShapeMatrices::DxShapeType& /*smDNdx*/,
+             const typename Traits::ShapeMatrices::JacobianType& /*smJ*/,
+             const double /*smDetJ*/)
 {
     // initReaction_localDiffusionStrategy(int_pt, localX, smDNdx, smJ, smDetJ);
     // initReaction_simpleStrategy(int_pt);
@@ -568,11 +569,13 @@ initReaction(
 
 template<typename Traits>
 void LADataNoTpl<Traits>::
-initReaction_localDiffusionStrategy(const unsigned int_pt,
-                                    const std::vector<double> &localX,
-                                    const MatRef &smDNdx, const MatRef& smJ,
-                                    const double smDetJ
-                                    )
+initReaction_localDiffusionStrategy(
+        const unsigned int_pt,
+        const std::vector<double> &localX,
+        const typename Traits::ShapeMatrices::DxShapeType& smDNdx,
+        const typename Traits::ShapeMatrices::JacobianType& smJ,
+        const double smDetJ
+        )
 {
     if (_AP->_iteration_in_current_timestep == 0)
     {
@@ -1135,8 +1138,9 @@ LADataNoTpl<Traits>::
 preEachAssembleIntegrationPoint(
         const unsigned int_pt,
         const std::vector<double> &localX,
-        const VecRef &smN, const MatRef& smDNdx,
-        const MatRef& smJ,
+        typename Traits::ShapeMatrices::ShapeType const& smN,
+        typename Traits::ShapeMatrices::DxShapeType const& smDNdx,
+        typename Traits::ShapeMatrices::JacobianType const& smJ,
         const double smDetJ)
 {
 #ifndef NDEBUG
@@ -1173,9 +1177,9 @@ preEachAssembleIntegrationPoint(
 }
 
 
-template<typename Traits>
+template<typename Mat>
 void
-ogs5OutMat(const typename LADataNoTpl<Traits>::MatRef& mat)
+ogs5OutMat(const Mat& mat)
 {
     for (unsigned r=0; r<mat.rows(); ++r)
     {
@@ -1220,9 +1224,9 @@ ogs5OutMat(const typename LADataNoTpl<Traits>::MatRef& mat)
 }
 
 
-template<typename Traits>
+template<typename Vec>
 void
-ogs5OutVec(const typename LADataNoTpl<Traits>::VecRef& vec)
+ogs5OutVec(const Vec& vec)
 {
     for (unsigned r=0; r<vec.size(); ++r)
     {
@@ -1303,11 +1307,12 @@ template<typename Traits>
 void
 LADataNoTpl<Traits>::
 assembleIntegrationPoint(unsigned integration_point,
-                         typename Traits::Matrix const& /*localA*/,
-                         typename Traits::Vector const& /*localRhs*/,
+                         typename Traits::LocalMatrix const* /*localA*/,
+                         typename Traits::LocalVector const* /*localRhs*/,
                          std::vector<double> const& localX,
-                         const VecRef &smN, const MatRef &smDNdx,
-                         MatRef const& smJ,
+                         const typename Traits::ShapeMatrices::ShapeType& smN,
+                         const typename Traits::ShapeMatrices::DxShapeType& smDNdx,
+                         const typename Traits::ShapeMatrices::JacobianType& smJ,
                          const double smDetJ,
                          const double weight)
 {
@@ -1331,7 +1336,7 @@ assembleIntegrationPoint(unsigned integration_point,
 
     // using auto for the type went terribly wrong!
     // calculating grad_p not separately also went wrong!
-    auto const grad_p = (smDNdx * Eigen::Map<const typename Traits::Vector>(localX.data(), N)).eval();
+    auto const grad_p = (smDNdx * Eigen::Map<const typename Traits::Vector1Comp>(localX.data(), N)).eval();
     assert(grad_p.size() == D);
     auto const velocity = (laplaceCoeffMat.block(0, 0, D, D) * grad_p
                                      / (-_rho_GR)).eval();
@@ -1359,10 +1364,10 @@ assembleIntegrationPoint(unsigned integration_point,
             assert(tmp.cols() == D && tmp.rows() == N);
             tmp *= laplaceCoeffMat.block(D*r, D*c, D, D);
             assert(tmp.cols() == D && tmp.rows() == N);
-            tmp *= smDNdx;
-            assert(tmp.cols() == N && tmp.rows() == N);
+            auto const tmp2 = (tmp * smDNdx).eval();
+            assert(tmp2.cols() == N && tmp2.rows() == N);
 
-            _Lap->block(N*r, N*c, N, N).noalias() += tmp;
+            _Lap->block(N*r, N*c, N, N).noalias() += tmp2;
             _Mas->block(N*r, N*c, N, N).noalias() += detJ_w_N_NT      * massCoeffMat(r, c);
             _Adv->block(N*r, N*c, N, N).noalias() += detJ_w_N_vT_dNdx * advCoeffMat(r, c);
             _Cnt->block(N*r, N*c, N, N).noalias() += detJ_w_N_NT      * contentCoeffMat(r, c);
@@ -1404,11 +1409,11 @@ LADataNoTpl<Traits>::init(const unsigned num_int_pts, const unsigned dimension)
 
     bounds_violation.resize(num_int_pts, false);
 
-    _Lap.reset(new typename Traits::Matrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _Mas.reset(new typename Traits::Matrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _Adv.reset(new typename Traits::Matrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _Cnt.reset(new typename Traits::Matrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _rhs.reset(new typename Traits::Vector(num_int_pts*NODAL_DOF));
+    _Lap.reset(new typename Traits::LocalMatrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _Mas.reset(new typename Traits::LocalMatrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _Adv.reset(new typename Traits::LocalMatrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _Cnt.reset(new typename Traits::LocalMatrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
+    _rhs.reset(new typename Traits::LocalVector(num_int_pts*NODAL_DOF));
 
     _Lap->setZero();
     _Mas->setZero();
@@ -1451,8 +1456,9 @@ LADataNoTpl<Traits>::preEachAssemble()
 template<typename Traits>
 void
 LADataNoTpl<Traits>
-::postEachAssemble(typename Traits::Matrix& localA, typename Traits::Vector& localRhs,
-                   typename Traits::Vector const& oldX)
+::postEachAssemble(typename Traits::LocalMatrix& localA,
+                   typename Traits::LocalVector& localRhs,
+                   typename Traits::LocalVector const& oldX)
 {
     localA.noalias() += *_Lap + *_Mas/_AP->_delta_t + *_Adv + *_Cnt;
     localRhs.noalias() += *_rhs
@@ -1474,27 +1480,27 @@ LADataNoTpl<Traits>
         }
 
         std::printf("\nStiffness: \n");
-        ogs5OutMat<Traits>(localA);
+        ogs5OutMat(localA);
         std::printf("\n");
 
         std::printf("\n---Mass matrix: \n");
-        ogs5OutMat<Traits>(*_Mas);
+        ogs5OutMat(*_Mas);
         std::printf("\n");
 
         std::printf("---Laplacian matrix: \n");
-        ogs5OutMat<Traits>(*_Lap);
+        ogs5OutMat(*_Lap);
         std::printf("\n");
 
         std::printf("---Advective matrix: \n");
-        ogs5OutMat<Traits>(*_Adv);
+        ogs5OutMat(*_Adv);
         std::printf("\n");
 
         std::printf("---Content: \n");
-        ogs5OutMat<Traits>(*_Cnt);
+        ogs5OutMat(*_Cnt);
         std::printf("\n");
 
         std::printf("---RHS: \n");
-        ogs5OutVec<Traits>(localRhs);
+        ogs5OutVec(localRhs);
         std::printf("\n");
     }
 }

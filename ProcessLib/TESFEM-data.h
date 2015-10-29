@@ -101,18 +101,23 @@ struct DataTraitsDynamic
 template<typename ShpPol, unsigned NIntPts, unsigned NodalDOF, unsigned Dim>
 struct DataTraitsFixed
 {
+    using ShapeMatrices = typename ShpPol::ShapeMatrices;
+
     template<int N, int M>
     using Mat = typename ShpPol::template MatrixType<N, M>;
     template<int N>
     using Vec = typename ShpPol::template VectorType<N>;
 
-    using Matrix = Mat<NIntPts*NodalDOF, NIntPts*NodalDOF>;
-    using Vector = Vec<NIntPts*NodalDOF>;
+    using MatrixDimDim = Mat<Dim, Dim>;
+    // using Vector = Vec;
 
-    using LocalMatrix = Matrix;
-    using LocalVector = Vector;
+    using LocalMatrix = Mat<NIntPts*NodalDOF, NIntPts*NodalDOF>;
+    using LocalVector = Vec<NIntPts*NodalDOF>;
+
+    using Vector1Comp = typename ShapeMatrices::ShapeType;
 
     using LaplaceMatrix = Mat<Dim*NodalDOF, Dim*NodalDOF>;
+
 };
 
 #ifndef EIGEN_DYNAMIC_SHAPE_MATRICES
@@ -130,18 +135,18 @@ template<typename Traits>
 class LADataNoTpl
 {
 public:
-    typedef Eigen::Ref<const typename Traits::Matrix> MatRef;
-    typedef Eigen::Ref<const typename Traits::Vector> VecRef;
+    // typedef Eigen::Ref<const typename Traits::Matrix> MatRef;
+    // typedef Eigen::Ref<const typename Traits::Vector> VecRef;
     typedef std::shared_ptr<std::vector<double> > SharedVector;
 
     void assembleIntegrationPoint(
             unsigned integration_point,
-            typename Traits::Matrix const& localA,
-            typename Traits::Vector const& localRhs,
+            typename Traits::LocalMatrix const* localA,
+            typename Traits::LocalVector const* localRhs,
             std::vector<double> const& localX,
-            VecRef const& smN,
-            MatRef const& smDNdx,
-            MatRef const& smJ,
+            typename Traits::ShapeMatrices::ShapeType const& smN,
+            typename Traits::ShapeMatrices::DxShapeType const& smDNdx,
+            typename Traits::ShapeMatrices::JacobianType const& smJ,
             const double smDetJ,
             const double weight
             );
@@ -152,8 +157,9 @@ public:
     void init(const unsigned num_int_pts, const unsigned dimension);
 
     void preEachAssemble();
-    void postEachAssemble(typename Traits::Matrix& localA, typename Traits::Vector& localRhs,
-                          const typename Traits::Vector& oldX);
+    void postEachAssemble(typename Traits::LocalMatrix& localA,
+                          typename Traits::LocalVector& localRhs,
+                          const typename Traits::LocalVector& oldX);
 
     std::shared_ptr<const std::vector<double> >
     getIntegrationPointValues(SecondaryVariables var) const;
@@ -171,17 +177,17 @@ private:
     void preEachAssembleIntegrationPoint(
             const unsigned int_pt,
             std::vector<double> const& localX,
-            VecRef const& smN,
-            MatRef const& smDNdx,
-            const MatRef& smJ,
+            typename Traits::ShapeMatrices::ShapeType const& smN,
+            typename Traits::ShapeMatrices::DxShapeType const& smDNdx,
+            typename Traits::ShapeMatrices::JacobianType const& smJ,
             const double smDetJ
             );
 
     void initReaction(
             const unsigned int_pt,
             std::vector<double> const& localX,
-            const MatRef& smDNdx,
-            const MatRef& smJ,
+            typename Traits::ShapeMatrices::DxShapeType const& smDNdx,
+            typename Traits::ShapeMatrices::JacobianType const& smJ,
             const double smDetJ);
 
     void initReaction_localVapourUptakeStrategy(const unsigned int_pt);
@@ -189,8 +195,8 @@ private:
     void initReaction_localDiffusionStrategy(
             const unsigned int_pt,
             std::vector<double> const& localX,
-            const MatRef& smDNdx,
-            const MatRef& smJ,
+            typename Traits::ShapeMatrices::DxShapeType const& smDNdx,
+            typename Traits::ShapeMatrices::JacobianType const& smJ,
             const double smDetJ);
 
     void initReaction_simpleStrategy(const unsigned int_pt);
@@ -241,21 +247,21 @@ private:
     double _p_V = -888.888; // vapour partial pressure
     double _qR = 88888.88888;  // reaction rate, use this in assembly!!!
 
-    std::unique_ptr<typename Traits::Matrix> _Lap;
-    std::unique_ptr<typename Traits::Matrix> _Mas;
-    std::unique_ptr<typename Traits::Matrix> _Adv;
-    std::unique_ptr<typename Traits::Matrix> _Cnt;
-    std::unique_ptr<typename Traits::Vector> _rhs;
+    std::unique_ptr<typename Traits::LocalMatrix> _Lap;
+    std::unique_ptr<typename Traits::LocalMatrix> _Mas;
+    std::unique_ptr<typename Traits::LocalMatrix> _Adv;
+    std::unique_ptr<typename Traits::LocalMatrix> _Cnt;
+    std::unique_ptr<typename Traits::LocalVector> _rhs;
 };
 
 
-template <typename Traits>
+template <typename Vec>
 void
-ogs5OutVec(const typename LADataNoTpl<Traits>::VecRef& vec);
+ogs5OutVec(const Vec& vec);
 
-template <typename Traits>
+template <typename Mat>
 void
-ogs5OutMat(const typename LADataNoTpl<Traits>::MatRef& vec);
+ogs5OutMat(const Mat& mat);
 
 
 } // namespace TES

@@ -99,7 +99,7 @@ assemble(std::vector<double> const& localX,
         auto const& wp = integration_method.getWeightedPoint(ip);
         auto const weight = wp.getWeight();
 
-        _data.assembleIntegrationPoint(ip, _localA, _localRhs, localX,
+        _data.assembleIntegrationPoint(ip, &_localA, &_localRhs, localX,
                                        sm.N, sm.dNdx, sm.J, sm.detJ, weight);
     }
 

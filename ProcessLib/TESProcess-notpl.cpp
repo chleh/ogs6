@@ -69,7 +69,7 @@ void printGlobalVector(const Eigen::Ref<Eigen::VectorXd>& vec)
 
 bool enforceConstraint(Eigen::VectorXd* vec,
                        const Eigen::Ref<Eigen::VectorXd>& previous_solution,
-                       const unsigned dof, const unsigned /*numDof*/, const unsigned nnodes,
+                       const unsigned dof, const unsigned numDof, const unsigned nnodes,
                        const double vmin, const double vmax)
 {
     assert(vec->size() == nnodes*numDof);
@@ -150,7 +150,7 @@ bool calculateError(Eigen::VectorXd* current_solution,
     {
         // decrease time step
         const double old_ts = materials->_delta_t;
-        // const double new_ts = old_ts / 2.0;
+        const double new_ts = old_ts / 2.0;
         DBUG("some constraints were violated. reducing timestep from %g to %g", old_ts, new_ts);
         // materials->_time_step = new_ts;
 
