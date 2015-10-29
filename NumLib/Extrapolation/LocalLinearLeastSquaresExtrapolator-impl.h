@@ -26,7 +26,7 @@ extrapolate(
 
     for (std::size_t i=0; i<loc_asms.size(); ++i)
     {
-        extrapolateElement(i, global_nodal_values, global_nodal_values_map, loc_asms[i], var, counts);
+        extrapolateElement(i, global_nodal_values, global_nodal_values_map, *loc_asms[i], var, counts);
     }
 
     _nodal_values.componentwiseDivide(counts);
@@ -56,24 +56,24 @@ extrapolateElement(
         std::size_t index,
         GlobalVector const& global_nodal_values,
         AssemblerLib::LocalToGlobalIndexMap const& global_nodal_values_map,
-        LocalAssembler const* loc_asm, VariableEnum var,
+        LocalAssembler const& loc_asm, VariableEnum var,
         GlobalVector& counts
         )
 {
     NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, global_nodal_values_map};
 
-    auto gp_vals = loc_asm->getIntegrationPointValues(var, nodal_dof);
+    auto const& gp_vals = loc_asm.getIntegrationPointValues(var, nodal_dof);
 
-    const unsigned nn = loc_asm->getShapeMatrix(0).rows(); // number of mesh nodes
+    const unsigned nn = loc_asm.getShapeMatrix(0).rows(); // number of mesh nodes
     // const unsigned nn = 5;
-    const unsigned ni = gp_vals->size();        // number of gauss points
+    const unsigned ni = gp_vals.size();        // number of gauss points
 
 
     Eigen::MatrixXd N(ni, nn);
 
     for (unsigned gp=0; gp<ni; ++gp)
     {
-        auto const& shp_mat = loc_asm->getShapeMatrix(gp);
+        auto const& shp_mat = loc_asm.getShapeMatrix(gp);
         assert(shp_mat.rows() == nn);
 
         for (unsigned n=0; n<nn; ++n)
@@ -82,7 +82,7 @@ extrapolateElement(
         }
     }
 
-    const Eigen::Map<const Eigen::VectorXd> gpvs(gp_vals->data(), gp_vals->size());
+    const Eigen::Map<const Eigen::VectorXd> gpvs(gp_vals.data(), gp_vals.size());
 
     {
         // TODO: now always zeroth component is used
@@ -105,8 +105,8 @@ calculateResiudalElement(
 {
     NumLib::LocalNodalDOFImpl<GlobalVector> nodal_dof{index, global_nodal_values, global_nodal_values_map};
 
-    auto gp_vals = loc_asm->getIntegrationPointValues(var, nodal_dof);
-    const unsigned ni = gp_vals->size();        // number of gauss points
+    auto const& gp_vals = loc_asm->getIntegrationPointValues(var, nodal_dof);
+    const unsigned ni = gp_vals.size();        // number of gauss points
 
     // TODO: now always zeroth component is used
     const auto& indices = _local_to_global(index, 0).rows;
@@ -127,7 +127,7 @@ calculateResiudalElement(
         NumLib::shapeFunctionInterpolate(
                     nodal_vals_element, loc_asm->getShapeMatrix(gp),
                     gp_val_extrapol2);
-        auto const& ax_m_b = gp_val_extrapol - (*gp_vals)[gp];
+        auto const& ax_m_b = gp_val_extrapol - gp_vals[gp];
         residual += ax_m_b * ax_m_b;
     }
 

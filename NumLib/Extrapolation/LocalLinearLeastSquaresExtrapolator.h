@@ -41,7 +41,7 @@ private:
             std::size_t index,
             GlobalVector const& global_nodal_values,
             AssemblerLib::LocalToGlobalIndexMap const& global_nodal_values_map,
-            LocalAssembler const* loc_asm, VariableEnum var,
+            LocalAssembler const& loc_asm, VariableEnum var,
             GlobalVector& counts
             );
 
