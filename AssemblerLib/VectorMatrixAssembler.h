@@ -34,7 +34,9 @@ public:
         GLOBAL_MATRIX_ &A,
         GLOBAL_VECTOR_ &rhs,
         LocalToGlobalIndexMap const& data_pos)
-    : _A(A), _rhs(rhs), _data_pos(data_pos) {}
+    : _A(A), _rhs(rhs), _data_pos(data_pos),
+    _cache{new Cache}
+    {}
 
     ~VectorMatrixAssembler() {}
 
@@ -48,11 +50,12 @@ public:
 
 
     void getLocalNodalValues(std::size_t const id,
-                             std::vector<double>& localX,
-                             std::vector<double>& localX_prev_ts) const
+                             std::vector<double> const*& localX,
+                             std::vector<double> const*& localX_prev_ts) const
     {
-        std::vector<GlobalIndexType> indices;
-        getLocalNodalValuesIndices(id, localX, localX_prev_ts, indices);
+        getLocalNodalValuesIndices(id);
+        localX = &_cache->localX;
+        localX_prev_ts = &_cache->localX_prev_ts;
     }
 
 
@@ -65,52 +68,49 @@ public:
     void operator()(std::size_t const id,
         LocalAssembler_* const local_assembler) const
     {
-        std::vector<double> localX;
-        std::vector<double> localX_pts;
-        std::vector<GlobalIndexType> indices;
-
         if (_x != nullptr)
         {
-            getLocalNodalValuesIndices(id, localX, localX_pts, indices);
+            getLocalNodalValuesIndices(id);
+        }
+        else
+        {
+            // TODO
         }
 
         LocalToGlobalIndexMap::RowColumnIndices const r_c_indices(
-                    indices, indices);
+                    _cache->indices, _cache->indices);
 
-        local_assembler->assemble(localX, localX_pts);
+        local_assembler->assemble(_cache->localX, _cache->localX_prev_ts);
         local_assembler->addToGlobal(_A, _rhs, r_c_indices);
     }
 
 private:
-    void getLocalNodalValuesIndices(
-            std::size_t const id,
-            std::vector<double>& localX,
-            std::vector<double>& localX_prev_ts,
-            std::vector<GlobalIndexType>& indices
-            ) const
+    void getLocalNodalValuesIndices(std::size_t const id) const
     {
         assert(_x != nullptr && _x_prev_ts != nullptr
                && _x->size() == _x_prev_ts->size());
         assert(_data_pos.size() > id);
 
-        indices.clear();
+        _cache->indices.clear();
 
         // Local matrices and vectors will always be ordered by component,
         // no matter what the order of the global matrix is.
         for (unsigned c=0; c<_data_pos.getNumComponents(); ++c)
         {
             auto const& idcs = _data_pos(id, c).rows;
-            indices.reserve(indices.size() + idcs.size());
-            indices.insert(indices.end(), idcs.begin(), idcs.end());
+            _cache->indices.reserve(_cache->indices.size() + idcs.size());
+            _cache->indices.insert(_cache->indices.end(), idcs.begin(), idcs.end());
         }
 
-        localX.reserve(indices.size());
-        localX_prev_ts.reserve(indices.size());
+        _cache->localX.clear();
+        _cache->localX_prev_ts.clear();
+        _cache->localX.reserve(_cache->indices.size());
+        _cache->localX_prev_ts.reserve(_cache->indices.size());
 
-        for (auto i : indices)
+        for (auto i : _cache->indices)
         {
-            localX.emplace_back(_x->get(i));
-            localX_pts.emplace_back(_x_prev_ts->get(i));
+            _cache->localX.emplace_back(_x->get(i));
+            _cache->localX_prev_ts.emplace_back(_x_prev_ts->get(i));
         }
     }
 
@@ -120,6 +120,17 @@ protected:
     GLOBAL_VECTOR_ const *_x = nullptr;
     GLOBAL_VECTOR_ const *_x_prev_ts = nullptr;
     LocalToGlobalIndexMap const& _data_pos;
+
+private:
+    struct Cache
+    {
+        // cache for results
+        std::vector<double> localX;
+        std::vector<double> localX_prev_ts;
+        std::vector<GlobalIndexType> indices;
+    };
+
+    std::unique_ptr<Cache> _cache;
 };
 
 }   // namespace AssemblerLib
