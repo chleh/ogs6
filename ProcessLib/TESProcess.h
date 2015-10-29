@@ -33,6 +33,9 @@
 
 #include "Parameter.h"
 
+#include "NumLib/Extrapolation/LocalLinearLeastSquaresExtrapolator.h"
+#include "NumLib/Extrapolation/GlobalLinearLeastSquaresExtrapolator.h"
+
 #include "TESProcess-notpl.h"
 #include "TESFEM.h"
 #include "TESFEM-data.h"
@@ -146,6 +149,21 @@ private:
 
     std::size_t _timestep = 0;
     std::size_t _total_iteration = 0;
+
+
+#if 0
+    NumLib::GlobalLinearLeastSquaresExtrapolator<
+            typename GlobalSetup::MatrixType,
+            typename GlobalSetup::VectorType, SecondaryVariables,
+            LocalAssembler>
+            extrapolator(*_local_to_global_index_map_single_component);
+#else
+    using ExtrapolatorIntf = NumLib::Extrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler>;
+    using ExtrapolatorImpl = NumLib::LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler>;
+    std::unique_ptr<ExtrapolatorIntf> _extrapolator;
+#endif
+
+
 };
 
 } // namespace TES

@@ -19,9 +19,6 @@
 
 #include "NumLib/TimeStepping/Algorithms/FixedTimeStepping.h"
 
-#include "NumLib/Extrapolation/LocalLinearLeastSquaresExtrapolator.h"
-#include "NumLib/Extrapolation/GlobalLinearLeastSquaresExtrapolator.h"
-
 #include "MathLib/LinAlg/VectorNorms.h"
 
 #include "TESProcess.h"
@@ -411,6 +408,8 @@ initialize()
                 new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets_single_component, _global_matrix_order)
                 );
 
+    _extrapolator.reset(new ExtrapolatorImpl(*_local_to_global_index_map_single_component));
+
     if (_mesh.getDimension()==1)
         createLocalAssemblers<1>();
     else if (_mesh.getDimension()==2)
@@ -566,20 +565,7 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
     }
 
 
-#if 0
-    NumLib::GlobalLinearLeastSquaresExtrapolator<
-            typename GlobalSetup::MatrixType,
-            typename GlobalSetup::VectorType, SecondaryVariables,
-            LocalAssembler>
-            extrapolator(*_local_to_global_index_map_single_component);
-#else
-    using ExtrapolatorIntf = NumLib::Extrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler>;
-    using ExtrapolatorImpl = NumLib::LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler>;
-    std::unique_ptr<ExtrapolatorIntf>
-            extrapolator(new ExtrapolatorImpl(*_local_to_global_index_map_single_component));
-#endif
-
-    auto add_secondary_var = [this, &extrapolator, &get_or_create_mesh_property]
+    auto add_secondary_var = [this, &get_or_create_mesh_property]
                              (SecondaryVariables const property,
                              std::string const& property_name,
                          #ifndef NDEBUG
@@ -600,8 +586,8 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             auto result = get_or_create_mesh_property(property_name, MeshLib::MeshItemType::Node);
             assert(result->size() == _mesh.getNNodes());
 
-            extrapolator->extrapolate(*_x, *_local_to_global_index_map, _local_assemblers, property);
-            auto const& nodal_values = extrapolator->getNodalValues().getRawVector();
+            _extrapolator->extrapolate(*_x, *_local_to_global_index_map, _local_assemblers, property);
+            auto const& nodal_values = _extrapolator->getNodalValues().getRawVector();
 
             // Copy result
             for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
@@ -617,8 +603,8 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             auto result = get_or_create_mesh_property(property_name_res, MeshLib::MeshItemType::Cell);
             assert(result->size() == _mesh.getNElements());
 
-            extrapolator->calculateResiduals(*_x, *_local_to_global_index_map, _local_assemblers, property);
-            auto const& residuals = extrapolator->getElementResiduals();
+            _extrapolator->calculateResiduals(*_x, *_local_to_global_index_map, _local_assemblers, property);
+            auto const& residuals = _extrapolator->getElementResiduals();
 
             // Copy result
             for (std::size_t i = 0; i < _mesh.getNElements(); ++i)
