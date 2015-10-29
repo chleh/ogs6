@@ -68,8 +68,8 @@ extrapolateElement(
     // const unsigned nn = 5;
     const unsigned ni = gp_vals.size();        // number of gauss points
 
-
-    Eigen::MatrixXd N(ni, nn);
+    auto& N = _local_matrix_cache;
+    N.resize(ni, nn); // TODO: might reallocate very often
 
     for (unsigned gp=0; gp<ni; ++gp)
     {
@@ -82,16 +82,15 @@ extrapolateElement(
         }
     }
 
-    const Eigen::Map<const Eigen::VectorXd> gpvs(gp_vals.data(), gp_vals.size());
+    Eigen::Map<const Eigen::VectorXd> const gpvs(gp_vals.data(), gp_vals.size());
 
-    {
-        // TODO: now always zeroth component is used
-        auto const& indices = _local_to_global(index, 0).rows;
+    // TODO: now always zeroth component is used
+    auto const& indices = _local_to_global(index, 0).rows;
 
-        Eigen::VectorXd elem_nodal_vals = (N.transpose() * N).ldlt().solve(N.transpose() * gpvs);
-        _nodal_values.add(indices, elem_nodal_vals);
-        counts.add(indices, 1.0);
-    }
+    Eigen::VectorXd tmp = (N.transpose()*N).ldlt().solve(N.transpose()*gpvs);
+
+    _nodal_values.add(indices, tmp);
+    counts.add(indices, 1.0);
 }
 
 template<typename GlobalVector, typename VariableEnum, typename LocalAssembler>

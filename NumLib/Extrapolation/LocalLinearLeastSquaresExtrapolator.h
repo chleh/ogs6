@@ -54,6 +54,8 @@ private:
     GlobalVector _nodal_values;
     GlobalVector _residuals;
     AssemblerLib::LocalToGlobalIndexMap const& _local_to_global;
+
+    Eigen::MatrixXd _local_matrix_cache;
 };
 
 }
