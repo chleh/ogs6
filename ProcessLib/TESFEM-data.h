@@ -161,8 +161,8 @@ public:
                           typename Traits::LocalVector& localRhs,
                           const typename Traits::LocalVector& oldX);
 
-    std::shared_ptr<const std::vector<double> >
-    getIntegrationPointValues(SecondaryVariables var) const;
+    std::vector<double> const&
+    getIntegrationPointValues(SecondaryVariables var, std::vector<double>& cache) const;
 
     double reaction_damping_factor = 1.0;
     std::vector<bool> bounds_violation;

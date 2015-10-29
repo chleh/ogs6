@@ -27,9 +27,10 @@ namespace TES
 class Extrapolatable
 {
 public:
-    virtual Eigen::VectorXd getShapeMatrix(const unsigned integration_point) const = 0;
+    virtual Eigen::Map<const Eigen::VectorXd>
+    getShapeMatrix(const unsigned integration_point) const = 0;
 
-    virtual std::shared_ptr< const std::vector<double> >
+    virtual std::vector<double> const&
     getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_dof) const = 0;
 };
 
@@ -87,18 +88,18 @@ public:
     void addToGlobal(GlobalMatrix& A, GlobalVector& rhs,
                      AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const& indices) const override;
 
-    Eigen::VectorXd
+    Eigen::Map<const Eigen::VectorXd>
     getShapeMatrix(const unsigned integration_point) const override {
-        return _shape_matrices[integration_point].N;
-        // const auto& shp_mats = _shape_matrices[integration_point];
-        // return (_shape_matrices.data() + integration_point)->N;
-        // return shp_mats.N;
+        auto const& N = _shape_matrices[integration_point].N;
+
+        // assumes N is stored contiguously in memory
+        return Eigen::Map<const Eigen::VectorXd>(N.data(), N.size());
     }
 
     bool checkBounds(std::vector<double> const& localX,
                      std::vector<double> const& localX_pts);
 
-    std::shared_ptr<const std::vector<double> >
+    std::vector<double> const&
     getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_dof) const override;
 
 private:
@@ -125,6 +126,8 @@ private:
     NodalVectorType _localRhs;
 
     unsigned _integration_order = 2;
+
+    std::unique_ptr<std::vector<double> > _integration_point_values_cache;
 };
 
 

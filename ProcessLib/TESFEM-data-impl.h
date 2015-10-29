@@ -1306,45 +1306,35 @@ ogs5OutVec(const Vec& vec)
 
 
 template<typename Traits>
-std::shared_ptr<const std::vector<double> >
+std::vector<double> const&
 LADataNoTpl<Traits>::
-getIntegrationPointValues(SecondaryVariables var) const
+getIntegrationPointValues(SecondaryVariables var, std::vector<double>& cache) const
 {
-    auto alias = [](std::vector<double> const& data)
-    {
-        // use shared_ptr's aliasing constructor
-        // this way the caller will get (unique) ownership of the dummy shared_ptr,
-        // but &data will not be deleted by the caller
-        return std::shared_ptr<const std::vector<double> >{
-                    std::shared_ptr<void>{}, // a dummy shared pointer
-                    &data
-        };
-    };
-
     switch (var)
     {
     case SecondaryVariables::REACTION_RATE:
-        return alias(_reaction_rate);
+        return _reaction_rate;
     case SecondaryVariables::SOLID_DENSITY:
-        return alias(_solid_density);
+        return _solid_density;
     case SecondaryVariables::VELOCITY_X:
-        return alias(_velocity[0]);
+        return _velocity[0];
     case SecondaryVariables::VELOCITY_Y:
         assert(_velocity.size() >= 2);
-        return alias(_velocity[1]);
+        return _velocity[1];
     case SecondaryVariables::VELOCITY_Z:
         assert(_velocity.size() >= 3);
-        return alias(_velocity[2]);
+        return _velocity[2];
     case SecondaryVariables::REACTION_KINETIC_INDICATOR:
-        return alias(_reaction_rate_indicator);
+        return _reaction_rate_indicator;
 
     case SecondaryVariables::LOADING:
     {
-        auto Cs = std::make_shared<std::vector<double> >();
-        Cs->reserve(_solid_density.size());
+        auto& Cs = cache;
+        Cs.clear();
+        Cs.reserve(_solid_density.size());
 
         for (auto rho_SR : _solid_density) {
-            Cs->push_back(rho_SR / _AP->_rho_SR_dry - 1.0);
+            Cs.push_back(rho_SR / _AP->_rho_SR_dry - 1.0);
         }
 
         return Cs;
@@ -1358,7 +1348,8 @@ getIntegrationPointValues(SecondaryVariables var) const
         break;
     }
 
-    return nullptr; // must not happen
+    cache.clear();
+    return cache;
 }
 
 

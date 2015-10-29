@@ -67,6 +67,8 @@ init(MeshLib::Element const& e,
     _data._AP = & process->getAssemblyParams();
 
     _data.init(n_integration_points, GlobalDim);
+
+    _integration_point_values_cache.reset(new std::vector<double>);
 }
 
 
@@ -133,7 +135,7 @@ template <typename ShapeFunction_,
           typename GlobalMatrix,
           typename GlobalVector,
           unsigned GlobalDim>
-std::shared_ptr<const std::vector<double> >
+std::vector<double> const&
 LocalAssemblerData<ShapeFunction_,
     IntegrationMethod_,
     GlobalMatrix,
@@ -153,7 +155,7 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
     case SecondaryVariables::LOADING:
         // These cases do not need access to nodal values
         // Thus, they can be handled inside _data
-        return _data.getIntegrationPointValues(var);
+        return _data.getIntegrationPointValues(var, *_integration_point_values_cache);
 
     // TODO [CL] the following cases could be better provided directly using nodal values without extrapolation
     case SecondaryVariables::VAPOUR_PARTIAL_PRESSURE:
@@ -161,8 +163,9 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
         IntegrationMethod_ integration_method(_integration_order);
         auto const n_integration_points = integration_method.getNPoints();
 
-        auto pVs = std::make_shared<std::vector<double> >();
-        pVs->reserve(n_integration_points);
+        auto& pVs = *_integration_point_values_cache;
+        pVs.clear();
+        pVs.reserve(n_integration_points);
 
         auto const ps = nodal_dof.getElementNodalValues(0); // TODO [CL] use constants for DOF indices
         auto const xs = nodal_dof.getElementNodalValues(2);
@@ -180,7 +183,7 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
             xm = Trafo::x(xm);
 
             auto const xn = AP._adsorption->get_molar_fraction(xm, AP._M_react, AP._M_inert);
-            pVs->push_back(p * xn);
+            pVs.push_back(p * xn);
         }
 
         return pVs;
@@ -190,8 +193,9 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
         IntegrationMethod_ integration_method(_integration_order);
         auto const n_integration_points = integration_method.getNPoints();
 
-        auto rhs = std::make_shared<std::vector<double> >();
-        rhs->reserve(n_integration_points);
+        auto& rhs = *_integration_point_values_cache;
+        rhs.clear();
+        rhs.reserve(n_integration_points);
 
         auto const nodal_vals = nodal_dof.getElementNodalValues();
 
@@ -208,7 +212,7 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
 
             auto const xn = AP._adsorption->get_molar_fraction(xm, AP._M_react, AP._M_inert);
             auto const pS = AP._adsorption->get_equilibrium_vapour_pressure(T);
-            rhs->push_back(p * xn / pS);
+            rhs.push_back(p * xn / pS);
         }
 
         return rhs;
@@ -218,8 +222,9 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
         IntegrationMethod_ integration_method(_integration_order);
         auto const n_integration_points = integration_method.getNPoints();
 
-        auto Cs = std::make_shared<std::vector<double> >();
-        Cs->reserve(n_integration_points);
+        auto& Cs = *_integration_point_values_cache;
+        Cs.clear();
+        Cs.reserve(n_integration_points);
 
         auto const nodal_vals = nodal_dof.getElementNodalValues();
 
@@ -237,9 +242,9 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
             auto const xn = AP._adsorption->get_molar_fraction(xm, AP._M_react, AP._M_inert);
             auto const pV = p * xn;
             if (pV < 0.0) {
-                Cs->push_back(0.0);
+                Cs.push_back(0.0);
             } else {
-                Cs->push_back(AP._adsorption->get_equilibrium_loading(pV, T, AP._M_react));
+                Cs.push_back(AP._adsorption->get_equilibrium_loading(pV, T, AP._M_react));
             }
         }
 
@@ -247,15 +252,16 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
     }
     case SecondaryVariables::REACTION_DAMPING_FACTOR:
     {
-        auto alphas = std::make_shared<std::vector<double> >();
-        alphas->resize(_shape_matrices.size(), _data.reaction_damping_factor);
+        auto& alphas = *_integration_point_values_cache;
+        alphas.clear();
+        alphas.resize(_shape_matrices.size(), _data.reaction_damping_factor);
 
         return alphas;
     }
     }
 
-
-    return nullptr;
+    _integration_point_values_cache->clear();
+    return *_integration_point_values_cache;
 }
 
 
