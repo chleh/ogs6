@@ -841,11 +841,11 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
             {
                 DBUG("%lu", id);
 
-                std::vector<double> localX;
-                std::vector<double> localX_pts;
+                std::vector<double> const* localX;
+                std::vector<double> const* localX_pts;
                 ga.getLocalNodalValues(id, localX, localX_pts);
 
-                if (!loc_asm->checkBounds(localX, localX_pts)) check_passed = false;
+                if (!loc_asm->checkBounds(*localX, *localX_pts)) check_passed = false;
             };
 
             _global_setup.execute(check_variable_bounds, _local_assemblers);
