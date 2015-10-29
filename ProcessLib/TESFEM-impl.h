@@ -167,8 +167,8 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
         pVs.clear();
         pVs.reserve(n_integration_points);
 
-        auto const ps = nodal_dof.getElementNodalValues(0); // TODO [CL] use constants for DOF indices
-        auto const xs = nodal_dof.getElementNodalValues(2);
+        auto const& ps = nodal_dof.getElementNodalValues(0); // TODO [CL] use constants for DOF indices
+        auto const& xs = nodal_dof.getElementNodalValues(2);
 
         auto const& AP = *_data._AP;
 
@@ -197,7 +197,7 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
         rhs.clear();
         rhs.reserve(n_integration_points);
 
-        auto const nodal_vals = nodal_dof.getElementNodalValues();
+        auto const& nodal_vals = nodal_dof.getElementNodalValues();
 
         auto const& AP = *_data._AP;
 
