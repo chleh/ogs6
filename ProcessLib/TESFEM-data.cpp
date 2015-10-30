@@ -10,8 +10,10 @@
  */
 
 #include "TESFEM-data-fwd.h"
-#include "TESFEM-data.h"
+
+#ifdef EIGEN_DYNAMIC_SHAPE_MATRICES
 #include "TESFEM-data-impl.h"
+#endif
 
 namespace ProcessLib
 {
@@ -20,7 +22,9 @@ namespace TES
 {
 
 #ifdef EIGEN_DYNAMIC_SHAPE_MATRICES
-template class LADataNoTpl<DataTraits<int, 0, 0, 0> >;
+
+template class LADataNoTpl<DataTraits<ShapeMatrixPolicyType<void, 0>, 0, 0, 0> >;
+
 static_assert(EIGEN_DYNAMIC_SHAPE_MATRICES_FLAG == 1, "inconsistent use of macros");
 #else
 static_assert(EIGEN_DYNAMIC_SHAPE_MATRICES_FLAG == 0, "inconsistent use of macros");

@@ -19,7 +19,7 @@
 
 #include "logog/include/logog.hpp"
 
-#include "TESFEM-data.h"
+#include "TESFEM-data-fwd.h"
 
 #include "MathLib/Nonlinear/Root1D.h"
 #include "NumLib/Function/Interpolation.h"
@@ -664,7 +664,7 @@ initReaction_localDiffusionStrategy(
             auto const nnodes = smDNdx.cols();
 
             assert(smJ.rows() == dim && smJ.cols() == dim);
-            std::array<typename Traits::Vector, 3> gradients;
+            std::array<typename Traits::template Vec<0>, 3> gradients;
             for (auto& v : gradients) { v.resize(dim); }
 
             NumLib::shapeFunctionInterpolateGradient(localX, smDNdx, gradients);
@@ -681,9 +681,10 @@ initReaction_localDiffusionStrategy(
             // DBUG("elem volume: %g, ext: %g", elem_volume, elem_linear_extension);
 
             // diffusion current associated with p_V if temperature is assumed to be constant
-            typename Traits::Vector const j_pV = - _AP->_diffusion_coefficient_component *
-                                         ( _p * dxn_dxm * gradients[2]
-                                         + xn * gradients[0] );
+            typename Traits::template Vec<0> const j_pV
+                    = - _AP->_diffusion_coefficient_component *
+                      ( _p * dxn_dxm * gradients[2]
+                      + xn * gradients[0] );
             auto const j_pV_norm = j_pV.norm();
 
             auto const delta_pV_diffusion = j_pV_norm / elem_linear_extension * _AP->_delta_t;

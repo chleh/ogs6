@@ -13,7 +13,7 @@
 #include <memory>
 #include <vector>
 
-#include "TESFEM-data.h"
+#include "TESFEM-data-fwd.h"
 #include "TESProcess-notpl.h"
 
 #include "NumLib/Extrapolation/LocalNodalDOF.h"

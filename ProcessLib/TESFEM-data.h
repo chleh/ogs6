@@ -87,17 +87,6 @@ struct TrafoTanh
 typedef TrafoIdentity Trafo;
 
 
-struct DataTraitsDynamic
-{
-    using Matrix = Eigen::MatrixXd;
-    using Vector = Eigen::VectorXd;
-
-    using LocalMatrix = Eigen::MatrixXd;
-    using LocalVector = Eigen::VectorXd;
-
-    using LaplaceMatrix = Eigen::MatrixXd;
-};
-
 template<typename ShpPol, unsigned NIntPts, unsigned NodalDOF, unsigned Dim>
 struct DataTraitsFixed
 {
@@ -109,7 +98,6 @@ struct DataTraitsFixed
     using Vec = typename ShpPol::template VectorType<N>;
 
     using MatrixDimDim = Mat<Dim, Dim>;
-    // using Vector = Vec;
 
     using LocalMatrix = Mat<NIntPts*NodalDOF, NIntPts*NodalDOF>;
     using LocalVector = Vec<NIntPts*NodalDOF>;
@@ -117,16 +105,19 @@ struct DataTraitsFixed
     using Vector1Comp = typename ShapeMatrices::ShapeType;
 
     using LaplaceMatrix = Mat<Dim*NodalDOF, Dim*NodalDOF>;
-
 };
 
 #ifndef EIGEN_DYNAMIC_SHAPE_MATRICES
+
 template<typename ShpPol, unsigned NIntPts, unsigned NodalDOF, unsigned Dim>
 using DataTraits = DataTraitsFixed<ShpPol, NIntPts, NodalDOF, Dim>;
+
 static_assert(EIGEN_DYNAMIC_SHAPE_MATRICES_FLAG == 0, "inconsistent use of macros");
 #else
+
 template<typename ShpPol, unsigned NIntPts, unsigned NodalDOF, unsigned Dim>
-using DataTraits = DataTraitsDynamic;
+using DataTraits = DataTraitsFixed<ShapeMatrixPolicyType<void, 0>, 0, 0, 0>;
+
 static_assert(EIGEN_DYNAMIC_SHAPE_MATRICES_FLAG == 1, "inconsistent use of macros");
 #endif
 
@@ -269,9 +260,7 @@ ogs5OutMat(const Mat& mat);
 } // namespace ProcessLib
 
 
-#ifndef EIGEN_DYNAMIC_SHAPE_MATRICES
-#include "TESFEM-data-impl.h"
-#endif
-
+// tricking cmake dependency checker
+#include "TESFEM-data-impl-incl.h"
 
 #endif // PROCESS_LIB_TES_FEM_NOTPL_H_
