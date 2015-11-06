@@ -46,7 +46,7 @@ namespace ApplicationsLib
 {
 struct LinearSolverLibrarySetup final
 {
-	LinearSolverLibrarySetup(int argc, char* argv[])
+	LinearSolverLibrarySetup(int& argc, char**& argv)
 	{
 		lis_initialize(&argc, &argv);
 	}

@@ -19,6 +19,11 @@
 
 namespace MathLib
 {
+LisVector::LisVector()
+{
+	lis_vector_create(0, &_vec);
+}
+
 LisVector::LisVector(std::size_t length)
 {
 	lis_vector_create(0, &_vec);

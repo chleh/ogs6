@@ -30,6 +30,8 @@ class LisVector
 public:
 	using IndexType = LIS_INT;
 public:
+	LisVector();
+
 	/**
 	 * Constructor for initialization of the number of rows
 	 * @param length number of rows
@@ -53,6 +55,11 @@ public:
 
 	/// return a vector length
 	std::size_t size() const;
+
+	void resize(std::size_t length)
+	{
+		lis_vector_set_size(_vec, length, 0);
+	}
 
 	/// return a start index of the active data range
 	std::size_t getRangeBegin() const { return 0; }
@@ -88,6 +95,7 @@ public:
 
 	/// return a raw Lis vector object
 	LIS_VECTOR& getRawVector() { return _vec; }
+	LIS_VECTOR const& getRawVector() const { return _vec; }
 	/// vector operation: set data
 	LisVector& operator=(const LisVector& src);
 
@@ -107,9 +115,46 @@ public:
 		}
 	}
 
+	void add(const std::vector<IndexType>& pos, double x)
+	{
+		for (std::size_t i = 0; i < pos.size(); ++i)
+		{
+			this->add(pos[i], x);
+		}
+	}
+
+	void componentwiseDivide(LisVector const& v)
+	{
+		// TODO: fragile: _vec passed twice
+		lis_vector_pdiv(_vec, v.getRawVector(), _vec);
+	}
+
 private:
 	LIS_VECTOR _vec;
 };
+
+
+inline double norm_1(const LisVector &v)
+{
+	double n;
+	return lis_vector_nrm1(v.getRawVector(), &n);
+	return n;
+}
+
+inline double norm_2(const LisVector &v)
+{
+	double n;
+	return lis_vector_nrm2(v.getRawVector(), &n);
+	return n;
+}
+
+inline double norm_max(const LisVector &v)
+{
+	double n;
+	return lis_vector_nrmi(v.getRawVector(), &n);
+	return n;
+}
+
 
 }  // MathLib
 

@@ -184,7 +184,7 @@ void LisMatrix::add(std::vector<IndexType> const& row_pos,
             add(row, col, fkt * sub_matrix(i, j));
         }
     }
-};
+}
 
 /// finish assembly to make this matrix be ready for use
 bool finalizeMatrixAssembly(LisMatrix &mat);
