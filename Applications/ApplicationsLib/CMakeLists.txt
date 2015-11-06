@@ -20,13 +20,13 @@ target_link_libraries(ApplicationsLib INTERFACE
 	MeshGeoToolsLib
 	NumLib
 	ProcessLib
-	${CATALYST_LIBRARIES}
+	${VTK_LIBRARIES}
 	logog
 	/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_core.so
 	/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_gnu_thread.so
 	/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_intel_lp64.so
 )
-ADD_CATALYST_DEPENDENCY(ApplicationsLib)
+ADD_VTK_DEPENDENCY(ApplicationsLib)
 
 if(TARGET Eigen)
 	add_dependencies(ApplicationsLib Eigen)
