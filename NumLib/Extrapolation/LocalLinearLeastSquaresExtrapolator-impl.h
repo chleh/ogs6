@@ -44,8 +44,8 @@ calculateResiduals(
 
     for (std::size_t i=0; i<loc_asms.size(); ++i)
     {
-        _residuals[i] = calculateResiudalElement(
-                            i, global_nodal_values, global_nodal_values_map, loc_asms[i], var);
+        _residuals.set(i, calculateResiudalElement(
+                           i, global_nodal_values, global_nodal_values_map, loc_asms[i], var));
     }
 }
 

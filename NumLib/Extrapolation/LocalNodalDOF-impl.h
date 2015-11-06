@@ -21,11 +21,10 @@ public:
     {}
 
     // this function is very similar to my [CL] current implementation of VectorMatrixAssembler
-    std::vector<double> const&
-    getElementNodalValues() override
+    std::vector<double>
+    getElementNodalValues() const override
     {
-        auto& localX = _localx_cache;
-        localX.clear();
+        std::vector<double> localX;
 
         auto const num_comp = _index_map.getNumComponents();
 
@@ -44,11 +43,10 @@ public:
         return localX;
     }
 
-    std::vector<double> const&
-    getElementNodalValues(unsigned component) override
+    std::vector<double>
+    getElementNodalValues(unsigned component) const override
     {
-        auto& localX = _localx_cache;
-        localX.clear();
+        std::vector<double> localX;
 
         auto const idcs = _index_map(_index, component).rows;
         // localX.reserve(idcs.size());
