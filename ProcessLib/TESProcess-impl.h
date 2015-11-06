@@ -756,8 +756,8 @@ singlePicardIteration(GlobalVector& x_prev_iter,
 #endif
 
 
-        typename GlobalSetup::LinearSolver linearSolver(*_A);
-        linearSolver.solve(*_rhs, x_curr);
+        typename GlobalSetup::LinearSolver linearSolver(BaseLib::ConfigTree{});
+        linearSolver.solve(*_A, *_rhs, x_curr);
 
 
 #ifndef NDEBUG
