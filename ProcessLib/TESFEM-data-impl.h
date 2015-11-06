@@ -892,7 +892,7 @@ void
 LADataNoTpl<Traits>::
 initReaction_slowDownUndershootStrategy(const unsigned int_pt)
 {
-    assert(_AP->_number_of_try_of_iteration < 10);
+    assert(_AP->_number_of_try_of_iteration < 20);
 
     const double loading = Ads::Adsorption::get_loading(_solid_density_prev_ts[int_pt], _AP->_rho_SR_dry);
 

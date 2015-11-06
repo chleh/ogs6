@@ -73,6 +73,9 @@ class TESProcess
     unsigned const _integration_order = 2;
 
 public:
+    using GlobalVector = typename GlobalSetup::VectorType;
+    using GlobalMatrix = typename GlobalSetup::MatrixType;
+
     TESProcess(MeshLib::Mesh& mesh,
                std::vector<ProcessVariable> const& variables,
                std::vector<std::unique_ptr<ParameterBase>> const& parameters,
@@ -93,16 +96,10 @@ public:
     ~TESProcess();
 
 private:
-    void singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
-                               typename GlobalSetup::VectorType& x_curr);
+    void singlePicardIteration(GlobalVector& x_prev_iter, GlobalVector& x_curr);
 
-    using LocalAssembler = TES::LocalAssemblerDataInterface<
-        typename GlobalSetup::MatrixType, typename GlobalSetup::VectorType>;
-    using GlobalAssembler =
-        AssemblerLib::VectorMatrixAssembler<
-            typename GlobalSetup::MatrixType,
-            typename GlobalSetup::VectorType>;
-
+    using LocalAssembler = TES::LocalAssemblerDataInterface<GlobalMatrix, GlobalVector>;
+    using GlobalAssembler = AssemblerLib::VectorMatrixAssembler<GlobalMatrix, GlobalVector>;
 
     MeshLib::MeshSubset const* _mesh_subset_all_nodes = nullptr;
     GlobalSetup _global_setup;
@@ -122,10 +119,10 @@ private:
     std::array<ProcessVariable*, NODAL_DOF> _process_vars; // ) = { nullptr, nullptr, nullptr };
     std::vector<MeshLib::MeshSubsets*> _all_mesh_subsets;
 
-    std::unique_ptr<typename GlobalSetup::MatrixType> _A;
-    std::unique_ptr<typename GlobalSetup::VectorType> _rhs;
-    std::unique_ptr<typename GlobalSetup::VectorType> _x;           // current iteration
-    std::unique_ptr<typename GlobalSetup::VectorType> _x_prev_ts;   // previous timestep
+    std::unique_ptr<GlobalMatrix> _A;
+    std::unique_ptr<GlobalVector> _rhs;
+    std::unique_ptr<GlobalVector> _x;           // current iteration
+    std::unique_ptr<GlobalVector> _x_prev_ts;   // previous timestep
 
     std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map;
 
@@ -157,8 +154,8 @@ private:
             LocalAssembler>
             extrapolator(*_local_to_global_index_map_single_component);
 #else
-    using ExtrapolatorIntf = NumLib::Extrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler>;
-    using ExtrapolatorImpl = NumLib::LocalLinearLeastSquaresExtrapolator<typename GlobalSetup::VectorType, SecondaryVariables, LocalAssembler>;
+    using ExtrapolatorIntf = NumLib::Extrapolator<GlobalVector, SecondaryVariables, LocalAssembler>;
+    using ExtrapolatorImpl = NumLib::LocalLinearLeastSquaresExtrapolator<GlobalVector, SecondaryVariables, LocalAssembler>;
     std::unique_ptr<ExtrapolatorIntf> _extrapolator;
 #endif
 

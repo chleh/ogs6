@@ -292,7 +292,7 @@ checkBounds(std::vector<double> const& localX,
         {
             auto const xold = localX_pts[i+xmV_offset];
             const auto a = xold / (xold - xnew);
-            if (a<alpha) DBUG("xo %g, xn %g, a %g", xold, xnew, a);
+            // if (a<alpha) DBUG("xo %g, xn %g, a %g", xold, xnew, a);
             alpha = std::min(alpha, a);
             _data.bounds_violation[i] = true;
         }
@@ -300,7 +300,7 @@ checkBounds(std::vector<double> const& localX,
         {
             auto const xold = localX_pts[i+xmV_offset];
             const auto a = xold / (xnew - xold);
-            if (a<alpha) DBUG("xo %g, xn %g, a %g", xold, xnew, a);
+            // if (a<alpha) DBUG("xo %g, xn %g, a %g", xold, xnew, a);
             alpha = std::min(alpha, a);
             _data.bounds_violation[i] = true;
         }
@@ -322,7 +322,7 @@ checkBounds(std::vector<double> const& localX,
         }
     }
 
-    DBUG("new damping factor: %g", _data.reaction_damping_factor);
+    // DBUG("new damping factor: %g", _data.reaction_damping_factor);
 
     return alpha == 1.0;
 }

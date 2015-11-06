@@ -460,6 +460,7 @@ bool TESProcess<GlobalSetup>::solve(const double delta_t)
 {
     DBUG("Solve TESProcess.");
 
+#if 0
     auto tmp = *_x;
     if (false && _timestep != 0)
     {
@@ -477,6 +478,9 @@ bool TESProcess<GlobalSetup>::solve(const double delta_t)
         *_x -= *_x_prev_ts;
     }
     *_x_prev_ts = tmp;
+#else
+    *_x_prev_ts = *_x;
+#endif
 
     _assembly_params._delta_t = delta_t;
     _assembly_params._iteration_in_current_timestep = 0;
@@ -587,7 +591,7 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             assert(result->size() == _mesh.getNNodes());
 
             _extrapolator->extrapolate(*_x, *_local_to_global_index_map, _local_assemblers, property);
-            auto const& nodal_values = _extrapolator->getNodalValues().getRawVector();
+            auto const& nodal_values = _extrapolator->getNodalValues();
 
             // Copy result
             for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
@@ -680,8 +684,8 @@ TESProcess<GlobalSetup>::
 template<typename GlobalSetup>
 void
 TESProcess<GlobalSetup>::
-singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
-                      typename GlobalSetup::VectorType& x_curr)
+singlePicardIteration(GlobalVector& x_prev_iter,
+                      GlobalVector& x_curr)
 {
     bool iteration_accepted = false;
     unsigned num_try = 0;
@@ -707,6 +711,10 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
         MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
 #ifndef NDEBUG
+#ifdef OGS_USE_LIS
+        MathLib::finalizeMatrixAssembly(*_A);
+#endif
+
         if (_total_iteration == 0 && _output_global_matrix)
         {
             // TODO [CL] Those files will be written to the working directory.
@@ -716,13 +724,17 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
         }
 #endif
 
+#ifndef USE_LIS
         // double residual = MathLib::norm((*_A) * x_curr - (*_rhs), MathLib::VecNormType::INFINITY_N);
-        MathLib::EigenVector res_vec;
+        GlobalVector res_vec;
         _A->multiply(x_curr, res_vec);
         res_vec -= *_rhs;
+
         double residual = MathLib::norm(res_vec, MathLib::VecNormType::INFINITY_N);
         DBUG("residual of old solution with new matrix: %g", residual);
+#endif
 
+#if defined(OGS_USE_EIGEN) && ! defined(USE_LIS)
         // "preconditioner"
         Eigen::VectorXd diag = _A->getRawMatrix().diagonal();
 
@@ -731,7 +743,9 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
             _A->getRawMatrix().row(i) /= diag[i];
             _rhs->getRawVector()[i] /= diag[i];
         }
+#endif
 
+#ifndef USE_LIS
         // _A->getRawMatrix().rowwise() /= diag; //  = invDiag * _A->getRawMatrix();
         // .cwiseQuotient(diag); //  = invDiag * _rhs->getRawVector();
 
@@ -739,9 +753,22 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
         res_vec -= *_rhs;
         residual = MathLib::norm(res_vec, MathLib::VecNormType::INFINITY_N);
         DBUG("residual of new solution with new matrix: %g", residual);
+#endif
+
 
         typename GlobalSetup::LinearSolver linearSolver(*_A);
         linearSolver.solve(*_rhs, x_curr);
+
+
+#ifndef NDEBUG
+        if (_total_iteration == 0 && _output_global_matrix)
+        {
+            // TODO [CL] Those files will be written to the working directory.
+            //           Relative path needed.
+            _A->write("global_matrix_post.txt");
+            _rhs->write("global_rhs_post.txt");
+        }
+#endif
 
 #if 0
         // assert that no component is smaller than some lower bound
@@ -839,7 +866,7 @@ singlePicardIteration(typename GlobalSetup::VectorType& x_prev_iter,
             = [&ga, &check_passed](
               std::size_t id, LocalAssembler* const loc_asm)
             {
-                DBUG("%lu", id);
+                // DBUG("%lu", id);
 
                 std::vector<double> const* localX;
                 std::vector<double> const* localX_pts;
