@@ -124,6 +124,9 @@ EigenLinearSolver::EigenLinearSolver(EigenMatrix &A,
         _solver = new details::EigenDirectLinearSolver<SolverType, IEigenSolver>();
     }
 #endif
+    else {
+        ERR("invalid linear solver type.");
+    }
 }
 
 void EigenLinearSolver::setOption(BaseLib::ConfigTreeNew const& option)
