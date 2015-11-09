@@ -47,6 +47,11 @@ public:
 	: std::valarray<T>(nrows)
 	{}
 
+	void resize(IndexType new_size)
+	{
+		std::valarray<T>::resize(new_size);
+	}
+
 	/// return a start index of the active data range
 	IndexType getRangeBegin() const { return 0;}
 
@@ -89,8 +94,13 @@ public:
 	void write (const std::string &filename) const
 	{
 		std::ofstream os(filename);
-		os << *this;
-		os.close();
+		write(os);
+	}
+
+	void write(std::ostream& os) const
+	{
+		os << static_cast<std::valarray<T> >(*this).size() << "\n";
+		os << *this << "\n";
 	}
 
     /// vector operation: add
