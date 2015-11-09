@@ -1,10 +1,17 @@
 #include "MathLib/LinAlg/Sparse/LOLMatrix.h"
 #include "MathLib/LinAlg/Sparse/LOLCSRTools.h"
 
+#include "MathLib/LinAlg/Dense/DenseVector.h"
+
+#include "MathLib/LinAlg/ApplyKnownSolution.h"
+#include "MathLib/LinAlg/Scaling.h"
+
 #include <gtest/gtest.h>
 
 #include <random>
 #include <numeric>
+
+#include <iostream>
 
 
 
@@ -70,7 +77,90 @@ TEST(MathLibSparseLOLMatrix, BasicTest)
 
     ASSERT_EQ(lolmat, toLOL(csrmat));
 
+}
 
+TEST(MathLibSparseLOLMatrix, KnownSolution)
+{
+    const unsigned nrows = 3;
+    const unsigned ncols = 3;
 
+    double values[3][3] = {
+        { 1.0, 2.0, 3.0 },
+        { 4.0, 5.0, 7.0 },
+        { 6.0, 8.0, 9.0 }
+    };
+
+    double rvalues[3] = { 1.0, 1.0, 1.0 };
+
+    MathLib::LOLMatrix lolmat(3, 3);
+    MathLib::DenseVector<double> rhs(3);
+
+    for (unsigned r=0; r<nrows; ++r) {
+        for (unsigned c=0; c<ncols; ++c) {
+            lolmat.setValue(r, c, values[r][c]);
+        }
+        rhs[r] = rvalues[r];
+    }
+
+    std::vector<std::size_t> known_ids{{1}};
+    std::vector<double> known_vals{{1.0}};
+
+    MathLib::applyKnownSolution(lolmat, rhs, known_ids, known_vals);
+
+    double values_result[3][3] = {
+        { 1.0, 0.0, 3.0 },
+        { 0.0, 1.0, 0.0 },
+        { 6.0, 0.0, 9.0 }
+    };
+
+    double rvalues_result[3] = { -1.0, 1.0, -7.0 };
+
+    for (unsigned r=0; r<nrows; ++r) {
+        for (unsigned c=0; c<ncols; ++c) {
+            EXPECT_EQ(values_result[r][c], lolmat.get(r, c));
+        }
+        EXPECT_EQ(rvalues_result[r], rhs[r]);
+    }
+}
+
+TEST(MathLibSparseLOLMatrix, Scaling)
+{
+    const unsigned nrows = 3;
+    const unsigned ncols = 3;
+
+    double values[3][3] = {
+        { 2.0, 2.0, 3.0 },
+        { 4.0, 4.0, 7.0 },
+        { 6.0, 8.0, 8.0 }
+    };
+
+    double rvalues[3] = { 1.0, 1.0, 1.0 };
+
+    MathLib::LOLMatrix lolmat(3, 3);
+    MathLib::DenseVector<double> rhs(3);
+
+    for (unsigned r=0; r<nrows; ++r) {
+        for (unsigned c=0; c<ncols; ++c) {
+            lolmat.setValue(r, c, values[r][c]);
+        }
+        rhs[r] = rvalues[r];
+    }
+
+    MathLib::scaleDiagonal(lolmat, rhs);
+
+    double values_result[3][3] = {
+        { 1.0,  1.0, 1.5  },
+        { 1.0,  1.0, 1.75 },
+        { 0.75, 1.0, 1.0  }
+    };
+
+    double rvalues_result[3] = { 0.5, 0.25, 0.125 };
+
+    for (unsigned r=0; r<nrows; ++r) {
+        for (unsigned c=0; c<ncols; ++c) {
+            EXPECT_EQ(values_result[r][c], lolmat.get(r, c));
+        }
+        EXPECT_EQ(rvalues_result[r], rhs[r]);
+    }
 }
 
