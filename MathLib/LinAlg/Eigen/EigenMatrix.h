@@ -186,7 +186,7 @@ void EigenMatrix::add(std::vector<IndexType> const& row_pos,
             add(row, col, fkt * sub_matrix(i, j));
         }
     }
-};
+}
 
 /// Sets the sparsity pattern of the underlying EigenMatrix.
 template <typename SPARSITY_PATTERN>
