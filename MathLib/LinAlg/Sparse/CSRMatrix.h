@@ -37,7 +37,7 @@ public:
     {
         assert(_values.size() == _col_idcs.size());
         assert(_row_idcs.size() >= 1);
-        assert(_row_idcs.back() == _values.size());
+        assert(_row_idcs.back() == (IndexType) _values.size());
     }
 
     /// return the number of rows

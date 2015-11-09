@@ -13,10 +13,16 @@
 #include <vector>
 #include <algorithm>
 
+#include <fstream>
+#include <iomanip>
+
 #include "MathLib/LinAlg/RowColumnIndices.h"
 
 namespace MathLib
 {
+
+template <class T>
+class DenseVector;
 
 /**
  * Global matrix based on Eigen sparse matrix
@@ -56,31 +62,31 @@ public:
      * @param n the number of rows (that is equal to the number of columns)
      * @param n_nonzero_columns the number of non-zero columns used for preallocation
      */
-    explicit LOLMatrix(IndexType num_rows, IndexType num_cols)
+    explicit LOLMatrix(std::size_t num_rows, std::size_t num_cols)
         : _mat{num_rows}, _num_cols{num_cols}
     {}
-    explicit LOLMatrix(IndexType num_rows)
+    explicit LOLMatrix(std::size_t num_rows)
         : _mat{num_rows}, _num_cols{num_rows}
     {}
 
 
-    explicit LOLMatrix(IndexType num_cols, std::vector<Row>&& data)
+    explicit LOLMatrix(std::size_t num_cols, std::vector<Row>&& data)
         : _mat{std::move(data)}, _num_cols{num_cols}
     {
 #ifndef NDEBUG
         for (auto const& row : _mat) {
             for (auto const& e : row) {
-                assert(e.col_idx < _num_cols);
+                assert(e.col_idx < (IndexType) _num_cols);
             }
         }
 #endif
     }
 
     /// return the number of rows
-    IndexType getNRows() const { return _mat.size(); }
+    std::size_t getNRows() const { return _mat.size(); }
 
     /// return the number of columns
-    IndexType getNCols() const { return _num_cols; }
+    std::size_t getNCols() const { return _num_cols; }
 
     /// reset data entries to zero.
     void setZero()
@@ -96,7 +102,7 @@ public:
     /// dynamically allocates it.
     void setValue(IndexType row_idx, IndexType col_idx, double value)
     {
-        assert(row_idx >= 0 && row_idx < _mat.size());
+        assert(row_idx >= 0 && row_idx < (IndexType) _mat.size());
 
         auto& row = _mat[row_idx];
 
@@ -116,9 +122,9 @@ public:
 
     /// add a value to the given entry. If the entry doesn't exist, the value is
     /// inserted.
-    int add(IndexType row_idx, IndexType col_idx, double value)
+    void add(IndexType row_idx, IndexType col_idx, double value)
     {
-        assert(row_idx >= 0 && row_idx < _mat.size());
+        assert(row_idx >= 0 && row_idx < (IndexType) _mat.size());
 
         auto& row = _mat[row_idx];
 
@@ -143,7 +149,7 @@ public:
             const T_DENSE_MATRIX &sub_matrix,
             double fkt = 1.0)
     {
-        this->add(row_pos, row_pos, sub_matrix, fkt);
+        add(row_pos, row_pos, sub_matrix, fkt);
     }
 
     /// Add sub-matrix at positions given by \c indices. If the entry doesn't exist,
@@ -153,7 +159,7 @@ public:
             const T_DENSE_MATRIX &sub_matrix,
             double fkt = 1.0)
     {
-        this->add(indices.rows, indices.columns, sub_matrix, fkt);
+        add(indices.rows, indices.columns, sub_matrix, fkt);
     }
 
     /// Add sub-matrix at positions \c row_pos and \c col_pos. If the entries doesn't
@@ -172,7 +178,7 @@ public:
     /// get value. This function returns zero if the element doesn't exist.
     double get(IndexType row_idx, IndexType col_idx) const
     {
-        assert(row_idx >= 0 && row_idx < _mat.size());
+        assert(row_idx >= 0 && row_idx < (IndexType) _mat.size());
 
         auto& row = _mat[row_idx];
 
@@ -181,9 +187,9 @@ public:
 
         if (pos == end || pos->col_idx != col_idx) {
             return 0.0;
-        } else if (pos->col_idx == col_idx) {
-            return pos->value;
         }
+
+        return pos->value;
     }
 
     /// get value. This function returns zero if the element doesn't exist.
@@ -217,20 +223,55 @@ public:
                 && a._mat == b._mat;
     }
 
-    void write(std::string const& /*path*/)
+    /// printout this matrix for debugging
+    void write(const std::string &filename) const
     {
-        // TODO implement
+        std::ofstream of(filename);
+        if (of)
+            write(of);
     }
+
+    /// printout this matrix for debugging
+    void write(std::ostream &os) const
+    {
+        IndexType nnz = 0;
+        for (auto& row : _mat) nnz += row.size();
+
+        os << getNRows() << " " << getNCols() << " " << nnz << "\n";
+        for (std::size_t k=0; k<_mat.size(); ++k) {
+            auto const& row = _mat[k];
+            for (auto const& e : row)
+                os << k << " " << e.col_idx << " " << std::setprecision(16) << e.value << "\n";
+        }
+        os << std::endl;
+    }
+
+    void setRowZero(IndexType row_idx)
+    {
+        _mat[row_idx].clear();
+    }
+
+    Row const& getRow(IndexType row_idx) const
+    {
+        return _mat[row_idx];
+    }
+
+    Row& getRow(IndexType row_idx) // TODO: too much exposure?
+    {
+        return _mat[row_idx];
+    }
+
+    void multiply(DenseVector<double> const& x, DenseVector<double>& r) const;
 
 protected:
     std::vector<Row> _mat;
-    const IndexType _num_cols;
+    const std::size_t _num_cols;
 
 
     void assert_sorted(Row const& row)
     {
 #ifndef NDEBUG
-        for (IndexType i=0; i<row.size()-1; ++i)
+        for (std::size_t i=0; i<row.size()-1; ++i)
             assert(row[i] < row[i+1]);
 #endif
     }
