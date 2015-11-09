@@ -22,6 +22,7 @@
 #include "FileIO/VtkIO/VtuInterface.h"
 
 #include "MathLib/LinAlg/ApplyKnownSolution.h"
+#include "MathLib/LinAlg/Scaling.h"
 #include "MathLib/LinAlg/SetMatrixSparsity.h"
 #include "MathLib/Nonlinear/Picard.h"
 

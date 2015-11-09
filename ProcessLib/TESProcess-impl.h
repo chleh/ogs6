@@ -725,7 +725,6 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         // Apply known values from the Dirichlet boundary conditions.
         MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
-#if !defined(OGS_USE_MKL)
 #if !defined(USE_LIS)
         // double residual = MathLib::norm((*_A) * x_curr - (*_rhs), MathLib::VecNormType::INFINITY_N);
         GlobalVector res_vec;
@@ -736,16 +735,7 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         DBUG("residual of old solution with new matrix: %g", residual);
 #endif
 
-#if defined(OGS_USE_EIGEN) && ! defined(USE_LIS)
-        // "preconditioner"
-        Eigen::VectorXd diag = _A->getRawMatrix().diagonal();
-
-        for (int i=0; i<diag.size(); ++i)
-        {
-            _A->getRawMatrix().row(i) /= diag[i];
-            _rhs->getRawVector()[i] /= diag[i];
-        }
-#endif
+        MathLib::scaleDiagonal(*_A, *_rhs);
 
 #ifndef USE_LIS
         // _A->getRawMatrix().rowwise() /= diag; //  = invDiag * _A->getRawMatrix();
@@ -755,7 +745,6 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         res_vec -= *_rhs;
         residual = MathLib::norm(res_vec, MathLib::VecNormType::INFINITY_N);
         DBUG("residual of new solution with new matrix: %g", residual);
-#endif
 #endif
 
 #ifndef NDEBUG
