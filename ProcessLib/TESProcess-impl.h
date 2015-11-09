@@ -241,6 +241,21 @@ TESProcess(MeshLib::Mesh& mesh,
     parseParameter(config, "reactive_system", Ads::Adsorption::newInstance, _assembly_params._adsorption);
 #endif
 
+    // linear solver
+    {
+        auto const par = config.get_child_optional("linear_solver");
+
+        if (par)
+        {
+            _linearSolver.reset(new typename GlobalSetup::LinearSolver(*par));
+        }
+        else
+        {
+            ERR("no linear solver configuration present.");
+            std::abort();
+        }
+    }
+
     // matrix order
     {
         auto order = config.get<std::string>("global_matrix_order");
@@ -710,21 +725,8 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         // Apply known values from the Dirichlet boundary conditions.
         MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
 
-#ifndef NDEBUG
-#ifdef OGS_USE_LIS
-        MathLib::finalizeMatrixAssembly(*_A);
-#endif
-
-        if (_total_iteration == 0 && _output_global_matrix)
-        {
-            // TODO [CL] Those files will be written to the working directory.
-            //           Relative path needed.
-            _A->write("global_matrix.txt");
-            _rhs->write("global_rhs.txt");
-        }
-#endif
-
-#ifndef USE_LIS
+#if !defined(OGS_USE_MKL)
+#if !defined(USE_LIS)
         // double residual = MathLib::norm((*_A) * x_curr - (*_rhs), MathLib::VecNormType::INFINITY_N);
         GlobalVector res_vec;
         _A->multiply(x_curr, res_vec);
@@ -754,14 +756,26 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         residual = MathLib::norm(res_vec, MathLib::VecNormType::INFINITY_N);
         DBUG("residual of new solution with new matrix: %g", residual);
 #endif
-
-
-        typename GlobalSetup::LinearSolver linearSolver(BaseLib::ConfigTree{});
-        linearSolver.solve(*_A, *_rhs, x_curr);
-
+#endif
 
 #ifndef NDEBUG
-        if (_total_iteration == 0 && _output_global_matrix)
+#ifdef OGS_USE_LIS
+        MathLib::finalizeMatrixAssembly(*_A);
+#endif
+
+        if (_total_iteration == 0 && num_try == 0 && _output_global_matrix)
+        {
+            // TODO [CL] Those files will be written to the working directory.
+            //           Relative path needed.
+            _A->write("global_matrix.txt");
+            _rhs->write("global_rhs.txt");
+        }
+#endif
+
+        _linearSolver->solve(*_A, *_rhs, x_curr);
+
+#ifndef NDEBUG
+        if (_total_iteration == 0 && num_try == 0 && _output_global_matrix)
         {
             // TODO [CL] Those files will be written to the working directory.
             //           Relative path needed.

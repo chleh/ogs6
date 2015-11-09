@@ -124,6 +124,8 @@ private:
     std::unique_ptr<GlobalVector> _x;           // current iteration
     std::unique_ptr<GlobalVector> _x_prev_ts;   // previous timestep
 
+    std::unique_ptr<typename GlobalSetup::LinearSolver> _linearSolver;
+
     std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map;
 
     DirichletBC _dirichlet_bc;
