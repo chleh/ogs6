@@ -9,12 +9,16 @@
 
 #pragma once
 
+#include <memory>
+
 #include "BaseLib/ConfigTree.h"
 #include "MathLib/LinAlg/Sparse/LOLMatrix.h"
 #include "MathLib/LinAlg/Dense/DenseVector.h"
 
 namespace MathLib
 {
+
+class PardisoLinearSolverImpl;
 
 class PardisoLinearSolver final
 {
@@ -38,6 +42,11 @@ public:
      * @param x     Solution vector
      */
     void solve(LOLMatrix& A, DenseVector<double> &b, DenseVector<double> &x);
+
+    ~PardisoLinearSolver();
+
+private:
+    std::unique_ptr<PardisoLinearSolverImpl> _data;
 };
 
 }
