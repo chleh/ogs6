@@ -270,6 +270,7 @@ protected:
 
     void assert_sorted(Row const& row)
     {
+        (void) row;
 #ifndef NDEBUG
         for (std::size_t i=0; i<row.size()-1; ++i)
             assert(row[i] < row[i+1]);
