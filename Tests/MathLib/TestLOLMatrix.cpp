@@ -79,6 +79,7 @@ TEST(MathLibSparseLOLMatrix, BasicTest)
 
 }
 
+#ifdef OGS_USE_MKL
 TEST(MathLibSparseLOLMatrix, KnownSolution)
 {
     const unsigned nrows = 3;
@@ -163,4 +164,5 @@ TEST(MathLibSparseLOLMatrix, Scaling)
         EXPECT_EQ(rvalues_result[r], rhs[r]);
     }
 }
+#endif
 
