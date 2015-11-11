@@ -148,8 +148,6 @@ solve(LOLMatrix &A, DenseVector<double> &rhs, DenseVector<double> &result)
 
     double* x = const_cast<double*>(&result[0]);
 
-    double res, res0;
-
     iparm[11] = 0;
     DBUG("\nSolving system...");
     PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
@@ -167,8 +165,9 @@ solve(LOLMatrix &A, DenseVector<double> &rhs, DenseVector<double> &result)
 
     char* uplo = (char*) "non-transposed";
     mkl_dcsrgemv (uplo, &nrows, a, ia, ja, x, bs);
-    res = 0.0;
-    res0 = 0.0;
+
+    double res = 0.0;
+    double res0 = 0.0;
     for (int j = 1; j <= nrows; j++)
     {
         res += (bs[j - 1] - b[j - 1]) * (bs[j - 1] - b[j - 1]);
