@@ -6,6 +6,8 @@
 #include "MathLib/LinAlg/ApplyKnownSolution.h"
 #include "MathLib/LinAlg/Scaling.h"
 
+#include "MathLib/LinAlg/Pardiso/PardisoTools.h"
+
 #include <gtest/gtest.h>
 
 #include <random>
@@ -68,8 +70,6 @@ TEST(MathLibSparseLOLMatrix, BasicTest)
         }
     }
 
-
-
     MathLib::CSRMatrix csrmat = toCSR(lolmat);
 
     ASSERT_EQ(lolmat.getNCols(), csrmat.getNCols());
@@ -77,6 +77,36 @@ TEST(MathLibSparseLOLMatrix, BasicTest)
 
     ASSERT_EQ(lolmat, toLOL(csrmat));
 
+}
+
+TEST(MathLibSparseLOLMatrix, Transpose)
+{
+    const unsigned nrows = 20;
+    const unsigned ncols = 10;
+
+    std::random_device random_dev;
+    std::mt19937 shuffle_gen(random_dev());
+
+    std::uniform_real_distribution<double> values_dist(1.0, 11.0);
+
+    MathLib::LOLMatrix lolmat(nrows, ncols);
+
+    for (unsigned r=0; r<nrows; ++r) {
+        for (unsigned c=0; c<ncols; ++c) {
+            lolmat.setValue(r, c, values_dist(shuffle_gen));
+        }
+    }
+
+    auto lolmatT = lolmat.transpose();
+
+    ASSERT_EQ(lolmat.getNCols(), lolmatT.getNRows());
+    ASSERT_EQ(lolmat.getNRows(), lolmatT.getNCols());
+
+    for (unsigned r=0; r<nrows; ++r) {
+        for (unsigned c=0; c<ncols; ++c) {
+            EXPECT_EQ(lolmat.get(r, c), lolmatT(c, r));
+        }
+    }
 }
 
 #ifdef OGS_USE_MKL
@@ -103,18 +133,18 @@ TEST(MathLibSparseLOLMatrix, KnownSolution)
         rhs[r] = rvalues[r];
     }
 
-    std::vector<std::size_t> known_ids{{1}};
-    std::vector<double> known_vals{{1.0}};
+    std::vector<std::size_t> known_ids{{1, 2}};
+    std::vector<double> known_vals{{1.0, 2.0}};
 
     MathLib::applyKnownSolution(lolmat, rhs, known_ids, known_vals);
 
     double values_result[3][3] = {
-        { 1.0, 0.0, 3.0 },
+        { 1.0, 0.0, 0.0 },
         { 0.0, 1.0, 0.0 },
-        { 6.0, 0.0, 9.0 }
+        { 0.0, 0.0, 1.0 }
     };
 
-    double rvalues_result[3] = { -1.0, 1.0, -7.0 };
+    double rvalues_result[3] = { -7.0, 1.0, 2.0 };
 
     for (unsigned r=0; r<nrows; ++r) {
         for (unsigned c=0; c<ncols; ++c) {
