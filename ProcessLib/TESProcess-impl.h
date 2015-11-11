@@ -23,6 +23,8 @@
 
 #include "TESProcess.h"
 
+#include "BaseLib/Timing.h"
+
 
 namespace
 {
@@ -53,6 +55,19 @@ find_variable(ConfigTree const& config,
          name.c_str(), variable_role.c_str());
 
     return &*variable;
+}
+
+template<typename T>
+void
+reserveSpace(T& /*mat*/, std::size_t) {}
+
+void
+reserveSpace(MathLib::EigenMatrix& mat, std::size_t n)
+{
+    INFO("Reserving %li for %li cols", n, mat.getNCols());
+    Eigen::VectorXi ns = Eigen::VectorXi::Constant(mat.getNCols(), n);
+    // INFO("Reserving %li for %li cols", n, (std::size_t) ns.size());
+    mat.getRawMatrix().reserve(ns);
 }
 
 } // anonymous namespace
@@ -416,6 +431,19 @@ initialize()
 
     _x_prev_ts.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
 
+    {
+        // TODO test, holds for structured quad-like mesh
+        int n;
+        switch (_mesh.getDimension())
+        {
+        case 1: n = 3; break;
+        case 2: n = 9; break;
+        case 3: n = 27; break;
+        }
+        n *= NODAL_DOF;
+
+        reserveSpace(*_A, n);
+    }
 
     // for extrapolation of secondary variables
     _all_mesh_subsets_single_component.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
@@ -718,12 +746,23 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         // Call global assembler for each local assembly item.
         _global_setup.execute(*_global_assembler, _local_assemblers);
 
+        {
+        BaseLib::TimingOneShot timing{"assembly"};
         // Call global assembler for each Neumann boundary local assembler.
         for (auto bc : _neumann_bcs)
             bc->integrate(_global_setup, &x_curr, _x_prev_ts.get());
+        timing.stop();
+        }
 
         // Apply known values from the Dirichlet boundary conditions.
+
+        INFO("size of known values: %li", _dirichlet_bc.global_ids.size());
+
+        {
+        BaseLib::TimingOneShot timing{"apply known solutions"};
         MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
+        timing.stop();
+        }
 
 #if !defined(USE_LIS)
         // double residual = MathLib::norm((*_A) * x_curr - (*_rhs), MathLib::VecNormType::INFINITY_N);
@@ -761,7 +800,11 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         }
 #endif
 
+        {
+        BaseLib::TimingOneShot timing{"linear solver"};
         _linearSolver->solve(*_A, *_rhs, x_curr);
+        timing.stop();
+        }
 
 #ifndef NDEBUG
         if (_total_iteration == 0 && num_try == 0 && _output_global_matrix)
