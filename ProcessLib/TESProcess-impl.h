@@ -57,19 +57,6 @@ find_variable(ConfigTree const& config,
     return &*variable;
 }
 
-template<typename T>
-void
-reserveSpace(T& /*mat*/, std::size_t) {}
-
-void
-reserveSpace(MathLib::EigenMatrix& mat, std::size_t n)
-{
-    INFO("Reserving %li for %li cols", n, mat.getNCols());
-    Eigen::VectorXi ns = Eigen::VectorXi::Constant(mat.getNCols(), n);
-    // INFO("Reserving %li for %li cols", n, (std::size_t) ns.size());
-    mat.getRawMatrix().reserve(ns);
-}
-
 } // anonymous namespace
 
 
@@ -422,7 +409,8 @@ initialize()
         new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets, _global_matrix_order));
 
     DBUG("Compute sparsity pattern");
-    _node_adjacency_table.createTable(_mesh.getNodes());
+    _sparsity_pattern = std::move(AssemblerLib::computeSparsityPattern(
+                *_local_to_global_index_map, _mesh));
 
     DBUG("Allocate global matrix, vectors, and linear solver.");
     _A.reset(_global_setup.createMatrix(_local_to_global_index_map->dofSize()));
@@ -430,20 +418,6 @@ initialize()
     _rhs.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
 
     _x_prev_ts.reset(_global_setup.createVector(_local_to_global_index_map->dofSize()));
-
-    {
-        // TODO test, holds for structured quad-like mesh
-        int n;
-        switch (_mesh.getDimension())
-        {
-        case 1: n = 3; break;
-        case 2: n = 9; break;
-        case 3: n = 27; break;
-        }
-        n *= NODAL_DOF;
-
-        reserveSpace(*_A, n);
-    }
 
     // for extrapolation of secondary variables
     _all_mesh_subsets_single_component.push_back(new MeshLib::MeshSubsets(_mesh_subset_all_nodes));
@@ -740,7 +714,7 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         _global_assembler->setX(&x_curr, _x_prev_ts.get());
 
         _A->setZero();
-        // MathLib::setMatrixSparsity(*_A, _node_adjacency_table); // TODO [CL] that call crashes
+        MathLib::setMatrixSparsity(*_A, _sparsity_pattern);
         *_rhs = 0;   // This resets the whole vector.
 
         // Call global assembler for each local assembly item.

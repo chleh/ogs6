@@ -18,6 +18,7 @@
 
 #include "AssemblerLib/LocalToGlobalIndexMap.h"
 #include "AssemblerLib/VectorMatrixAssembler.h"
+#include "AssemblerLib/ComputeSparsityPattern.h"
 
 #include "FileIO/VtkIO/VtuInterface.h"
 
@@ -27,7 +28,6 @@
 #include "MathLib/Nonlinear/Picard.h"
 
 #include "MeshGeoToolsLib/MeshNodeSearcher.h"
-#include "MeshLib/NodeAdjacencyTable.h"
 
 #include "ProcessVariable.h"
 #include "Process.h"
@@ -107,7 +107,7 @@ private:
     std::vector<LocalAssembler*> _local_assemblers;
     std::unique_ptr<GlobalAssembler> _global_assembler;
 
-    MeshLib::NodeAdjacencyTable _node_adjacency_table;
+    AssemblerLib::SparsityPattern _sparsity_pattern;
 
     std::unique_ptr<MathLib::Nonlinear::Picard> _picard;
 
