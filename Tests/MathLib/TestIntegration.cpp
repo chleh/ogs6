@@ -37,10 +37,10 @@ TEST(MathLib, IntegrationGaussLegendre)
             eps);
 
     auto const& cube = [](double const x){ return x*x*x; };
-    EXPECT_EQ(0.0, MathLib::WeightedSum<MathLib::GaussLegendre<1>>::add(cube));
-    EXPECT_EQ(0.0, MathLib::WeightedSum<MathLib::GaussLegendre<2>>::add(cube));
-    EXPECT_EQ(0.0, MathLib::WeightedSum<MathLib::GaussLegendre<3>>::add(cube));
-    EXPECT_EQ(0.0, MathLib::WeightedSum<MathLib::GaussLegendre<4>>::add(cube));
+    EXPECT_NEAR(0.0, MathLib::WeightedSum<MathLib::GaussLegendre<1>>::add(cube), eps);
+    EXPECT_NEAR(0.0, MathLib::WeightedSum<MathLib::GaussLegendre<2>>::add(cube), eps);
+    EXPECT_NEAR(0.0, MathLib::WeightedSum<MathLib::GaussLegendre<3>>::add(cube), eps);
+    EXPECT_NEAR(0.0, MathLib::WeightedSum<MathLib::GaussLegendre<4>>::add(cube), eps);
 }
 
 

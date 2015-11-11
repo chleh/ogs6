@@ -164,7 +164,7 @@ template <class T>
 const double NumLibFemIsoTest<T>::conductivity = 1e-11;
 
 template <class T>
-const double NumLibFemIsoTest<T>::eps = std::numeric_limits<double>::epsilon();
+const double NumLibFemIsoTest<T>::eps = 10.0 * std::numeric_limits<double>::epsilon();
 
 template <class T>
 const unsigned NumLibFemIsoTest<T>::dim;

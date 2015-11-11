@@ -65,7 +65,7 @@ public:
 
 public:
     NumLibFemNaturalCoordinatesMappingTest()
-    : eps(std::numeric_limits<double>::epsilon())
+    : eps(10.0 * std::numeric_limits<double>::epsilon())
     {
         // create four elements used for testing
         naturalEle   = this->createNaturalShape();
