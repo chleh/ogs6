@@ -19,6 +19,11 @@
 #include "MathLib/LinAlg/Eigen/EigenVector.h"
 #endif
 
+#ifdef USE_LIS
+#include "MathLib/LinAlg/Lis/LisMatrix.h"
+#include "MathLib/LinAlg/Lis/LisVector.h"
+#endif
+
 namespace MathLib
 {
 
@@ -28,6 +33,10 @@ void scaleDiagonal(LOLMatrix& A, DenseVector<double>& b);
 
 #ifdef OGS_USE_EIGEN
 void scaleDiagonal(EigenMatrix& A, EigenVector& b);
+#endif
+
+#ifdef USE_LIS
+inline void scaleDiagonal(LisMatrix& /*A*/, LisVector& /*b*/) {}
 #endif
 
 }
