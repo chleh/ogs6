@@ -68,14 +68,7 @@ public:
     void operator()(std::size_t const id,
         LocalAssembler_* const local_assembler) const
     {
-        if (_x != nullptr)
-        {
-            getLocalNodalValuesIndices(id);
-        }
-        else
-        {
-            // TODO
-        }
+        getLocalNodalValuesIndices(id);
 
         LocalToGlobalIndexMap::RowColumnIndices const r_c_indices(
                     _cache->indices, _cache->indices);
@@ -87,9 +80,6 @@ public:
 private:
     void getLocalNodalValuesIndices(std::size_t const id) const
     {
-        assert(_x != nullptr && _x_prev_ts != nullptr
-               && _x->size() == _x_prev_ts->size());
-        assert(_data_pos.size() > id);
 
         _cache->indices.clear();
 
@@ -102,15 +92,22 @@ private:
             _cache->indices.insert(_cache->indices.end(), idcs.begin(), idcs.end());
         }
 
-        _cache->localX.clear();
-        _cache->localX_prev_ts.clear();
-        _cache->localX.reserve(_cache->indices.size());
-        _cache->localX_prev_ts.reserve(_cache->indices.size());
-
-        for (auto i : _cache->indices)
+        if (_x != nullptr)
         {
-            _cache->localX.emplace_back(_x->get(i));
-            _cache->localX_prev_ts.emplace_back(_x_prev_ts->get(i));
+            assert(_x != nullptr && _x_prev_ts != nullptr
+                   && _x->size() == _x_prev_ts->size());
+            assert(_data_pos.size() > id);
+
+            _cache->localX.clear();
+            _cache->localX_prev_ts.clear();
+            _cache->localX.reserve(_cache->indices.size());
+            _cache->localX_prev_ts.reserve(_cache->indices.size());
+
+            for (auto i : _cache->indices)
+            {
+                _cache->localX.emplace_back(_x->get(i));
+                _cache->localX_prev_ts.emplace_back(_x_prev_ts->get(i));
+            }
         }
     }
 
