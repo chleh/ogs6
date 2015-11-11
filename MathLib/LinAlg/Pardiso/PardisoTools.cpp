@@ -24,7 +24,6 @@ void applyKnownSolution(LOLMatrix &A, DenseVector<double> &b,
 
     //A(k, j) = 0.
     // set row to zero
-    // A.setRowZero(row_id);
     for (auto row_id : vec_knownX_id)
         for (auto& e : A.getRow(row_id)) e.value = 0.0;
 
