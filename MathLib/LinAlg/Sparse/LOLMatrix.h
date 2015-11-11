@@ -82,6 +82,17 @@ public:
 #endif
     }
 
+    LOLMatrix(LOLMatrix&& mat)
+        : _mat{std::move(mat._mat)}
+        , _num_cols{mat._num_cols}
+    {}
+    LOLMatrix& operator= (LOLMatrix&& mat)
+    {
+        _mat = std::move(mat._mat);
+        _num_cols = mat._num_cols;
+        return *this;
+    }
+
     /// return the number of rows
     std::size_t getNRows() const { return _mat.size(); }
 
@@ -263,9 +274,11 @@ public:
 
     void multiply(DenseVector<double> const& x, DenseVector<double>& r) const;
 
+    LOLMatrix transpose() const;
+
 protected:
     std::vector<Row> _mat;
-    const std::size_t _num_cols;
+    std::size_t _num_cols;
 
 
     void assert_sorted(Row const& row)

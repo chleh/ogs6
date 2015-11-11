@@ -36,4 +36,32 @@ multiply(const DenseVector<double> &x, DenseVector<double> &res) const
     }
 }
 
+
+LOLMatrix
+LOLMatrix::transpose() const
+{
+    std::vector<Row> cols(_num_cols);
+
+    std::vector<std::size_t> nnz_per_col(_num_cols);
+
+    for (auto const& row : _mat) {
+        for (auto const& e : row) {
+            ++ nnz_per_col[e.col_idx];
+        }
+    }
+
+    for (std::size_t c=0; c<_num_cols; ++c) {
+        cols[c].reserve(nnz_per_col[c]);
+    }
+
+    auto const num_rows = _mat.size();
+    for (std::size_t r=0; r<num_rows; ++r) {
+        for (auto const& e : _mat[r]) {
+            cols[e.col_idx].emplace_back(r, e.value);
+        }
+    }
+
+    return LOLMatrix(num_rows, std::move(cols));
+}
+
 }
