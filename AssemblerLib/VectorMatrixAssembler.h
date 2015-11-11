@@ -49,6 +49,24 @@ public:
     }
 
 
+    std::vector<GlobalIndexType> const&
+    getLocalNodalIndices(std::size_t const id) const
+    {
+        _cache->indices.clear();
+
+        // Local matrices and vectors will always be ordered by component,
+        // no matter what the order of the global matrix is.
+        for (unsigned c=0; c<_data_pos.getNumComponents(); ++c)
+        {
+            auto const& idcs = _data_pos(id, c).rows;
+            _cache->indices.reserve(_cache->indices.size() + idcs.size());
+            _cache->indices.insert(_cache->indices.end(), idcs.begin(), idcs.end());
+        }
+
+        return _cache->indices;
+    }
+
+
     void getLocalNodalValues(std::size_t const id,
                              std::vector<double> const*& localX,
                              std::vector<double> const*& localX_prev_ts) const
@@ -80,17 +98,7 @@ public:
 private:
     void getLocalNodalValuesIndices(std::size_t const id) const
     {
-
-        _cache->indices.clear();
-
-        // Local matrices and vectors will always be ordered by component,
-        // no matter what the order of the global matrix is.
-        for (unsigned c=0; c<_data_pos.getNumComponents(); ++c)
-        {
-            auto const& idcs = _data_pos(id, c).rows;
-            _cache->indices.reserve(_cache->indices.size() + idcs.size());
-            _cache->indices.insert(_cache->indices.end(), idcs.begin(), idcs.end());
-        }
+        getLocalNodalIndices(id);
 
         if (_x != nullptr)
         {
