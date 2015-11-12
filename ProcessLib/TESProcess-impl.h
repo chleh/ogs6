@@ -763,12 +763,11 @@ singlePicardIteration(GlobalVector& x_prev_iter,
 #endif
 
 #ifndef NDEBUG
-#ifdef OGS_USE_LIS
-        MathLib::finalizeMatrixAssembly(*_A);
-#endif
-
         if (_total_iteration == 0 && num_try == 0 && _output_global_matrix)
         {
+#ifdef USE_LIS
+        MathLib::finalizeMatrixAssembly(*_A);
+#endif
             // TODO [CL] Those files will be written to the working directory.
             //           Relative path needed.
             _A->write("global_matrix.txt");
