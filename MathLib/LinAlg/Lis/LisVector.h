@@ -134,24 +134,25 @@ private:
 };
 
 
+// TODO [CL] check error code!
 inline double norm_1(const LisVector &v)
 {
 	double n;
-	return lis_vector_nrm1(v.getRawVector(), &n);
+	lis_vector_nrm1(v.getRawVector(), &n);
 	return n;
 }
 
 inline double norm_2(const LisVector &v)
 {
 	double n;
-	return lis_vector_nrm2(v.getRawVector(), &n);
+	lis_vector_nrm2(v.getRawVector(), &n);
 	return n;
 }
 
 inline double norm_max(const LisVector &v)
 {
 	double n;
-	return lis_vector_nrmi(v.getRawVector(), &n);
+	lis_vector_nrmi(v.getRawVector(), &n);
 	return n;
 }
 
