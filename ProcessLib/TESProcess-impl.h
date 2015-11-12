@@ -249,7 +249,7 @@ TESProcess(MeshLib::Mesh& mesh,
 
         if (par)
         {
-            _linearSolver.reset(new typename GlobalSetup::LinearSolver(*par));
+            _linear_solver_options.reset(new BaseLib::ConfigTree(*par));
         }
         else
         {
@@ -425,6 +425,8 @@ initialize()
                 new AssemblerLib::LocalToGlobalIndexMap(_all_mesh_subsets_single_component, _global_matrix_order)
                 );
 
+    _linear_solver.reset(new typename GlobalSetup::LinearSolver(
+        *_A, "", _linear_solver_options.get()));
     _extrapolator.reset(new ExtrapolatorImpl(*_local_to_global_index_map_single_component));
 
     if (_mesh.getDimension()==1)
@@ -776,7 +778,7 @@ singlePicardIteration(GlobalVector& x_prev_iter,
 
         {
         BaseLib::TimingOneShot timing{"linear solver"};
-        _linearSolver->solve(*_A, *_rhs, x_curr);
+        _linear_solver->solve(*_rhs, x_curr);
         timing.stop();
         }
 
