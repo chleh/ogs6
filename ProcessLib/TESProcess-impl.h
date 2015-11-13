@@ -720,16 +720,16 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         MathLib::setMatrixSparsity(*_A, _sparsity_pattern);
         *_rhs = 0;   // This resets the whole vector.
 
-        // Call global assembler for each local assembly item.
-        _global_setup.execute(*_global_assembler, _local_assemblers);
-
         {
         BaseLib::TimingOneShot timing{"assembly"};
+        // Call global assembler for each local assembly item.
+        _global_setup.execute(*_global_assembler, _local_assemblers);
+        timing.stop();
+        }
+
         // Call global assembler for each Neumann boundary local assembler.
         for (auto bc : _neumann_bcs)
             bc->integrate(_global_setup, &x_curr, _x_prev_ts.get());
-        timing.stop();
-        }
 
         // Apply known values from the Dirichlet boundary conditions.
 
@@ -873,13 +873,18 @@ singlePicardIteration(GlobalVector& x_prev_iter,
                              + "_" +    std::to_string(_assembly_params._iteration_in_current_timestep)
                              + "_" +    std::to_string(num_try)
                              + ".vtu";
+
+            BaseLib::TimingOneShot timing{"output iteration results"};
             postTimestep(fn, 0);
+            timing.stop();
         }
 
         bool check_passed = true;
 
         if (!Trafo::constrained)
         {
+            BaseLib::TimingOneShot timing{"checking bounds"};
+
             // bounds checking only has to happen if the vapour mass fraction is non-logarithmic.
 
             auto& ga = *_global_assembler;
@@ -903,6 +908,8 @@ singlePicardIteration(GlobalVector& x_prev_iter,
             {
                 x_curr = x_prev_iter;
             }
+
+            timing.stop();
         }
 
         iteration_accepted = check_passed;
