@@ -10,6 +10,8 @@
  *
  */
 
+#include <memory>
+
 #ifndef NDEBUG
 #include <fenv.h>
 #endif
@@ -22,6 +24,8 @@
 #include "BaseLib/ConfigTree.h"
 #include "BaseLib/ConfigTreeNew.h"
 #include "BaseLib/FileTools.h"
+
+#include "FileIO/VtkIO/PVDFile.h"
 
 #include "Applications/ApplicationsLib/LinearSolverLibrarySetup.h"
 #include "Applications/ApplicationsLib/LogogSetup.h"
@@ -39,7 +43,7 @@ void solveProcesses(ProjectData &project)
 	std::string const out_pref = output_control.getFilePrefix();
 
 	auto do_output = [out_pref](unsigned pcs, ProcessLib::Process* p,
-					 unsigned ts, double current_time)
+					 unsigned ts, double current_time, FileIO::PVDFile& pvdf)
 	{
 		std::string const output_file_name =
 				out_pref + "_pcs_" + std::to_string(pcs)
@@ -49,14 +53,21 @@ void solveProcesses(ProjectData &project)
 		DBUG("output to %s", output_file_name.c_str());
 		// auto const& p = _processes[pcs];
 		p->postTimestep(output_file_name, ts);
+		pvdf.addVTUFile(output_file_name, current_time);
 	};
+
+	std::vector<std::unique_ptr<FileIO::PVDFile> > pvd_files;
 
 	{
 		unsigned i = 0;  // process counter, used to distinguish output files
 		for (auto p = project.processesBegin(); p != project.processesEnd();
 			 ++p)
 		{
-			do_output(i, *p, 0, 0.0);
+			std::string const fn = out_pref + "_pcs_" + std::to_string(i)
+								   + ".pvd";
+			pvd_files.emplace_back(new FileIO::PVDFile(fn));
+
+			do_output(i, *p, 0, 0.0, *pvd_files.back());
 		}
 	}
 
@@ -89,7 +100,7 @@ void solveProcesses(ProjectData &project)
 
 			if (output_timestep)
 			{
-				do_output(i, *p, timestep, current_time);
+				do_output(i, *p, timestep, current_time, *pvd_files[i]);
 			}
 
 			++i;
@@ -108,7 +119,7 @@ void solveProcesses(ProjectData &project)
 		for (auto p = project.processesBegin(); p != project.processesEnd();
 			 ++p)
 		{
-			do_output(i, *p, timestep, current_time);
+			do_output(i, *p, timestep, current_time, *pvd_files[i]);
 		}
 	}
 
