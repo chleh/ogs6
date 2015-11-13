@@ -39,7 +39,7 @@ bool Picard::solve(T_FUNCTOR &functor,  const T_VALUE &x0, T_VALUE &x_new)
     double abs_error = -1.;
     double rel_error = -1.;
     for (itr_cnt=0; itr_cnt<_max_itr; itr_cnt++) {
-        INFO("-> picard iteration %li/%li started", itr_cnt, _max_itr);
+        INFO("-> picard iteration %lu/%lu started", itr_cnt, _max_itr);
         functor(x_old, x_new);
         dx = x_new;
         dx -= x_old;
