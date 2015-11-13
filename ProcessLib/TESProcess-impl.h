@@ -711,6 +711,7 @@ singlePicardIteration(GlobalVector& x_prev_iter,
 
     do
     {
+        INFO("-> TES process try number %u in current picard iteration", num_try);
         _assembly_params._number_of_try_of_iteration = num_try;
 
         _global_assembler->setX(&x_curr, _x_prev_ts.get());
