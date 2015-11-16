@@ -22,6 +22,8 @@
 
 #include "LisCheck.h"
 
+#include "BaseLib/Timing.h"
+
 namespace MathLib
 {
 
@@ -62,8 +64,12 @@ void LisLinearSolver::solve(LisVector &b, LisVector &x)
 
     // solve
     INFO("-> solve");
+    {
+    BaseLib::TimingOneShot timing("lis_solve only");
     ierr = lis_solve(_A.getRawMatrix(), b.getRawVector(), x.getRawVector(), solver);
+    timing.stop();
     checkLisError(ierr);
+    }
 
     {
         LIS_INT status;
