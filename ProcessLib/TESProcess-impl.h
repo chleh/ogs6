@@ -751,7 +751,7 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         DBUG("residual of old solution with new matrix: %g", residual);
 #endif
 
-        MathLib::scaleDiagonal(*_A, *_rhs);
+        // MathLib::scaleDiagonal(*_A, *_rhs);
 
 #ifndef USE_LIS
         // _A->getRawMatrix().rowwise() /= diag; //  = invDiag * _A->getRawMatrix();
