@@ -201,7 +201,11 @@ PardisoLinearSolverImpl::~PardisoLinearSolverImpl()
 }
 
 
-PardisoLinearSolver::PardisoLinearSolver(const BaseLib::ConfigTree &/*option*/)
+PardisoLinearSolver::PardisoLinearSolver(
+        LOLMatrix &A, const std::string /*solver_name*/,
+        BaseLib::ConfigTree const*const /*option*/)
+    : _A{A}
+    , _data{new PardisoLinearSolverImpl}
 {
     /*
     boost::optional<std::string> solver_type
@@ -215,19 +219,16 @@ PardisoLinearSolver::PardisoLinearSolver(const BaseLib::ConfigTree &/*option*/)
         ERR("option <solver_type> not given");
     }
     */
-
-    _data.reset(new PardisoLinearSolverImpl);
 }
 
 void PardisoLinearSolver
-::solve(LOLMatrix &A, DenseVector<double> &rhs, DenseVector<double> &result)
+::solve(DenseVector<double> &rhs, DenseVector<double> &result)
 {
-    _data->solve(A, rhs, result);
+    _data->solve(_A, rhs, result);
 }
+
 
 PardisoLinearSolver::~PardisoLinearSolver()
-{
-}
-
+{}
 
 }
