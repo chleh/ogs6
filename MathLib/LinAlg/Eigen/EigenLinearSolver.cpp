@@ -118,7 +118,7 @@ EigenLinearSolver::EigenLinearSolver(EigenMatrix &A,
         using SolverType = Eigen::ConjugateGradient<EigenMatrix::RawMatrixType, Eigen::Lower, Eigen::DiagonalPreconditioner<double>>;
         _solver = new details::EigenIterativeLinearSolver<SolverType, IEigenSolver>(A.getRawMatrix());
     }
-#ifdef OGS_USE_MKL
+#ifdef EIGEN_USE_MKL_ALL
     else if (_option.solver_type == EigenOption::SolverType::PardisoLU) {
         using SolverType = Eigen::PardisoLU<EigenMatrix::RawMatrixType>;
         _solver = new details::EigenDirectLinearSolver<SolverType, IEigenSolver>();
