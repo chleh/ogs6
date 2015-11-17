@@ -1378,10 +1378,14 @@ assembleIntegrationPoint(unsigned integration_point,
 
     // using auto for the type went terribly wrong!
     // calculating grad_p not separately also went wrong!
-    auto const grad_p = (smDNdx * Eigen::Map<const typename Traits::Vector1Comp>(localX.data(), N)).eval();
-    assert(grad_p.size() == D);
+    // auto const grad_p = (smDNdx * Eigen::Map<const typename Traits::Vector1Comp>(localX.data(), N)).eval();
+    // assert(grad_p.size() == D);
     auto const velocity = (Traits::blockDimDim(laplaceCoeffMat, 0, 0, D, D)
-                           * (grad_p / -_rho_GR)).eval();
+                           * (
+                               smDNdx * Eigen::Map<const typename Traits::Vector1Comp>(localX.data(), N) // grad_p
+                               / -_rho_GR
+                               )
+                           ).eval();
     // auto const velocity = (laplaceCoeffMat.block(0, 0, D, D) * grad_p
     //                                  / (-_rho_GR)).eval();
     assert(velocity.size() == D);
@@ -1395,23 +1399,30 @@ assembleIntegrationPoint(unsigned integration_point,
     auto const detJ_w_N_NT = (detJ_w_N * smN.transpose()).eval();
     assert(detJ_w_N_NT.rows() == N && detJ_w_N_NT.cols() == N);
 
-    auto const vT_dNdx = (velocity.transpose() * smDNdx).eval();
-    assert(vT_dNdx.cols() == N && vT_dNdx.rows() == 1);
-    auto const detJ_w_N_vT_dNdx = (detJ_w_N * vT_dNdx).eval();
+    // auto const vT_dNdx = (velocity.transpose() * smDNdx).eval();
+    // assert(vT_dNdx.cols() == N && vT_dNdx.rows() == 1);
+    auto const detJ_w_N_vT_dNdx = (detJ_w_N
+                                   * velocity.transpose() * smDNdx // vT_dNdx
+                                   ).eval();
     assert(detJ_w_N_vT_dNdx.rows() == N && detJ_w_N_vT_dNdx.cols() == N);
 
     for (unsigned r=0; r<NODAL_DOF; ++r)
     {
         for (unsigned c=0; c<NODAL_DOF; ++c)
         {
+            /*
             auto tmp = (smDetJ * weight * smDNdx.transpose()).eval();
             assert(tmp.cols() == D && tmp.rows() == N);
             tmp *= Traits::blockDimDim(laplaceCoeffMat, D*r, D*c, D, D);
             assert(tmp.cols() == D && tmp.rows() == N);
             auto const tmp2 = (tmp * smDNdx).eval();
             assert(tmp2.cols() == N && tmp2.rows() == N);
+            */
 
-            Traits::blockShpShp(*_Lap, N*r, N*c, N, N).noalias() += tmp2;
+            Traits::blockShpShp(*_Lap, N*r, N*c, N, N).noalias() +=
+                    smDetJ * weight * smDNdx.transpose()                    // tmp = ...
+                    * Traits::blockDimDim(laplaceCoeffMat, D*r, D*c, D, D)  // tmp *= ...
+                    * smDNdx;                                               // tmp2 = ...
             Traits::blockShpShp(*_Mas, N*r, N*c, N, N).noalias() += detJ_w_N_NT      * massCoeffMat(r, c);
             Traits::blockShpShp(*_Adv, N*r, N*c, N, N).noalias() += detJ_w_N_vT_dNdx * advCoeffMat(r, c);
             Traits::blockShpShp(*_Cnt, N*r, N*c, N, N).noalias() += detJ_w_N_NT      * contentCoeffMat(r, c);
