@@ -105,6 +105,111 @@ struct DataTraitsFixed
     using Vector1Comp = typename ShapeMatrices::ShapeType;
 
     using LaplaceMatrix = Mat<Dim*NodalDOF, Dim*NodalDOF>;
+
+
+    template<typename Mat>
+    static
+    typename std::enable_if<NodalDOF != 0,
+        decltype(std::declval<const Mat>().template block<Dim, Dim>(0u, 0u))
+    >::type
+    blockDimDim(Mat const& mat,
+                unsigned top, unsigned left, unsigned width, unsigned height)
+    {
+        assert(width==Dim && height==Dim);
+        (void) width; (void) height;
+        return mat.template block<Dim, Dim>(top, left);
+    }
+
+    template<typename Mat>
+    static
+    typename std::enable_if<NodalDOF == 0,
+        decltype(std::declval<const Mat>().block(0u, 0u, 0u, 0u))
+    >::type
+    blockDimDim(Mat const& mat,
+                unsigned top, unsigned left, unsigned width, unsigned height)
+    {
+        assert(width == height);
+        return mat.block(top, left, width, height);
+    }
+    template<typename Mat>
+    static
+    typename std::enable_if<NodalDOF != 0,
+        decltype(std::declval<Mat>().template block<Dim, Dim>(0u, 0u))
+    >::type
+    blockDimDim(Mat& mat,
+                unsigned top, unsigned left, unsigned width, unsigned height)
+    {
+        assert(width==Dim && height==Dim);
+        (void) width; (void) height;
+        return mat.template block<Dim, Dim>(top, left);
+    }
+
+    template<typename Mat>
+    static
+    typename std::enable_if<NodalDOF == 0,
+        decltype(std::declval<Mat>().block(0u, 0u, 0u, 0u))
+    >::type
+    blockDimDim(Mat& mat,
+                unsigned top, unsigned left, unsigned width, unsigned height)
+    {
+        assert(width == height);
+        return mat.block(top, left, width, height);
+    }
+
+
+    template<typename Mat>
+    static
+    typename std::enable_if<NodalDOF != 0,
+        decltype(std::declval<const Mat>().template block<NIntPts, NIntPts>(0u, 0u))
+    >::type
+    blockShpShp(Mat const& mat,
+                unsigned top, unsigned left, unsigned width, unsigned height)
+    {
+        assert(width==NIntPts && height==NIntPts);
+        (void) width; (void) height;
+        return mat.template block<NIntPts, NIntPts>(top, left);
+    }
+
+    template<typename Mat>
+    static
+    typename std::enable_if<NodalDOF == 0,
+        decltype(std::declval<const Mat>().block(0u, 0u, 0u, 0u))
+    >::type
+    blockShpShp(Mat const& mat,
+                unsigned top, unsigned left, unsigned width, unsigned height)
+    {
+        assert(width == height);
+        return mat.block(top, left, width, height);
+    }
+
+    template<typename Mat>
+    static
+    typename std::enable_if<NodalDOF != 0,
+        decltype(std::declval<Mat>().template block<NIntPts, NIntPts>(0u, 0u))
+    >::type
+    blockShpShp(Mat& mat,
+                unsigned top, unsigned left, unsigned width, unsigned height)
+    {
+        assert(width==NIntPts && height==NIntPts);
+        (void) width; (void) height;
+        return mat.template block<NIntPts, NIntPts>(top, left);
+    }
+
+    template<typename Mat>
+    static
+    typename std::enable_if<NodalDOF == 0,
+        decltype(std::declval<Mat>().block(0u, 0u, 0u, 0u))
+    >::type
+    blockShpShp(Mat& mat,
+                unsigned top, unsigned left, unsigned width, unsigned height)
+    {
+        assert(width == height);
+        return mat.block(top, left, width, height);
+    }
+
+private:
+    static const unsigned _Dim = Dim;
+    static const unsigned _NIntPts = NIntPts;
 };
 
 #ifndef EIGEN_DYNAMIC_SHAPE_MATRICES

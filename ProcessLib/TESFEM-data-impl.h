@@ -487,21 +487,11 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 	using Mat = typename Traits::MatrixDimDim;
 
 	// TODO: k_rel
-	Mat L_pp = _AP->_solid_perm_tensor.block(0,0,dim,dim) * _rho_GR / eta_GR;
-
-	Mat L_pT = Mat::Zero(dim, dim);
-	Mat L_px = Mat::Zero(dim, dim);
-
-	Mat L_Tp = Mat::Zero(dim, dim);
+	Mat L_pp = Traits::blockDimDim(_AP->_solid_perm_tensor, 0,0,dim,dim) * _rho_GR / eta_GR;
 
 	// TODO: add zeolite part
 	Mat L_TT = Mat::Identity(dim, dim)
 					  * ( _AP->_poro * lambda_F + (1.0 - _AP->_poro) * lambda_S);
-
-	Mat L_Tx = Mat::Zero(dim, dim);
-
-	Mat L_xp = Mat::Zero(dim, dim);
-	Mat L_xT = Mat::Zero(dim, dim);
 
 	Mat L_xx = Mat::Identity(dim, dim)
 			   * (_AP->_tortuosity * _AP->_poro * _rho_GR
@@ -509,19 +499,20 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 				  * Trafo::dxdy(_vapour_mass_fraction)
 				  );
 
-	typename Traits::LaplaceMatrix L(dim*3, dim*3);
+	typename Traits::LaplaceMatrix L
+			= Traits::LaplaceMatrix::Zero(dim*NODAL_DOF, dim*NODAL_DOF);
 
-	L.block(    0,     0, dim, dim) = L_pp;
-	L.block(    0,   dim, dim, dim) = L_pT;
-	L.block(    0, 2*dim, dim, dim) = L_px;
+	Traits::blockDimDim(L,     0,     0, dim, dim) = L_pp;
+	// Traits::blockDimDim(L,     0,   dim, dim, dim) = Mat::Zero(dim, dim); // L_pT
+	// Traits::blockDimDim(L,     0, 2*dim, dim, dim) = Mat::Zero(dim, dim); // L_px
 
-	L.block(  dim,     0, dim, dim) = L_Tp;
-	L.block(  dim,   dim, dim, dim) = L_TT;
-	L.block(  dim, 2*dim, dim, dim) = L_Tx;
+	// Traits::blockDimDim(L,   dim,     0, dim, dim) = Mat::Zero(dim, dim); // L_Tp
+	Traits::blockDimDim(L,   dim,   dim, dim, dim) = L_TT;
+	// Traits::blockDimDim(L,   dim, 2*dim, dim, dim) = Mat::Zero(dim, dim); // L_Tx
 
-	L.block(2*dim,     0, dim, dim) = L_xp;
-	L.block(2*dim,   dim, dim, dim) = L_xT;
-	L.block(2*dim, 2*dim, dim, dim) = L_xx;
+	// Traits::blockDimDim(L, 2*dim,     0, dim, dim) = Mat::Zero(dim, dim); // L_xp
+	// Traits::blockDimDim(L, 2*dim,   dim, dim, dim) = Mat::Zero(dim, dim); // L_xT
+	Traits::blockDimDim(L, 2*dim, 2*dim, dim, dim) = L_xx;
 
 	return L;
 }
@@ -1389,8 +1380,10 @@ assembleIntegrationPoint(unsigned integration_point,
     // calculating grad_p not separately also went wrong!
     auto const grad_p = (smDNdx * Eigen::Map<const typename Traits::Vector1Comp>(localX.data(), N)).eval();
     assert(grad_p.size() == D);
-    auto const velocity = (laplaceCoeffMat.block(0, 0, D, D) * grad_p
-                                     / (-_rho_GR)).eval();
+    auto const velocity = (Traits::blockDimDim(laplaceCoeffMat, 0, 0, D, D)
+                           * (grad_p / -_rho_GR)).eval();
+    // auto const velocity = (laplaceCoeffMat.block(0, 0, D, D) * grad_p
+    //                                  / (-_rho_GR)).eval();
     assert(velocity.size() == D);
 
     for (unsigned d=0; d<D; ++d)
@@ -1413,15 +1406,15 @@ assembleIntegrationPoint(unsigned integration_point,
         {
             auto tmp = (smDetJ * weight * smDNdx.transpose()).eval();
             assert(tmp.cols() == D && tmp.rows() == N);
-            tmp *= laplaceCoeffMat.block(D*r, D*c, D, D);
+            tmp *= Traits::blockDimDim(laplaceCoeffMat, D*r, D*c, D, D);
             assert(tmp.cols() == D && tmp.rows() == N);
             auto const tmp2 = (tmp * smDNdx).eval();
             assert(tmp2.cols() == N && tmp2.rows() == N);
 
-            _Lap->block(N*r, N*c, N, N).noalias() += tmp2;
-            _Mas->block(N*r, N*c, N, N).noalias() += detJ_w_N_NT      * massCoeffMat(r, c);
-            _Adv->block(N*r, N*c, N, N).noalias() += detJ_w_N_vT_dNdx * advCoeffMat(r, c);
-            _Cnt->block(N*r, N*c, N, N).noalias() += detJ_w_N_NT      * contentCoeffMat(r, c);
+            Traits::blockShpShp(*_Lap, N*r, N*c, N, N).noalias() += tmp2;
+            Traits::blockShpShp(*_Mas, N*r, N*c, N, N).noalias() += detJ_w_N_NT      * massCoeffMat(r, c);
+            Traits::blockShpShp(*_Adv, N*r, N*c, N, N).noalias() += detJ_w_N_vT_dNdx * advCoeffMat(r, c);
+            Traits::blockShpShp(*_Cnt, N*r, N*c, N, N).noalias() += detJ_w_N_NT      * contentCoeffMat(r, c);
         }
     }
 
