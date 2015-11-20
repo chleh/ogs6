@@ -67,8 +67,12 @@ static double fluid_density(const double p, const double T, const double x)
 template<int i>
 inline double mypow(const double x)
 {
-    const double p = mypow<(i>>1)>(x);
-    return (i&1) ? p*p*x : p*p;
+    if (i<0) {
+        return 1.0/mypow<-i>(x);
+    } else {
+        const double p = mypow<(i>>1)>(x);
+        return (i&1) ? p*p*x : p*p;
+    }
 }
 
 template<>

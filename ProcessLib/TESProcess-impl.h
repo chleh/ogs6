@@ -766,7 +766,7 @@ singlePicardIteration(GlobalVector& x_prev_iter,
 #ifndef NDEBUG
         if (_total_iteration == 0 && num_try == 0 && _output_global_matrix)
         {
-#ifdef USE_LIS
+#if defined(USE_LIS) && !defined(OGS_USE_EIGENLIS)
         MathLib::finalizeMatrixAssembly(*_A);
 #endif
             // TODO [CL] Those files will be written to the working directory.
