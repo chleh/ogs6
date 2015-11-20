@@ -253,149 +253,168 @@ static double fluid_viscosity(const double p, const double T, const double x)
 			+ V1*x1 / (x1 + x0 * phi_21);
 }
 
-static double fluid_heat_conductivity_N2(double rho, double T)
+
+struct FluidHeatConductivityN2
 {
-	const double X1 = 0.95185202;
-	const double X2 = 1.0205422;
+	static double get(double rho, double T)
+	{
+		const double X1 = 0.95185202;
+		const double X2 = 1.0205422;
 
-	const double rho_c = 314;             // [kg/m3]
-	const double M = 28.013;
-	const double k = 1.38062e-23;
-	const double eps = 138.08483e-23;
-	const double N_A = 6.02213E26;
-	const double R = 8.31434;
-	// const double R = GAS_CONST;
-	const double CCF = 4.173;             //mW/m/K
+		const double rho_c = 314;             // [kg/m3]
+		const double M = 28.013;
+		const double k = 1.38062e-23;
+		const double eps = 138.08483e-23;
+		const double N_A = 6.02213E26;
+		const double R = 8.31434;
+		// const double R = GAS_CONST;
+		const double CCF = 4.173;             //mW/m/K
 
-	const double c1 = 0.3125;
-	const double c2 = 2.0442e-49;
-	const double sigma = 0.36502496e-09;
+		const double c1 = 0.3125;
+		const double c2 = 2.0442e-49;
+		const double sigma = 0.36502496e-09;
 
-	double F;
-	double A[5],f[9],C[4];
-	double sum = 0,eta_0,c_v0,T_star,Omega = 0;
-	double lamda_tr,lamda_in,lamda_r,lamda_0,lamda;
+		rho /= rho_c;
 
-	int i;
+		// dilute heat conductivity
+		const double sum1 = loop1_term<0>(T) + loop1_term<1>(T) + loop1_term<2>(T)
+							+ loop1_term<3>(T) + loop1_term<4>(T) + loop1_term<5>(T)
+							+ loop1_term<6>(T);
+		const double temp (std::exp ((f[8] / T)) - 1);
+		const double c_v0
+				= R * (sum1 + ((f[7] * (f[8] / T) * (f[8] / T) * (std::exp((f[8] / T))))
+				                / (temp * temp) - 1));
 
-	T_star = T * k / eps;
-	rho = rho / rho_c;
+		double cvint;
+		cvint = c_v0 * 1000 / N_A;
 
-	A[0] = 0.46649;
-	A[1] = -0.57015;
-	A[2] = 0.19164;
-	A[3] = -0.03708;
-	A[4] = 0.00241;
+		// dilute gas viscosity
+		const double log_T_star = std::log(T * k / eps);
 
-	f[0] = -0.837079888737e3;
-	f[1] = 0.37914711487e2;
-	f[2] = -0.601737844275;
-	f[3] = 0.350418363823e1;
-	f[4] = -0.874955653028e-5;
-	f[5] = 0.148968607239e-7;
-	f[6] = -0.256370354277e-11;
-	f[7] = 0.100773735767e1;
-	f[8] = 0.335340610e4;
+		const double Omega
+				= std::exp(
+					  loop2_term<0>(log_T_star) + loop2_term<1>(log_T_star) + loop2_term<2>(log_T_star) +
+					  loop2_term<3>(log_T_star) + loop2_term<4>(log_T_star)
+					  );
 
-	C[0] = 3.3373542;
-	C[1] = 0.37098251;
-	C[2] = 0.89913456;
-	C[3] = 0.16972505;
+		//eta in [Pa*s]
+		const double eta_0 = 1e6 * (c1 * std::sqrt(c2 * T) / (sigma * sigma * Omega));
 
-	// dilute heat conductivity
-	for (i = 0; i < 7; i++)
-		sum = sum + f[i] * std::pow(T,(i - 3));
-	const double temp (std::exp ((f[8] / T)) - 1);
-	c_v0 = R * (sum + ((f[7] * (f[8] / T) * (f[8] / T) * (std::exp((f[8] / T)))) / (temp * temp) - 1));
-	sum = 0;
+		const double F = eta_0 * k * N_A / (M * 1000);
 
-	double cvint;
-	cvint = c_v0 * 1000 / N_A;
+		const double lambda_tr = 2.5 * (1.5 - X1);
+		const double lambda_in = X2 * (cvint / k + X1);
 
-	// dilute gas viscosity
-	for (i = 0; i < 5; i++)
-		Omega = Omega + A[i] * std::pow(log(T_star),i);
-	Omega = std::exp (Omega);
+		const double lambda_0 = F * (lambda_tr + lambda_in);
 
-	//eta in [Pa*s]
-	eta_0 = 1e6 * (c1 * std::sqrt(c2 * T) / (sigma * sigma * Omega));
+		const double sum2 = loop3_term<0>(rho) + loop3_term<1>(rho)
+							+ loop3_term<2>(rho) + loop3_term<3>(rho);
+		const double lambda_r = sum2 * CCF;
 
-	F = eta_0 * k * N_A / (M * 1000);
+		return (lambda_0 + lambda_r) / 1000;   //lambda in [W/m/K]
+	}
 
-	lamda_tr = 2.5 * (1.5 - X1);
-	lamda_in = X2 * (cvint / k + X1);
+private:
+	template<int i>
+	static double loop1_term(const double T)
+	{
+		return f[i] * mypow<i-3>(T);
+	}
 
-	lamda_0 = F * (lamda_tr + lamda_in);
-	sum = 0;
-	for (i = 0; i < 4; i++)
-		sum = sum + C[i] * std::pow(rho,(i + 1));
+	template<int i>
+	static double loop2_term(const double log_T_star)
+	{
+		return A[i] * mypow<i>(log_T_star);
+	}
 
-	lamda_r = sum * CCF;
+	template<int i>
+	static double loop3_term(const double rho)
+	{
+		return C[i] * mypow<i+1>(rho);
+	}
 
-	lamda = (lamda_0 + lamda_r) / 1000;   //lamda in [W/m/K]
+	constexpr static double A[5] = {
+		0.46649, -0.57015, 0.19164, -0.03708, 0.00241
+	};
 
-	return lamda;
-}
+	constexpr static double f[9] = {
+		-0.837079888737e3,   0.37914711487e2,  -0.601737844275,
+		 0.350418363823e1,  -0.874955653028e-5, 0.148968607239e-7,
+		-0.256370354277e-11, 0.100773735767e1,  0.335340610e4
+	};
 
-static double fluid_heat_conductivity_H2O(double rho, double T)
+	constexpr static double C[4] = {
+		3.3373542, 0.37098251, 0.89913456, 0.16972505
+	};
+};
+
+
+struct FluidHeatConductivityH2O
 {
-	double lamda,lamda_0,lamda_1,lamda_2;
-	double sum1 = 0;
-	double S,Q,dT;
-	double a[4],b[3],B[2],d[4],C[6];
-	int i;
+	static double get(double rho, double T)
+	{
+		double S, Q;
+		double b[3], B[2], d[4], C[6];
 
-	T = T / 647.096;
-	rho = rho / 317.11;
+		T   /= 647.096;
+		rho /= 317.11;
 
-	a[0] =  0.0102811;
-	a[1] =  0.0299621;
-	a[2] =  0.0156146;
-	a[3] = -0.00422464;
+		b[0] = -0.397070;
+		b[1] =  0.400302;
+		b[2] =  1.060000;
 
-	b[0] = -0.397070;
-	b[1] =  0.400302;
-	b[2] =  1.060000;
+		B[0] = -0.171587;
+		B[1] =  2.392190;
 
-	B[0] = -0.171587;
-	B[1] =  2.392190;
+		d[0] = 0.0701309;
+		d[1] = 0.0118520;
+		d[2] = 0.00169937;
+		d[3] = -1.0200;
 
-	d[0] = 0.0701309;
-	d[1] = 0.0118520;
-	d[2] = 0.00169937;
-	d[3] = -1.0200;
+		C[0] = 0.642857;
+		C[1] = -4.11717;
+		C[2] = -6.17937;
+		C[3] = 0.00308976;
+		C[4] = 0.0822994;
+		C[5] = 10.0932;
 
-	C[0] = 0.642857;
-	C[1] = -4.11717;
-	C[2] = -6.17937;
-	C[3] = 0.00308976;
-	C[4] = 0.0822994;
-	C[5] = 10.0932;
+		const double sum1 = loop_term<0>(T) + loop_term<1>(T)
+							+ loop_term<2>(T) + loop_term<3>(T);
 
-	for (i = 0; i < 4; i++)
-		sum1 = sum1 + a[i] * std::pow(T,i);
+		const double lambda_0 = std::sqrt(T) * sum1;
+		const double lambda_1 = b[0] + b[1] * rho + b[2] * std::exp(B[0] * (rho + B[1]) * (rho + B[1]));
 
-	lamda_0 = std::sqrt(T) * sum1;
-	lamda_1 = b[0] + b[1] * rho + b[2] * std::exp(B[0] * (rho + B[1]) * (rho + B[1]));
+		const double dT = fabs(T - 1) + C[3];
+		const double dT_pow_3_5 = std::pow(dT, 3./5.);
+		Q = 2 + (C[4] / dT_pow_3_5);
 
-	dT = fabs(T - 1) + C[3];
-	Q = 2 + (C[4] / std::pow(dT,3. / 5.));
+		if (T >= 1)
+			S = 1 / dT;
+		else
+			S = C[5] / dT_pow_3_5;
 
-	if (T >= 1)
-		S = 1 / dT;
-	else
-		S = C[5] / std::pow(dT,3. / 5.);
+		const double rho_pow_9_5 = std::pow(rho, 9./5.);
+		const double rho_pow_Q   = std::pow(rho, Q);
+		const double T_pow_3_2   = T * std::sqrt(T);
+		const double lambda_2 =
+				(d[0] /
+				 mypow<10>(T) + d[1]) * rho_pow_9_5 * std::exp(C[0] * (1 - rho * rho_pow_9_5))
+				+ d[2]* S * rho_pow_Q * std::exp((Q / (1. + Q)) * (1 - rho * rho_pow_Q))
+				+ d[3] * std::exp(C[1] * T_pow_3_2 + C[2] / mypow<5>(rho));
 
-	lamda_2 =
-	        (d[0] /
-	         mypow<10>(T) + d[1]) * std::pow(rho,9. / 5.) * std::exp(C[0] * (1 - std::pow(rho,14. / 5.)))
-	        + d[2]* S * std::pow(rho,Q) * std::exp((Q / (1. + Q)) * (1 - std::pow(rho,(1. + Q))))
-	        + d[3] * std::exp(C[1] * std::pow(T,3. / 2.) + C[2] / mypow<5>(rho));
+		return lambda_0 + lambda_1 + lambda_2; // lambda in [W/m/K]
+	}
 
-	lamda = (lamda_0 + lamda_1 + lamda_2); // lamda in [W/m/K]
+private:
+	template<unsigned i>
+	static double loop_term(const double T)
+	{
+		return a[i] * mypow<i>(T);
+	}
 
-	return lamda;
-}
+	static constexpr double a[4] = { 0.0102811, 0.0299621, 0.0156146, -0.00422464 };
+};
+
 
 static double fluid_heat_conductivity(const double p, const double T, const double x)
 {
@@ -407,18 +426,19 @@ static double fluid_heat_conductivity(const double p, const double T, const doub
 	// TODO [CL] max() is redundant if the fraction is guaranteed to be between 0 and 1.
 	//reactive component
 	const double x0 = std::max(M0*x/(M0*x + M1*(1.0-x)), 0.); // convert mass to mole fraction
-	const double k0 = fluid_heat_conductivity_H2O(M1*p/(GAS_CONST*T), T);
+	const double k0 = FluidHeatConductivityH2O::get(M1*p/(GAS_CONST*T), T);
 	//inert component
 	const double x1 = 1.0 - x0;
-	const double k1 = fluid_heat_conductivity_N2(M0*p/(GAS_CONST*T), T);
+	const double k1 = FluidHeatConductivityN2::get(M0*p/(GAS_CONST*T), T);
 
 	const double M1_over_M2 = M1/M0; //reactive over inert
 	const double V1_over_V2 = FluidViscosityH2O::get(M1*p/(GAS_CONST*T), T)
 							/ FluidViscosityN2::get(M0*p/(GAS_CONST*T), T);
 	const double L1_over_L2 = V1_over_V2 / M1_over_M2;
 
-	const double phi_12 =   (1.0 + std::sqrt(L1_over_L2) * std::pow(M1_over_M2, -0.25))
-						  * (1.0 + std::sqrt(V1_over_V2) * std::pow(M1_over_M2, -0.25))
+	const double M12_pow_mquarter = std::pow(M1_over_M2, -0.25);
+	const double phi_12 =   (1.0 + std::sqrt(L1_over_L2) * M12_pow_mquarter)
+						  * (1.0 + std::sqrt(V1_over_V2) * M12_pow_mquarter)
 						  / std::sqrt(8.0 * (1.0 + M1_over_M2));
 	const double phi_21 = phi_12 * M1_over_M2 / V1_over_V2;
 
@@ -486,33 +506,27 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 
 	using Mat = typename Traits::MatrixDimDim;
 
-	// TODO: k_rel
-	Mat L_pp = Traits::blockDimDim(_AP->_solid_perm_tensor, 0,0,dim,dim) * _rho_GR / eta_GR;
-
-	// TODO: add zeolite part
-	Mat L_TT = Mat::Identity(dim, dim)
-					  * ( _AP->_poro * lambda_F + (1.0 - _AP->_poro) * lambda_S);
-
-	Mat L_xx = Mat::Identity(dim, dim)
-			   * (_AP->_tortuosity * _AP->_poro * _rho_GR
-				  * _AP->_diffusion_coefficient_component
-				  * Trafo::dxdy(_vapour_mass_fraction)
-				  );
-
 	typename Traits::LaplaceMatrix L
 			= Traits::LaplaceMatrix::Zero(dim*NODAL_DOF, dim*NODAL_DOF);
 
-	Traits::blockDimDim(L,     0,     0, dim, dim) = L_pp;
-	// Traits::blockDimDim(L,     0,   dim, dim, dim) = Mat::Zero(dim, dim); // L_pT
-	// Traits::blockDimDim(L,     0, 2*dim, dim, dim) = Mat::Zero(dim, dim); // L_px
+	// TODO: k_rel
+	// L_pp
+	Traits::blockDimDim(L,     0,     0, dim, dim)
+			= Traits::blockDimDim(_AP->_solid_perm_tensor, 0,0,dim,dim) * _rho_GR / eta_GR;
 
-	// Traits::blockDimDim(L,   dim,     0, dim, dim) = Mat::Zero(dim, dim); // L_Tp
-	Traits::blockDimDim(L,   dim,   dim, dim, dim) = L_TT;
-	// Traits::blockDimDim(L,   dim, 2*dim, dim, dim) = Mat::Zero(dim, dim); // L_Tx
+	// TODO: add zeolite part
+	// L_TT
+	Traits::blockDimDim(L,   dim,   dim, dim, dim)
+			= Mat::Identity(dim, dim)
+			  * ( _AP->_poro * lambda_F + (1.0 - _AP->_poro) * lambda_S);
 
-	// Traits::blockDimDim(L, 2*dim,     0, dim, dim) = Mat::Zero(dim, dim); // L_xp
-	// Traits::blockDimDim(L, 2*dim,   dim, dim, dim) = Mat::Zero(dim, dim); // L_xT
-	Traits::blockDimDim(L, 2*dim, 2*dim, dim, dim) = L_xx;
+	// L_xx
+	Traits::blockDimDim(L, 2*dim, 2*dim, dim, dim)
+			= Mat::Identity(dim, dim)
+			  * (_AP->_tortuosity * _AP->_poro * _rho_GR
+				 * _AP->_diffusion_coefficient_component
+				 * Trafo::dxdy(_vapour_mass_fraction)
+				 );
 
 	return L;
 }
