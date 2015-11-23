@@ -106,6 +106,7 @@ struct DataTraitsFixed
     using LaplaceMatrix = Mat<Dim*NodalDOF, Dim*NodalDOF>;
 
     // block dim x dim, fixed-size const matrix
+    // TODO: swap variable names width <--> height
     template<typename Mat>
     static
     typename std::enable_if<NodalDOF != 0,
@@ -290,8 +291,6 @@ public:
             const double weight
             );
 
-    AssemblyParams const* _AP;
-
     void init(const unsigned num_int_pts, const unsigned dimension);
 
     void preEachAssemble();
@@ -301,9 +300,6 @@ public:
 
     std::vector<double> const&
     getIntegrationPointValues(SecondaryVariables var, std::vector<double>& cache) const;
-
-    double reaction_damping_factor = 1.0;
-    std::vector<bool> bounds_violation;
 
 private:
     Eigen::Matrix3d getMassCoeffMatrix(const unsigned int_pt);
@@ -348,13 +344,16 @@ private:
     /// of adsorbate loading and vapour partial pressure
     double estimateAdsorptionEquilibrium(const double p_V0, const double C0) const;
 
+public:
+    AssemblyParams const* _AP;
 
-    // nodal quantities, secondary variables
+    double reaction_damping_factor = 1.0;
+    std::vector<bool> bounds_violation;
+
+private:
+    // integration point quantities
     std::vector<double> _solid_density;
-    std::vector<double> _solid_density_prev_ts;
-
     std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
-    std::vector<double> _reaction_rate_prev_ts; // could also be calculated from _solid_density_prev_ts
 
     // std::vector<double> _equilibrium_loading;
     // std::vector<double> _equilibrium_loading_prev_ts;
@@ -376,20 +375,24 @@ private:
     // bool last_was_repeated = false;
 
     // integration point values of unknowns
-    double _p = -888.888; // gas pressure
-    double _T = -888.888; // temperature
-    double _vapour_mass_fraction = -888.888;     // fluid mass fraction of the second component
+    double _p = std::numeric_limits<double>::quiet_NaN(); // gas pressure
+    double _T = std::numeric_limits<double>::quiet_NaN(); // temperature
+    double _vapour_mass_fraction = std::numeric_limits<double>::quiet_NaN(); // fluid mass fraction of the second component
 
     // temporary storage for some properties
     // values do not change during the assembly of one integration point
-    double _rho_GR = -888.888;
-    double _p_V = -888.888; // vapour partial pressure
-    double _qR = 88888.88888;  // reaction rate, use this in assembly!!!
+    double _rho_GR = std::numeric_limits<double>::quiet_NaN();
+    double _p_V    = std::numeric_limits<double>::quiet_NaN(); // vapour partial pressure
+    double _qR     = std::numeric_limits<double>::quiet_NaN();  // reaction rate, use this in assembly!!!
 
     // TODO: entirely omit local matrices
     typename Traits::LocalMatrix _Mas;
     typename Traits::LocalMatrix _Lap_Adv_Cnt;
     typename Traits::LocalVector _rhs;
+
+    // variables at previous timestep
+    std::vector<double> _solid_density_prev_ts;
+    std::vector<double> _reaction_rate_prev_ts; // could also be calculated from _solid_density_prev_ts
 };
 
 
