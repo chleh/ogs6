@@ -221,7 +221,7 @@ TESProcess(MeshLib::Mesh& mesh,
         auto rsys = config.get<std::string>("reactive_system");
         DBUG("reactive_system: %s", rsys.c_str());
 
-        _assembly_params._adsorption = Ads::Adsorption::newInstance(rsys);
+        _assembly_params._adsorption = std::move(Ads::Adsorption::newInstance(rsys));
     }
 #else
     parseParameter(config, "reactive_system", Ads::Adsorption::newInstance, _assembly_params._adsorption);

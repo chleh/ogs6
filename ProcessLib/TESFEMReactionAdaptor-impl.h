@@ -23,7 +23,7 @@ std::unique_ptr<TESFEMReactionAdaptor<Traits> >
 TESFEMReactionAdaptor<Traits>::
 newInstance(LADataNoTpl<Traits>& data)
 {
-    auto const* ads = data._AP->_adsorption;
+    auto const* ads = data._AP->_adsorption.get();
     if (dynamic_cast<Ads::Adsorption const*>(ads) != nullptr) {
         return std::unique_ptr<TESFEMReactionAdaptor<Traits> >(
                     new TESFEMReactionAdaptorAdsorption<Traits>(data)

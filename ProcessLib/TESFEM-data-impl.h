@@ -441,7 +441,8 @@ Eigen::Matrix3d
 LADataNoTpl<Traits>::
 getMassCoeffMatrix(const unsigned int_pt)
 {
-	const double dxn_dxm = _AP->_adsorption->d_molar_fraction(
+	// TODO: Dalton's law property
+	const double dxn_dxm = Ads::Adsorption::d_molar_fraction(
 							   _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
 
 	const double M_pp = _AP->_poro/_p * _rho_GR;
