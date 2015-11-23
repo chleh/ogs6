@@ -16,7 +16,6 @@
 #include <Eigen/Eigen>
 
 #include "TESProcess-notpl.h"
-#include "TESFEMReactionAdaptor.h"
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
 
 namespace ProcessLib
@@ -34,8 +33,6 @@ enum class SecondaryVariables {
     EQUILIBRIUM_LOADING,
     REACTION_DAMPING_FACTOR
 };
-
-const double NONLINEAR_ERROR_TOLERANCE = 1e-6;
 
 
 /**
@@ -276,6 +273,13 @@ static_assert(EIGEN_DYNAMIC_SHAPE_MATRICES_FLAG == 1, "inconsistent use of macro
 
 
 template<typename Traits>
+class TESFEMReactionAdaptor;
+
+template<typename Traits>
+class TESFEMReactionAdaptorAdsorption;
+
+
+template<typename Traits>
 class LADataNoTpl
 {
 public:
@@ -319,11 +323,9 @@ private:
 
     void initReaction(const unsigned int_pt);
 
-public:
+
     AssemblyParams const* _AP;
 
-    // TODO: reintroduce
-// private:
     // integration point quantities
     std::vector<double> _solid_density;
     std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
@@ -352,7 +354,12 @@ public:
     std::vector<double> _solid_density_prev_ts;
     std::vector<double> _reaction_rate_prev_ts; // could also be calculated from _solid_density_prev_ts
 
+
+    template <typename, typename, typename, typename, unsigned>
+    friend class LocalAssemblerData;
+
     friend class TESFEMReactionAdaptor<Traits>;
+    friend class TESFEMReactionAdaptorAdsorption<Traits>;
 };
 
 

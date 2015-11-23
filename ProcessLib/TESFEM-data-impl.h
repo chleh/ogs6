@@ -23,6 +23,8 @@
 
 #include "NumLib/Function/Interpolation.h"
 
+#include "TESFEMReactionAdaptor.h"
+
 namespace
 {
 const double GAS_CONST = 8.3144621;
