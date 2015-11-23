@@ -102,8 +102,7 @@ assemble(std::vector<double> const& localX,
                                        sm.N, sm.dNdx, sm.J, sm.detJ, weight);
     }
 
-    // first timestep:
-    const Eigen::Map<const Eigen::VectorXd> oldX(localXPrevTs.data(), localXPrevTs.size());
+    const Eigen::Map<const typename DT::LocalVector> oldX(localXPrevTs.data(), localXPrevTs.size());
     _data.postEachAssemble(_localA, _localRhs, oldX);
 }
 
