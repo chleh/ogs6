@@ -11,28 +11,15 @@
 
 #include<memory>
 
+#include "BaseLib/ConfigTree.h"
+
 namespace Ads
 {
-
-enum class SolidReactiveSystem
-{
-	Z13XBF,
-	Z13XBF_Const,
-	Z13XBF_Hauer,
-	Z13XBF_Mette,
-	Z13XBF_Nunez,
-	Z13XBF_Cook,
-	Z13XBF_Dubinin,
-	Z13XBF_100MPa,
-	Inert,
-	Sinusoidal
-};
 
 class Reaction
 {
 public:
-	static std::unique_ptr<Reaction> newInstance(SolidReactiveSystem rsys);
-	static std::unique_ptr<Reaction> newInstance(std::string const& rsys);
+	static std::unique_ptr<Reaction> newInstance(BaseLib::ConfigTree const& rsys);
 
 	virtual double get_enthalpy(const double p_Ads, const double T_Ads, const double M_Ads) const = 0;
 	virtual double get_reaction_rate(const double p_Ads, const double T_Ads,

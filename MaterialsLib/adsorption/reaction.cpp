@@ -27,75 +27,38 @@
 namespace Ads
 {
 
-bool
-stringToReactiveSystem(std::string const& name, SolidReactiveSystem& rsys_out)
-{
-	if (name == "Z13XBF")
-		rsys_out = SolidReactiveSystem::Z13XBF;
-	else if (name == "Z13XBF_100MPa")
-		rsys_out = SolidReactiveSystem::Z13XBF_100MPa;
-	else if (name == "Z13XBF_Const")
-		rsys_out = SolidReactiveSystem::Z13XBF_Const;
-	else if (name == "Z13XBF_Cook")
-		rsys_out = SolidReactiveSystem::Z13XBF_Cook;
-	else if (name == "Z13XBF_Dubinin")
-		rsys_out = SolidReactiveSystem::Z13XBF_Dubinin;
-	else if (name == "Z13XBF_Hauer")
-		rsys_out = SolidReactiveSystem::Z13XBF_Hauer;
-	else if (name == "Z13XBF_Mette")
-		rsys_out = SolidReactiveSystem::Z13XBF_Mette;
-	else if (name == "Z13XBF_Nunez")
-		rsys_out = SolidReactiveSystem::Z13XBF_Nunez;
-	else if (name == "Inert")
-		rsys_out = SolidReactiveSystem::Inert;
-	else if (name == "Sinusoidal")
-		rsys_out = SolidReactiveSystem::Sinusoidal;
-	else return false;
-
-	return true;
-}
-
 std::unique_ptr<Reaction>
 Reaction::
-newInstance(std::string const& rsys)
+newInstance(BaseLib::ConfigTree const& conf)
 {
-	SolidReactiveSystem r;
-	if (stringToReactiveSystem(rsys, r)) {
-		return newInstance(r);
-	} else {
-		ERR("unknown reactive system: %s", rsys.c_str());
-		return nullptr;
-	}
-}
+	auto const type = conf.get<std::string>("type", "");
 
-std::unique_ptr<Reaction>
-Reaction::
-newInstance(const SolidReactiveSystem rsys)
-{
-	switch (rsys)
-	{
-	case SolidReactiveSystem::Z13XBF:
+	if (type == "Z13XBF")
 		return std::unique_ptr<Reaction>(new DensityLegacy);
-	case SolidReactiveSystem::Z13XBF_100MPa:
+	else if (type == "Z13XBF_100MPa")
 		return std::unique_ptr<Reaction>(new Density100MPa);
-	case SolidReactiveSystem::Z13XBF_Const:
+	else if (type == "Z13XBF_Const")
 		return std::unique_ptr<Reaction>(new DensityConst);
-	case SolidReactiveSystem::Z13XBF_Cook:
+	else if (type == "Z13XBF_Cook")
 		return std::unique_ptr<Reaction>(new DensityCook);
-	case SolidReactiveSystem::Z13XBF_Dubinin:
+	else if (type == "Z13XBF_Dubinin")
 		return std::unique_ptr<Reaction>(new DensityDubinin);
-	case SolidReactiveSystem::Z13XBF_Hauer:
+	else if (type == "Z13XBF_Hauer")
 		return std::unique_ptr<Reaction>(new DensityHauer);
-	case SolidReactiveSystem::Z13XBF_Mette:
+	else if (type == "Z13XBF_Mette")
 		return std::unique_ptr<Reaction>(new DensityMette);
-	case SolidReactiveSystem::Z13XBF_Nunez:
+	else if (type == "Z13XBF_Nunez")
 		return std::unique_ptr<Reaction>(new DensityNunez);
-	case SolidReactiveSystem::Inert:
+	else if (type == "Inert")
 		return std::unique_ptr<Reaction>(new ReactionInert);
-	case SolidReactiveSystem::Sinusoidal:
-		return std::unique_ptr<Reaction>(new ReactionSinusoidal);
-	}
+	else if (type == "Sinusoidal")
+		return std::unique_ptr<Reaction>(new ReactionSinusoidal(conf));
 
+	if (type.empty()) {
+		ERR("No reactive system specified.");
+	} else {
+		ERR("Unknown reactive system: %s.", type.c_str());
+	}
 	return nullptr;
 }
 
