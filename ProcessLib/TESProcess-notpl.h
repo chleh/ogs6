@@ -54,9 +54,6 @@ struct AssemblyParams
 class TESProcessInterface
 {
 public:
-    /*AssemblyParams& getAssemblyParams() {
-        return _assembly_params;
-    }*/
     AssemblyParams const& getAssemblyParams() const {
         return _assembly_params;
     }
@@ -66,16 +63,6 @@ public:
 protected:
     AssemblyParams _assembly_params;
 };
-
-
-bool calculateError(Eigen::VectorXd* current_solution,
-                    const Eigen::Ref<Eigen::VectorXd>& previous_solution, AssemblyParams* materials);
-// bool calculateError(const Eigen::SparseMatrix<double>& current_solution,
-//                     const Eigen::SparseMatrix<double>& previous_solution);
-
-
-void printGlobalMatrix(const Eigen::SparseMatrix<double>& mat);
-void printGlobalVector(const Eigen::Ref<Eigen::VectorXd>& vec);
 
 } // namespace TES
 
