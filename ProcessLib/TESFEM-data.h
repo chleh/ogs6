@@ -27,7 +27,6 @@ namespace TES
 enum class SecondaryVariables {
     SOLID_DENSITY, REACTION_RATE,
     VELOCITY_X, VELOCITY_Y, VELOCITY_Z,
-    REACTION_KINETIC_INDICATOR,
     VAPOUR_PARTIAL_PRESSURE,
     RELATIVE_HUMIDITY,
     LOADING,
@@ -231,9 +230,7 @@ template<typename Traits>
 class LADataNoTpl
 {
 public:
-    // typedef Eigen::Ref<const typename Traits::Matrix> MatRef;
-    // typedef Eigen::Ref<const typename Traits::Vector> VecRef;
-    typedef std::shared_ptr<std::vector<double> > SharedVector;
+    // typedef std::shared_ptr<std::vector<double> > SharedVector;
 
     void assembleIntegrationPoint(
             unsigned integration_point,
@@ -247,7 +244,6 @@ public:
             const double weight
             );
 
-    // TESProcessInterface const* _process;
     AssemblyParams const* _AP;
 
     void init(const unsigned num_int_pts, const unsigned dimension);
@@ -306,6 +302,7 @@ private:
     /// of adsorbate loading and vapour partial pressure
     double estimateAdsorptionEquilibrium(const double p_V0, const double C0) const;
 
+
     // nodal quantities, secondary variables
     std::vector<double> _solid_density;
     std::vector<double> _solid_density_prev_ts;
@@ -313,21 +310,21 @@ private:
     std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
     std::vector<double> _reaction_rate_prev_ts; // could also be calculated from _solid_density_prev_ts
 
-    std::vector<double> _equilibrium_loading;
-    std::vector<double> _equilibrium_loading_prev_ts;
+    // std::vector<double> _equilibrium_loading;
+    // std::vector<double> _equilibrium_loading_prev_ts;
 
-    std::vector<bool>   _is_equilibrium_reaction;   ///< true if equilibrium reaction is used in this timestep
+    // std::vector<bool>   _is_equilibrium_reaction;   ///< true if equilibrium reaction is used in this timestep
 
     /** the value of p_V that the equilibrium reaction estimated
      *  in the first iteration of this timestep */
-    std::vector<double> _estimated_vapour_pressure;
+    // std::vector<double> _estimated_vapour_pressure;
 
     std::vector<std::vector<double> > _velocity;
     // typename Traits::Matrix _velocity; // row index: gauss point, column index: dimension x/y/z
 
-    std::vector<double> _reaction_rate_indicator; // TODO [CL] get rid of this
+    // std::vector<double> _reaction_rate_indicator; // TODO [CL] get rid of this
 
-    bool is_var_out_of_bounds = false;
+    // bool is_var_out_of_bounds = false;
 
     // bool this_is_repeated = false;
     // bool last_was_repeated = false;

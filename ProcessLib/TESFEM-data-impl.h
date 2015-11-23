@@ -635,6 +635,7 @@ initReaction(const unsigned int_pt, const std::vector<double>& /*localX*/,
 }
 
 
+#if 0
 template<typename Traits>
 void LADataNoTpl<Traits>::
 initReaction_localDiffusionStrategy(
@@ -782,6 +783,7 @@ initReaction_localDiffusionStrategy(
 
     _qR = _reaction_rate[int_pt];
 }
+#endif
 
 
 template<typename Traits>
@@ -811,6 +813,7 @@ estimateAdsorptionEquilibrium(const double p_V0, const double C0) const
 }
 
 
+#if 0
 template<typename Traits>
 void LADataNoTpl<Traits>::
 initReaction_simpleStrategy(const unsigned int_pt)
@@ -894,6 +897,7 @@ initReaction_readjustEquilibriumLoadingStrategy(const unsigned int_pt)
 
     _qR = _reaction_rate[int_pt];
 }
+#endif
 
 
 template<typename Traits>
@@ -908,8 +912,6 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
     double react_rate_R = _AP->_adsorption->get_reaction_rate(_p_V, _T, _AP->_M_react, loading)
                           * _AP->_rho_SR_dry;
 
-    _reaction_rate_indicator[int_pt] = 0.0;
-
     // set reaction rate based on current damping factor
     react_rate_R = (reaction_damping_factor > 1e-3)
                    ? reaction_damping_factor * react_rate_R
@@ -919,7 +921,6 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
         && react_rate_R > 0.0)
     {
         react_rate_R = 0.0;
-        _reaction_rate_indicator[int_pt] = -100.0;
     }
     else if (_p_V < 100.0 || _p_V < 0.05 * Ads::Adsorption::get_equilibrium_vapour_pressure(_T))
     {
@@ -951,7 +952,6 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
             )
         {
             react_rate_R = react_rate_R2;
-            _reaction_rate_indicator[int_pt] = 100.0;
         }
     }
 
@@ -989,12 +989,11 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
     _reaction_rate[int_pt] = react_rate_R;
     _solid_density[int_pt] = _solid_density_prev_ts[int_pt] + react_rate_R * _AP->_delta_t;
 
-    _is_equilibrium_reaction[int_pt] = false;
-
     _qR = _reaction_rate[int_pt];
 }
 
 
+#if 0
 template<typename Traits>
 void LADataNoTpl<Traits>::
 initReaction_localVapourUptakeStrategy(
@@ -1199,6 +1198,7 @@ initReaction_localVapourUptakeStrategy(
 
     _qR = _reaction_rate[int_pt];
 }
+#endif
 
 
 template<typename Traits>
@@ -1334,8 +1334,6 @@ getIntegrationPointValues(SecondaryVariables var, std::vector<double>& cache) co
     case SecondaryVariables::VELOCITY_Z:
         assert(_velocity.size() >= 3);
         return _velocity[2];
-    case SecondaryVariables::REACTION_KINETIC_INDICATOR:
-        return _reaction_rate_indicator;
 
     case SecondaryVariables::LOADING:
     {
@@ -1471,6 +1469,7 @@ LADataNoTpl<Traits>::init(const unsigned num_int_pts, const unsigned dimension)
     _velocity.resize(dimension);
     for (auto& v : _velocity) v.resize(num_int_pts);
 
+#if 0
     _reaction_rate_indicator.resize(num_int_pts);
 
     _is_equilibrium_reaction.resize(num_int_pts);
@@ -1479,6 +1478,7 @@ LADataNoTpl<Traits>::init(const unsigned num_int_pts, const unsigned dimension)
     _equilibrium_loading.resize(num_int_pts);
     _equilibrium_loading_prev_ts.resize(
                 num_int_pts, EQ_LOADING_FIRST_TS); // TODO [CL] provide separate "first assembly" method
+#endif
 
     bounds_violation.resize(num_int_pts, false);
 
@@ -1506,7 +1506,6 @@ LADataNoTpl<Traits>::preEachAssemble()
         {
             _solid_density_prev_ts = _solid_density;
             _reaction_rate_prev_ts = _reaction_rate;
-            _equilibrium_loading_prev_ts = _equilibrium_loading;
 
             reaction_damping_factor = std::min(
                 std::sqrt(reaction_damping_factor),

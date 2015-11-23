@@ -151,7 +151,6 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
     case SecondaryVariables::VELOCITY_X:
     case SecondaryVariables::VELOCITY_Y:
     case SecondaryVariables::VELOCITY_Z:
-    case SecondaryVariables::REACTION_KINETIC_INDICATOR:
     case SecondaryVariables::LOADING:
         // These cases do not need access to nodal values
         // Thus, they can be handled inside _data

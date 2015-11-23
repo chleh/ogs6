@@ -128,8 +128,6 @@ TESProcess(MeshLib::Mesh& mesh,
             if (_mesh.getDimension() >= 2) add_secondary_variable("velocity_y",    SecondaryVariables::VELOCITY_Y,    1);
             if (_mesh.getDimension() >= 3) add_secondary_variable("velocity_z",    SecondaryVariables::VELOCITY_Z,    1);
 
-            add_secondary_variable("reaction_kinetic_indicator", SecondaryVariables::REACTION_KINETIC_INDICATOR, 1);
-
             add_secondary_variable("vapour_partial_pressure", SecondaryVariables::VAPOUR_PARTIAL_PRESSURE, 1);
             add_secondary_variable("relative_humidity",       SecondaryVariables::RELATIVE_HUMIDITY,       1);
             add_secondary_variable("loading",                 SecondaryVariables::LOADING,                 1);
