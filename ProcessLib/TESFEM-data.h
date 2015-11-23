@@ -340,11 +340,11 @@ private:
     double _p_V = -888.888; // vapour partial pressure
     double _qR = 88888.88888;  // reaction rate, use this in assembly!!!
 
-    std::unique_ptr<typename Traits::LocalMatrix> _Lap;
-    std::unique_ptr<typename Traits::LocalMatrix> _Mas;
-    std::unique_ptr<typename Traits::LocalMatrix> _Adv;
-    std::unique_ptr<typename Traits::LocalMatrix> _Cnt;
-    std::unique_ptr<typename Traits::LocalVector> _rhs;
+    typename Traits::LocalMatrix _Lap;
+    typename Traits::LocalMatrix _Mas;
+    typename Traits::LocalMatrix _Adv;
+    typename Traits::LocalMatrix _Cnt;
+    typename Traits::LocalVector _rhs;
 };
 
 

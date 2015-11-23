@@ -1380,7 +1380,7 @@ assembleIntegrationPoint(unsigned integration_point,
     auto const D = smDNdx.rows(); // global dimension: 1, 2 or 3
 
     // assert(N*NODAL_DOF == localA.cols());
-    assert(N*NODAL_DOF == _Lap->cols());
+    assert(N*NODAL_DOF == _Lap.cols());
 
     auto const laplaceCoeffMat = getLaplaceCoeffMatrix(integration_point, D);
     assert(laplaceCoeffMat.cols() == D*NODAL_DOF);
@@ -1435,13 +1435,13 @@ assembleIntegrationPoint(unsigned integration_point,
             assert(tmp2.cols() == N && tmp2.rows() == N);
             */
 
-            Traits::blockShpShp(*_Lap, N*r, N*c, N, N).noalias() +=
+            Traits::blockShpShp(_Lap, N*r, N*c, N, N).noalias() +=
                     smDetJ * weight * smDNdx.transpose()                    // tmp = ...
                     * Traits::blockDimDim(laplaceCoeffMat, D*r, D*c, D, D)  // tmp *= ...
                     * smDNdx;                                               // tmp2 = ...
-            Traits::blockShpShp(*_Mas, N*r, N*c, N, N).noalias() += detJ_w_N_NT      * massCoeffMat(r, c);
-            Traits::blockShpShp(*_Adv, N*r, N*c, N, N).noalias() += detJ_w_N_vT_dNdx * advCoeffMat(r, c);
-            Traits::blockShpShp(*_Cnt, N*r, N*c, N, N).noalias() += detJ_w_N_NT      * contentCoeffMat(r, c);
+            Traits::blockShpShp(_Mas, N*r, N*c, N, N).noalias() += detJ_w_N_NT      * massCoeffMat(r, c);
+            Traits::blockShpShp(_Adv, N*r, N*c, N, N).noalias() += detJ_w_N_vT_dNdx * advCoeffMat(r, c);
+            Traits::blockShpShp(_Cnt, N*r, N*c, N, N).noalias() += detJ_w_N_NT      * contentCoeffMat(r, c);
         }
     }
 
@@ -1449,7 +1449,8 @@ assembleIntegrationPoint(unsigned integration_point,
 
     for (unsigned r=0; r<NODAL_DOF; ++r)
     {
-        _rhs->block(N*r, 0, N, 1).noalias() +=
+        // TODO: template
+        _rhs.block(N*r, 0, N, 1).noalias() +=
                 rhsCoeffVector(r) * smN * smDetJ * weight;
     }
 }
@@ -1482,17 +1483,17 @@ LADataNoTpl<Traits>::init(const unsigned num_int_pts, const unsigned dimension)
 
     bounds_violation.resize(num_int_pts, false);
 
-    _Lap.reset(new typename Traits::LocalMatrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _Mas.reset(new typename Traits::LocalMatrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _Adv.reset(new typename Traits::LocalMatrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _Cnt.reset(new typename Traits::LocalMatrix(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF));
-    _rhs.reset(new typename Traits::LocalVector(num_int_pts*NODAL_DOF));
+    _Lap.resize(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF);
+    _Mas.resize(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF);
+    _Adv.resize(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF);
+    _Cnt.resize(num_int_pts*NODAL_DOF, num_int_pts*NODAL_DOF);
+    _rhs.resize(num_int_pts*NODAL_DOF);
 
-    _Lap->setZero();
-    _Mas->setZero();
-    _Adv->setZero();
-    _Cnt->setZero();
-    _rhs->setZero();
+    _Lap.setZero();
+    _Mas.setZero();
+    _Adv.setZero();
+    _Cnt.setZero();
+    _rhs.setZero();
 }
 
 
@@ -1517,11 +1518,11 @@ LADataNoTpl<Traits>::preEachAssemble()
         }
     }
 
-    _Lap->setZero();
-    _Mas->setZero();
-    _Adv->setZero();
-    _Cnt->setZero();
-    _rhs->setZero();
+    _Lap.setZero();
+    _Mas.setZero();
+    _Adv.setZero();
+    _Cnt.setZero();
+    _rhs.setZero();
 }
 
 
@@ -1532,9 +1533,9 @@ LADataNoTpl<Traits>
                    typename Traits::LocalVector& localRhs,
                    typename Traits::LocalVector const& oldX)
 {
-    localA.noalias() += *_Lap + *_Mas/_AP->_delta_t + *_Adv + *_Cnt;
-    localRhs.noalias() += *_rhs
-                           + *_Mas * oldX/_AP->_delta_t;
+    localA.noalias() += _Lap + _Mas/_AP->_delta_t + _Adv + _Cnt;
+    localRhs.noalias() += _rhs
+                           + _Mas * oldX/_AP->_delta_t;
 
     if (_AP->_output_element_matrices)
     {
@@ -1556,19 +1557,19 @@ LADataNoTpl<Traits>
         std::printf("\n");
 
         std::printf("\n---Mass matrix: \n");
-        ogs5OutMat(*_Mas);
+        ogs5OutMat(_Mas);
         std::printf("\n");
 
         std::printf("---Laplacian matrix: \n");
-        ogs5OutMat(*_Lap);
+        ogs5OutMat(_Lap);
         std::printf("\n");
 
         std::printf("---Advective matrix: \n");
-        ogs5OutMat(*_Adv);
+        ogs5OutMat(_Adv);
         std::printf("\n");
 
         std::printf("---Content: \n");
-        ogs5OutMat(*_Cnt);
+        ogs5OutMat(_Cnt);
         std::printf("\n");
 
         std::printf("---RHS: \n");
