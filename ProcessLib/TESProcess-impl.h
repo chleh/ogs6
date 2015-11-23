@@ -214,18 +214,17 @@ TESProcess(MeshLib::Mesh& mesh,
         }
     }
 
-
-#if 1
     // reactive system
     {
-        auto rsys = config.get<std::string>("reactive_system");
-        DBUG("reactive_system: %s", rsys.c_str());
+        auto rsys = config.get_child_optional("reactive_system");
 
-        _assembly_params._reaction_system = std::move(Ads::Adsorption::newInstance(rsys));
+        if (rsys) {
+            _assembly_params._reaction_system = std::move(Ads::Adsorption::newInstance(*rsys));
+        } else {
+            ERR("<reactive_system> not specified. Aborting.");
+            std::abort();
+        }
     }
-#else
-    parseParameter(config, "reactive_system", Ads::Adsorption::newInstance, _assembly_params._adsorption);
-#endif
 
     // linear solver
     {
