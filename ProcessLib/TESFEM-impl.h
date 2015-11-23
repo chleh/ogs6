@@ -242,7 +242,7 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
             if (pV < 0.0) {
                 Cs.push_back(0.0);
             } else {
-                Cs.push_back(AP._adsorption->get_equilibrium_loading(pV, T, AP._M_react));
+                Cs.push_back(AP._reaction_system->get_equilibrium_loading(pV, T, AP._M_react));
             }
         }
 

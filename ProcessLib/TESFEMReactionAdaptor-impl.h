@@ -30,7 +30,7 @@ std::unique_ptr<TESFEMReactionAdaptor<Traits> >
 TESFEMReactionAdaptor<Traits>::
 newInstance(LADataNoTpl<Traits>& data)
 {
-    auto const* ads = data._AP->_adsorption.get();
+    auto const* ads = data._AP->_reaction_system.get();
     if (dynamic_cast<Ads::Adsorption const*>(ads) != nullptr) {
         return std::unique_ptr<TESFEMReactionAdaptor<Traits> >(
                     new TESFEMReactionAdaptorAdsorption<Traits>(data)
@@ -59,7 +59,7 @@ TESFEMReactionAdaptorAdsorption(LADataNoTpl<Traits> &data)
     : _bounds_violation(data._solid_density.size(), false)
     , _data{data}
 {
-    assert(dynamic_cast<Ads::Adsorption const*>(data._AP->_adsorption.get()) != nullptr
+    assert(dynamic_cast<Ads::Adsorption const*>(data._AP->_reaction_system.get()) != nullptr
            && "Reactive system has wrong type.");
     assert(_bounds_violation.size() != 0);
 }
@@ -75,7 +75,7 @@ initReaction_slowDownUndershootStrategy(const unsigned int_pt)
     const double loading = Ads::Adsorption::get_loading(_data._solid_density_prev_ts[int_pt],
                                                         AP->_rho_SR_dry);
 
-    double react_rate_R = AP->_adsorption->get_reaction_rate(_data._p_V, _data._T, AP->_M_react, loading)
+    double react_rate_R = AP->_reaction_system->get_reaction_rate(_data._p_V, _data._T, AP->_M_react, loading)
                           * AP->_rho_SR_dry;
 
     // set reaction rate based on current damping factor
@@ -170,13 +170,13 @@ estimateAdsorptionEquilibrium(const double p_V0, const double C0) const
     {
         auto const& AP = data._AP;
         // pV0 := _p_V
-        const double C_eq = AP->_adsorption->get_equilibrium_loading(pV, data._T, AP->_M_react);
+        const double C_eq = AP->_reaction_system->get_equilibrium_loading(pV, data._T, AP->_M_react);
         return (pV - p_V0) * AP->_M_react / Ads::GAS_CONST / data._T * AP->_poro
                 + (1.0-AP->_poro) * (C_eq - C0) * AP->_rho_SR_dry;
     };
 
     // range where to search for roots of f
-    const double C_eq0 = data._AP->_adsorption->get_equilibrium_loading(p_V0, data._T, data._AP->_M_react);
+    const double C_eq0 = data._AP->_reaction_system->get_equilibrium_loading(p_V0, data._T, data._AP->_M_react);
     const double limit = (C_eq0 > C0)
                          ? 1e-8
                          : Ads::Adsorption::get_equilibrium_vapour_pressure(data._T);
@@ -261,7 +261,7 @@ TESFEMReactionAdaptorSinusoidal<Traits>::
 TESFEMReactionAdaptorSinusoidal(LADataNoTpl<Traits> &data)
     : _data{data}
 {
-    assert(dynamic_cast<Ads::ReactionSinusoidal const*>(data._AP->_adsorption.get()) != nullptr
+    assert(dynamic_cast<Ads::ReactionSinusoidal const*>(data._AP->_reaction_system.get()) != nullptr
            && "Reactive system has wrong type.");
 }
 

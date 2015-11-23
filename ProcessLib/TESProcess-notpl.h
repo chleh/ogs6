@@ -19,7 +19,7 @@ const double M_H2O = 0.018016;
 
 struct AssemblyParams
 {
-    std::unique_ptr<Ads::Reaction> _adsorption;
+    std::unique_ptr<Ads::Reaction> _reaction_system;
 
     double _fluid_specific_heat_source = std::numeric_limits<double>::quiet_NaN();
     double _cpG = std::numeric_limits<double>::quiet_NaN(); // specific isobaric fluid heat capacity
