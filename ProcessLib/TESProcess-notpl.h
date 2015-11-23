@@ -2,7 +2,7 @@
 #define PROCESS_LIB_TESPROCESS_NOTPL_H_
 
 
-#include "MaterialsLib/adsorption/adsorption.h"
+#include "MaterialsLib/adsorption/reaction.h"
 #include "Eigen/Sparse"
 #include "Eigen/Eigen"
 
@@ -47,6 +47,7 @@ struct AssemblyParams
     bool _output_element_matrices = false;
 
     unsigned _number_of_try_of_iteration = 0;
+    double   _current_time = std::numeric_limits<double>::quiet_NaN();
 };
 
 

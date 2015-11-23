@@ -38,7 +38,9 @@ public:
     preZerothTryAssemble() = 0;
 
     // TODO: remove
-    virtual double getReactionDampingFactor() const = 0;
+    virtual double getReactionDampingFactor() const {
+        return -1.0;
+    }
 
     virtual ~TESFEMReactionAdaptor() = default;
 
@@ -48,10 +50,10 @@ public:
 
 
 template<typename Traits>
-class TESFEMReactionAdaptorAdsorption : public TESFEMReactionAdaptor<Traits>
+class TESFEMReactionAdaptorAdsorption final : public TESFEMReactionAdaptor<Traits>
 {
 public:
-    TESFEMReactionAdaptorAdsorption(LADataNoTpl<Traits>& data);
+    explicit TESFEMReactionAdaptorAdsorption(LADataNoTpl<Traits>& data);
 
     bool checkBounds(const std::vector<double> &localX, const std::vector<double> &localX_pts)
     override;
@@ -62,6 +64,11 @@ public:
 
     void preZerothTryAssemble() override;
 
+    // TODO: get rid of
+    double getReactionDampingFactor() const override {
+        return _reaction_damping_factor;
+    }
+
 private:
     void initReaction_slowDownUndershootStrategy(const unsigned int_pt);
 
@@ -70,13 +77,49 @@ private:
     /// of adsorbate loading and vapour partial pressure
     double estimateAdsorptionEquilibrium(const double p_V0, const double C0) const;
 
-    double getReactionDampingFactor() const override {
-        return _reaction_damping_factor;
-    }
-
     double _reaction_damping_factor = 1.0;
     std::vector<bool> _bounds_violation;
 
+    LADataNoTpl<Traits>& _data;
+};
+
+
+template<typename Traits>
+class TESFEMReactionAdaptorInert final : public TESFEMReactionAdaptor<Traits>
+{
+public:
+    explicit TESFEMReactionAdaptorInert(LADataNoTpl<Traits>&);
+
+    bool checkBounds(const std::vector<double> &, const std::vector<double> &)
+    override {
+        return true;
+    }
+
+    void initReaction(const unsigned) override
+    {}
+
+    void preZerothTryAssemble() override
+    {}
+};
+
+
+template<typename Traits>
+class TESFEMReactionAdaptorSinusoidal final : public TESFEMReactionAdaptor<Traits>
+{
+public:
+    explicit TESFEMReactionAdaptorSinusoidal(LADataNoTpl<Traits>& data);
+
+    bool checkBounds(const std::vector<double> &, const std::vector<double> &)
+    override {
+        return true;
+    }
+
+    void initReaction(const unsigned) override;
+
+    void preZerothTryAssemble() override
+    {}
+
+private:
     LADataNoTpl<Traits>& _data;
 };
 

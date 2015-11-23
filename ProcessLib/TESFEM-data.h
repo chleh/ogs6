@@ -278,6 +278,9 @@ class TESFEMReactionAdaptor;
 template<typename Traits>
 class TESFEMReactionAdaptorAdsorption;
 
+template<typename Traits>
+class TESFEMReactionAdaptorSinusoidal;
+
 
 template<typename Traits>
 class LADataNoTpl
@@ -360,6 +363,7 @@ private:
 
     friend class TESFEMReactionAdaptor<Traits>;
     friend class TESFEMReactionAdaptorAdsorption<Traits>;
+    friend class TESFEMReactionAdaptorSinusoidal<Traits>;
 };
 
 

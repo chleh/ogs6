@@ -10,8 +10,15 @@
 #pragma once
 
 #include <cassert>
+
+#include <logog/include/logog.hpp>
+
 #include "TESFEMReactionAdaptor.h"
 #include "MathLib/Nonlinear/Root1D.h"
+
+#include "MaterialsLib/adsorption/adsorption.h"
+#include "MaterialsLib/adsorption/reaction_inert.h"
+#include "MaterialsLib/adsorption/reaction_sinusoidal.h"
 
 namespace ProcessLib
 {
@@ -28,20 +35,32 @@ newInstance(LADataNoTpl<Traits>& data)
         return std::unique_ptr<TESFEMReactionAdaptor<Traits> >(
                     new TESFEMReactionAdaptorAdsorption<Traits>(data)
                     );
+    } else if (dynamic_cast<Ads::ReactionInert const*>(ads) != nullptr) {
+        return std::unique_ptr<TESFEMReactionAdaptor<Traits> >(
+                    new TESFEMReactionAdaptorInert<Traits>(data)
+                    );
+    } else if (dynamic_cast<Ads::ReactionSinusoidal const*>(ads) != nullptr) {
+        return std::unique_ptr<TESFEMReactionAdaptor<Traits> >(
+                    new TESFEMReactionAdaptorSinusoidal<Traits>(data)
+                    );
     }
 
+    ERR("No suitable TESFEMReactionAdaptor found. Aborting.");
+    std::abort();
     return std::unique_ptr<TESFEMReactionAdaptor<Traits> >(nullptr);
 }
 
 
-
 template<typename Traits>
-TESFEMReactionAdaptorAdsorption<Traits>::TESFEMReactionAdaptorAdsorption(LADataNoTpl<Traits> &data)
+TESFEMReactionAdaptorAdsorption<Traits>::
+TESFEMReactionAdaptorAdsorption(LADataNoTpl<Traits> &data)
     // caution fragile: this relies in this constructor b eing called __after__
     // data._solid_density has been properly set up!
     : _bounds_violation(data._solid_density.size(), false)
     , _data{data}
 {
+    assert(dynamic_cast<Ads::Adsorption const*>(data._AP->_adsorption.get()) != nullptr
+           && "Reactive system has wrong type.");
     assert(_bounds_violation.size() != 0);
 }
 
@@ -227,6 +246,42 @@ preZerothTryAssemble()
     _reaction_damping_factor = std::min(
         std::sqrt(_reaction_damping_factor),
         10.0*_reaction_damping_factor);
+}
+
+
+template<typename Traits>
+TESFEMReactionAdaptorInert<Traits>::
+TESFEMReactionAdaptorInert(LADataNoTpl<Traits> &)
+{
+}
+
+
+template<typename Traits>
+TESFEMReactionAdaptorSinusoidal<Traits>::
+TESFEMReactionAdaptorSinusoidal(LADataNoTpl<Traits> &data)
+    : _data{data}
+{
+    assert(dynamic_cast<Ads::ReactionSinusoidal const*>(data._AP->_adsorption.get()) != nullptr
+           && "Reactive system has wrong type.");
+}
+
+
+template<typename Traits>
+void
+TESFEMReactionAdaptorSinusoidal<Traits>::
+initReaction(const unsigned int int_pt)
+{
+    const double t = _data._AP->_current_time;
+
+    // Cf. OGS5
+    const double rhoSR0 = 1.0;
+    const double rhoTil = 0.1;
+    const double omega  = 2.0 * 3.1416;
+    const double poro   = _data._AP->_poro;
+
+    _data._solid_density[int_pt] = rhoSR0 + rhoTil * std::sin(omega*t) / (1.0 - poro);
+    _data._reaction_rate[int_pt] = rhoTil * omega * cos(omega*t) / (1.0 - poro);
+    _data._qR = _data._reaction_rate[int_pt];
 }
 
 
