@@ -22,7 +22,7 @@ const double rho_SR0 = 1160.0; // kg/m^3
 const double C0 = 0.0;
 const double pV0 = 1e2;
 
-Adsorption* ads = Adsorption::newInstance(SolidReactiveSystem::Z13XBF_Hauer);
+std::unique_ptr<Reaction> ads = Adsorption::newInstance(SolidReactiveSystem::Z13XBF_Hauer);
 
 double f(const double pV)
 {
