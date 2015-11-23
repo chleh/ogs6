@@ -16,6 +16,7 @@
 #include <Eigen/Eigen>
 
 #include "TESProcess-notpl.h"
+#include "TESFEMReactionAdaptor.h"
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
 
 namespace ProcessLib
@@ -316,40 +317,13 @@ private:
             const double smDetJ
             );
 
-    void initReaction(
-            const unsigned int_pt,
-            std::vector<double> const& localX,
-            typename Traits::ShapeMatrices::DxShapeType const& smDNdx,
-            typename Traits::ShapeMatrices::JacobianType const& smJ,
-            const double smDetJ);
-
-    void initReaction_localVapourUptakeStrategy(const unsigned int_pt);
-
-    void initReaction_localDiffusionStrategy(
-            const unsigned int_pt,
-            std::vector<double> const& localX,
-            typename Traits::ShapeMatrices::DxShapeType const& smDNdx,
-            typename Traits::ShapeMatrices::JacobianType const& smJ,
-            const double smDetJ);
-
-    void initReaction_simpleStrategy(const unsigned int_pt);
-
-    void initReaction_readjustEquilibriumLoadingStrategy(const unsigned int_pt);
-
-    void initReaction_slowDownUndershootStrategy(const unsigned int_pt);
-
-    /// returns estimated equilibrium vapour pressure
-    /// based on a local (i.e. no diffusion/advection) balance
-    /// of adsorbate loading and vapour partial pressure
-    double estimateAdsorptionEquilibrium(const double p_V0, const double C0) const;
+    void initReaction(const unsigned int_pt);
 
 public:
     AssemblyParams const* _AP;
 
-    double reaction_damping_factor = 1.0;
-    std::vector<bool> bounds_violation;
-
-private:
+    // TODO: reintroduce
+// private:
     // integration point quantities
     std::vector<double> _solid_density;
     std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
@@ -372,9 +346,13 @@ private:
     typename Traits::LocalMatrix _Lap_Adv_Cnt;
     typename Traits::LocalVector _rhs;
 
+    std::unique_ptr<TESFEMReactionAdaptor<Traits> > _reaction_adaptor;
+
     // variables at previous timestep
     std::vector<double> _solid_density_prev_ts;
     std::vector<double> _reaction_rate_prev_ts; // could also be calculated from _solid_density_prev_ts
+
+    friend class TESFEMReactionAdaptor<Traits>;
 };
 
 

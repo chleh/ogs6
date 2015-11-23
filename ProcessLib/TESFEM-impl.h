@@ -249,7 +249,7 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
     {
         auto& alphas = *_integration_point_values_cache;
         alphas.clear();
-        alphas.resize(_shape_matrices.size(), _data.reaction_damping_factor);
+        alphas.resize(_shape_matrices.size(), _data._reaction_adaptor->getReactionDampingFactor());
 
         return alphas;
     }
@@ -274,47 +274,7 @@ LocalAssemblerData<ShapeFunction_,
 checkBounds(std::vector<double> const& localX,
             const std::vector<double>& localX_pts)
 {
-    double alpha = 1.0;
-
-    const double min_xmV = 1e-6;
-    const std::size_t nnodes = localX.size() / NODAL_DOF;
-    const std::size_t xmV_offset = (NODAL_DOF - 1)*nnodes;
-
-    for (std::size_t i=0; i<nnodes; ++i)
-    {
-        auto const xnew = localX[xmV_offset+i];
-        if (xnew < min_xmV)
-        {
-            auto const xold = localX_pts[i+xmV_offset];
-            const auto a = xold / (xold - xnew);
-            alpha = std::min(alpha, a);
-            _data.bounds_violation[i] = true;
-        }
-        else if (xnew > 1.0)
-        {
-            auto const xold = localX_pts[i+xmV_offset];
-            const auto a = xold / (xnew - xold);
-            alpha = std::min(alpha, a);
-            _data.bounds_violation[i] = true;
-        }
-        else
-        {
-            _data.bounds_violation[i] = false;
-        }
-    }
-
-    assert (alpha > 0.0);
-
-    if (alpha != 1.0)
-    {
-        if (_data._AP->_number_of_try_of_iteration <=2) {
-            _data.reaction_damping_factor *= sqrt(std::min(alpha, 0.5));
-        } else {
-            _data.reaction_damping_factor *= std::min(alpha, 0.5);
-        }
-    }
-
-    return alpha == 1.0;
+    return _data._reaction_adaptor->checkBounds(localX, localX_pts);
 }
 
 

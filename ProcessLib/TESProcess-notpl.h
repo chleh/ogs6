@@ -13,7 +13,6 @@ namespace TES
 {
 
 const unsigned NODAL_DOF = 3;
-const unsigned NODAL_DOF_2ND = 2; // loading or solid density, and reaction rate
 
 const double M_N2  = 0.028013;
 const double M_H2O = 0.018016;
