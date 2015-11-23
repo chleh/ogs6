@@ -105,6 +105,7 @@ struct DataTraitsFixed
 
     using LaplaceMatrix = Mat<Dim*NodalDOF, Dim*NodalDOF>;
 
+
     // block dim x dim, fixed-size const matrix
     // TODO: swap variable names width <--> height
     template<typename Mat>
@@ -234,7 +235,7 @@ struct DataTraitsFixed
     template<typename Vec>
     static
     typename std::enable_if<NodalDOF != 0,
-        decltype(std::declval<Vec>().template block<NIntPts, NIntPts>(0u, 0u))
+        decltype(std::declval<Vec>().template block<NIntPts, 1>(0u, 0u))
     >::type
     blockShp(Vec& vec, unsigned top, unsigned height)
     {
@@ -277,8 +278,6 @@ template<typename Traits>
 class LADataNoTpl
 {
 public:
-    // typedef std::shared_ptr<std::vector<double> > SharedVector;
-
     void assembleIntegrationPoint(
             unsigned integration_point,
             typename Traits::LocalMatrix const* localA,
@@ -354,27 +353,10 @@ private:
     // integration point quantities
     std::vector<double> _solid_density;
     std::vector<double> _reaction_rate; // dC/dt * _rho_SR_dry
+    std::vector<std::vector<double> > _velocity; // vector of velocities for each integration point
 
-    // std::vector<double> _equilibrium_loading;
-    // std::vector<double> _equilibrium_loading_prev_ts;
 
-    // std::vector<bool>   _is_equilibrium_reaction;   ///< true if equilibrium reaction is used in this timestep
-
-    /** the value of p_V that the equilibrium reaction estimated
-     *  in the first iteration of this timestep */
-    // std::vector<double> _estimated_vapour_pressure;
-
-    std::vector<std::vector<double> > _velocity;
-    // typename Traits::Matrix _velocity; // row index: gauss point, column index: dimension x/y/z
-
-    // std::vector<double> _reaction_rate_indicator; // TODO [CL] get rid of this
-
-    // bool is_var_out_of_bounds = false;
-
-    // bool this_is_repeated = false;
-    // bool last_was_repeated = false;
-
-    // integration point values of unknowns
+    // integration point values of unknowns -- temporary storage
     double _p = std::numeric_limits<double>::quiet_NaN(); // gas pressure
     double _T = std::numeric_limits<double>::quiet_NaN(); // temperature
     double _vapour_mass_fraction = std::numeric_limits<double>::quiet_NaN(); // fluid mass fraction of the second component
