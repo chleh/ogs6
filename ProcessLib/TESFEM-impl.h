@@ -57,12 +57,9 @@ init(MeshLib::Element const& e,
                     _shape_matrices[ip]);
     }
 
+    constexpr unsigned MAT_SIZE = ShapeFunction::NPOINTS * NODAL_DOF;
     _localA.resize(MAT_SIZE, MAT_SIZE);
     _localRhs.resize(MAT_SIZE);
-    // _localA.reset(new NodalMatrixType);
-    // _localRhs.reset(new NodalVectorType);
-
-    // DBUG("local matrix size: %i", local_matrix_size);
 
     _data._AP = & process->getAssemblyParams();
 
@@ -291,7 +288,6 @@ checkBounds(std::vector<double> const& localX,
         {
             auto const xold = localX_pts[i+xmV_offset];
             const auto a = xold / (xold - xnew);
-            // if (a<alpha) DBUG("xo %g, xn %g, a %g", xold, xnew, a);
             alpha = std::min(alpha, a);
             _data.bounds_violation[i] = true;
         }
@@ -299,7 +295,6 @@ checkBounds(std::vector<double> const& localX,
         {
             auto const xold = localX_pts[i+xmV_offset];
             const auto a = xold / (xnew - xold);
-            // if (a<alpha) DBUG("xo %g, xn %g, a %g", xold, xnew, a);
             alpha = std::min(alpha, a);
             _data.bounds_violation[i] = true;
         }
@@ -315,13 +310,10 @@ checkBounds(std::vector<double> const& localX,
     {
         if (_data._AP->_number_of_try_of_iteration <=2) {
             _data.reaction_damping_factor *= sqrt(std::min(alpha, 0.5));
-                                            // * sqrt(_data.reaction_damping_factor);
         } else {
             _data.reaction_damping_factor *= std::min(alpha, 0.5);
         }
     }
-
-    // DBUG("new damping factor: %g", _data.reaction_damping_factor);
 
     return alpha == 1.0;
 }
