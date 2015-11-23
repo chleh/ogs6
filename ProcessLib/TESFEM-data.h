@@ -105,7 +105,7 @@ struct DataTraitsFixed
 
     using LaplaceMatrix = Mat<Dim*NodalDOF, Dim*NodalDOF>;
 
-
+    // block dim x dim, fixed-size const matrix
     template<typename Mat>
     static
     typename std::enable_if<NodalDOF != 0,
@@ -118,7 +118,7 @@ struct DataTraitsFixed
         (void) width; (void) height;
         return mat.template block<Dim, Dim>(top, left);
     }
-
+    // block dim x dim, dynamic-size const matrix
     template<typename Mat>
     static
     typename std::enable_if<NodalDOF == 0,
@@ -130,6 +130,7 @@ struct DataTraitsFixed
         assert(width == height);
         return mat.block(top, left, width, height);
     }
+    // block dim x dim, fixed-size non-const matrix
     template<typename Mat>
     static
     typename std::enable_if<NodalDOF != 0,
@@ -142,7 +143,7 @@ struct DataTraitsFixed
         (void) width; (void) height;
         return mat.template block<Dim, Dim>(top, left);
     }
-
+    // block dim x dim, dynamic-size non-const matrix
     template<typename Mat>
     static
     typename std::enable_if<NodalDOF == 0,
@@ -155,7 +156,7 @@ struct DataTraitsFixed
         return mat.block(top, left, width, height);
     }
 
-
+    // block gauss x gauss, fixed-size const matrix
     template<typename Mat>
     static
     typename std::enable_if<NodalDOF != 0,
@@ -168,7 +169,7 @@ struct DataTraitsFixed
         (void) width; (void) height;
         return mat.template block<NIntPts, NIntPts>(top, left);
     }
-
+    // block gauss x gauss, dynamic-size const matrix
     template<typename Mat>
     static
     typename std::enable_if<NodalDOF == 0,
@@ -180,7 +181,7 @@ struct DataTraitsFixed
         assert(width == height);
         return mat.block(top, left, width, height);
     }
-
+    // block gauss x gauss, fixed-size non-const matrix
     template<typename Mat>
     static
     typename std::enable_if<NodalDOF != 0,
@@ -193,7 +194,7 @@ struct DataTraitsFixed
         (void) width; (void) height;
         return mat.template block<NIntPts, NIntPts>(top, left);
     }
-
+    // block gauss x gauss, dynamic-size non-const matrix
     template<typename Mat>
     static
     typename std::enable_if<NodalDOF == 0,
@@ -204,6 +205,51 @@ struct DataTraitsFixed
     {
         assert(width == height);
         return mat.block(top, left, width, height);
+    }
+
+    // block gauss x 1, fixed-size const vector
+    template<typename Vec>
+    static
+    typename std::enable_if<NodalDOF != 0,
+        decltype(std::declval<const Vec>().template block<NIntPts, 1>(0u, 0u))
+    >::type
+    blockShp(Vec const& vec, unsigned top, unsigned height)
+    {
+        assert(height==NIntPts);
+        (void) height;
+        return vec.template block<NIntPts, 1>(top, 0);
+    }
+    // block gauss x 1, dynamic-size const vector
+    template<typename Vec>
+    static
+    typename std::enable_if<NodalDOF == 0,
+        decltype(std::declval<const Vec>().block(0u, 0u, 0u, 0u))
+    >::type
+    blockShp(Vec const& vec, unsigned top, unsigned height)
+    {
+        return vec.block(top, 0, height, 1);
+    }
+    // block gauss x 1, fixed-size non-const vector
+    template<typename Vec>
+    static
+    typename std::enable_if<NodalDOF != 0,
+        decltype(std::declval<Vec>().template block<NIntPts, NIntPts>(0u, 0u))
+    >::type
+    blockShp(Vec& vec, unsigned top, unsigned height)
+    {
+        assert(height==NIntPts);
+        (void) height;
+        return vec.template block<NIntPts, 1>(top, 0);
+    }
+    // block gauss x 1, dynamic-size non-const vector
+    template<typename Vec>
+    static
+    typename std::enable_if<NodalDOF == 0,
+        decltype(std::declval<Vec>().block(0u, 0u, 0u, 0u))
+    >::type
+    blockShp(Vec& vec, unsigned top, unsigned height)
+    {
+        return vec.block(top, 0, height, 1);
     }
 
 private:
@@ -340,10 +386,9 @@ private:
     double _p_V = -888.888; // vapour partial pressure
     double _qR = 88888.88888;  // reaction rate, use this in assembly!!!
 
-    typename Traits::LocalMatrix _Lap;
+    // TODO: entirely omit local matrices
     typename Traits::LocalMatrix _Mas;
-    typename Traits::LocalMatrix _Adv;
-    typename Traits::LocalMatrix _Cnt;
+    typename Traits::LocalMatrix _Lap_Adv_Cnt;
     typename Traits::LocalVector _rhs;
 };
 
