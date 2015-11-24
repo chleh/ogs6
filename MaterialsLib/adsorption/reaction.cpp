@@ -22,6 +22,7 @@
 
 #include "reaction_inert.h"
 #include "reaction_sinusoidal.h"
+#include "reaction_CaOH2.h"
 
 
 namespace Ads
@@ -53,6 +54,8 @@ newInstance(BaseLib::ConfigTree const& conf)
 		return std::unique_ptr<Reaction>(new ReactionInert);
 	else if (type == "Sinusoidal")
 		return std::unique_ptr<Reaction>(new ReactionSinusoidal(conf));
+	else if (type == "CaOH2")
+		return std::unique_ptr<Reaction>(new ReactionCaOH2(conf));
 
 	if (type.empty()) {
 		ERR("No reactive system specified.");

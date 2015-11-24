@@ -18,7 +18,7 @@ class ReactionInert final : public Reaction
 {
 public:
     double get_enthalpy(const double /*p_Ads*/, const double /*T_Ads*/,
-                        const double /*M_Ads*/) const
+                        const double /*M_Ads*/) const override
     {
         ERR("Method get_enthalpy() should never be called directly");
         std::abort();
@@ -26,7 +26,7 @@ public:
     }
 
     double get_reaction_rate(const double /*p_Ads*/, const double /*T_Ads*/, const double /*M_Ads*/,
-                             const double /*loading*/) const
+                             const double /*loading*/) const override
     {
         ERR("Method get_reaction_rate() should never be called directly");
         std::abort();
