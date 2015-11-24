@@ -54,6 +54,26 @@ void printStats(void* cvode_mem)
 namespace MathLib
 {
 
+
+/**
+ * This class provides concrete access to Sundials' CVode solver.
+ *
+ * OdeSolver (implicitly bounds checked, agnostic to concrete ODE solver)
+ *  |
+ *  | Dynamic polymorphism
+ *  v
+ * ConcreteOdeSolver (implicitly bounds checked, interfaces with a specific library)
+ *  |
+ *  | Forward calls, disable bounds checking, no need for templates anymore
+ *  v
+ * Implementation = CVodeSolverInternal (no templates)
+ *  |
+ *  | Pimpl (hide implementation, do not include 3rd party libs in header)
+ *  v
+ * CVodeSolverImpl
+ *
+ * This scheme might be a general way for accessing 3rd party libraries.
+ */
 class CVodeSolverImpl
 {
     static_assert(std::is_same<realtype, double>::value, "cvode's realtype is not the same as double");
@@ -74,11 +94,12 @@ public:
     double const* getSolution() const { return NV_DATA_S(_y); }
     double getTime() const { return _t; }
 
+    bool getYDot(const double t, double const*const y, double *const ydot);
+
     ~CVodeSolverImpl();
 
 private:
     N_Vector _y = nullptr;
-    N_Vector _ydot = nullptr;
 
     realtype _t;
 
@@ -128,14 +149,13 @@ CVodeSolverImpl::CVodeSolverImpl(const CVodeSolverInternal::ConfigTree &config)
 void CVodeSolverImpl::init(const unsigned num_equations)
 {
     _y      = N_VNew_Serial(num_equations);
-    _ydot   = N_VNew_Serial(num_equations);
     _abstol = N_VNew_Serial(num_equations);
     _num_equations = num_equations;
 
     _cvode_mem = CVodeCreate(_linear_multistep_method, _nonlinear_solver_iteration);
 
     assert(_cvode_mem != nullptr && _y != nullptr
-           && _abstol != nullptr && _ydot != nullptr);
+           && _abstol != nullptr);
 }
 
 void CVodeSolverImpl::setTolerance(const double *abstol, const double reltol)
@@ -236,13 +256,21 @@ void CVodeSolverImpl::solve(const double t_end)
 	}
 }
 
+bool CVodeSolverImpl::getYDot(const double t, double const*const y, double *const ydot)
+{
+    if (_f != nullptr) {
+        return _f->call(t, y, ydot);
+    }
+
+    return false;
+}
+
 CVodeSolverImpl::~CVodeSolverImpl()
 {
     printStats(_cvode_mem);
 
     if (_y) {
         N_VDestroy_Serial(_y);
-        N_VDestroy_Serial(_ydot);
         N_VDestroy_Serial(_abstol);
     }
 
@@ -297,6 +325,11 @@ void CVodeSolverInternal::solve(const double t_end)
 double const* CVodeSolverInternal::getSolution() const
 {
 	return _impl->getSolution();
+}
+
+bool CVodeSolverInternal::getYDot(const double t, double const*const y, double *const ydot) const
+{
+	return _impl->getYDot(t, y, ydot);
 }
 
 double CVodeSolverInternal::getTime() const

@@ -106,16 +106,26 @@ createOdeSolver(const boost::property_tree::ptree& config);
 
 
 /**
- * ODE solver with a bounds-safe interface
+ * ODE solver with a bounds-safe interface.
+ *
+ * This class makes contact between the abstract \c OdeSolver interface and a
+ * certain solver \c Implementation.
+ *
+ * The interface of this class inherits the array bounds checking from \c OdeSolver.
+ * Its methods forward calls to the \c Implementation erasing array bounds info by
+ * passing \c std::array as raw pointer.
+ *
+ * This way the \c Implementation does not need to be templated.
  */
 template<unsigned NumEquations, typename Implementation, typename... FunctionArguments>
-class ConcreteOdeSolver
+class ConcreteOdeSolver final
         : public OdeSolver<NumEquations, FunctionArguments...>,
         private Implementation
 {
 public:
     using Interface = OdeSolver<NumEquations, FunctionArguments...>;
     using Arr = typename Interface::Arr;
+    using ConstArrRef = typename Interface::ConstArrRef;
     using Function = typename Interface::Function;
     using JacobianFunction = typename Interface::JacobianFunction;
 
@@ -149,12 +159,18 @@ public:
         Implementation::solve(t);
     }
 
-    double const* getSolution() const override {
-        return Implementation::getSolution();
+    ConstArrRef getSolution() const override {
+        return ConstArrRef(Implementation::getSolution());
     }
 
     double getTime() const override {
         return Implementation::getTime();
+    }
+
+    Arr getYDot(const double t, const Arr& y) const override {
+        Arr ydot;
+        Implementation::getYDot(t, y.data(), ydot.data());
+        return ydot;
     }
 
 private:

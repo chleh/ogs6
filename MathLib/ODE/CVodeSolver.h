@@ -36,6 +36,7 @@ protected:
 
     double const* getSolution() const;
     double getTime() const;
+    bool getYDot(const double t, double const*const y, double *const ydot) const;
 
     ~CVodeSolverInternal();
 private:
