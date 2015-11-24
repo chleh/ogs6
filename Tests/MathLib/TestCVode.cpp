@@ -172,7 +172,7 @@ TEST(MathLibCVodeTest, Exponential)
 
         ode_solver->solve(time);
 
-        double const* y = ode_solver->getSolution();
+        auto const y = ode_solver->getSolution();
         double time_reached = ode_solver->getTime();
 
         std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
@@ -210,7 +210,7 @@ TEST(MathLibCVodeTest, ExponentialExtraData)
 
         ode_solver->solve(time);
 
-        double const* y = ode_solver->getSolution();
+        auto const y = ode_solver->getSolution();
         double time_reached = ode_solver->getTime();
 
         std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
@@ -248,7 +248,7 @@ TEST(MathLibCVodeTest, ExponentialWithJacobian)
 
         ode_solver->solve(time);
 
-        double const* y = ode_solver->getSolution();
+        auto const y = ode_solver->getSolution();
         double time_reached = ode_solver->getTime();
 
         std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
@@ -288,7 +288,7 @@ TEST(MathLibCVodeTest, ExponentialWithJacobianNewton)
 
         ode_solver->solve(time);
 
-        double const* y = ode_solver->getSolution();
+        auto const y = ode_solver->getSolution();
         double time_reached = ode_solver->getTime();
 
         std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
