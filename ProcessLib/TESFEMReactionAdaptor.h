@@ -13,6 +13,9 @@
 #include <memory>
 #include "TESFEM-data.h"
 
+#include "MaterialsLib/adsorption/reaction_CaOH2.h"
+#include "MathLib/ODE/OdeSolverFactory.h"
+
 
 
 namespace ProcessLib
@@ -121,6 +124,36 @@ public:
 
 private:
     LADataNoTpl<Traits>& _data;
+};
+
+
+template<typename Traits>
+class TESFEMReactionAdaptorCaOH2 final : public TESFEMReactionAdaptor<Traits>
+{
+public:
+    explicit TESFEMReactionAdaptorCaOH2(LADataNoTpl<Traits>& data);
+
+    bool checkBounds(const std::vector<double> &, const std::vector<double> &)
+    override {
+        return true;
+    }
+
+    void initReaction(const unsigned) override;
+
+    void preZerothTryAssemble() override
+    {}
+
+private:
+    using Data = LADataNoTpl<Traits>;
+    Data& _data;
+    Ads::ReactionCaOH2& _react;
+
+    std::unique_ptr<MathLib::OdeSolver<1, Data> > _ode_solver;
+
+    static bool ode(const double /*t*/,
+                    BaseLib::ArrayRef<const double, 1> y,
+                    BaseLib::ArrayRef<double, 1> ydot,
+                    Data& data);
 };
 
 }
