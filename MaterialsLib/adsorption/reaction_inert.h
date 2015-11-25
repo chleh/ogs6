@@ -20,8 +20,6 @@ public:
     double get_enthalpy(const double /*p_Ads*/, const double /*T_Ads*/,
                         const double /*M_Ads*/) const override
     {
-        ERR("Method get_enthalpy() should never be called directly");
-        std::abort();
         return 0.0;
     }
 
