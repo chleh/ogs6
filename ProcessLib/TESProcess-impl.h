@@ -421,6 +421,7 @@ initialize()
         setInitialConditions(*_process_vars[i], i);
     }
 
+    // TODO: read from input file
     _picard.reset(new MathLib::Nonlinear::Picard);
     _picard->setAbsTolerance(1e-1);
     _picard->setRelTolerance(1e-6);
@@ -446,7 +447,7 @@ setInitialConditions(ProcessVariable const& variable, std::size_t component_id)
 }
 
 template<typename GlobalSetup>
-bool TESProcess<GlobalSetup>::solve(const double delta_t)
+bool TESProcess<GlobalSetup>::solve(const double current_time, const double delta_t)
 {
     DBUG("Solve TESProcess.");
 
@@ -474,6 +475,7 @@ bool TESProcess<GlobalSetup>::solve(const double delta_t)
 
     _assembly_params._delta_t = delta_t;
     _assembly_params._iteration_in_current_timestep = 0;
+    _assembly_params._current_time = current_time;
     ++ _timestep;
 
     auto cb = [this](typename GlobalSetup::VectorType& x_prev_iter,
@@ -548,6 +550,7 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
         {
             MeshLib::Location loc(_mesh.getID(), MeshLib::MeshItemType::Node, i);
             auto const idx = _local_to_global_index_map->getGlobalIndex(loc, vi);
+            assert(!isnan((*_x)[idx]));
             (*result)[i] = (*_x)[idx];
         }
     };
@@ -583,6 +586,7 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             // Copy result
             for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
             {
+                assert(!isnan(nodal_values[i]));
                 (*result)[i] = nodal_values[i];
             }
         }
@@ -600,6 +604,7 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             // Copy result
             for (std::size_t i = 0; i < _mesh.getNElements(); ++i)
             {
+                assert(!isnan(residuals[i]));
                 (*result)[i] = residuals[i];
             }
         }
@@ -719,7 +724,9 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         DBUG("residual of old solution with new matrix: %g", residual);
 #endif
 
-        // MathLib::scaleDiagonal(*_A, *_rhs);
+#if defined(OGS_USE_EIGEN) && ! defined(OGS_USE_EIGENLIS)
+        MathLib::scaleDiagonal(*_A, *_rhs);
+#endif
 
 #ifndef USE_LIS
         // _A->getRawMatrix().rowwise() /= diag; //  = invDiag * _A->getRawMatrix();

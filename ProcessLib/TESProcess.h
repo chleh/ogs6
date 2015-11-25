@@ -87,7 +87,7 @@ public:
 
     void initialize() override;
 
-    bool solve(const double delta_t) override;
+    bool solve(const double current_time, const double delta_t) override;
 
     void post(std::string const& file_name) override;
     void postTimestep(std::string const& file_name, const unsigned timestep) override;
