@@ -16,6 +16,10 @@
 namespace Ads
 {
 
+constexpr double ReactionCaOH2::tol_l;
+constexpr double ReactionCaOH2::tol_u;
+
+
 double
 ReactionCaOH2::get_enthalpy(const double, const double, const double) const
 {
@@ -30,14 +34,27 @@ ReactionCaOH2::get_reaction_rate(const double, const double, const double, const
 }
 
 
-void ReactionCaOH2::eval(double /*t*/, Eigen::VectorXd const& y, Eigen::VectorXd &dydx)
+void ReactionCaOH2::eval(double /*t*/,
+						 const BaseLib::ArrayRef<const double, 1>& y,
+						 BaseLib::ArrayRef<double, 1>& dydx)
 {
 	assert( y.size() == dydx.size() );
 
-	rho_s = y(0);
+	rho_s = y[0];
 	calculate_qR();
-	dydx(0) = qR;
+	dydx[0] = qR;
+}
 
+void ReactionCaOH2::update_param(
+		double T_solid,
+		double p_gas,
+		double x_react,
+		double rho_s_initial)
+{
+	T_s     = T_solid;
+	this->p_gas = p_gas;
+	this->x_react = x_react;
+	rho_s   = rho_s_initial;
 }
 
 void ReactionCaOH2::calculate_qR()

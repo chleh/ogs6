@@ -11,8 +11,8 @@ namespace Ads
 
 constexpr double GAS_CONST = 8.3144621;
 
-const double M_N2  = 0.028;
-const double M_H2O = 0.018;
+constexpr double M_N2  = 0.028;
+constexpr double M_H2O = 0.018;
 
 class Adsorption : public Reaction
 {

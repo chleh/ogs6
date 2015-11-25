@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include<Eigen/Core>
+#include "BaseLib/ArrayRef.h"
 
 #include "reaction.h"
 #include "adsorption.h"
@@ -47,43 +47,39 @@ public:
 
 
 private:
-    void eval(double /*t*/, Eigen::VectorXd const& y, Eigen::VectorXd &dydx);
+    void eval(double /*t*/,
+              BaseLib::ArrayRef<const double, 1> const& y,
+              BaseLib::ArrayRef<double, 1>& dydx);
     void calculate_qR();
     void set_chemical_equilibrium();
+    void update_param(double T_solid,
+                      double p_gas,
+                      double x_react,
+                      double rho_s_initial);
     double Ca_hydration();
 
 
     static constexpr double R = Ads::GAS_CONST;  // [J/mol/K]
-    double rho_s;    // solid phase density
-    double rho_s_0;  // initial solid phase density
-    double phi_solid; //solid volume fraction
-    double p_gas;    // gas phase pressure;
-    double p_r_g;    // pressure of H2O on gas phase;
-    double p_eq;     // equilibrium pressure; // unit in bar
-    double T_eq;     // equilibrium temperature;
-    double T_s;      // solid phase temperature;
-    double T;        // gas phase temperature;
-    double qR;       // rate of solid density change;
-    double x_react;    // mass fraction of water in gas phase;
-    double X_D;      // mass fraction of dehydration (CaO) in the solid phase;
-    double X_H;      // mass fraction of hydration in the solid phase;
-    double dt;       // time step size;
-    double rho_low; //lower density limit
-    double rho_up; //upper density limit
-    double reaction_enthalpy;
-    double reaction_entropy;
-    double M_carrier; //inert component molar mass
-    double M_react; //reactive component molar mass
-    double W0; //maximum specific adsorbed volume
-    double C_eq; //equilibrium loading of sorbens
-    double p_min; //minimum pressure for which we find a valid adsorption potential
+    double rho_s;                 // solid phase density
+    double p_gas;                 // gas phase pressure in unit bar
+    double p_r_g;                 // pressure of H2O on gas phase;
+    double p_eq       = 1.0;      // equilibrium pressure; // unit in bar
+    double T_eq;                  // equilibrium temperature;
+    double T_s;                   // solid phase temperature;
+    double qR;                    // rate of solid density change;
+    double x_react;               // mass fraction of water in gas phase;
+    double X_D;                   // mass fraction of dehydration (CaO) in the solid phase;
+    double X_H;                   // mass fraction of hydration in the solid phase;
+    static constexpr double rho_low = 1656.0;              // lower density limit
+    static constexpr double rho_up = 2200.0;               // upper density limit
+    static constexpr double reaction_enthalpy = -1.12e+05; // in J/mol; negative for exothermic composition reaction
+    static constexpr double reaction_entropy  = -143.5;    // in J/mol K
+    static constexpr double M_carrier = Ads::M_N2;         // inert component molar mass
+    static constexpr double M_react   = Ads::M_H2O;        // reactive component molar mass
 
-    double tol_l;
-    double tol_u;
-    double tol_rho;
-
-    double lower_solid_density_limit;
-    double upper_solid_density_limit;
+    static constexpr double tol_l   = 1e-4;
+    static constexpr double tol_u   = 1.0 - 1e-4;
+    static constexpr double tol_rho = 0.1;
 
     const BaseLib::ConfigTree ode_solver_config;
 
