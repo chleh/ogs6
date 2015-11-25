@@ -27,6 +27,8 @@ struct Handles<N, FunctionArgument>
 
     bool call(const double t, const double * const y, double * const ydot) override
     {
+        // looks like f and df could be any callable object with suitable signature
+        // consider omission of data pointer and switch to std::function or alike
         if (f) return f(t,
                         BaseLib::ArrayRef<const double, N>{y},
                         BaseLib::ArrayRef<double, N>{ydot},
@@ -54,6 +56,7 @@ struct Handles<N, FunctionArgument>
         _data = arg;
     }
 
+    // TODO: make private
     Function f = nullptr;
     JacobianFunction df = nullptr;
 
