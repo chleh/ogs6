@@ -296,7 +296,7 @@ TESFEMReactionAdaptorCaOH2(LADataNoTpl<Traits> &data)
     _ode_solver->init();
     _ode_solver->setTolerance(1e-8, 1e-6);
 
-    _ode_solver->setFunction(ode, nullptr, &_data); // TODO: change signature to reference
+    _ode_solver->setFunction(odeRhs, nullptr, &_data); // TODO: change signature to reference
 }
 
 template<typename Traits>
@@ -319,6 +319,9 @@ initReaction(const unsigned int int_pt)
 
 	const double t_end = _data._AP->_delta_t;
 
+	_react.update_param(_data._T, _data._p, _data._vapour_mass_fraction,
+						_data._solid_density_prev_ts[int_pt]);
+
 	_ode_solver->setIC(t0, { y0 });
 	_ode_solver->preSolve();
 	_ode_solver->solve(t_end);
@@ -328,18 +331,14 @@ initReaction(const unsigned int int_pt)
 
 	const double y_new     = _ode_solver->getSolution()[0];
 	const double y_dot_new = _ode_solver->getYDot(t_end, { y_new })[0];
-#if 0
-	cvode_conversion_rate(,
-						  delta_t, pcs->m_conversion_rate /* TODO */, y_new, y_dot_new);
-#endif
 
 	double rho_react;
 
 	//cut off when limits are reached
-	if ( y_new < _react.lower_solid_density_limit )
-		rho_react = _react.lower_solid_density_limit;
-	else if ( y_new > _react.upper_solid_density_limit ) //{
-		rho_react = _react.upper_solid_density_limit;
+	if ( y_new < _react.rho_low )
+		rho_react = _react.rho_low;
+	else if ( y_new > _react.rho_up ) //{
+		rho_react = _react.rho_up;
 	else
 		rho_react = y_new;
 
@@ -348,15 +347,19 @@ initReaction(const unsigned int int_pt)
     _data._qR = _data._reaction_rate[int_pt];
 }
 
+
+// TODO: there could be a general implementation for this in the OdeSolver class
+// general implementation should take an object and a member function pointer
+// with suitable signature.
 template<typename Traits>
 bool
 TESFEMReactionAdaptorCaOH2<Traits>::
-ode(const double /*t*/,
-    BaseLib::ArrayRef<const double, 1> y,
-    BaseLib::ArrayRef<double, 1> ydot,
-    Data& data)
+odeRhs(const double t,
+       BaseLib::ArrayRef<const double, 1> const& y,
+       BaseLib::ArrayRef<double, 1>& ydot,
+       Ads::ReactionCaOH2& reaction)
 {
-    // TODO
+    reaction.eval(t, y, ydot);
     return true;
 }
 

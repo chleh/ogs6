@@ -150,10 +150,10 @@ private:
 
     std::unique_ptr<MathLib::OdeSolver<1, Data> > _ode_solver;
 
-    static bool ode(const double /*t*/,
-                    BaseLib::ArrayRef<const double, 1> y,
-                    BaseLib::ArrayRef<double, 1> ydot,
-                    Data& data);
+    static bool odeRhs(const double /*t*/,
+                       BaseLib::ArrayRef<const double, 1> const& y,
+                       BaseLib::ArrayRef<double, 1>& ydot,
+                       Ads::ReactionCaOH2& reaction);
 };
 
 }
