@@ -98,11 +98,17 @@ public:
         return true;
     }
 
-    void initReaction(const unsigned) override
-    {}
+    void initReaction(const unsigned int_pt) override
+    {
+        _data._qR = 0.0;
+        _data._reaction_rate[int_pt] = 0.0;
+    }
 
     void preZerothTryAssemble() override
     {}
+
+private:
+    LADataNoTpl<Traits>& _data;
 };
 
 

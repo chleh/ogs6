@@ -279,6 +279,9 @@ template<typename Traits>
 class TESFEMReactionAdaptorAdsorption;
 
 template<typename Traits>
+class TESFEMReactionAdaptorInert;
+
+template<typename Traits>
 class TESFEMReactionAdaptorSinusoidal;
 
 
@@ -363,6 +366,7 @@ private:
 
     friend class TESFEMReactionAdaptor<Traits>;
     friend class TESFEMReactionAdaptorAdsorption<Traits>;
+    friend class TESFEMReactionAdaptorInert<Traits>;
     friend class TESFEMReactionAdaptorSinusoidal<Traits>;
 };
 

@@ -251,7 +251,8 @@ preZerothTryAssemble()
 
 template<typename Traits>
 TESFEMReactionAdaptorInert<Traits>::
-TESFEMReactionAdaptorInert(LADataNoTpl<Traits> &)
+TESFEMReactionAdaptorInert(LADataNoTpl<Traits>& data)
+    : _data{data}
 {
 }
 
