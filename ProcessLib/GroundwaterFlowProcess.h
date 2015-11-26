@@ -222,7 +222,13 @@ public:
     {
         DBUG("Assemble GroundwaterFlowProcess.");
 
-        *this->_rhs = 0;   // This resets the whole vector.
+    bool solve(const double /*delta_t*/) override
+    {
+        DBUG("Solve GroundwaterFlowProcess.");
+
+        _A->setZero();
+        MathLib::setMatrixSparsity(*_A, _sparsity_pattern);
+        *_rhs = 0;   // This resets the whole vector.
 
         // Call global assembler for each local assembly item.
         this->_global_setup.execute(*this->_global_assembler,

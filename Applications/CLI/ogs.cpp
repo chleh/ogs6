@@ -91,7 +91,7 @@ void solveProcesses(ProjectData &project)
 		for (auto p = project.processesBegin(); p != project.processesEnd();
 		     ++p)
 		{
-			accepted = accepted && (*p)->solve(dt);
+			accepted = accepted && (*p)->solve(current_time, dt);
 
 			if (!accepted) {
 				ERR("Timestep has not been accepted. Aborting.");

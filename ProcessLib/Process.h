@@ -48,7 +48,8 @@ public:
 	virtual void init() = 0;
 	virtual bool assemble(const double delta_t) = 0;
 
-	virtual std::string getLinearSolverName() const = 0;
+    virtual void initialize() = 0;
+    virtual bool solve(const double delta_t) = 0;
 
 	/// Postprocessing after solve().
 	/// The file_name is indicating the name of possible output file.
