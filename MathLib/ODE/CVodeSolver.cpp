@@ -182,6 +182,19 @@ void CVodeSolverImpl::setFunction(FunctionHandles* f)
 {
     _f = f;
     assert(_num_equations == f->getNumEquations());
+
+    auto f_wrapped
+			= [](const realtype t, const N_Vector y, N_Vector ydot, void* function_handles)
+			  -> int
+	{
+		bool successful = static_cast<FunctionHandles*>(function_handles)
+						  ->call(t, NV_DATA_S(y), NV_DATA_S(ydot));
+		return successful ? 0 : 1;
+	};
+
+    // TODO: check not run twice! move this call somewhere else
+    int flag = CVodeInit(_cvode_mem, f_wrapped, 0.0, _y);
+    (void) flag;
 }
 
 void CVodeSolverImpl::setIC(const double t0, double const*const y0)
@@ -198,17 +211,9 @@ void CVodeSolverImpl::preSolve()
 {
 	assert(_f != nullptr && "ode function handle was not provided");
 
-	auto f_wrapped
-			= [](const realtype t, const N_Vector y, N_Vector ydot, void* function_handles)
-			  -> int
-	{
-		bool successful = static_cast<FunctionHandles*>(function_handles)
-						  ->call(t, NV_DATA_S(y), NV_DATA_S(ydot));
-		return successful ? 0 : 1;
-	};
 
-
-	int flag = CVodeInit(_cvode_mem, f_wrapped, _t, _y); // TODO: consider CVodeReInit()!
+	// int flag = CVodeInit(_cvode_mem, f_wrapped, _t, _y); // TODO: consider CVodeReInit()!
+	int flag = CVodeReInit(_cvode_mem, _t, _y); // TODO: consider CVodeReInit()!
 	// if (check_flag(&flag, "CVodeInit", 1)) return(1);
 
 	flag = CVodeSetUserData(_cvode_mem, static_cast<void*>(_f));
