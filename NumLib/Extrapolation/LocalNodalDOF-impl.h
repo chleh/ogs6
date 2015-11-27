@@ -17,7 +17,7 @@ public:
             std::size_t index,
             GlobalVector const& global_nodal_values,
             AssemblerLib::LocalToGlobalIndexMap const& index_map)
-        : _index{index}, _index_map{index_map}, _global_nodal_values{global_nodal_values}
+        : _index{index}, _index_map(index_map), _global_nodal_values(global_nodal_values)
     {}
 
     // this function is very similar to my [CL] current implementation of VectorMatrixAssembler
