@@ -264,7 +264,7 @@ TESFEMReactionAdaptorInert(LADataNoTpl<Traits>& data)
 template<typename Traits>
 TESFEMReactionAdaptorSinusoidal<Traits>::
 TESFEMReactionAdaptorSinusoidal(LADataNoTpl<Traits> &data)
-    : _data{data}
+    : _data(data)
 {
     assert(dynamic_cast<Ads::ReactionSinusoidal const*>(data._AP->_reaction_system.get()) != nullptr
            && "Reactive system has wrong type.");
@@ -293,8 +293,8 @@ initReaction(const unsigned int int_pt)
 template<typename Traits>
 TESFEMReactionAdaptorCaOH2<Traits>::
 TESFEMReactionAdaptorCaOH2(LADataNoTpl<Traits> &data)
-    : _data{data}
-    , _react{dynamic_cast<Ads::ReactionCaOH2&>(*data._AP->_reaction_system.get())}
+    : _data(data)
+    , _react(dynamic_cast<Ads::ReactionCaOH2&>(*data._AP->_reaction_system.get()))
 {
     _ode_solver = std::move(MathLib::createOdeSolver<1, React>(_react.getOdeSolverConfig()));
 
@@ -337,6 +337,7 @@ initReaction(const unsigned int int_pt)
 	_ode_solver->solve(t_end);
 
 	const double time_reached = _ode_solver->getTime();
+	(void) time_reached;
 	assert(std::abs(t_end - time_reached) < std::numeric_limits<double>::epsilon());
 
 	const double y_new     = _ode_solver->getSolution()[0];
