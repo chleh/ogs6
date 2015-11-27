@@ -61,7 +61,7 @@ TESFEMReactionAdaptorAdsorption(LADataNoTpl<Traits> &data)
     // caution fragile: this relies in this constructor b eing called __after__
     // data._solid_density has been properly set up!
     : _bounds_violation(data._solid_density.size(), false)
-    , _data{data}
+    , _data(data)
 {
     assert(dynamic_cast<Ads::Adsorption const*>(data._AP->_reaction_system.get()) != nullptr
            && "Reactive system has wrong type.");
@@ -256,7 +256,7 @@ preZerothTryAssemble()
 template<typename Traits>
 TESFEMReactionAdaptorInert<Traits>::
 TESFEMReactionAdaptorInert(LADataNoTpl<Traits>& data)
-    : _data{data}
+    : _data(data)
 {
 }
 
