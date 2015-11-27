@@ -13,7 +13,17 @@ add_library(ApplicationsLib STATIC ${LIB_SOURCES})
 #	endif()
 #endif()
 
+if (OGS_USE_MKL)
 LINK_DIRECTORIES(/home/lehmannc/lib/MKL/mkl/lib/intel64)
+
+	set(MKL_LIBRARIES
+		/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_core.so
+		/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_gnu_thread.so
+		/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_intel_lp64.so
+	)
+else()
+	set(MKL_LIBRARIES)
+endif()
 
 target_link_libraries(ApplicationsLib INTERFACE
 	GeoLib
@@ -22,9 +32,7 @@ target_link_libraries(ApplicationsLib INTERFACE
 	ProcessLib
 	${VTK_LIBRARIES}
 	logog
-	/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_core.so
-	/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_gnu_thread.so
-	/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_intel_lp64.so
+	${MKL_LIBRARIES}
 )
 ADD_VTK_DEPENDENCY(ApplicationsLib)
 
