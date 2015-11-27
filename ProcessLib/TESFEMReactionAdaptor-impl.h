@@ -299,7 +299,7 @@ TESFEMReactionAdaptorCaOH2(LADataNoTpl<Traits> &data)
     _ode_solver = std::move(MathLib::createOdeSolver<1, React>(_react.getOdeSolverConfig()));
 
     _ode_solver->init();
-    _ode_solver->setTolerance(1e-8, 1e-6);
+    _ode_solver->setTolerance(1e-10, 1e-10);
 
     _ode_solver->setFunction(odeRhs, nullptr, &_react); // TODO: change signature to reference
 }
@@ -309,7 +309,12 @@ void
 TESFEMReactionAdaptorCaOH2<Traits>::
 initReaction(const unsigned int int_pt)
 {
-    // TODO implement
+    if (_data._AP->_iteration_in_current_timestep > 0
+        || _data._AP->_number_of_try_of_iteration > 0)
+    {
+        _data._qR = _data._reaction_rate[int_pt];
+        return;
+    }
 
 
     // TODO: double check!
