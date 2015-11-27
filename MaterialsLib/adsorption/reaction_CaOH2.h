@@ -45,17 +45,20 @@ public:
     double get_reaction_rate(const double /*p_Ads*/, const double /*T_Ads*/, const double /*M_Ads*/,
                              const double /*loading*/) const override;
 
+    const BaseLib::ConfigTree& getOdeSolverConfig() const { return ode_solver_config; }
 
-private:
+
     void eval(double /*t*/,
               BaseLib::ArrayRef<const double, 1> const& y,
               BaseLib::ArrayRef<double, 1>& dydx);
-    void calculate_qR();
-    void set_chemical_equilibrium();
     void update_param(double T_solid,
                       double p_gas,
                       double x_react,
                       double rho_s_initial);
+
+private:
+    void calculate_qR();
+    void set_chemical_equilibrium();
     double Ca_hydration();
 
 
@@ -70,8 +73,6 @@ private:
     double x_react;               // mass fraction of water in gas phase;
     double X_D;                   // mass fraction of dehydration (CaO) in the solid phase;
     double X_H;                   // mass fraction of hydration in the solid phase;
-    static constexpr double rho_low = 1656.0;              // lower density limit
-    static constexpr double rho_up = 2200.0;               // upper density limit
     static constexpr double reaction_enthalpy = -1.12e+05; // in J/mol; negative for exothermic composition reaction
     static constexpr double reaction_entropy  = -143.5;    // in J/mol K
     static constexpr double M_carrier = Ads::M_N2;         // inert component molar mass
@@ -85,6 +86,10 @@ private:
 
     template<typename>
     friend class ProcessLib::TESFEMReactionAdaptorCaOH2;
+
+public:
+    static constexpr double rho_low = 1656.0;              // lower density limit
+    static constexpr double rho_up = 2200.0;               // upper density limit
 };
 
 }

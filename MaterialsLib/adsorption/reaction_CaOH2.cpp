@@ -52,7 +52,7 @@ void ReactionCaOH2::update_param(
 		double rho_s_initial)
 {
 	T_s     = T_solid;
-	this->p_gas = p_gas;
+	this->p_gas = p_gas / 1e5; // convert Pa to bar
 	this->x_react = x_react;
 	rho_s   = rho_s_initial;
 }
