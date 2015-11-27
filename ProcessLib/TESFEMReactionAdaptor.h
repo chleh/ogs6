@@ -151,15 +151,16 @@ public:
 
 private:
     using Data = LADataNoTpl<Traits>;
+    using React = Ads::ReactionCaOH2;
     Data& _data;
-    Ads::ReactionCaOH2& _react;
+    React& _react;
 
-    std::unique_ptr<MathLib::OdeSolver<1, Data> > _ode_solver;
+    std::unique_ptr<MathLib::OdeSolver<1, React> > _ode_solver;
 
     static bool odeRhs(const double /*t*/,
-                       BaseLib::ArrayRef<const double, 1> const& y,
-                       BaseLib::ArrayRef<double, 1>& ydot,
-                       Ads::ReactionCaOH2& reaction);
+                       BaseLib::ArrayRef<const double, 1> y,
+                       BaseLib::ArrayRef<double, 1> ydot,
+                       React& reaction);
 };
 
 }

@@ -43,6 +43,10 @@ newInstance(LADataNoTpl<Traits>& data)
         return std::unique_ptr<TESFEMReactionAdaptor<Traits> >(
                     new TESFEMReactionAdaptorSinusoidal<Traits>(data)
                     );
+    } else if (dynamic_cast<Ads::ReactionCaOH2 const*>(ads) != nullptr) {
+        return std::unique_ptr<TESFEMReactionAdaptor<Traits> >(
+                    new TESFEMReactionAdaptorCaOH2<Traits>(data)
+                    );
     }
 
     ERR("No suitable TESFEMReactionAdaptor found. Aborting.");
@@ -292,12 +296,12 @@ TESFEMReactionAdaptorCaOH2(LADataNoTpl<Traits> &data)
     : _data{data}
     , _react{dynamic_cast<Ads::ReactionCaOH2&>(*data._AP->_reaction_system.get())}
 {
-    _ode_solver = MathLib::createOdeSolver<1, Data>(_react.ode_solver_config);
+    _ode_solver = std::move(MathLib::createOdeSolver<1, React>(_react.getOdeSolverConfig()));
 
     _ode_solver->init();
     _ode_solver->setTolerance(1e-8, 1e-6);
 
-    _ode_solver->setFunction(odeRhs, nullptr, &_data); // TODO: change signature to reference
+    _ode_solver->setFunction(odeRhs, nullptr, &_react); // TODO: change signature to reference
 }
 
 template<typename Traits>
@@ -356,8 +360,8 @@ template<typename Traits>
 bool
 TESFEMReactionAdaptorCaOH2<Traits>::
 odeRhs(const double t,
-       BaseLib::ArrayRef<const double, 1> const& y,
-       BaseLib::ArrayRef<double, 1>& ydot,
+       BaseLib::ArrayRef<const double, 1> const y,
+       BaseLib::ArrayRef<double, 1> ydot,
        Ads::ReactionCaOH2& reaction)
 {
     reaction.eval(t, y, ydot);
