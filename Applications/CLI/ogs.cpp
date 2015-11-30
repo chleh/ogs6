@@ -75,6 +75,7 @@ void solveProcesses(ProjectData &project)
 
 	while (time_stepper.next()) // skips zeroth timestep, but OK since end of first timestep is after first delta t
 	{
+		BaseLib::TimingOneShot timing("timestep");
 
 		const auto dt = time_stepper.getTimeStep().dt();
 		const auto current_time = time_stepper.getTimeStep().current();
@@ -106,6 +107,8 @@ void solveProcesses(ProjectData &project)
 			++i;
 		}
 
+		timing.stop();
+
 		if (!accepted) break;
 	}
 
@@ -122,8 +125,6 @@ void solveProcesses(ProjectData &project)
 			do_output(i, *p, timestep, current_time, *pvd_files[i]);
 		}
 	}
-
-
 }
 
 int main(int argc, char *argv[])

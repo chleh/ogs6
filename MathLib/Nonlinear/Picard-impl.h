@@ -15,6 +15,7 @@
 #include "logog/include/logog.hpp"
 
 #include "Picard.h"
+#include "BaseLib/Timing.h"
 
 namespace MathLib
 {
@@ -38,8 +39,11 @@ bool Picard::solve(T_FUNCTOR &functor,  const T_VALUE &x0, T_VALUE &x_new)
     double x_norm = -1.;
     double abs_error = -1.;
     double rel_error = -1.;
-    for (itr_cnt=0; itr_cnt<_max_itr; itr_cnt++) {
+    for (itr_cnt=0; itr_cnt<_max_itr; itr_cnt++)
+    {
         INFO("-> picard iteration %lu/%lu started", itr_cnt, _max_itr);
+        BaseLib::TimingOneShot timing("Picard iteration");
+
         functor(x_old, x_new);
         dx = x_new;
         dx -= x_old;
@@ -59,6 +63,9 @@ bool Picard::solve(T_FUNCTOR &functor,  const T_VALUE &x0, T_VALUE &x_new)
 #ifdef DEBUG_PICARD
         printout(std::cout, itr_cnt, x_new, dx);
 #endif
+
+        timing.stop();
+
         if (converged) {
             break;
         }
