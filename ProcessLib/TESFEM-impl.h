@@ -175,8 +175,8 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
             NumLib::shapeFunctionInterpolate(ps, sm.N, Array{ &p  });
             NumLib::shapeFunctionInterpolate(xs, sm.N, Array{ &xm });
 
-            p  = trafo_p.x(p);
-            xm = trafo_x.x(xm);
+            p  = _data._AP->trafo_p.x(p);
+            xm = _data._AP->trafo_x.x(xm);
 
             // TODO: Dalton's law method
             auto const xn = Ads::Adsorption::get_molar_fraction(xm, AP._M_react, AP._M_inert);
@@ -205,9 +205,9 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
             using Array = std::array<double*, 3>;
             NumLib::shapeFunctionInterpolate(nodal_vals, sm.N, Array{ &p, &T, &xm });
 
-            p  = trafo_p.x(p);
-            T  = trafo_T.x(T);
-            xm = trafo_x.x(xm);
+            p  = _data._AP->trafo_p.x(p);
+            T  = _data._AP->trafo_T.x(T);
+            xm = _data._AP->trafo_x.x(xm);
 
             // TODO: Dalton's law method
             auto const xn = Ads::Adsorption::get_molar_fraction(xm, AP._M_react, AP._M_inert);
@@ -237,9 +237,9 @@ getIntegrationPointValues(SecondaryVariables var, NumLib::LocalNodalDOF& nodal_d
             using Array = std::array<double*, 3>;
             NumLib::shapeFunctionInterpolate(nodal_vals, sm.N, Array{ &p, &T, &xm });
 
-            p  = trafo_p.x(p);
-            T  = trafo_T.x(T);
-            xm = trafo_x.x(xm);
+            p  = _data._AP->trafo_p.x(p);
+            T  = _data._AP->trafo_T.x(T);
+            xm = _data._AP->trafo_x.x(xm);
 
             // TODO: Dalton's law method
             auto const xn = Ads::Adsorption::get_molar_fraction(xm, AP._M_react, AP._M_inert);

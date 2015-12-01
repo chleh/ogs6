@@ -445,23 +445,23 @@ getMassCoeffMatrix(const unsigned int_pt)
 	const double dxn_dxm = Ads::Adsorption::d_molar_fraction(
 							   _vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
 
-	const double M_pp = _AP->_poro/_p * _rho_GR * trafo_p.dxdy(_p);
-	const double M_pT = -_AP->_poro/_T *  _rho_GR * trafo_T.dxdy(_T);
+	const double M_pp = _AP->_poro/_p * _rho_GR * _AP->trafo_p.dxdy(_p);
+	const double M_pT = -_AP->_poro/_T *  _rho_GR * _AP->trafo_T.dxdy(_T);
 	const double M_px = (_AP->_M_react-_AP->_M_inert) * _p
 						/ (GAS_CONST * _T) * dxn_dxm * _AP->_poro
-						* trafo_x.dxdy(_vapour_mass_fraction);
+						* _AP->trafo_x.dxdy(_vapour_mass_fraction);
 
-	const double M_Tp = -_AP->_poro * trafo_p.dxdy(_p);
+	const double M_Tp = -_AP->_poro * _AP->trafo_p.dxdy(_p);
 	const double M_TT = (
 			_AP->_poro * _rho_GR * _AP->_cpG // TODO: vapour heat capacity
 			+ (1.0-_AP->_poro) * _solid_density[int_pt] * _AP->_cpS // TODO: adsorbate heat capacity
-		) * trafo_T.dxdy(_T);
+		) * _AP->trafo_T.dxdy(_T);
 	const double M_Tx = 0.0;
 
 	const double M_xp = 0.0;
 	const double M_xT = 0.0;
 	const double M_xx = _AP->_poro * _rho_GR
-						* trafo_x.dxdy(_vapour_mass_fraction);
+						* _AP->trafo_x.dxdy(_vapour_mass_fraction);
 
 
 	Eigen::Matrix3d M;
@@ -492,21 +492,21 @@ getLaplaceCoeffMatrix(const unsigned /*int_pt*/, const unsigned dim)
 	// L_pp
 	Traits::blockDimDim(L,     0,     0, dim, dim)
 			= Traits::blockDimDim(_AP->_solid_perm_tensor, 0,0,dim,dim) * _rho_GR / eta_GR
-			  * trafo_p.dxdy(_p);
+			  * _AP->trafo_p.dxdy(_p);
 
 	// TODO: add zeolite part
 	// L_TT
 	Traits::blockDimDim(L,   dim,   dim, dim, dim)
 			= Mat::Identity(dim, dim)
 			  * ( _AP->_poro * lambda_F + (1.0 - _AP->_poro) * lambda_S)
-			  * trafo_T.dxdy(_T);
+			  * _AP->trafo_T.dxdy(_T);
 
 	// L_xx
 	Traits::blockDimDim(L, 2*dim, 2*dim, dim, dim)
 			= Mat::Identity(dim, dim)
 			  * (_AP->_tortuosity * _AP->_poro * _rho_GR
 				 * _AP->_diffusion_coefficient_component
-				 * trafo_x.dxdy(_vapour_mass_fraction)
+				 * _AP->trafo_x.dxdy(_vapour_mass_fraction)
 				 );
 
 	return L;
@@ -525,13 +525,13 @@ getAdvectionCoeffMatrix(const unsigned /*int_pt*/)
 
 	const double A_Tp = 0.0;
 
-	const double A_TT = _rho_GR * _AP->_cpG * trafo_T.dxdy(_T); // porosity?
+	const double A_TT = _rho_GR * _AP->_cpG * _AP->trafo_T.dxdy(_T); // porosity?
 	const double A_Tx = 0.0;
 
 	const double A_xp = 0.0;
 	const double A_xT = 0.0;
 	const double A_xx = _rho_GR
-						* trafo_x.dxdy(_vapour_mass_fraction); // porosity?
+						* _AP->trafo_x.dxdy(_vapour_mass_fraction); // porosity?
 
 
 	Eigen::Matrix3d A;
@@ -629,9 +629,9 @@ preEachAssembleIntegrationPoint(
 
     NumLib::shapeFunctionInterpolate(localX, smN, int_pt_val);
 
-    _p = trafo_p.x(_p);
-    _T = trafo_p.x(_T);
-    _vapour_mass_fraction = trafo_x.x(_vapour_mass_fraction);
+    _p = _AP->trafo_p.x(_p);
+    _T = _AP->trafo_p.x(_T);
+    _vapour_mass_fraction = _AP->trafo_x.x(_vapour_mass_fraction);
 
     // pre-compute certain properties
     _p_V = _p * Ads::Adsorption::get_molar_fraction(_vapour_mass_fraction, _AP->_M_react, _AP->_M_inert);
