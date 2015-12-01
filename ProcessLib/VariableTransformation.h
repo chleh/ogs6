@@ -62,7 +62,12 @@ struct TrafoTanh
 
 struct TrafoScale
 {
-    TrafoScale(const double factor) : _factor{factor} {}
+    TrafoScale() : _factor{1.0} {}
+    explicit TrafoScale(const double factor) : _factor{factor} {}
+
+    void operator=(TrafoScale const& other) {
+        _factor = other._factor;
+    }
 
     static const bool constrained = false;
 
@@ -77,7 +82,7 @@ struct TrafoScale
     double dxdy(const double /*x*/) const { return _factor; }
 
 private:
-    const double _factor;
+    double _factor;
 };
 
 typedef TrafoScale Trafo;
