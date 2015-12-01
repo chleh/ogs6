@@ -36,7 +36,7 @@ createPicard(const BaseLib::ConfigTree &config)
     auto const norm = config.get_optional<std::string>("norm_type");
     if (norm) {
         if      (*norm == "Norm1")   pic->setNormType(MathLib::VecNormType::NORM1);
-        else if (*norm == "Norm1")   pic->setNormType(MathLib::VecNormType::NORM2);
+        else if (*norm == "Norm2")   pic->setNormType(MathLib::VecNormType::NORM2);
         else if (*norm == "NormMax") pic->setNormType(MathLib::VecNormType::INFINITY_N);
         else {
             ERR("invalid vector norm type: `%s'", norm->c_str());
