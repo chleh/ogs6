@@ -13,6 +13,9 @@
 #ifndef MATHLIB_NONLINEAR_PICARD_H_
 #define MATHLIB_NONLINEAR_PICARD_H_
 
+#include <memory>
+#include "BaseLib/ConfigTree.h"
+
 #include "MathLib/LinAlg/VectorNorms.h"
 
 namespace MathLib
@@ -98,6 +101,10 @@ private:
     /// relative error in the last calculation
     double _rel_error;
 };
+
+
+std::unique_ptr<Picard>
+createNonlinearSolver(BaseLib::ConfigTree const& config);
 
 } // Nonlinear
 } // MathLib
