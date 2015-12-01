@@ -332,6 +332,7 @@ createLocalAssemblers()
                 _process_vars[i]->getMesh());
 
 
+        // TODO extend
         DBUG("Initialize boundary conditions.");
         _process_vars[i]->initializeDirichletBCs(
                     process_var_mesh_node_searcher,
@@ -423,9 +424,10 @@ initialize()
 
     // TODO: read from input file
     _picard.reset(new MathLib::Nonlinear::Picard);
-    _picard->setAbsTolerance(1e-1);
-    _picard->setRelTolerance(1e-6);
+    _picard->setAbsTolerance(1e-2);
+    _picard->setRelTolerance(1e-8);
     _picard->setMaxIterations(100);
+    _picard->setNormType(MathLib::VecNormType::NORM2);
     _picard->printErrors(true);
 }
 
