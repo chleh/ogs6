@@ -117,10 +117,11 @@ void ProcessVariable::initializeDirichletBCs(
     MeshGeoToolsLib::MeshNodeSearcher& searcher,
     AssemblerLib::LocalToGlobalIndexMap const& dof_table,
     const unsigned nodal_dof_idx,
+    const Trafo& trafo,
     std::vector<GlobalIndexType>& global_ids, std::vector<double>& values)
 {
     for (auto& bc : _dirichlet_bcs)
-        bc->initialize(searcher, dof_table, nodal_dof_idx,
+        bc->initialize(searcher, dof_table, nodal_dof_idx, trafo,
                        global_ids, values);
 }
 
