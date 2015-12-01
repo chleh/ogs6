@@ -260,6 +260,21 @@ TESProcess(MeshLib::Mesh& mesh,
         }
     }
 
+    // nonlinear solver
+    {
+        auto const par = config.get_child_optional("nonlinear_solver");
+
+        if (par)
+        {
+            _picard = std::move(MathLib::Nonlinear::createNonlinearSolver(*par));
+        }
+        else
+        {
+            ERR("no nonlinear solver configuration present.");
+            std::abort();
+        }
+    }
+
     // matrix order
     {
         auto order = config.get<std::string>("global_matrix_order");
@@ -434,20 +449,11 @@ initialize()
     else
         assert(false);
 
-
     // set initial values
     for (unsigned i=0; i<NODAL_DOF; ++i)
     {
         setInitialConditions(*_process_vars[i], i);
     }
-
-    // TODO: read from input file
-    _picard.reset(new MathLib::Nonlinear::Picard);
-    _picard->setAbsTolerance(1e-2);
-    _picard->setRelTolerance(1e-8);
-    _picard->setMaxIterations(100);
-    _picard->setNormType(MathLib::VecNormType::NORM2);
-    _picard->printErrors(true);
 }
 
 template<typename GlobalSetup>
