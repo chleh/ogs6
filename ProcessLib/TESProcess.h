@@ -82,9 +82,6 @@ public:
                std::vector<std::unique_ptr<ParameterBase>> const& parameters,
                ConfigTree const& config);
 
-    template <unsigned GlobalDim>
-    void createLocalAssemblers();
-
     void initialize() override;
 
     bool solve(const double current_time, const double delta_t) override;
@@ -92,11 +89,15 @@ public:
     void post(std::string const& file_name) override;
     void postTimestep(std::string const& file_name, const unsigned timestep) override;
 
-    void setInitialConditions(ProcessVariable const& variable, std::size_t component_id);
-
     ~TESProcess();
 
 private:
+    template <unsigned GlobalDim>
+    void createLocalAssemblers();
+
+    void setInitialConditions(ProcessVariable const& variable,
+                              std::size_t const component_id);
+
     void singlePicardIteration(GlobalVector& x_prev_iter, GlobalVector& x_curr);
 
     using LocalAssembler = TES::LocalAssemblerDataInterface<GlobalMatrix, GlobalVector>;

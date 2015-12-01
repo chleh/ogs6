@@ -2,9 +2,13 @@
 #define PROCESS_LIB_TESPROCESS_NOTPL_H_
 
 
+#include <Eigen/Sparse>
+#include <Eigen/Eigen>
+
 #include "MaterialsLib/adsorption/reaction.h"
-#include "Eigen/Sparse"
-#include "Eigen/Eigen"
+
+#include "ProcessLib/VariableTransformation.h"
+
 
 namespace ProcessLib
 {
@@ -19,6 +23,10 @@ const double M_H2O = 0.018016;
 
 struct AssemblyParams
 {
+    Trafo trafo_p;
+    Trafo trafo_T;
+    Trafo trafo_x;
+
     std::unique_ptr<Ads::Reaction> _reaction_system;
 
     double _fluid_specific_heat_source = std::numeric_limits<double>::quiet_NaN();

@@ -36,10 +36,6 @@ enum class SecondaryVariables {
     REACTION_DAMPING_FACTOR
 };
 
-const TrafoScale trafo_p(1e5);
-const TrafoScale trafo_T(1e2);
-const TrafoScale trafo_x(1e-1);
-
 
 template<typename ShpPol, unsigned NIntPts, unsigned NodalDOF, unsigned Dim>
 struct DataTraitsFixed
