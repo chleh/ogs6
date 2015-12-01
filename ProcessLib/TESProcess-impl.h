@@ -179,26 +179,45 @@ TESProcess(MeshLib::Mesh& mesh,
         }
     }
 
-    std::vector<std::pair<const std::string, double*> > params{
-        { "fluid_specific_heat_source",            &_assembly_params._fluid_specific_heat_source },
-        { "fluid_specific_isobaric_heat_capacity", &_assembly_params._cpG },
-        // {  "solid_hydraulic_permeability",          &_assembly_params._solid_perm_tensor },
-        { "solid_specific_heat_source",            &_assembly_params._solid_specific_heat_source },
-        { "solid_heat_conductivity",               &_assembly_params._solid_heat_cond },
-        { "solid_specific_isobaric_heat_capacity", &_assembly_params._cpS },
-        { "tortuosity",                            &_assembly_params._tortuosity },
-        { "diffusion_coefficient",                 &_assembly_params._diffusion_coefficient_component },
-        { "porosity",                              &_assembly_params._poro },
-        { "solid_density_dry",                     &_assembly_params._rho_SR_dry },
-        { "solid_density_initial",                 &_assembly_params._initial_solid_density }
-    };
-
-    for (auto const& p : params)
     {
-        auto const par = config.get_optional<double>(p.first);
-        if (par) {
-            DBUG("setting parameter `%s' to value `%g'", p.first.c_str(), *par);
-            *p.second = *par;
+        std::vector<std::pair<const std::string, double*> > params{
+            { "fluid_specific_heat_source",            &_assembly_params._fluid_specific_heat_source },
+            { "fluid_specific_isobaric_heat_capacity", &_assembly_params._cpG },
+            { "solid_specific_heat_source",            &_assembly_params._solid_specific_heat_source },
+            { "solid_heat_conductivity",               &_assembly_params._solid_heat_cond },
+            { "solid_specific_isobaric_heat_capacity", &_assembly_params._cpS },
+            { "tortuosity",                            &_assembly_params._tortuosity },
+            { "diffusion_coefficient",                 &_assembly_params._diffusion_coefficient_component },
+            { "porosity",                              &_assembly_params._poro },
+            { "solid_density_dry",                     &_assembly_params._rho_SR_dry },
+            { "solid_density_initial",                 &_assembly_params._initial_solid_density }
+        };
+
+        for (auto const& p : params)
+        {
+            auto const par = config.get_optional<double>(p.first);
+            if (par) {
+                DBUG("setting parameter `%s' to value `%g'", p.first.c_str(), *par);
+                *p.second = *par;
+            }
+        }
+    }
+
+    // characteristic values of primary variables
+    {
+        std::vector<std::pair<const std::string, Trafo*> > const params{
+            { "characteristic_pressure",             &_assembly_params.trafo_p },
+            { "characteristic_temperature",          &_assembly_params.trafo_T },
+            { "characteristic_vapour_mass_fraction", &_assembly_params.trafo_x }
+        };
+
+        for (auto const& p : params)
+        {
+            auto const par = config.get_optional<double>(p.first);
+            if (par) {
+                INFO("setting parameter `%s' to value `%g'", p.first.c_str(), *par);
+                *p.second = Trafo{*par};
+            }
         }
     }
 
@@ -740,6 +759,29 @@ singlePicardIteration(GlobalVector& x_prev_iter,
         DBUG("residual of new solution with new matrix: %g", residual);
 #endif
 
+#if defined(OGS_USE_EIGENLIS)
+        // scaling
+        typename GlobalMatrix::RawMatrixType AT = _A->getRawMatrix().transpose();
+
+        for (unsigned dof = 0; dof < NODAL_DOF; ++dof)
+        {
+            auto const& trafo = (dof == 0) ? _assembly_params.trafo_p
+                              : (dof == 1) ? _assembly_params.trafo_T
+                                           : _assembly_params.trafo_x;
+
+            for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
+            {
+                MeshLib::Location loc(_mesh.getID(), MeshLib::MeshItemType::Node, i);
+                auto const idx = _local_to_global_index_map->getGlobalIndex(loc, dof);
+
+                AT.row(idx) *= trafo.dxdy(0);
+                x_curr[idx] /= trafo.dxdy(0);
+            }
+        }
+
+        _A->getRawMatrix() = AT.transpose();
+#endif
+
 #ifndef NDEBUG
         if (_total_iteration == 0 && num_try == 0 && _output_global_matrix)
         {
@@ -766,6 +808,25 @@ singlePicardIteration(GlobalVector& x_prev_iter,
             //           Relative path needed.
             _A->write("global_matrix_post.txt");
             _rhs->write("global_rhs_post.txt");
+        }
+#endif
+
+#if defined(OGS_USE_EIGENLIS)
+        // scale back
+        for (unsigned dof = 0; dof < NODAL_DOF; ++dof)
+        {
+            auto const& trafo = (dof == 0) ? _assembly_params.trafo_p
+                              : (dof == 1) ? _assembly_params.trafo_T
+                                           : _assembly_params.trafo_x;
+
+            for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
+            {
+                MeshLib::Location loc(_mesh.getID(), MeshLib::MeshItemType::Node, i);
+                auto const idx = _local_to_global_index_map->getGlobalIndex(loc, dof);
+
+                // TODO: _A
+                x_curr[idx] *= trafo.dxdy(0);
+            }
         }
 #endif
 
