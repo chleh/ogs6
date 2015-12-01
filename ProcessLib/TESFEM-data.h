@@ -18,6 +18,8 @@
 #include "TESProcess-notpl.h"
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
 
+#include "VariableTransformation.h"
+
 namespace ProcessLib
 {
 
@@ -34,54 +36,9 @@ enum class SecondaryVariables {
     REACTION_DAMPING_FACTOR
 };
 
-
-/**
- * y ... variable in global matrix
- * x ... "physical" process variable in local assembly
- *
- * x = exp(y), dx = dx/dy * dy
- * dx/dy = exp(y) = x
- */
-struct TrafoLog
-{
-    static const bool constrained = true;
-
-    /// Converts global matrix entry to "physical" variable
-    /// used in local assembly.
-    static double x(const double y) { return std::exp(y); }
-
-    /// Derivative of the "physical" variable x w.r.t y.
-    /// the argument is x!
-    static double dxdy(const double x) { return x; }
-};
-
-struct TrafoIdentity
-{
-    static const bool constrained = false;
-
-    /// Converts global matrix entry to "physical" variable
-    /// used in local assembly.
-    static double x(const double y) { return y; }
-
-    /// Derivative of the "physical" variable x w.r.t y.
-    /// the argument is x!
-    constexpr static double dxdy(const double /*x*/) { return 1.0; }
-};
-
-struct TrafoTanh
-{
-    static const bool constrained = true;
-
-    /// Converts global matrix entry to "physical" variable
-    /// used in local assembly.
-    static double x(const double y) { return 0.5 * std::tanh(y) + 0.5; }
-
-    /// Derivative of the "physical" variable x w.r.t y.
-    /// the argument is x!
-    constexpr static double dxdy(const double x) { return 2.0*x*(1.0-x); }
-};
-
-typedef TrafoIdentity Trafo;
+const TrafoScale trafo_p(1e5);
+const TrafoScale trafo_T(1e2);
+const TrafoScale trafo_x(1e-1);
 
 
 template<typename ShpPol, unsigned NIntPts, unsigned NodalDOF, unsigned Dim>
