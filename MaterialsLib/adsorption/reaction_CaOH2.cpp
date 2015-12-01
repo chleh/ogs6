@@ -9,6 +9,8 @@
 
 #include<cassert>
 
+#include <logog/include/logog.hpp>
+
 #include "reaction_CaOH2.h"
 
 #include "adsorption.h"
@@ -23,12 +25,14 @@ constexpr double ReactionCaOH2::tol_u;
 double
 ReactionCaOH2::get_enthalpy(const double, const double, const double) const
 {
-    return 0.0;
+    return - reaction_enthalpy/M_react;
 }
 
 double
 ReactionCaOH2::get_reaction_rate(const double, const double, const double, const double) const
 {
+    ERR("get_reaction_rate do not call directly");
+    std::abort();
     // TODO: error
     return -1.0;
 }
