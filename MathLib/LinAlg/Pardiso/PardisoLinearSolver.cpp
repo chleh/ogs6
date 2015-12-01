@@ -15,9 +15,9 @@
 
 extern "C"
 {
-#include "mkl_pardiso.h"
-#include "mkl_types.h"
-#include "mkl_spblas.h"
+#include <mkl_pardiso.h>
+#include <mkl_types.h>
+#include <mkl_spblas.h>
 }
 
 

@@ -147,6 +147,10 @@ if (OGS_USE_EIGENLIS)
 	endif()
 endif()
 
+if (OGS_USE_MKL)
+	add_definitions(-DOGS_USE_MKL)
+endif()
+
 ######################
 ### Subdirectories ###
 ######################
