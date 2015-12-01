@@ -220,7 +220,17 @@ public:
 
     bool assemble(const double /*delta_t*/) override
     {
-        DBUG("Assemble GroundwaterFlowProcess.");
+        std::size_t const n = _mesh.getNNodes();
+        for (std::size_t i = 0; i < n; ++i)
+        {
+            MeshLib::Location const l(_mesh.getID(),
+                                      MeshLib::MeshItemType::Node, i);
+            auto const global_index = // 0 is the component id.
+              std::abs( _local_to_global_index_map->getGlobalIndex(l, 0) );
+            _x->set(global_index,
+                   variable.getInitialConditionValue(*_mesh.getNode(i)));
+        }
+    }
 
     bool solve(const double /*delta_t*/) override
     {
