@@ -58,7 +58,6 @@ public:
             MeshGeoToolsLib::MeshNodeSearcher& searcher,
             AssemblerLib::LocalToGlobalIndexMap const& dof_table,
             std::size_t component_id,
-            const Trafo& trafo,
             std::vector<GlobalIndexType>& global_ids,
             std::vector<double>& values)
     {

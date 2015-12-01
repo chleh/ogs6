@@ -59,7 +59,6 @@ public:
 	void initializeDirichletBCs(MeshGeoToolsLib::MeshNodeSearcher& searcher,
 	        const AssemblerLib::LocalToGlobalIndexMap& dof_table,
 	        const unsigned nodal_dof_idx,
-	        const Trafo& trafo,
 	        std::vector<GlobalIndexType>& global_ids, std::vector<double>& values);
 
 	template <typename OutputIterator, typename GlobalSetup, typename... Args>
