@@ -1,0 +1,58 @@
+<VTKFile type="UnstructuredGrid" version="1.0" byte_order="LittleEndian" header_type="UInt64">
+  <UnstructuredGrid>
+    <Piece NumberOfPoints="16" NumberOfCells="9">
+      <PointData>
+        <DataArray type="Float64" Name="ic" NumberOfComponents="2" format="ascii" RangeMin="0" RangeMax="0.064031242374">
+          0 0 0 0
+          0 0 0 0
+          0 0 0 0
+          0 0 0 0
+          0 0 0 0
+          0 0 0 0
+          0 0 0 0
+          0 0 0 0
+        </DataArray>
+      </PointData>
+      <CellData>
+      </CellData>
+      <Points>
+        <DataArray type="Float64" Name="Points" NumberOfComponents="3" format="ascii" RangeMin="0" RangeMax="1.4142135624">
+          0 0 0 0.33333333333 0 0
+          0.66666666667 0 0 1 0 0
+          0 0.33333333333 0 0.33333333333 0.33333333333 0
+          0.66666666667 0.33333333333 0 1 0.33333333333 0
+          0 0.66666666667 0 0.33333333333 0.66666666667 0
+          0.66666666667 0.66666666667 0 1 0.66666666667 0
+          0 1 0 0.33333333333 1 0
+          0.66666666667 1 0 1 1 0
+        </DataArray>
+      </Points>
+      <Cells>
+        <DataArray type="Int64" Name="connectivity" format="ascii" RangeMin="0" RangeMax="15">
+          0 1 5 4 1 2
+          6 5 2 3 7 6
+          4 5 9 8 5 6
+          10 9 6 7 11 10
+          8 9 13 12 9 10
+          14 13 10 11 15 14
+        </DataArray>
+        <DataArray type="Int64" Name="offsets" format="ascii" RangeMin="4" RangeMax="36">
+          4 8 12 16 20 24
+          28 32 36
+        </DataArray>
+        <DataArray type="UInt8" Name="types" format="ascii" RangeMin="9" RangeMax="9">
+          9 9 9 9 9 9
+          9 9 9
+        </DataArray>
+        <DataArray type="Int64" Name="faces" format="ascii" RangeMin="0" RangeMax="0">
+          0 0 0 0 0 0
+          0 0 0
+        </DataArray>
+        <DataArray type="Int64" Name="faceoffsets" format="ascii" RangeMin="1" RangeMax="9">
+          1 2 3 4 5 6
+          7 8 9
+        </DataArray>
+      </Cells>
+    </Piece>
+  </UnstructuredGrid>
+</VTKFile>
