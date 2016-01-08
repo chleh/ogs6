@@ -408,6 +408,10 @@ public:
     template<typename T> T
     peekConfParam(std::string const& param) const;
 
+    /*! Checks the existence of a config parameter.
+     */
+    bool exists(std::string const& param);
+
     /*! Assert that \c param has the given \c value.
      *
      * Convenience method combining getConfParam(std::string const&) with a check.

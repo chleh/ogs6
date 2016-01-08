@@ -159,6 +159,11 @@ getConfSubtreeList(std::string const& root) const
                 SubtreeIterator(p.second, root, *this));
 }
 
+bool ConfigTree::exists(std::string const& param)
+{
+    return _tree->find(param) != _tree->not_found();
+}
+
 void ConfigTree::ignoreConfParam(const std::string &param) const
 {
     checkUnique(param);
