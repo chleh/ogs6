@@ -59,7 +59,7 @@ namespace TES
 /// imposed and their corresponding values.
 struct DirichletBC
 {
-    std::vector<std::size_t> global_ids;
+    std::vector<GlobalIndexType> global_ids;
     std::vector<double> values;
 };
 

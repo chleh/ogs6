@@ -737,7 +737,7 @@ singlePicardIteration(GlobalVector& x_prev_iter,
 
         {
         BaseLib::TimingOneShot timing{"apply known solutions"};
-        MathLib::applyKnownSolution(*_A, *_rhs, _dirichlet_bc.global_ids, _dirichlet_bc.values);
+        MathLib::applyKnownSolution(*_A, *_rhs, x_curr, _dirichlet_bc.global_ids, _dirichlet_bc.values);
         timing.stop();
         }
 
