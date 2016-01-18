@@ -17,7 +17,6 @@
 #endif
 
 #include <Eigen/Eigen>
-#include <Eigen/Sparse>
 
 namespace MathLib
 {
@@ -33,6 +32,8 @@ public:
     // more appropriate RawVectorType for the global vectors.
     using IndexType = Eigen::SparseMatrix<double>::Index;
 
+    EigenVector() = default;
+
     /// Constructor for initialization of the number of rows
     /// @param length number of rows
     explicit EigenVector(std::size_t length) : _vec(length) {}
@@ -42,6 +43,8 @@ public:
 
     /// return a vector length
     std::size_t size() const { return _vec.size(); }
+
+    void resize(std::size_t new_size) { _vec.resize(new_size); }
 
     /// return a start index of the active data range
     std::size_t getRangeBegin() const { return 0;}
@@ -84,6 +87,22 @@ public:
         for (std::size_t i=0; i<pos.size(); ++i) {
             this->add(pos[i], sub_vec[i]);
         }
+    }
+
+    /// add the same value to selected elements
+    void add(const std::vector<IndexType> &pos, const double v)
+    {
+        for (std::size_t i=0; i<pos.size(); ++i) {
+            this->add(pos[i], v);
+        }
+    }
+
+    /// divide elementwise by another EigenVector
+    void componentwiseDivide(const EigenVector& other)
+    {
+        assert(size() == other.size());
+
+        _vec.noalias() = _vec.cwiseQuotient(other._vec);
     }
 
 #ifndef NDEBUG
