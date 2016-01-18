@@ -14,7 +14,7 @@
 #define MATHLIB_NONLINEAR_PICARD_H_
 
 #include <memory>
-#include "BaseLib/ConfigTree.h"
+#include "BaseLib/ConfigTreeNew.h"
 
 #include "MathLib/LinAlg/VectorNorms.h"
 
@@ -104,7 +104,7 @@ private:
 
 
 std::unique_ptr<Picard>
-createNonlinearSolver(BaseLib::ConfigTree const& config);
+createNonlinearSolver(BaseLib::ConfigTreeNew const& config);
 
 } // Nonlinear
 } // MathLib

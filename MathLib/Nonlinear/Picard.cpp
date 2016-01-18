@@ -15,25 +15,25 @@ namespace
 {
 
 std::unique_ptr<MathLib::Nonlinear::Picard>
-createPicard(const BaseLib::ConfigTree &config)
+createPicard(const BaseLib::ConfigTreeNew &config)
 {
-    assert(config.get<std::string>("type", "") == "Picard");
+    config.checkConfParam<std::string>("type", "Picard");
 
     std::unique_ptr<MathLib::Nonlinear::Picard> pic(new MathLib::Nonlinear::Picard);
 
-    auto const abs_tol = config.get_optional<double>("absolute_tolerance");
+    auto const abs_tol = config.getConfParamOptional<double>("absolute_tolerance");
     if (abs_tol) pic->setAbsTolerance(*abs_tol);
 
-    auto const rel_tol = config.get_optional<double>("relative_tolerance");
+    auto const rel_tol = config.getConfParamOptional<double>("relative_tolerance");
     if (rel_tol) pic->setRelTolerance(*rel_tol);
 
-    auto const max_iter = config.get_optional<std::size_t>("max_iterations");
+    auto const max_iter = config.getConfParamOptional<std::size_t>("max_iterations");
     if (max_iter) pic->setMaxIterations(*max_iter);
 
-    auto const print = config.get_optional<bool>("print_errors");
+    auto const print = config.getConfParamOptional<bool>("print_errors");
     if (print) pic->printErrors(*print);
 
-    auto const norm = config.get_optional<std::string>("norm_type");
+    auto const norm = config.getConfParamOptional<std::string>("norm_type");
     if (norm) {
         if      (*norm == "Norm1")   pic->setNormType(MathLib::VecNormType::NORM1);
         else if (*norm == "Norm2")   pic->setNormType(MathLib::VecNormType::NORM2);
@@ -68,22 +68,14 @@ Picard::Picard()
 
 
 std::unique_ptr<Picard>
-createNonlinearSolver(const BaseLib::ConfigTree &config)
+createNonlinearSolver(BaseLib::ConfigTreeNew const& config)
 {
-    auto const type = config.get_optional<std::string>("type");
+    auto const type = config.getConfParam<std::string>("type");
 
-    if (type) {
-        if (*type == "Picard") {
-            return createPicard(config);
-
-
-
-        } else {
-            ERR("nonlinear solver type `%s' unknown", type->c_str());
-            std::abort();
-        }
+    if (type == "Picard") {
+        return createPicard(config);
     } else {
-        ERR("nonlinear solver type not given.");
+        ERR("nonlinear solver type `%s' unknown", type.c_str());
         std::abort();
     }
 
