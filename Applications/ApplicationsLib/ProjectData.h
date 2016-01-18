@@ -24,6 +24,7 @@
 #include "ProcessLib/ProcessVariable.h"
 #include "ProcessLib/Process.h"
 #include "ProcessLib/Parameter.h"
+#include "ProcessLib/Output.h"
 #include "ProcessLib/GroundwaterFlowProcess-fwd.h"
 #include "ProcessLib/TESProcess-fwd.h"
 
@@ -151,10 +152,10 @@ public:
 		return _processes.end();
 	}
 
-	std::string const&
-	getOutputFilePrefix() const
+	ProcessLib::Output const&
+	getOutputControl() const
 	{
-		return _output_file_prefix;
+		return *_output;
 	}
 
 	NumLib::ITimeStepAlgorithm const& getTimeStepper() const
@@ -215,11 +216,10 @@ private:
 	/// Buffer for each parameter config passed to the process.
 	std::vector<std::unique_ptr<ProcessLib::ParameterBase>> _parameters;
 
-	/// Output file path with project prefix.
-	std::string _output_file_prefix;
-
 	/// Timestepper
 	std::unique_ptr<NumLib::ITimeStepAlgorithm> _time_stepper;
+
+	std::unique_ptr<ProcessLib::Output> _output;
 };
 
 #endif //PROJECTDATA_H_
