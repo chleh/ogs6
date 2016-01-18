@@ -118,8 +118,7 @@ private:
 
 CVodeSolverImpl::CVodeSolverImpl(const CVodeSolverInternal::ConfigTree &config)
 {
-    auto param = config.get_optional<std::string>("linear_multistep_method");
-    if (param)
+    if (auto const param = config.getConfParamOptional<std::string>("linear_multistep_method"))
     {
         DBUG("setting linear multistep method (config: %s)", param->c_str());
 
@@ -131,8 +130,7 @@ CVodeSolverImpl::CVodeSolverImpl(const CVodeSolverInternal::ConfigTree &config)
         }
     }
 
-    param = config.get_optional<std::string>("nonlinear_solver_iteration");
-    if (param)
+    if (auto const param = config.getConfParamOptional<std::string>("nonlinear_solver_iteration"))
     {
         DBUG("setting nonlinear solver iteration (config: %s)", param->c_str());
 

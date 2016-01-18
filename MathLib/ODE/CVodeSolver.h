@@ -2,7 +2,8 @@
 #define MATHLIB_CVODESOLVER_H
 
 #include "declarations.h"
-#include "boost/property_tree/ptree.hpp"
+
+#include "BaseLib/ConfigTreeNew.h"
 
 namespace MathLib
 {
@@ -18,7 +19,7 @@ class CVodeSolverImpl;
 class CVodeSolverInternal
 {
 public:
-    using ConfigTree = boost::property_tree::ptree;
+    using ConfigTree = BaseLib::ConfigTreeNew;
 
 protected:
     CVodeSolverInternal(ConfigTree const& config);

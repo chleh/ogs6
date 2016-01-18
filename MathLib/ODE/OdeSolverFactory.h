@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "boost/property_tree/ptree.hpp"
+#include "BaseLib/ConfigTreeNew.h"
 
 #include "OdeSolver.h"
 
@@ -105,7 +105,7 @@ struct Handles<N>
 
 template <unsigned NumEquations, typename... FunctionArguments>
 std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >
-createOdeSolver(const boost::property_tree::ptree& config);
+createOdeSolver(BaseLib::ConfigTreeNew const& config);
 
 
 /**
@@ -187,19 +187,18 @@ private:
 
     friend std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >
     createOdeSolver<NumEquations, FunctionArguments...>
-    (const boost::property_tree::ptree& config);
+    (BaseLib::ConfigTreeNew const& config);
 };
 
 
 template <unsigned NumEquations, typename... FunctionArguments>
 std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >
-createOdeSolver(const boost::property_tree::ptree& config)
+createOdeSolver(BaseLib::ConfigTreeNew const& config)
 {
-    auto up = std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >();
-    auto p  = new ConcreteOdeSolver<NumEquations, CVodeSolverInternal, FunctionArguments...>
-            (config);
-    up.reset(p);
-    return up;
+    return std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >(
+                new ConcreteOdeSolver<NumEquations, CVodeSolverInternal, FunctionArguments...>
+                            (config)
+                );
 }
 
 } // namespace MathLib
