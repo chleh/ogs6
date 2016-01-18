@@ -54,7 +54,7 @@ function (AddTest)
 		if(ARG_FOUND)
 			set(AddTest_EXECUTABLE_ARGS_PARSED ${AddTest_EXECUTABLE_ARGS_PARSED} DATA{${AddTest_SOURCE_PATH}/${ARG}})
 		else()
-			set(AddTest_EXECUTABLE_ARGS_PARSED ${AddTest_EXECUTABLE_ARGS_PARSED} ${ARG}})
+			set(AddTest_EXECUTABLE_ARGS_PARSED ${AddTest_EXECUTABLE_ARGS_PARSED} ${ARG})
 		endif()
 	endforeach()
 
@@ -87,6 +87,8 @@ function (AddTest)
 		unset(tester)
 	elseif(AddTest_WRAPPER STREQUAL "mpirun")
 		set(WRAPPER_COMMAND "${MPIRUN_TOOL_PATH} ${AddTest_WRAPPER_ARGS}")
+	else()
+		set(WRAPPER_COMMAND "${AddTest_WRAPPER}")
 	endif()
 
 	# --- Implement testers ---
