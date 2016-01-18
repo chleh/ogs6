@@ -38,42 +38,36 @@ FixedTimeStepping::newInstance(BaseLib::ConfigTreeNew const& config)
 
     auto const t_initial = config.getConfParam<double>("t_initial");
     auto const t_end     = config.getConfParam<double>("t_end");
-    auto const dt        = config.getConfParam<double>("dt");
+    auto const delta_ts  = config.getConfSubtree("timesteps");
 
     std::vector<double> timesteps;
-    double te = *t_initial;
-    unsigned c = 0;
+    double te = t_initial;
     double dt = 0.0;
 
-    auto const range = delta_ts->equal_range("pair");
-    if (range.first == range.second) {
+    auto const range = delta_ts->getConfSubtreeList("pair");
+    if (range.begin() == range.end()) {
         ERR("no timesteps have been given");
         return nullptr;
     }
-    for (auto it=range.first; it!=range.second; ++it)
+    for (auto const pair : delta_ts)
     {
-        auto count   = it->second.get_optional<std::size_t>("count");
-        auto delta_t = it->second.get_optional<double>("delta_t");
+        auto const count   = pair.getConfParam<std::size_t>("count");
+        dt                 = pair.getConfParam<double>("delta_t");
 
-        if (count && delta_t) {
-            if (*count == 0) {
-                ERR("<count> is zero.");
-                return nullptr;
-            }
-            if (*delta_t < 0.0) {
-                ERR("timestep <delta_t> is smaller than zero.");
-                return nullptr;
-            }
-            c = *count; dt = *delta_t;
-            timesteps.resize(timesteps.size() + c, dt);
-        } else {
-            ERR("<count> or <delta_t> missing in <pair>");
+        if (count == 0) {
+            ERR("<count> is zero.");
+            return nullptr;
+        }
+        if (dt < 0.0) {
+            ERR("timestep <delta_t> is smaller than zero.");
             return nullptr;
         }
 
-        te += c * dt;
+        if (te <= t_end) {
+            timesteps.resize(timesteps.size() + count, dt);
 
-        if (te > *t_end) break;
+            te += count * dt;
+        }
     }
 
     // append last timestep until t_end is reached
