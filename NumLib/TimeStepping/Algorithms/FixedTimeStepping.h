@@ -3,7 +3,7 @@
  * \date   2012-08-03
  *
  * \copyright
- * Copyright (c) 2012-2016, OpenGeoSys Community (http://www.opengeosys.org)
+ * Copyright (c) 2012-2015, OpenGeoSys Community (http://www.opengeosys.org)
  *            Distributed under a Modified BSD License.
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
@@ -64,7 +64,7 @@ public:
      *
      * Currently this function only covers uniform timestep size.
      */
-    static FixedTimeStepping* newInstance(BaseLib::ConfigTreeNew const& config);
+    static std::unique_ptr<FixedTimeStepping> newInstance(BaseLib::ConfigTreeNew const& config);
 
     virtual ~FixedTimeStepping() {}
 

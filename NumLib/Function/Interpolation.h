@@ -48,6 +48,36 @@ void shapeFunctionInterpolate(
     }
 }
 
+
+template<typename NodalValues, typename ShapeMatrix, std::size_t NodalDOF,
+         typename Vector>
+void shapeFunctionInterpolateGradient(
+        const NodalValues& nodal_values,
+        const ShapeMatrix& shape_matrix_dNdx,
+        std::array<Vector , NodalDOF>& interpolated_values
+        )
+{
+    auto const num_nodes = shape_matrix_dNdx.cols();
+    auto const dim       = shape_matrix_dNdx.rows();
+
+    assert(num_nodes*NodalDOF == nodal_values.size());
+
+    for (auto comp=decltype(NodalDOF){0}; comp<NodalDOF; ++comp)
+    {
+        auto& vec = interpolated_values[comp];
+        vec.setZero();
+        assert(decltype(dim)(vec.size()) == dim);
+
+        for (auto d=decltype(dim){0}; d<dim; ++d)
+        {
+            for (auto n=decltype(num_nodes){0}; n<num_nodes; ++n)
+            {
+                vec[d] += nodal_values[comp*num_nodes+n] * shape_matrix_dNdx(d, n);
+            }
+        }
+    }
+}
+
 }
 
 #endif // NUMLIB_INTERPOLATION_H

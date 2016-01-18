@@ -263,7 +263,7 @@ void ProjectData::parseTimeStepping(BaseLib::ConfigTreeNew const& timestepping_c
 
 	if (type == "FixedTimeStepping")
 	{
-		_time_stepper.reset(NumLib::FixedTimeStepping::newInstance(timestepping_config));
+		_time_stepper = NumLib::FixedTimeStepping::newInstance(timestepping_config);
 	}
 	else if (type == "SingleStep")
 	{

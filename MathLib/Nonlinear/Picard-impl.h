@@ -14,6 +14,8 @@
 
 #include "logog/include/logog.hpp"
 
+#include "Picard.h"
+
 namespace MathLib
 {
 
