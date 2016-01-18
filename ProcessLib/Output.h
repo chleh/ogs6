@@ -14,7 +14,7 @@
 #ifndef PROCESSLIB_OUTPUT_H
 #define PROCESSLIB_OUTPUT_H
 
-#include "boost/property_tree/ptree.hpp"
+#include "BaseLib/ConfigTreeNew.h"
 
 namespace ProcessLib
 {
@@ -22,8 +22,7 @@ namespace ProcessLib
 class Output
 {
 public:
-    using ConfigTree = boost::property_tree::ptree;
-    static Output* newInstance(ConfigTree const& config, const std::string& path);
+    static Output* newInstance(const BaseLib::ConfigTreeNew& config, const std::string& path);
 
     std::string const& getFilePrefix() const { return _output_file_prefix; }
 

@@ -20,35 +20,24 @@
 namespace ProcessLib
 {
 
+// TODO: change to unique_ptr
 Output*
-Output::newInstance(const ConfigTree &config, std::string const& path)
+Output::newInstance(const BaseLib::ConfigTreeNew &config, std::string const& path)
 {
-	auto const file = config.get_optional<std::string>("file");
-	if (!file) {
-		ERR("The output config does not provide a file tag.");
-		ERR("    Output file not set.");
-		return nullptr;
-	}
+	auto out = new Output(path + config.getConfParam<std::string>("file"));
 
-	auto out = new Output(path + *file);
-
-	auto const timesteps = config.get_child_optional("timesteps");
-	if (timesteps)
+	if (auto const timesteps = config.getConfSubtreeOptional("timesteps"))
 	{
-		auto const range = timesteps->equal_range("pair");
-		for (auto it=range.first; it!=range.second; ++it)
+		for (auto pair : timesteps->getConfSubtreeList("pair"))
 		{
-			auto count      = it->second.get_optional<std::size_t>("count");
-			auto each_steps = it->second.get_optional<std::size_t>("each-steps");
+			auto count      = pair.getConfParam<std::size_t>("count");
+			auto each_steps = pair.getConfParam<std::size_t>("each-steps");
 
-			if (count && each_steps) {
-				assert(*count != 0 && *each_steps != 0);
-				out->_countsSteps.emplace_back(*count, *each_steps);
-			} else {
-				ERR("<count> or <each-steps> missing in <pair>");
-			}
+			assert(count != 0 && each_steps != 0);
+			out->_countsSteps.emplace_back(count, each_steps);
 		}
 
+		// TODO: change assertion
 		assert(out->_countsSteps.size() != 0);
 	}
 	else
