@@ -35,7 +35,7 @@ find_variable(ConfigTree const& config,
               std::string const& variable_role,
               std::vector<ProcessLib::ProcessVariable> const& variables)
 {
-    std::string const name = config.template get<std::string>(variable_role);
+    std::string const name = config.template getConfParam<std::string>(variable_role);
 
     auto variable = std::find_if(variables.cbegin(), variables.cend(),
             [&name](ProcessLib::ProcessVariable const& v) {
@@ -71,8 +71,8 @@ TESProcess<GlobalSetup>::
 TESProcess(MeshLib::Mesh& mesh,
            std::vector<ProcessVariable> const& variables,
            std::vector<std::unique_ptr<ParameterBase>> const& /*parameters*/,
-           ConfigTree const& config)
-    : Process(mesh)
+           const BaseLib::ConfigTreeNew& config)
+    : Process<GlobalSetup>(mesh)
 {
     DBUG("Create TESProcess.");
 
@@ -82,7 +82,7 @@ TESProcess(MeshLib::Mesh& mesh,
                                               "temperature",
                                               "vapour_mass_fraction" };
 
-        ConfigTree proc_vars = config.get_child("process_variables");
+        auto const proc_vars = config.getConfSubtree("process_variables");
 
         for (unsigned i=0; i<NODAL_DOF; ++i)
         {
@@ -93,46 +93,37 @@ TESProcess(MeshLib::Mesh& mesh,
     }
 
     // secondary variables
+    if (auto proc_vars = config.getConfSubtreeOptional("secondary_variables"))
     {
-        auto const& proc_vars = config.get_child_optional("secondary_variables");
-        if (proc_vars)
+        auto add_secondary_variable =
+                [this, &proc_vars](
+                std::string const& var, SecondaryVariables type, unsigned num_components)
         {
-            auto add_secondary_variable =
-                    [this, &proc_vars](
-                    std::string const& var, SecondaryVariables type, unsigned num_components)
+            if (auto variable = proc_vars->getConfParamOptional<std::string>(var))
             {
-                auto variable = proc_vars->get_optional<std::string>(var);
-                if (variable)
-                {
-                    _secondary_process_vars.emplace_back(type, *variable, num_components);
-                }
-            };
+                _secondary_process_vars.emplace_back(type, *variable, num_components);
+            }
+        };
 
-            add_secondary_variable("solid_density", SecondaryVariables::SOLID_DENSITY, 1);
-            add_secondary_variable("reaction_rate", SecondaryVariables::REACTION_RATE, 1);
-            add_secondary_variable("velocity_x",    SecondaryVariables::VELOCITY_X,    1);
-            if (_mesh.getDimension() >= 2) add_secondary_variable("velocity_y",    SecondaryVariables::VELOCITY_Y,    1);
-            if (_mesh.getDimension() >= 3) add_secondary_variable("velocity_z",    SecondaryVariables::VELOCITY_Z,    1);
+        add_secondary_variable("solid_density", SecondaryVariables::SOLID_DENSITY, 1);
+        add_secondary_variable("reaction_rate", SecondaryVariables::REACTION_RATE, 1);
+        add_secondary_variable("velocity_x",    SecondaryVariables::VELOCITY_X,    1);
+        if (BP::_mesh.getDimension() >= 2) add_secondary_variable("velocity_y",    SecondaryVariables::VELOCITY_Y,    1);
+        if (BP::_mesh.getDimension() >= 3) add_secondary_variable("velocity_z",    SecondaryVariables::VELOCITY_Z,    1);
 
-            add_secondary_variable("vapour_partial_pressure", SecondaryVariables::VAPOUR_PARTIAL_PRESSURE, 1);
-            add_secondary_variable("relative_humidity",       SecondaryVariables::RELATIVE_HUMIDITY,       1);
-            add_secondary_variable("loading",                 SecondaryVariables::LOADING,                 1);
-            add_secondary_variable("equilibrium_loading",     SecondaryVariables::EQUILIBRIUM_LOADING,     1);
-            add_secondary_variable("reaction_damping_factor", SecondaryVariables::REACTION_DAMPING_FACTOR, 1);
-        }
+        add_secondary_variable("vapour_partial_pressure", SecondaryVariables::VAPOUR_PARTIAL_PRESSURE, 1);
+        add_secondary_variable("relative_humidity",       SecondaryVariables::RELATIVE_HUMIDITY,       1);
+        add_secondary_variable("loading",                 SecondaryVariables::LOADING,                 1);
+        add_secondary_variable("equilibrium_loading",     SecondaryVariables::EQUILIBRIUM_LOADING,     1);
+        add_secondary_variable("reaction_damping_factor", SecondaryVariables::REACTION_DAMPING_FACTOR, 1);
     }
 
     // variables for output
-    {
-        auto const& out_vars = config.get_child_optional("output.variables");
-        if (out_vars)
+    if (auto output = config.getConfSubtreeOptional("output")) {
+        if (auto out_vars = output->getConfSubtreeOptional("variables"))
         {
-            auto const& out_vars_range = out_vars->equal_range("variable");
-            for (auto it = out_vars_range.first; it!=out_vars_range.second; ++it)
+            for (auto out_var : out_vars->getConfParamList<std::string>("variable"))
             {
-                // auto const& out_var = it->first; //->second.get<std::string>("variable");
-                auto const& out_var = it->second.get_value<std::string>();
-
                 if (_output_variables.find(out_var) != _output_variables.cend())
                 {
                     ERR("output variable `%s' specified twice.", out_var.c_str());
@@ -171,8 +162,7 @@ TESProcess(MeshLib::Mesh& mesh,
                 _output_variables.insert(out_var);
             }
 
-            auto const& out_resid = config.get_optional<bool>("output.output_extrapolation_residuals");
-            if (out_resid)
+            if (auto out_resid = output->getConfParamOptional<bool>("output_extrapolation_residuals"))
             {
                 _output_residuals = *out_resid;
             }
@@ -195,8 +185,7 @@ TESProcess(MeshLib::Mesh& mesh,
 
         for (auto const& p : params)
         {
-            auto const par = config.get_optional<double>(p.first);
-            if (par) {
+            if (auto const par = config.getConfParamOptional<double>(p.first)) {
                 DBUG("setting parameter `%s' to value `%g'", p.first.c_str(), *par);
                 *p.second = *par;
             }
@@ -213,8 +202,7 @@ TESProcess(MeshLib::Mesh& mesh,
 
         for (auto const& p : params)
         {
-            auto const par = config.get_optional<double>(p.first);
-            if (par) {
+            if (auto const par = config.getConfParamOptional<double>(p.first)) {
                 INFO("setting parameter `%s' to value `%g'", p.first.c_str(), *par);
                 *p.second = Trafo{*par};
             }
@@ -222,62 +210,29 @@ TESProcess(MeshLib::Mesh& mesh,
     }
 
     // permeability
+    if (auto par = config.getConfParamOptional<double>("solid_hydraulic_permeability"))
     {
-        auto const par = config.get_optional<double>("solid_hydraulic_permeability");
-        if (par)
-        {
-            DBUG("setting parameter `solid_hydraulic_permeability' to isotropic value `%g'", *par);
-            const auto dim = _mesh.getDimension();
-            _assembly_params._solid_perm_tensor
-                    = Eigen::MatrixXd::Identity(dim, dim) * (*par);
-        }
+        DBUG("setting parameter `solid_hydraulic_permeability' to isotropic value `%g'", *par);
+        const auto dim = BP::_mesh.getDimension();
+        _assembly_params._solid_perm_tensor
+                = Eigen::MatrixXd::Identity(dim, dim) * (*par);
     }
 
     // reactive system
-    {
-        auto rsys = config.get_child_optional("reactive_system");
-
-        if (rsys) {
-            _assembly_params._reaction_system = std::move(Ads::Adsorption::newInstance(*rsys));
-        } else {
-            ERR("<reactive_system> not specified. Aborting.");
-            std::abort();
-        }
-    }
+    _assembly_params._reaction_system = std::move(
+        Ads::Adsorption::newInstance(config.getConfSubtree("reactive_system")));
 
     // linear solver
-    {
-        auto const par = config.get_child_optional("linear_solver");
-
-        if (par)
-        {
-            _linear_solver_options.reset(new BaseLib::ConfigTree(*par));
-        }
-        else
-        {
-            ERR("no linear solver configuration present.");
-            std::abort();
-        }
-    }
+    if (auto opt = config.getConfSubtreeOptional("linear_solver"))
+        BP::setLinearSolverOptions(std::move(*opt));
 
     // nonlinear solver
-    {
-        auto const par = config.get_child_optional("nonlinear_solver");
-
-        if (par)
-        {
-            _picard = std::move(MathLib::Nonlinear::createNonlinearSolver(*par));
-        }
-        else
-        {
-            ERR("no nonlinear solver configuration present.");
-            std::abort();
-        }
-    }
+    _picard = std::move(MathLib::Nonlinear::createNonlinearSolver(
+                            config.getConfSubtree("nonlinear_solver")));
 
     // matrix order
     {
-        auto order = config.get<std::string>("global_matrix_order");
+        auto const order = config.getConfParam<std::string>("global_matrix_order");
         DBUG("global_matrix_order: %s", order.c_str());
 
         if (order == "BY_COMPONENT")
@@ -291,30 +246,27 @@ TESProcess(MeshLib::Mesh& mesh,
     }
 
     // debug output
+    if (auto const param = config.getConfParamOptional<bool>("output_element_matrices"))
     {
-        auto param = config.get_optional<bool>("output_element_matrices");
-        if (param)
-        {
-            DBUG("output_element_matrices: %s", (*param) ? "true" : "false");
+        DBUG("output_element_matrices: %s", (*param) ? "true" : "false");
 
-            _assembly_params._output_element_matrices = *param;
-        }
+        _assembly_params._output_element_matrices = *param;
+    }
 
-        param = config.get_optional<bool>("output_iteration_results");
-        if (param)
-        {
-            DBUG("output_iteration_results: %s", (*param) ? "true" : "false");
+    // debug output
+    if (auto const param = config.getConfParamOptional<bool>("output_iteration_results"))
+    {
+        DBUG("output_iteration_results: %s", (*param) ? "true" : "false");
 
-            _output_iteration_results = *param;
-        }
+        _output_iteration_results = *param;
+    }
 
-        param = config.get_optional<bool>("output_global_matrix");
-        if (param)
-        {
-            DBUG("output_global_matrix: %s", (*param) ? "true" : "false");
+    // debug output
+    if (auto const param = config.getConfParamOptional<bool>("output_global_matrix"))
+    {
+        DBUG("output_global_matrix: %s", (*param) ? "true" : "false");
 
-            _output_global_matrix = *param;
-        }
+        _output_global_matrix = *param;
     }
 }
 
@@ -326,7 +278,7 @@ createLocalAssemblers()
 {
     DBUG("Create local assemblers.");
     // Populate the vector of local assemblers.
-    _local_assemblers.resize(_mesh.getNElements());
+    _local_assemblers.resize(BP::_mesh.getNElements());
     // Shape matrices initializer
     using LocalDataInitializer = AssemblerLib::LocalDataInitializer<
         TES::LocalAssemblerDataInterface,
@@ -348,7 +300,7 @@ createLocalAssemblers()
     DBUG("Calling local assembler builder for all mesh elements.");
     _global_setup.execute(
                 local_asm_builder,
-                _mesh.getElements(),
+                BP::_mesh.getElements(),
                 _local_assemblers,
                 _integration_order,
                 this);
@@ -396,19 +348,19 @@ createLocalAssemblers()
     }
 
     for (auto bc : _neumann_bcs)
-        bc->initialize(_global_setup, *_A, *_rhs, _mesh.getDimension());
+        bc->initialize(_global_setup, *_A, *_rhs, BP::_mesh.getDimension());
 }
 
 template<typename GlobalSetup>
 void
 TESProcess<GlobalSetup>::
-initialize()
+init()
 {
     DBUG("Initialize TESProcess.");
 
     DBUG("Construct dof mappings.");
     // Create single component dof in every of the mesh's nodes.
-    _mesh_subset_all_nodes = new MeshLib::MeshSubset(_mesh, &_mesh.getNodes());
+    _mesh_subset_all_nodes = new MeshLib::MeshSubset(BP::_mesh, &BP::_mesh.getNodes());
 
     // Collect the mesh subsets in a vector.
     for (unsigned i=0; i<NODAL_DOF; ++i)
@@ -421,7 +373,7 @@ initialize()
 
     DBUG("Compute sparsity pattern");
     _sparsity_pattern = std::move(AssemblerLib::computeSparsityPattern(
-                *_local_to_global_index_map, _mesh));
+                *_local_to_global_index_map, BP::_mesh));
 
     DBUG("Allocate global matrix, vectors, and linear solver.");
     _A.reset(_global_setup.createMatrix(_local_to_global_index_map->dofSize()));
@@ -440,11 +392,11 @@ initialize()
         *_A, "", _linear_solver_options.get()));
     _extrapolator.reset(new ExtrapolatorImpl(*_local_to_global_index_map_single_component));
 
-    if (_mesh.getDimension()==1)
+    if (BP::_mesh.getDimension()==1)
         createLocalAssemblers<1>();
-    else if (_mesh.getDimension()==2)
+    else if (BP::_mesh.getDimension()==2)
         createLocalAssemblers<2>();
-    else if (_mesh.getDimension()==3)
+    else if (BP::_mesh.getDimension()==3)
         createLocalAssemblers<3>();
     else
         assert(false);
@@ -460,22 +412,23 @@ template<typename GlobalSetup>
 void TESProcess<GlobalSetup>::
 setInitialConditions(ProcessVariable const& variable, std::size_t component_id)
 {
-    std::size_t const n = _mesh.getNNodes();
+    std::size_t const n = BP::_mesh.getNNodes();
     for (std::size_t i = 0; i < n; ++i)
     {
-        MeshLib::Location const l(_mesh.getID(),
+        MeshLib::Location const l(BP::_mesh.getID(),
                                   MeshLib::MeshItemType::Node, i);
         std::size_t const global_index =
             _local_to_global_index_map->getGlobalIndex(
                 l, component_id);
         _x->set(global_index,
-               variable.getInitialConditionValue(*_mesh.getNode(i)));
+               variable.getInitialConditionValue(*BP::_mesh.getNode(i)));
     }
 }
 
 template<typename GlobalSetup>
-bool TESProcess<GlobalSetup>::solve(const double current_time, const double delta_t)
+bool TESProcess<GlobalSetup>::assemble(/*const double current_time,*/ const double delta_t)
 {
+    const double current_time = 0.0;
     DBUG("Solve TESProcess.");
 
 #if 0
@@ -543,16 +496,16 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
         // Get or create a property vector for results.
         boost::optional<MeshLib::PropertyVector<double>&> result;
 
-        auto const N = count(_mesh, type);
+        auto const N = count(BP::_mesh, type);
 
-        if (_mesh.getProperties().hasPropertyVector(property_name))
+        if (BP::_mesh.getProperties().hasPropertyVector(property_name))
         {
-            result = _mesh.getProperties().template
+            result = BP::_mesh.getProperties().template
                 getPropertyVector<double>(property_name);
         }
         else
         {
-            result = _mesh.getProperties().template
+            result = BP::_mesh.getProperties().template
                 createNewPropertyVector<double>(property_name, type);
             result->resize(N);
         }
@@ -570,19 +523,19 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
         DBUG("  process var %s", property_name.c_str());
 
         auto result = get_or_create_mesh_property(property_name, MeshLib::MeshItemType::Node);
-        assert(result->size() == _mesh.getNNodes());
+        assert(result->size() == BP::_mesh.getNNodes());
 
         // Copy result
-        for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
+        for (std::size_t i = 0; i < BP::_mesh.getNNodes(); ++i)
         {
-            MeshLib::Location loc(_mesh.getID(), MeshLib::MeshItemType::Node, i);
+            MeshLib::Location loc(BP::_mesh.getID(), MeshLib::MeshItemType::Node, i);
             auto const idx = _local_to_global_index_map->getGlobalIndex(loc, vi);
             assert(!isnan((*_x)[idx]));
             (*result)[i] = (*_x)[idx];
         }
     };
 
-    assert(_x->size() == NODAL_DOF * _mesh.getNNodes());
+    assert(_x->size() == NODAL_DOF * BP::_mesh.getNNodes());
     for (unsigned vi=0; vi!=NODAL_DOF; ++vi)
     {
         add_primary_var(vi);
@@ -605,13 +558,13 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             DBUG("  process var %s", property_name.c_str());
 
             auto result = get_or_create_mesh_property(property_name, MeshLib::MeshItemType::Node);
-            assert(result->size() == _mesh.getNNodes());
+            assert(result->size() == BP::_mesh.getNNodes());
 
             _extrapolator->extrapolate(*_x, *_local_to_global_index_map, _local_assemblers, property);
             auto const& nodal_values = _extrapolator->getNodalValues();
 
             // Copy result
-            for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
+            for (std::size_t i = 0; i < BP::_mesh.getNNodes(); ++i)
             {
                 assert(!isnan(nodal_values[i]));
                 (*result)[i] = nodal_values[i];
@@ -623,13 +576,13 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
             auto const& property_name_res = property_name + "_residual";
 
             auto result = get_or_create_mesh_property(property_name_res, MeshLib::MeshItemType::Cell);
-            assert(result->size() == _mesh.getNElements());
+            assert(result->size() == BP::_mesh.getNElements());
 
             _extrapolator->calculateResiduals(*_x, *_local_to_global_index_map, _local_assemblers, property);
             auto const& residuals = _extrapolator->getElementResiduals();
 
             // Copy result
-            for (std::size_t i = 0; i < _mesh.getNElements(); ++i)
+            for (std::size_t i = 0; i < BP::_mesh.getNElements(); ++i)
             {
                 assert(!isnan(residuals[i]));
                 (*result)[i] = residuals[i];
@@ -644,7 +597,7 @@ postTimestep(const std::string& file_name, const unsigned /*timestep*/)
 
 
     // Write output file
-    FileIO::VtuInterface vtu_interface(&_mesh, vtkXMLWriter::Binary, true);
+    FileIO::VtuInterface vtu_interface(&this->_mesh, vtkXMLWriter::Binary, true);
     vtu_interface.writeToFile(file_name);
 }
 
@@ -659,14 +612,14 @@ post(std::string const& file_name)
 
     // Get or create a property vector for results.
     boost::optional<MeshLib::PropertyVector<double>&> result;
-    if (_mesh.getProperties().hasPropertyVector(property_name))
+    if (BP::_mesh.getProperties().hasPropertyVector(property_name))
     {
-        result = _mesh.getProperties().template
+        result = BP::_mesh.getProperties().template
             getPropertyVector<double>(property_name);
     }
     else
     {
-        result = _mesh.getProperties().template
+        result = BP::_mesh.getProperties().template
             createNewPropertyVector<double>(property_name,
                 MeshLib::MeshItemType::Node);
         result->resize(_x->size());
@@ -678,7 +631,7 @@ post(std::string const& file_name)
         (*result)[i] = (*_x)[i];
 
     // Write output file
-    FileIO::VtuInterface vtu_interface(&_mesh, vtkXMLWriter::Binary, true);
+    FileIO::VtuInterface vtu_interface(&this->_mesh, vtkXMLWriter::Binary, true);
     vtu_interface.writeToFile(file_name);
 }
 
@@ -775,9 +728,9 @@ singlePicardIteration(GlobalVector& x_prev_iter,
                               : (dof == 1) ? _assembly_params.trafo_T
                                            : _assembly_params.trafo_x;
 
-            for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
+            for (std::size_t i = 0; i < BP::_mesh.getNNodes(); ++i)
             {
-                MeshLib::Location loc(_mesh.getID(), MeshLib::MeshItemType::Node, i);
+                MeshLib::Location loc(BP::_mesh.getID(), MeshLib::MeshItemType::Node, i);
                 auto const idx = _local_to_global_index_map->getGlobalIndex(loc, dof);
 
                 AT.row(idx) *= trafo.dxdy(0);
@@ -825,9 +778,9 @@ singlePicardIteration(GlobalVector& x_prev_iter,
                               : (dof == 1) ? _assembly_params.trafo_T
                                            : _assembly_params.trafo_x;
 
-            for (std::size_t i = 0; i < _mesh.getNNodes(); ++i)
+            for (std::size_t i = 0; i < BP::_mesh.getNNodes(); ++i)
             {
-                MeshLib::Location loc(_mesh.getID(), MeshLib::MeshItemType::Node, i);
+                MeshLib::Location loc(BP::_mesh.getID(), MeshLib::MeshItemType::Node, i);
                 auto const idx = _local_to_global_index_map->getGlobalIndex(loc, dof);
 
                 // TODO: _A

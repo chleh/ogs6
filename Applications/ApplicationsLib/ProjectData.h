@@ -104,13 +104,13 @@ public:
 					new ProcessLib::GroundwaterFlowProcess<GlobalSetupType>(
 						*_mesh_vec[0], _process_variables, _parameters, pc));
 			}
-			else if (pc.get<std::string>("type") == "TES") {
+			else if (type == "TES") {
 				// The existence check of the in the configuration referenced
 				// process variables is checked in the physical process.
 				// TODO at the moment we have only one mesh, later there can be
 				// several meshes. Then we have to assign the referenced mesh
 				// here.
-				_processes.push_back(
+				_processes.emplace_back(
 					new ProcessLib::TES::TESProcess<GlobalSetupType>(
 						*_mesh_vec[0], _process_variables, _parameters, pc));
 			}

@@ -66,10 +66,10 @@ struct DirichletBC
 
 template<typename GlobalSetup>
 class TESProcess
-        : public Process,
+        : public Process<GlobalSetup>,
           public TESProcessInterface
 {
-    using ConfigTree = boost::property_tree::ptree;
+    using BP = Process<GlobalSetup>;
 
     unsigned const _integration_order = 2;
 
@@ -80,14 +80,17 @@ public:
     TESProcess(MeshLib::Mesh& mesh,
                std::vector<ProcessVariable> const& variables,
                std::vector<std::unique_ptr<ParameterBase>> const& parameters,
-               ConfigTree const& config);
+               BaseLib::ConfigTreeNew const& config);
 
-    void initialize() override;
+    void init() override;
 
-    bool solve(const double current_time, const double delta_t) override;
+    bool assemble(/*const double current_time,*/ const double delta_t) override;
 
     void post(std::string const& file_name) override;
     void postTimestep(std::string const& file_name, const unsigned timestep) override;
+
+    std::string getLinearSolverName() const override { return "tes_"; }
+    void initializeMeshSubsets(MeshLib::Mesh const& /*mesh*/) override {}
 
     ~TESProcess();
 
@@ -126,7 +129,7 @@ private:
     std::unique_ptr<GlobalVector> _x;           // current iteration
     std::unique_ptr<GlobalVector> _x_prev_ts;   // previous timestep
 
-    std::unique_ptr<BaseLib::ConfigTree> _linear_solver_options;
+    std::unique_ptr<BaseLib::ConfigTreeNew> _linear_solver_options;
     std::unique_ptr<typename GlobalSetup::LinearSolver> _linear_solver;
 
     std::unique_ptr<AssemblerLib::LocalToGlobalIndexMap> _local_to_global_index_map;

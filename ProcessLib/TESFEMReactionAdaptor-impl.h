@@ -297,6 +297,7 @@ TESFEMReactionAdaptorCaOH2(LADataNoTpl<Traits> &data)
     , _react(dynamic_cast<Ads::ReactionCaOH2&>(*data._AP->_reaction_system.get()))
 {
     _ode_solver = std::move(MathLib::createOdeSolver<1, React>(_react.getOdeSolverConfig()));
+    // TODO invalidate config
 
     _ode_solver->init();
     _ode_solver->setTolerance(1e-10, 1e-10);
