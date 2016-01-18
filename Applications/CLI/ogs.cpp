@@ -42,7 +42,8 @@ void solveProcesses(ProjectData &project)
 
 	std::string const out_pref = output_control.getFilePrefix();
 
-	auto do_output = [out_pref](unsigned pcs, ProcessLib::Process* p,
+	auto do_output = [out_pref](unsigned pcs,
+					 ProcessLib::Process<GlobalSetupType>* p,
 					 unsigned ts, double current_time, FileIO::PVDFile& pvdf)
 	{
 		std::string const output_file_name =
@@ -67,7 +68,7 @@ void solveProcesses(ProjectData &project)
 								   + ".pvd";
 			pvd_files.emplace_back(new FileIO::PVDFile(fn));
 
-			do_output(i, *p, 0, 0.0, *pvd_files.back());
+			do_output(i, p->get(), 0, 0.0, *pvd_files.back());
 		}
 	}
 
@@ -92,7 +93,7 @@ void solveProcesses(ProjectData &project)
 		for (auto p = project.processesBegin(); p != project.processesEnd();
 		     ++p)
 		{
-			accepted = accepted && (*p)->solve(current_time, dt);
+			accepted = accepted && (*p)->solve(/*current_time,*/ dt);
 
 			if (!accepted) {
 				ERR("Timestep has not been accepted. Aborting.");
@@ -101,7 +102,7 @@ void solveProcesses(ProjectData &project)
 
 			if (output_timestep)
 			{
-				do_output(i, *p, timestep, current_time, *pvd_files[i]);
+				do_output(i, p->get(), timestep, current_time, *pvd_files[i]);
 			}
 
 			++i;
@@ -122,7 +123,7 @@ void solveProcesses(ProjectData &project)
 		for (auto p = project.processesBegin(); p != project.processesEnd();
 			 ++p)
 		{
-			do_output(i, *p, timestep, current_time, *pvd_files[i]);
+			do_output(i, p->get(), timestep, current_time, *pvd_files[i]);
 		}
 	}
 }
