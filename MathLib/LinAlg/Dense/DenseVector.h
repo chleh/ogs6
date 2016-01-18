@@ -31,7 +31,7 @@ class DenseVector : public std::valarray<T>
 {
 public:
 	typedef T FP_T;
-	using IndexType = std::size_t;  // The type of valarray indices.
+	using IndexType = int;  // The type of valarray indices.
 
 public:
 	using std::valarray<T>::operator=;
@@ -43,24 +43,29 @@ public:
 	 * Constructor for initialization of the number of rows
 	 * @param nrows number of rows
 	 */
-	explicit DenseVector(std::size_t nrows=0)
+	explicit DenseVector(IndexType nrows=0)
 	: std::valarray<T>(nrows)
 	{}
 
+	void resize(IndexType new_size)
+	{
+		std::valarray<T>::resize(new_size);
+	}
+
 	/// return a start index of the active data range
-	std::size_t getRangeBegin() const { return 0;}
+	IndexType getRangeBegin() const { return 0;}
 
 	/// return an end index of the active data range
-	std::size_t getRangeEnd() const { return this->size(); }
+	IndexType getRangeEnd() const { return this->size(); }
 
 	/// get entry
 	T get(std::size_t i) const { return (*this)[i]; }
 
 	/// set a value to entry
-	void set(std::size_t i, T v) { (*this)[i] = v; }
+	void set(IndexType i, T v) { (*this)[i] = v; }
 
 	/// add a value to entry
-	void add(std::size_t i, T v) { (*this)[i] += v; }
+	void add(IndexType i, T v) { (*this)[i] += v; }
 
 	/**
 	 * add a sub vector
@@ -68,10 +73,17 @@ public:
 	 * @param sub_vec   sub-vector
 	 */
 	template<class T_SUBVEC>
-	void add(const std::vector<std::size_t> &pos, const T_SUBVEC &sub_vec)
+	void add(const std::vector<IndexType> &pos, const T_SUBVEC &sub_vec)
 	{
 		for (std::size_t i=0; i<pos.size(); ++i) {
 			this->add(pos[i], sub_vec[i]);
+		}
+	}
+
+	void add(const std::vector<IndexType> &pos, const double v)
+	{
+		for (std::size_t i=0; i<pos.size(); ++i) {
+			this->add(pos[i], v);
 		}
 	}
 
@@ -82,8 +94,13 @@ public:
 	void write (const std::string &filename) const
 	{
 		std::ofstream os(filename);
-		os << *this;
-		os.close();
+		write(os);
+	}
+
+	void write(std::ostream& os) const
+	{
+		os << static_cast<std::valarray<T> >(*this).size() << "\n";
+		os << *this << "\n";
 	}
 
     /// vector operation: add
@@ -96,6 +113,11 @@ public:
     void operator-= (const DenseVector<T>& v)
     {
         *this -= static_cast<std::valarray<T> >(v);
+    }
+
+    void componentwiseDivide(DenseVector<T> const& v)
+    {
+        *this /= static_cast<std::valarray<T> >(v);
     }
 
 };

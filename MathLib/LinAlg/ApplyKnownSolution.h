@@ -25,4 +25,8 @@
 #include "MathLib/LinAlg/PETSc/PETScTools.h"
 #endif // USE_PETSC
 
+#ifdef OGS_USE_MKL
+#include "MathLib/LinAlg/Pardiso/PardisoTools.h"
+#endif
+
 #endif  // MATHLIB_APPLYKNOWNSOLUTION_H_

@@ -1,6 +1,6 @@
 /**
  * \copyright
- * Copyright (c) 2012-2016, OpenGeoSys Community (http://www.opengeosys.org)
+ * Copyright (c) 2012-2015, OpenGeoSys Community (http://www.opengeosys.org)
  *            Distributed under a Modified BSD License.
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
@@ -17,6 +17,10 @@
 #include "EigenTools.h"
 
 #include "MathLib/LinAlg/LinearSolverOptions.h"
+
+#ifdef OGS_USE_MKL
+#include <Eigen/PardisoSupport>
+#endif
 
 namespace MathLib
 {
@@ -113,6 +117,15 @@ EigenLinearSolver::EigenLinearSolver(EigenMatrix &A,
     } else if (_option.solver_type==EigenOption::SolverType::CG) {
         using SolverType = Eigen::ConjugateGradient<EigenMatrix::RawMatrixType, Eigen::Lower, Eigen::DiagonalPreconditioner<double>>;
         _solver = new details::EigenIterativeLinearSolver<SolverType, IEigenSolver>(A.getRawMatrix());
+    }
+#ifdef OGS_USE_MKL
+    else if (_option.solver_type == EigenOption::SolverType::PardisoLU) {
+        using SolverType = Eigen::PardisoLU<EigenMatrix::RawMatrixType>;
+        _solver = new details::EigenDirectLinearSolver<SolverType, IEigenSolver>();
+    }
+#endif
+    else {
+        ERR("invalid linear solver type.");
     }
 }
 

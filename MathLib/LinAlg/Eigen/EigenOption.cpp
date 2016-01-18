@@ -28,6 +28,9 @@ EigenOption::SolverType EigenOption::getSolverType(const std::string &solver_nam
     RETURN_SOLVER_ENUM_IF_SAME_STRING(solver_name, CG);
     RETURN_SOLVER_ENUM_IF_SAME_STRING(solver_name, BiCGSTAB);
     RETURN_SOLVER_ENUM_IF_SAME_STRING(solver_name, SparseLU);
+#ifdef OGS_USE_MKL
+    RETURN_SOLVER_ENUM_IF_SAME_STRING(solver_name, PardisoLU);
+#endif
 
     return SolverType::INVALID;
 #undef RETURN_SOLVER_ENUM_IF_SAME_STRING
