@@ -220,25 +220,9 @@ public:
 
     bool assemble(const double /*delta_t*/) override
     {
-        std::size_t const n = _mesh.getNNodes();
-        for (std::size_t i = 0; i < n; ++i)
-        {
-            MeshLib::Location const l(_mesh.getID(),
-                                      MeshLib::MeshItemType::Node, i);
-            auto const global_index = // 0 is the component id.
-              std::abs( _local_to_global_index_map->getGlobalIndex(l, 0) );
-            _x->set(global_index,
-                   variable.getInitialConditionValue(*_mesh.getNode(i)));
-        }
-    }
+        DBUG("Assemble GroundwaterFlowProcess.");
 
-    bool solve(const double /*delta_t*/) override
-    {
-        DBUG("Solve GroundwaterFlowProcess.");
-
-        _A->setZero();
-        MathLib::setMatrixSparsity(*_A, _sparsity_pattern);
-        *_rhs = 0;   // This resets the whole vector.
+        *this->_rhs = 0;   // This resets the whole vector.
 
         // Call global assembler for each local assembly item.
         this->_global_setup.execute(*this->_global_assembler,
