@@ -44,12 +44,13 @@ FixedTimeStepping::newInstance(BaseLib::ConfigTreeNew const& config)
     double te = t_initial;
     double dt = 0.0;
 
-    auto const range = delta_ts->getConfSubtreeList("pair");
+    // TODO: consider adding call "listNonEmpty" to config tree
+    auto const range = delta_ts.getConfSubtreeList("pair");
     if (range.begin() == range.end()) {
         ERR("no timesteps have been given");
         return nullptr;
     }
-    for (auto const pair : delta_ts)
+    for (auto const pair : range)
     {
         auto const count   = pair.getConfParam<std::size_t>("count");
         dt                 = pair.getConfParam<double>("delta_t");
@@ -71,14 +72,14 @@ FixedTimeStepping::newInstance(BaseLib::ConfigTreeNew const& config)
     }
 
     // append last timestep until t_end is reached
-    if (te < *t_end)
+    if (te < t_end)
     {
-        c = std::ceil((*t_end - te) / dt);
-        timesteps.resize(timesteps.size() + c, dt);
-        te += c*dt;
+        auto const count = std::ceil((t_end - te) / dt);
+        timesteps.resize(timesteps.size() + count, dt);
+        te += count*dt;
     }
 
-    return std::unique_ptr<FixedTimeStepping>(new FixedTimeStepping(*t_initial, *t_end, timesteps));
+    return std::unique_ptr<FixedTimeStepping>(new FixedTimeStepping(t_initial, t_end, timesteps));
 }
 
 const TimeStep FixedTimeStepping::getTimeStep() const
