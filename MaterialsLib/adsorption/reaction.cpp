@@ -30,9 +30,9 @@ namespace Ads
 
 std::unique_ptr<Reaction>
 Reaction::
-newInstance(BaseLib::ConfigTree const& conf)
+newInstance(BaseLib::ConfigTreeNew const& conf)
 {
-	auto const type = conf.get<std::string>("type", "");
+	auto const type = conf.getConfParam<std::string>("type");
 
 	if (type == "Z13XBF")
 		return std::unique_ptr<Reaction>(new DensityLegacy);
@@ -57,11 +57,9 @@ newInstance(BaseLib::ConfigTree const& conf)
 	else if (type == "CaOH2")
 		return std::unique_ptr<Reaction>(new ReactionCaOH2(conf));
 
-	if (type.empty()) {
-		ERR("No reactive system specified.");
-	} else {
-		ERR("Unknown reactive system: %s.", type.c_str());
-	}
+	ERR("Unknown reactive system: %s.", type.c_str());
+	std::abort();
+
 	return nullptr;
 }
 

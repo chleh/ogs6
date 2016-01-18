@@ -12,7 +12,7 @@
 #include <logog/include/logog.hpp>
 
 #include "reaction.h"
-#include "BaseLib/ConfigTree.h"
+#include "BaseLib/ConfigTreeNew.h"
 
 namespace Ads
 {
@@ -20,15 +20,9 @@ namespace Ads
 class ReactionSinusoidal final : public Reaction
 {
 public:
-    explicit ReactionSinusoidal(BaseLib::ConfigTree const& conf)
+    explicit ReactionSinusoidal(BaseLib::ConfigTreeNew const& conf)
+        : _enthalpy(conf.getConfParam<double>("reaction_enthalpy"))
     {
-        auto const param = conf.get_optional<double>("reaction_enthalpy");
-        if (param) {
-            _enthalpy = *param;
-        } else {
-            ERR("<reaction_enthalpy> not specified.");
-            std::abort();
-        }
     }
 
     double get_enthalpy(const double /*p_Ads*/, const double /*T_Ads*/,
