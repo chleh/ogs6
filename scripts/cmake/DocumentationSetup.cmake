@@ -38,4 +38,12 @@ if(DOXYGEN_FOUND)
 
     configure_file(Documentation/Doxyfile.in ${PROJECT_BINARY_DIR}/Doxyfile)
 
+	add_custom_target(internal_pre_doc
+		${CMAKE_COMMAND}
+		-DPROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}
+		-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+		-P ${PROJECT_SOURCE_DIR}/scripts/cmake/DocumentationProjectFile.cmake
+		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+		COMMENT "Generating project file documentation hierarchy." VERBATIM)
+	add_dependencies(doc internal_pre_doc)
 endif()
