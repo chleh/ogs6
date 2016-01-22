@@ -38,6 +38,8 @@ if(DOXYGEN_FOUND)
 
     configure_file(Documentation/Doxyfile.in ${PROJECT_BINARY_DIR}/Doxyfile)
 
+	# TODO that will always transform all of the input files no matter if they changed
+	# maybe this behaviour can be changed to on-demand processing
 	add_custom_target(internal_pre_doc
 		${CMAKE_COMMAND}
 		-DPROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}
