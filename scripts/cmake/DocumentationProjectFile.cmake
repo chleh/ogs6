@@ -22,8 +22,11 @@ function(documentationProjectFilePutIntoPlace p)
             # is the "table of contents" file already processed outside
             # of this loop
             if (NOT rel_pf MATCHES ^__)
-                # set(pf_tagname ${rel_pf})
-                string(SUBSTRING ${rel_pf} 2 -1 pf_tagname)
+                if(IS_DIRECTORY ${pf})
+                    set(pf_tagname ${rel_pf})
+                else()
+                    string(SUBSTRING ${rel_pf} 2 -1 pf_tagname)
+                endif()
 
                 if ("${dir_name}" STREQUAL "") # toplevel dir must be trested slightly different
                     set(pf_tagpath "${pf_tagname}")
@@ -31,6 +34,7 @@ function(documentationProjectFilePutIntoPlace p)
                     set(pf_tagpath "${dir_name}/${pf_tagname}")
                     string(REPLACE "/" "__" pf_tagpath "${pf_tagpath}")
                 endif()
+                message("  t.o.c. entry ${pf_tagpath}")
 
                 set(postfix "${postfix} - \\subpage ogs_project_file_parameter__${pf_tagpath}\n")
 
@@ -53,7 +57,7 @@ function(documentationProjectFilePutIntoPlace p)
             string(REPLACE "/" "__" tagpath "${dir_name}/${tagname}")
         endif()
     endif()
-    message("tp ${tagpath}")
+    message("  child param  ${tagpath}")
 
     # read, augment, write file content
     file(READ ${p} content)
@@ -74,6 +78,6 @@ endif()
 file(GLOB_RECURSE input_paths ${DocumentationProjectFileInputDir}/__*)
 
 foreach(p ${input_paths})
-	message("in path ${p}")
+	message("directory index file ${p}")
 	documentationProjectFilePutIntoPlace(${p})
 endforeach()
