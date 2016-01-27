@@ -2,15 +2,12 @@ function(documentationProjectFilePutIntoPlace p)
     file(RELATIVE_PATH relative_path ${DocumentationProjectFileInputDir} ${p})
     get_filename_component(dir_name ${relative_path} DIRECTORY)
 
-    get_filename_component(tagname ${relative_path} NAME_WE)
-    if (tagname MATCHES ^_)
+    get_filename_component(otagname ${relative_path} NAME_WE)
+    if (otagname MATCHES ^__)
         # if the file name starts with an underscore, then this files is
         # the "table of contents of the current directory
         
         file(MAKE_DIRECTORY "${DocumentationProjectFileBuildDir}/${dir_name}")
-
-        set(otagname "${tagname}")
-        string(SUBSTRING ${tagname} 1 -1 tagname) # remove _ from start
 
         set(postfix "# Parameters used at this level\n\n")
 
@@ -24,8 +21,9 @@ function(documentationProjectFilePutIntoPlace p)
             # if the file name starts with an underscore, then this
             # is the "table of contents" file already processed outside
             # of this loop
-            if (NOT rel_pf MATCHES ^_)
-                set(pf_tagname ${rel_pf})
+            if (NOT rel_pf MATCHES ^__)
+                # set(pf_tagname ${rel_pf})
+                string(SUBSTRING ${rel_pf} 2 -1 pf_tagname)
 
                 if ("${dir_name}" STREQUAL "") # toplevel dir must be trested slightly different
                     set(pf_tagpath "${pf_tagname}")
@@ -43,13 +41,13 @@ function(documentationProjectFilePutIntoPlace p)
         endforeach()
     else()
         set(postfix "")
-        set(otagname "")
     endif()
 
+    string(SUBSTRING ${otagname} 2 -1 tagname)
     if (dir_name STREQUAL "") # toplevel dir must be trested slightly different
         set(tagpath "${tagname}")
     else()
-        if (otagname MATCHES ^_) # treat "table of contents" file special
+        if (otagname MATCHES ^__) # treat "table of contents" file special
             string(REPLACE "/" "__" tagpath "${dir_name}")
         else()
             string(REPLACE "/" "__" tagpath "${dir_name}/${tagname}")
@@ -73,7 +71,7 @@ if (IS_DIRECTORY ${DocumentationProjectFileBuildDir})
 	file(REMOVE_RECURSE ${DocumentationProjectFileBuildDir})
 endif()
 
-file(GLOB_RECURSE input_paths ${DocumentationProjectFileInputDir}/_*)
+file(GLOB_RECURSE input_paths ${DocumentationProjectFileInputDir}/__*)
 
 foreach(p ${input_paths})
 	message("in path ${p}")
