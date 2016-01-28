@@ -59,9 +59,11 @@ function(documentationProjectFilePutIntoPlace p)
     endif()
     message("  child param  ${tagpath}")
 
+    set(pagetitle "[tag]&emsp;${tagname}")
+
     # read, augment, write file content
     file(READ ${p} content)
-    set(content "/*! \\page ogs_project_file_parameter__${tagpath} ${tagname}\n${content}\n\n${postfix}\n*/\n")
+    set(content "/*! \\page ogs_project_file_parameter__${tagpath} ${pagetitle}\n${content}\n\n${postfix}\n*/\n")
     string(REGEX REPLACE .md$ .dox output_file "${DocumentationProjectFileBuildDir}/${relative_path}")
     file(WRITE "${output_file}" "${content}")
 endfunction()
