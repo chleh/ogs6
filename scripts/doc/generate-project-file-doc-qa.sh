@@ -16,8 +16,8 @@ toolsdir="$srcdir/scripts/doc"
 
 qafile="$doxdir/project-file-doc-qa.dox"
 
-cat <<"EOF" | tee /dev/stderr >"$qafile"
-/*! \page project_file_doc_qa ProjectFile Documentation Quality Assurance
+cat <<"EOF" >"$qafile"
+/*! \page project_file_doc_qa Project File Parameters&mdash;Quality Assurance
 
 This is the QA page
 
@@ -30,3 +30,4 @@ cat <<EOF >>"$qafile"
 */
 EOF
 
+"$toolsdir/append-xml-tags.py" prj "$datadir" "$doxdir/ProjectFile"
