@@ -51,7 +51,7 @@ if(DOXYGEN_FOUND)
 		${CMAKE_COMMAND}
 		-DPROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}
 		-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
-                # -Ddoc_use_external_tools=${doc_use_external_tools}
+                -Ddoc_use_external_tools=${doc_use_external_tools}
 		-P ${PROJECT_SOURCE_DIR}/scripts/cmake/DocumentationProjectFile.cmake
 		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 		COMMENT "Generating project file documentation hierarchy." VERBATIM)
