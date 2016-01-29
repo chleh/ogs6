@@ -4,6 +4,8 @@ import sys
 import re
 import os.path
 
+def debug(msg):
+    sys.stderr.write(msg+"\n")
 
 if len(sys.argv) != 2:
     print("USAGE: {} DOCAUXDIR".format(sys.argv[0]))
@@ -44,7 +46,7 @@ for inline in sys.stdin:
     path, lineno, line = inline.split(":", 2)
     if path in excluded: continue
 
-    if path != oldpath: print(path)
+    if path != oldpath: debug(path)
 
     line = line.strip()
     lineno = int(lineno)
@@ -56,7 +58,7 @@ for inline in sys.stdin:
         state = "comment"
 
         tag_path_comment = m.group(1).replace("__", ".")
-        print(" {:>5}  //! {}".format(lineno, tag_path_comment))
+        debug(" {:>5}  //! {}".format(lineno, tag_path_comment))
         tag_name_comment = tag_path_comment.split(".")[-1]
 
         dirs = tag_path_comment.split(".")[:-1]
@@ -69,18 +71,20 @@ for inline in sys.stdin:
     
     m = getter.match(line)
     if m:
-        param = m.group(5); paramtype = m.group(4) or ""
+        param = m.group(5)
+        paramtype = m.group(4)[1:-1] if m.group(4) else ""
+
         if state != "comment" or oldpath != path:
             undocumented.append((path, lineno, param, paramtype))
         else:
-            print(" {:>5}  {} {} ".format(lineno, param, paramtype))
+            debug(" {:>5}  {} {} ".format(lineno, param, paramtype))
 
             if param != tag_name_comment:
-                print("error: parameter name from comment and code do not match:",
+                debug("error: parameter name from comment and code do not match:",
                         tag_name_comment, "vs.", param)
                 undocumented.append((path, lineno, param, paramtype))
             elif lineno != oldlineno+1:
-                print("error: the associated comment is not on the line preceding this one."
+                debug("error: the associated comment is not on the line preceding this one."
                         + " line numbers {} vs. {}".format(oldlineno, lineno))
                 undocumented.append((path, lineno, param, paramtype))
 
@@ -92,25 +96,31 @@ for inline in sys.stdin:
 
 if (undocumented):
     print()
-    print("Undocumented parameters:")
+    print("# Undocumented parameters")
+    print("| File | Line | Parameter | Type |")
+    print("| ---- | ---- | --------- | ---- |")
     for u in sorted(undocumented):
-        print("  {} {:>5}: {} {}".format(*u))
+        print("| {} | {} | {} | <tt>{}</tt> |".format(*u))
 
 if (unneeded_comments):
     print()
-    print("Comments not documenting anything:")
+    print("# Comments not documenting anything")
+    print("| File | Line | Comment |")
+    print("| ---- | ---- | ------- |")
     for u in sorted(unneeded_comments):
-        print("  {} {:>5}: {}".format(*u))
+        print("| {} | {} | {} |".format(*u))
 
 if (wrong_input):
     print()
-    print("Lines of input to that script that have not been recognized:")
+    print("# Lines of input to that script that have not been recognized")
     for u in sorted(wrong_input):
-        print(" ", u)
+        print(" - ", u)
 
 if (no_doc_page):
     print()
-    print("No documentation page has been found for the following parameters")
+    print("# No documentation page")
+    print("| Parameter | File | Line |")
+    print("| --------- | ---- | ---- |")
     for n in sorted(no_doc_page):
-        print(" ", *n)
+        print("| {} | {} | {} |".format(*n))
 
