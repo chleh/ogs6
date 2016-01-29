@@ -32,5 +32,8 @@ ignoreConfParam.*)
 peekConfParam.*)
 EOF
 
+# exits with the status of "$further_script"
+exit $?
+
 # format as table:
 # | sed -e 's_::_@@_g' -e's_:\s\+_:_' | column -t -s: | sed -e 's_@@_::_g'
