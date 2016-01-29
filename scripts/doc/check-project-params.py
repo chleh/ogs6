@@ -124,3 +124,11 @@ if (no_doc_page):
     for n in sorted(no_doc_page):
         print("| {} | {} | {} |".format(*n))
 
+
+# exit with error status if something was not documented.
+if (not not undocumented) or (not not unneeded_comments) \
+        or (not not wrong_input) or (not not no_doc_page):
+            sys.exit(1)
+
+sys.exit(0)
+
