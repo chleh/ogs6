@@ -69,7 +69,7 @@ function(documentationProjectFilePutIntoPlace p)
 endfunction()
 
 
-set(DocumentationProjectFileBuildDir ${PROJECT_BINARY_DIR}/DocProjectFileAux)
+set(DocumentationProjectFileBuildDir ${PROJECT_BINARY_DIR}/DocAux/dox/ProjectFile)
 set(DocumentationProjectFileInputDir ${PROJECT_SOURCE_DIR}/Documentation/ProjectFile)
 
 # remove old output
