@@ -48,7 +48,7 @@ function(documentationProjectFilePutIntoPlace p)
     endif()
 
     string(SUBSTRING ${otagname} 2 -1 tagname)
-    if (dir_name STREQUAL "") # toplevel dir must be trested slightly different
+    if (dir_name STREQUAL "") # toplevel dir must be treated slightly different
         set(tagpath "${tagname}")
     else()
         if (otagname MATCHES ^__) # treat "table of contents" file special
@@ -59,13 +59,22 @@ function(documentationProjectFilePutIntoPlace p)
     endif()
     message("  child param  ${tagpath}")
 
-    set(pagetitle "[tag]&emsp;${tagname}")
+    if (otagname MATCHES ^__ AND dir_name STREQUAL "")
+        set(pagetitle "Project File Parameters")
+    else()
+        set(pagetitle "[tag]&emsp;${tagname}")
+    endif()
 
     # read, augment, write file content
     file(READ ${p} content)
-    set(content "/*! \\page ogs_project_file_parameter__${tagpath} ${pagetitle}\n${content}\n\n${postfix}\n*/\n")
+    set(content "/*! \\page ogs_project_file_parameter__${tagpath} ${pagetitle}\n${content}\n\n${postfix}\n")
+    if (NOT doc_use_external_tools)
+        set(ending "\n*/\n")
+    else()
+        set(ending "") # external tools shall finish the file
+    endif()
     string(REGEX REPLACE .md$ .dox output_file "${DocumentationProjectFileBuildDir}/${relative_path}")
-    file(WRITE "${output_file}" "${content}")
+    file(WRITE "${output_file}" "${content}${ending}")
 endfunction()
 
 
