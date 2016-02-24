@@ -274,7 +274,7 @@ private:
 	}
 
 	/// Sets the initial condition values in the solution vector x for a given
-	/// process variable and component.
+	/// process variable and all variable's components.
 	void setInitialConditions(ProcessVariable const& variable,
 	                          int const component_id,
 	                          GlobalVector& x)
@@ -284,23 +284,30 @@ private:
 		{
 			MeshLib::Location const l(_mesh.getID(),
 			                          MeshLib::MeshItemType::Node, node_id);
-			auto global_index = std::abs(
-			    _local_to_global_index_map->getGlobalIndex(l, component_id));
+			// TODO extend component ids to multiple process variables.
+			auto const& n_components = variable.getNumberOfComponents();
+			for (std::size_t component_id = 0; component_id < n_components;
+			     ++component_id)
+			{
+				auto global_index =
+				    std::abs(_local_to_global_index_map->getGlobalIndex(
+				        l, component_id));
 #ifdef USE_PETSC
-			// The global indices of the ghost entries of the global
-			// matrix or the global vectors need to be set as negative values
-			// for equation assembly, however the global indices start from zero.
-			// Therefore, any ghost entry with zero index is assigned an negative
-			// value of the vector size or the matrix dimension.
-			// To assign the initial value for the ghost entries,
-			// the negative indices of the ghost entries are restored to zero.
-			// checked hereby.
+				// The global indices of the ghost entries of the global matrix
+				// or the global vectors need to be set as negative values for
+				// equation assembly, however the global indices start from
+				// zero.  Therefore, any ghost entry with zero index is assigned
+				// an negative value of the vector size or the matrix dimension.
+				// To assign the initial value for the ghost entries, the
+				// negative indices of the ghost entries are restored to zero.
+				// checked hereby.
 			if ( global_index == x.size() )
 			    global_index = 0;
 #endif
 			x.set(global_index,
-			      variable.getInitialConditionValue(*_mesh.getNode(node_id),
-			                                        component_id));
+				        variable.getInitialConditionValue(
+				            *_mesh.getNode(node_id), component_id));
+			}
 		}
 	}
 
