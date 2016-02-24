@@ -20,15 +20,15 @@ namespace MathLib
 namespace Nonlinear
 {
 
-NewtonRaphson::NewtonRaphson()
-: _normType(VecNormType::INFINITY_N),
-  _r_abs_tol(std::numeric_limits<double>::max()), _r_rel_tol(1e-6), _dx_rel_tol(.0),
-  _max_itr(25), _printErrors(true), _n_iterations(0), _r_abs_error(.0), _r_rel_error(.0), _dx_rel_error(.0)
-{
-}
-
-template<class F_RESIDUAL, class F_DX, class T_VALUE>
-bool NewtonRaphson::solve(F_RESIDUAL &f_residual, F_DX &f_dx, const T_VALUE &x0, T_VALUE &x_new)
+///
+/// XXX RENAME DX TO MINUS_DX!!!!!!!!
+///
+template <class F_RESIDUAL, class F_DX, class T_VALUE>
+bool NewtonRaphson::solve(F_RESIDUAL& f_residual,
+                          F_DX& f_dx,
+                          const T_VALUE& r,
+                          const T_VALUE& x0,
+                          T_VALUE& x_new)
 {
     const bool checkAbsResidualError = (_r_abs_tol < std::numeric_limits<double>::max());
     const bool checkRelResidualError = (_r_rel_tol < std::numeric_limits<double>::max());
@@ -41,8 +41,7 @@ bool NewtonRaphson::solve(F_RESIDUAL &f_residual, F_DX &f_dx, const T_VALUE &x0,
 
     // evaluate initial residual
     x_new = x0;
-    T_VALUE r(x0);
-    f_residual(x_new, r);
+    f_residual();
 
     // check convergence
     double r_norm = norm(r, _normType);
@@ -63,10 +62,10 @@ bool NewtonRaphson::solve(F_RESIDUAL &f_residual, F_DX &f_dx, const T_VALUE &x0,
     if (!converged) {
         for (itr_cnt=1; itr_cnt<_max_itr; itr_cnt++) {
             // solve dx=-J^-1*r
-            f_dx(x_new, r, dx);
-            x_new += dx;
+            f_dx(dx);
+            x_new -= dx;
             // evaluate residual
-            f_residual(x_new, r);
+            f_residual();
 #ifdef DEBUG_NEWTON_RAPHSON
             printout(std::cout, itr_cnt, x_new, r, dx);
 #endif

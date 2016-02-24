@@ -13,6 +13,7 @@
 
 #include "InitialCondition.h"
 #include "UniformDirichletBoundaryCondition.h"
+#include "UniformDisplacementBoundaryCondition.h"
 #include "NeumannBc.h"
 #include "DirichletBc.h"
 

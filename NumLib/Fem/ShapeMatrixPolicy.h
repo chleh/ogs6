@@ -85,10 +85,10 @@ struct EigenDynamicShapeMatrixPolicy
     // Dynamic size local matrices are much slower in allocation than their
     // fixed counterparts.
 
-    template<int N, int M>
+    template<int, int>
     using MatrixType =
         Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-    template<int N>
+    template<int>
     using VectorType =
         Eigen::Matrix<double, Eigen::Dynamic, 1>;
 

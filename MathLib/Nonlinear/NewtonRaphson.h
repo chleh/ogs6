@@ -71,11 +71,12 @@ public:
      * \param x_new             Solution
      * \return true if converged
      */
-    template<class F_RESIDUAL, class F_DX, class T_VALUE>
-    bool solve(F_RESIDUAL &f_residual, F_DX &f_dx, const T_VALUE &x0, T_VALUE &x_new);
+	template <class F_RESIDUAL, class F_DX, class T_VALUE>
+	bool solve(F_RESIDUAL& f_residual, F_DX& f_dx, const T_VALUE& r,
+	           const T_VALUE& x0, T_VALUE& x_new);
 
-    /// return the number of iterations
-    std::size_t getNIterations() const {return _n_iterations; }
+	/// return the number of iterations
+	std::size_t getNIterations() const {return _n_iterations; }
 
     /// return absolute error in the last iteration
     double getAbsResidualError() const {return _r_abs_error; }

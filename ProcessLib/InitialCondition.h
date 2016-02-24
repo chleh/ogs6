@@ -72,6 +72,12 @@ public:
 	    : _property(property)
 	{
 		assert(_property.getMeshItemType() == MeshLib::MeshItemType::Node);
+		/*
+		std::cout << "Initial Condition property:";
+		std::copy(_property.cbegin(),
+		          _property.cend(),
+		          std::ostream_iterator<double>(std::cout, " "));
+		*/
 	}
 
 	// TODO replace Node with node's id.
