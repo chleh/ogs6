@@ -70,7 +70,7 @@ public:
 		for (auto& bc_config : _dirichlet_bc_configs)
 		{
 			DirichletBc<GlobalIndexType> bc;
-			bc_config->initialize(searcher, dof_table, nodal_dof_idx, bc);
+			bc_config.first->initialize(searcher, dof_table, nodal_dof_idx, bc);
 			output_bcs++ = bc;
 		}
 	}
@@ -106,7 +106,10 @@ private:
 	MeshLib::Mesh& _mesh;
 	const int _n_components;
 	std::unique_ptr<InitialCondition> _initial_condition;
-	std::vector<std::unique_ptr<UniformDirichletBoundaryCondition>>
+
+	// pairs of dirichlet boundary conditions and corresponding component ids.
+	std::vector<
+	    std::pair<std::unique_ptr<UniformDirichletBoundaryCondition>, int>>
 	    _dirichlet_bc_configs;
 	std::vector<std::unique_ptr<NeumannBcConfig>> _neumann_bc_configs;
 };
