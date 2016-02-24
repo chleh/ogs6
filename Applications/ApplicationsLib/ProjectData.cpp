@@ -35,6 +35,7 @@
 #include "UncoupledProcessesTimeLoop.h"
 
 #include "ProcessLib/GroundwaterFlowProcess-fwd.h"
+#include "ProcessLib/SmallDeformationProcess-fwd.h"
 
 
 namespace detail
@@ -176,6 +177,38 @@ void ProjectData::buildProcesses()
 				ProcessLib::createGroundwaterFlowProcess<GlobalSetupType>(
 				    *_mesh_vec[0], *nl_slv, std::move(time_disc),
 				    _process_variables, _parameters, pc));
+		}
+		else if (type == "SMALL_DEFORMATION")
+		{
+			switch (pc.getConfParam<int>("dimension"))
+			{
+				case 1:
+					_processes.emplace_back(
+					    ProcessLib::createSmallDeformationProcess<
+					        GlobalSetupType, 1>(
+					        *_mesh_vec[0], *nl_slv, std::move(time_disc),
+					        _process_variables, _parameters, pc));
+					break;
+				case 2:
+					_processes.emplace_back(
+					    ProcessLib::createSmallDeformationProcess<
+					        GlobalSetupType, 2>(
+					        *_mesh_vec[0], *nl_slv, std::move(time_disc),
+					        _process_variables, _parameters, pc));
+					break;
+				case 3:
+					_processes.emplace_back(
+					    ProcessLib::createSmallDeformationProcess<
+					        GlobalSetupType, 3>(
+					        *_mesh_vec[0], *nl_slv, std::move(time_disc),
+					        _process_variables, _parameters, pc));
+					break;
+				default:
+					ERR(
+					    "SMALL_DEFORMATION process does not support "
+					    "given dimension");
+					std::abort();
+			}
 		}
 		else
 		{
