@@ -40,11 +40,11 @@ public:
 private:
     std::size_t _next_id = 1;
 
-    std::map<std::size_t, std::unique_ptr<Matrix> > _unused_matrices;
-    std::map<std::size_t, std::unique_ptr<Matrix> > _used_matrices;
+    std::map<std::size_t, Matrix*> _unused_matrices;
+    std::map<Matrix*, std::size_t> _used_matrices;
 
-    std::map<std::size_t, std::unique_ptr<Vector> > _unused_vectors;
-    std::map<std::size_t, std::unique_ptr<Vector> > _used_vectors;
+    std::map<std::size_t, Vector*> _unused_vectors;
+    std::map<Vector*, std::size_t> _used_vectors;
 };
 
 
