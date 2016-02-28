@@ -158,6 +158,7 @@ void ProjectData::buildProcesses()
 		    "A nonlinear solver with the given name has not been defined.");
 
 		auto time_disc = NumLib::createTimeDiscretization<GlobalVector>(
+		        _matrix_provider,
 		        pc.getConfSubtree("time_discretization")
 		    );
 
