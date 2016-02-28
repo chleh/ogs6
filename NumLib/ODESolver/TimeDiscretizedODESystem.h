@@ -98,7 +98,8 @@ public:
         : _matrix_provider(matrix_provider)
         , _ode(ode)
         , _time_disc(time_discretization)
-        , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(time_discretization))
+        , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(
+                         matrix_provider, time_discretization))
     {
         _Jac  = &_matrix_provider.getMatrix(_ode, _Jac_id);
         _M    = &_matrix_provider.getMatrix(_ode, _M_id);
@@ -248,7 +249,8 @@ public:
         : _matrix_provider(matrix_provider)
         , _ode(ode)
         , _time_disc(time_discretization)
-        , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(time_discretization))
+        , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(
+                         matrix_provider, time_discretization))
     {
         _M = &_matrix_provider.getMatrix(ode, _M_id);
         _K = &_matrix_provider.getMatrix(ode, _K_id);

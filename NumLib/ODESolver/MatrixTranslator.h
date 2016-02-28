@@ -111,8 +111,10 @@ public:
      *
      * \param timeDisc the time discretization scheme to be used.
      */
-    MatrixTranslatorGeneral(TimeDiscretization<Vector> const& timeDisc)
-        : _time_disc(timeDisc)
+    MatrixTranslatorGeneral(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
+                            TimeDiscretization<Vector> const& timeDisc)
+        : _matrix_provider(matrix_provider)
+        , _time_disc(timeDisc)
     {}
 
     //! Computes \f$ A = M \cdot \alpha + K \f$.
@@ -132,10 +134,13 @@ public:
     {
         namespace BLAS = MathLib::BLAS;
 
-        _time_disc.getWeightedOldX(_tmp);
+        auto& tmp = _matrix_provider.getVector(_tmp_id);
+        _time_disc.getWeightedOldX(tmp);
 
         // rhs = M * weighted_old_x + b
-        BLAS::matMultAdd(M, _tmp, b, rhs);
+        BLAS::matMultAdd(M, tmp, b, rhs);
+
+        _matrix_provider.releaseVector(_tmp_id, tmp);
     }
 
     //! Computes \f$ r = M \cdot \hat x + K \cdot x_C - b \f$.
@@ -163,8 +168,10 @@ public:
     }
 
 private:
+    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     TimeDiscretization<Vector> const& _time_disc; //!< the time discretization used.
-    mutable Vector _tmp; //!< used to store intermediate calculation results
+
+    mutable std::size_t _tmp_id;
 };
 
 
@@ -199,8 +206,10 @@ public:
      *
      * \param timeDisc the time discretization scheme to be used.
      */
-    MatrixTranslatorForwardEuler(ForwardEuler<Vector> const& timeDisc)
-        : _fwd_euler(timeDisc)
+    MatrixTranslatorForwardEuler(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
+                                 ForwardEuler<Vector> const& timeDisc)
+        : _matrix_provider(matrix_provider)
+        , _fwd_euler(timeDisc)
     {}
 
     //! Computes \f$ A = M \cdot \alpha \f$.
@@ -220,14 +229,17 @@ public:
     {
         namespace BLAS = MathLib::BLAS;
 
-        _fwd_euler.getWeightedOldX(_tmp);
+        auto& tmp = _matrix_provider.getVector(_tmp_id);
+        _fwd_euler.getWeightedOldX(tmp);
 
         auto const& x_old          = _fwd_euler.getXOld();
 
         // rhs = b + M * weighted_old_x - K * x_old
         BLAS::matMult(K, x_old, rhs); // rhs = K * x_old
         BLAS::aypx(rhs, -1.0, b);     // rhs = b - K * x_old
-        BLAS::matMultAdd(M, _tmp, rhs, rhs); // rhs += M * weighted_old_x
+        BLAS::matMultAdd(M, tmp, rhs, rhs); // rhs += M * weighted_old_x
+
+        _matrix_provider.releaseVector(_tmp_id, tmp);
     }
 
     //! Computes \f$ r = M \cdot \hat x + K \cdot x_C - b \f$.
@@ -255,8 +267,10 @@ public:
     }
 
 private:
+    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     ForwardEuler<Vector> const& _fwd_euler; //!< the time discretization used.
-    mutable Vector _tmp; //!< used to store intermediate calculation results
+
+    mutable std::size_t _tmp_id;
 };
 
 
@@ -290,9 +304,19 @@ public:
      *
      * \param timeDisc the time discretization scheme to be used.
      */
-    MatrixTranslatorCrankNicolson(CrankNicolson<Vector> const& timeDisc)
-        : _crank_nicolson(timeDisc)
+    MatrixTranslatorCrankNicolson(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
+                                  CrankNicolson<Vector> const& timeDisc)
+        : _matrix_provider(matrix_provider)
+        , _crank_nicolson(timeDisc)
+        , _M_bar(matrix_provider.getMatrix())
+        , _b_bar(matrix_provider.getVector())
     {}
+
+    ~MatrixTranslatorCrankNicolson()
+    {
+        _matrix_provider.releaseMatrix(666, _M_bar);
+        _matrix_provider.releaseVector(666, _b_bar);
+    }
 
     //! Computes \f$ A = \theta \cdot (M \cdot \alpha + K) + \bar M \cdot \alpha \f$.
     void computeA(Matrix const& M, Matrix const& K, Matrix& A) const override
@@ -307,7 +331,7 @@ public:
         BLAS::aypx(A, dxdot_dx, K); // A = M * dxdot_dx + K
 
         BLAS::scale(A, theta); // A *= theta
-        BLAS::axpy(A, dxdot_dx, *_M_bar); // A += dxdot_dx * _M_bar
+        BLAS::axpy(A, dxdot_dx, _M_bar); // A += dxdot_dx * _M_bar
     }
 
     //! Computes \f$ \mathtt{rhs} = \theta \cdot (M \cdot x_O + b) + \bar M \cdot x_O - \bar b \f$.
@@ -315,16 +339,19 @@ public:
     {
         namespace BLAS = MathLib::BLAS;
 
-        _crank_nicolson.getWeightedOldX(*_tmp);
+        auto& tmp = _matrix_provider.getVector(_tmp_id);
+        _crank_nicolson.getWeightedOldX(tmp);
 
         auto const  theta          = _crank_nicolson.getTheta();
 
         // rhs = theta * (b + M * weighted_old_x) + _M_bar * weighted_old_x - _b_bar;
-        BLAS::matMultAdd(M, *_tmp, b, rhs); // rhs = b + M * weighted_old_x
+        BLAS::matMultAdd(M, tmp, b, rhs); // rhs = b + M * weighted_old_x
 
         BLAS::scale(rhs, theta); // rhs *= theta
-        BLAS::matMultAdd(*_M_bar, *_tmp, rhs, rhs); // rhs += _M_bar * weighted_old_x
-        BLAS::axpy(rhs, -1.0, *_b_bar); // rhs -= b
+        BLAS::matMultAdd(_M_bar, tmp, rhs, rhs); // rhs += _M_bar * weighted_old_x
+        BLAS::axpy(rhs, -1.0, _b_bar); // rhs -= b
+
+        _matrix_provider.releaseVector(_tmp_id, tmp);
     }
     //! Computes \f$ r = \theta \cdot (M \cdot \hat x + K \cdot x_C - b) + \bar M \cdot \hat x + \bar b \f$.
     void computeResidual(Matrix const& M, Matrix const& K, Vector const& b,
@@ -341,8 +368,8 @@ public:
         BLAS::matMultAdd(K, x_curr, res, res); // res += K * x_curr
         BLAS::axpy(res, -1.0, b); // res = M * x_dot + K * x_curr - b
 
-        BLAS::aypx(res, theta, *_b_bar); // res = res * theta + _b_bar
-        BLAS::matMultAdd(*_M_bar, xdot, res, res); // rs += _M_bar * x_dot
+        BLAS::aypx(res, theta, _b_bar); // res = res * theta + _b_bar
+        BLAS::matMultAdd(_M_bar, xdot, res, res); // rs += _M_bar * x_dot
     }
 
     /*! Computes \f$ \mathtt{Jac\_out} = \theta \cdot \mathtt{Jac\_in} + \bar M \cdot \alpha \f$.
@@ -360,7 +387,7 @@ public:
         // J = theta * Jac + dxdot_dx * _M_bar
         BLAS::copy(Jac_in, Jac_out);
         BLAS::scale(Jac_out, theta);
-        BLAS::axpy(Jac_out, dxdot_dx, *_M_bar);
+        BLAS::axpy(Jac_out, dxdot_dx, _M_bar);
     }
 
     /*! Saves internal state for use in the successive timestep;
@@ -386,23 +413,24 @@ public:
         auto const x_old = _crank_nicolson.getXOld();
 
         // _M_bar = (1.0-theta) * M;
-        BLAS::copy(M, *_M_bar);
-        BLAS::scale(*_M_bar, 1.0-theta);
+        BLAS::copy(M, _M_bar);
+        BLAS::scale(_M_bar, 1.0-theta);
 
         // _b_bar = (1.0-theta) * (K * x_old - b)
-        BLAS::matMult(K, x_old, *_b_bar);
-        BLAS::axpy(*_b_bar, -1.0, b);
-        BLAS::scale(*_b_bar, 1.0-theta);
+        BLAS::matMult(K, x_old, _b_bar);
+        BLAS::axpy(_b_bar, -1.0, b);
+        BLAS::scale(_b_bar, 1.0-theta);
     }
 
 private:
+    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     CrankNicolson<Vector> const& _crank_nicolson;
 
-    Matrix* _M_bar = nullptr; //!< Used to adjust matrices and vectors assembled by the ODE.
-                              //!< \see pushMatrices()
-    Vector* _b_bar = nullptr; //!< Used to adjust vectors assembled by the ODE.
-                              //!< \see pushMatrices()
-    mutable Vector* _tmp = nullptr; //!< used to store intermediate calculation results
+    Matrix& _M_bar; //!< Used to adjust matrices and vectors assembled by the ODE.
+                    //!< \see pushMatrices()
+    Vector& _b_bar; //!< Used to adjust vectors assembled by the ODE.
+                    //!< \see pushMatrices()
+    mutable std::size_t _tmp_id;
 };
 
 
@@ -410,22 +438,26 @@ private:
 //! time discretization scheme.
 template<typename Matrix, typename Vector, ODESystemTag ODETag>
 std::unique_ptr<MatrixTranslator<Matrix, Vector, ODETag>>
-createMatrixTranslator(TimeDiscretization<Vector> const& timeDisc)
+createMatrixTranslator(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
+                       TimeDiscretization<Vector> const& timeDisc)
 {
     if (auto* fwd_euler = dynamic_cast<ForwardEuler<Vector> const*>(&timeDisc))
     {
         return std::unique_ptr<MatrixTranslator<Matrix, Vector, ODETag>>(
-                new MatrixTranslatorForwardEuler<Matrix, Vector, ODETag>(*fwd_euler));
+            new MatrixTranslatorForwardEuler<Matrix, Vector, ODETag>(
+                matrix_provider, *fwd_euler));
     }
     else if (auto* crank = dynamic_cast<CrankNicolson<Vector> const*>(&timeDisc))
     {
         return std::unique_ptr<MatrixTranslator<Matrix, Vector, ODETag>>(
-                new MatrixTranslatorCrankNicolson<Matrix, Vector, ODETag>(*crank));
+            new MatrixTranslatorCrankNicolson<Matrix, Vector, ODETag>(
+                matrix_provider, *crank));
     }
     else
     {
         return std::unique_ptr<MatrixTranslator<Matrix, Vector, ODETag>>(
-                new MatrixTranslatorGeneral<Matrix, Vector, ODETag>(timeDisc));
+            new MatrixTranslatorGeneral<Matrix, Vector, ODETag>(
+                matrix_provider, timeDisc));
     }
 }
 
