@@ -35,7 +35,6 @@ transfer(std::map<MatVec*, std::size_t>& from_used,
     auto res = to_unused.emplace(id, std::move(ptr));
     assert(res.second && "Emplacement failed.");
     from_used.erase(it);
-    // return res.first->second;
 }
 
 } // detail
@@ -45,15 +44,64 @@ namespace MathLib
 {
 
 template<typename Matrix, typename Vector>
+template<bool do_search, typename MatVec, typename... Args>
+MatVec&
+SimpleMatrixProvider<Matrix, Vector>::
+get_(std::size_t& id,
+     std::map<std::size_t, MatVec*>& unused_map,
+     std::map<MatVec*, std::size_t>& used_map,
+     Args&&... args)
+{
+    if (do_search)
+    {
+        auto it = unused_map.find(id);
+        if (it != unused_map.end()) // unused matrix/vector found
+            return *::detail::transfer(unused_map, used_map, it);
+    }
+
+    // not searched or not found, so create a new one
+    id = _next_id++;
+    auto res = used_map.emplace(
+        new MatVec{std::forward<Args>(args)...}, id);
+    assert(res.second && "Emplacement failed.");
+    return *res.first->first;
+}
+
+template<typename Matrix, typename Vector>
+template<bool do_search, typename... Args>
+Matrix&
+SimpleMatrixProvider<Matrix, Vector>::
+getMatrix_(std::size_t& id, Args&&... args)
+{
+    return get_<do_search>(id, _unused_matrices, _used_matrices, std::forward<Args>(args)...);
+}
+
+
+template<typename Matrix, typename Vector>
 Matrix&
 SimpleMatrixProvider<Matrix, Vector>::
 getMatrix()
 {
-    // not found, so create a new one
-    auto const id = _next_id++;
-    auto res = _used_matrices.emplace(new Matrix(0, 0), id);
-    assert(res.second && "Emplacement failed.");
-    return *res.first->first;
+    std::size_t id;
+    return getMatrix_<false>(id, 0u, 0u); // TODO default constructor
+}
+
+template<typename Matrix, typename Vector>
+Matrix&
+SimpleMatrixProvider<Matrix, Vector>::
+getMatrix(std::size_t& id)
+{
+    return getMatrix_<true>(id, 0u, 0u); // TODO default constructor
+}
+
+template<typename Matrix, typename Vector>
+Matrix&
+SimpleMatrixProvider<Matrix, Vector>::
+getMatrix(MatrixSpecificationsProvider const& msp)
+{
+    std::size_t id;
+    auto const mat_spec = msp.getMatrixSpecifications();
+    return getMatrix_<false>(id, mat_spec.nrows, mat_spec.ncols); // TODO change
 }
 
 template<typename Matrix, typename Vector>
@@ -61,40 +109,25 @@ Matrix&
 SimpleMatrixProvider<Matrix, Vector>::
 getMatrix(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
-    auto it = _unused_matrices.find(id);
-    if (it == _unused_matrices.end())
-    {
-        auto mat_spec = msp.getMatrixSpecifications();
-        // not found, so create a new one
-        id = _next_id++;
-        auto res = _used_matrices.emplace(
-            new Matrix{mat_spec.nrows, mat_spec.ncols}, id);
-        assert(res.second && "Emplacement failed.");
-        return *res.first->first;
-    }
-    else { // unused matrix found
-        return *::detail::transfer(_unused_matrices, _used_matrices, it);
-    }
+    auto mat_spec = msp.getMatrixSpecifications();
+    return getMatrix_<true>(id, mat_spec.nrows, mat_spec.ncols); // TODO change
 }
 
 template<typename Matrix, typename Vector>
 Matrix&
 SimpleMatrixProvider<Matrix, Vector>::
-getMatrix(MatrixSpecificationsProvider const& msp, std::size_t& id, Matrix const& A)
+getMatrix(Matrix const& A)
 {
-    (void) msp; // TODO
-    auto it = _unused_matrices.find(id);
-    if (it == _unused_matrices.end())
-    {
-        // not found, so create a new one
-        id = _next_id++;
-        auto res = _used_matrices.emplace(new Matrix{A}, id);
-        assert(res.second && "Emplacement failed.");
-        return *res.first->first;
-    }
-    else { // unused matrix found
-        return *::detail::transfer(_unused_matrices, _used_matrices, it);
-    }
+    std::size_t id;
+    return getMatrix_<false>(id, A); // TODO assert that A is always copied!
+}
+
+template<typename Matrix, typename Vector>
+Matrix&
+SimpleMatrixProvider<Matrix, Vector>::
+getMatrix(Matrix const& A, std::size_t& id)
+{
+    return getMatrix_<true>(id, A); // TODO assert that A is always copied!
 }
 
 template<typename Matrix, typename Vector>
@@ -112,27 +145,22 @@ releaseMatrix(Matrix const& A)
 }
 
 template<typename Matrix, typename Vector>
+template<bool do_search, typename... Args>
 Vector&
 SimpleMatrixProvider<Matrix, Vector>::
-getVector()
+getVector_(std::size_t& id, Args&&... args)
 {
-    // TODO create an empty zero-size vector
-    std::size_t const id = _next_id++;
-    auto res = _used_vectors.emplace(new Vector, id);
-    assert(res.second && "Emplacement failed.");
-    return *res.first->first;
+    return get_<do_search>(id, _unused_vectors, _used_vectors, std::forward<Args>(args)...);
 }
+
 
 template<typename Matrix, typename Vector>
 Vector&
 SimpleMatrixProvider<Matrix, Vector>::
-getVector(Vector const& x)
+getVector()
 {
-    // TODO create an empty zero-size vector
-    std::size_t const id = _next_id++;
-    auto res = _used_vectors.emplace(new Vector{x}, id);
-    assert(res.second && "Emplacement failed.");
-    return *res.first->first;
+    std::size_t id;
+    return getVector_<false>(id); // TODO default constructor
 }
 
 template<typename Matrix, typename Vector>
@@ -140,18 +168,17 @@ Vector&
 SimpleMatrixProvider<Matrix, Vector>::
 getVector(std::size_t& id)
 {
-    auto it = _unused_vectors.find(id);
-    if (it == _unused_vectors.end())
-    {
-        // not found, so create a new one
-        id = _next_id++;
-        auto res = _used_vectors.emplace(new Vector, id);
-        assert(res.second && "Emplacement failed.");
-        return *res.first->first;
-    }
-    else { // unused vector found
-        return *::detail::transfer(_unused_vectors, _used_vectors, it);
-    }
+    return getVector_<true>(id); // TODO default constructor
+}
+
+template<typename Matrix, typename Vector>
+Vector&
+SimpleMatrixProvider<Matrix, Vector>::
+getVector(MatrixSpecificationsProvider const& msp)
+{
+    std::size_t id;
+    auto const mat_spec = msp.getMatrixSpecifications();
+    return getVector_<false>(id, mat_spec.nrows); // TODO change
 }
 
 template<typename Matrix, typename Vector>
@@ -159,39 +186,25 @@ Vector&
 SimpleMatrixProvider<Matrix, Vector>::
 getVector(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
-    auto it = _unused_vectors.find(id);
-    if (it == _unused_vectors.end())
-    {
-        // not found, so create a new one
-        id = _next_id++;
-        auto res = _used_vectors.emplace(
-            new Vector{msp.getMatrixSpecifications().nrows}, id);
-        assert(res.second && "Emplacement failed.");
-        return *res.first->first;
-    }
-    else { // unused vector found
-        return *::detail::transfer(_unused_vectors, _used_vectors, it);
-    }
+    auto mat_spec = msp.getMatrixSpecifications();
+    return getVector_<true>(id, mat_spec.nrows); // TODO change
 }
 
 template<typename Matrix, typename Vector>
 Vector&
 SimpleMatrixProvider<Matrix, Vector>::
-getVector(MatrixSpecificationsProvider const& msp, std::size_t& id, Vector const& x)
+getVector(Vector const& x)
 {
-    (void) msp; // TODO
-    auto it = _unused_vectors.find(id);
-    if (it == _unused_vectors.end())
-    {
-        // not found, so create a new one
-        id = _next_id++;
-        auto res = _used_vectors.emplace(new Vector{x}, id);
-        assert(res.second && "Emplacement failed.");
-        return *res.first->first;
-    }
-    else { // unused vector found
-        return *::detail::transfer(_unused_vectors, _used_vectors, it);
-    }
+    std::size_t id;
+    return getVector_<false>(id, x); // TODO assert that A is always copied!
+}
+
+template<typename Matrix, typename Vector>
+Vector&
+SimpleMatrixProvider<Matrix, Vector>::
+getVector(Vector const& x, std::size_t& id)
+{
+    return getVector_<true>(id, x); // TODO assert that A is always copied!
 }
 
 template<typename Matrix, typename Vector>

@@ -27,13 +27,17 @@ class VectorProvider
 public:
     using MSP = MatrixSpecificationsProvider;
 
-    virtual Vector& getVector() = 0;
-    virtual Vector& getVector(Vector const& x) = 0;
-    virtual Vector& getVector(std::size_t& id) = 0;
     //! get an uninitialized vector (or the one with the given id)
-    virtual Vector& getVector(MSP const& msp, std::size_t& id) = 0;
+    virtual Vector& getVector() = 0;
+    virtual Vector& getVector(std::size_t& id) = 0;
+
     //! get a copy of x
-    virtual Vector& getVector(MSP const& msp, std::size_t& id, Vector const& x) = 0;
+    virtual Vector& getVector(Vector const& x) = 0;
+    virtual Vector& getVector(Vector const& x, std::size_t& id) = 0;
+
+    //! get a vector according to the given specifications
+    virtual Vector& getVector(MSP const& msp) = 0;
+    virtual Vector& getVector(MSP const& msp, std::size_t& id) = 0;
 
     virtual void releaseVector(Vector const& x) = 0;
 
@@ -47,23 +51,19 @@ class MatrixProvider
 public:
     using MSP = MatrixSpecificationsProvider;
 
+    //! get an uninitialized Matrix (or the one with the given id)
     virtual Matrix& getMatrix() = 0;
-    //! get an uninitialized matrix (or the one with the given id)
+    virtual Matrix& getMatrix(std::size_t& id) = 0;
+
+    //! get a copy of x
+    virtual Matrix& getMatrix(Matrix const& A) = 0;
+    virtual Matrix& getMatrix(Matrix const& A, std::size_t& id) = 0;
+
+    //! get a Matrix according to the given specifications
+    virtual Matrix& getMatrix(MSP const& msp) = 0;
     virtual Matrix& getMatrix(MSP const& msp, std::size_t& id) = 0;
-    //! get a copy of A
-    virtual Matrix& getMatrix(MSP const& msp, std::size_t& id, Matrix const& A) = 0;
 
     virtual void releaseMatrix(Matrix const& A) = 0;
 };
-
-template<typename Matrix, typename Vector>
-class MatrixUser
-{
-public:
-    virtual void setMatrixProvider(MatrixProvider<Matrix, Vector>& prvd) = 0;
-
-    virtual ~MatrixUser() = default;
-};
-
 
 } // namespace MathLib
