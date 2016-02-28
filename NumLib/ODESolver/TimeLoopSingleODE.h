@@ -27,8 +27,7 @@ namespace NumLib
  * \tparam Vector the type of the solution vector of the ODE.
  */
 template<typename Matrix, typename Vector, NonlinearSolverTag NLTag>
-class TimeLoopSingleODE
-        : public MathLib::MatrixUser<Matrix, Vector>
+class TimeLoopSingleODE final
 {
 public:
     using TDiscODESys  = TimeDiscretizedODESystemBase<Matrix, Vector, NLTag>;
@@ -70,8 +69,6 @@ public:
               const double t_end, const double delta_t,
               Callback& post_timestep);
 
-    void setMatrixProvider(MathLib::MatrixProvider<Matrix, Vector>& prvd) override;
-
 private:
     MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     TDiscODESys& _ode_sys;
@@ -81,13 +78,6 @@ private:
 
 //! @}
 
-
-template<typename Matrix, typename Vector, NonlinearSolverTag NLTag>
-void TimeLoopSingleODE<Matrix, Vector, NLTag>::
-setMatrixProvider(MathLib::MatrixProvider<Matrix, Vector> &prvd)
-{
-    assert(false); // TODO remove method.
-}
 
 template<typename Matrix, typename Vector, NonlinearSolverTag NLTag>
 template<typename Callback>
