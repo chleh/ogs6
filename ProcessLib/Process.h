@@ -126,6 +126,11 @@ public:
 		}
 	}
 
+	MathLib::MatrixSpecifications getMatrixSpecifications() const override final
+	{
+		return { _local_to_global_index_map->dofSize(), _local_to_global_index_map->dofSize() };
+	}
+
 	std::size_t getNumEquations() const override final
 	{
 		return _local_to_global_index_map->dofSize();
