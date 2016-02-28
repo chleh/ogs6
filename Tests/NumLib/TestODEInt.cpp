@@ -5,10 +5,11 @@
 #include <memory>
 #include <typeinfo>
 
-#include "ProcessLib/NumericsConfig.h"
-#include "NumLib/ODESolver/TimeLoopSingleODE.h"
-#include "ODEs.h"
 #include "BaseLib/BuildInfo.h"
+#include "MathLib/LinAlg/SimpleMatrixProvider.h"
+#include "NumLib/ODESolver/TimeLoopSingleODE.h"
+#include "ProcessLib/NumericsConfig.h"
+#include "ODEs.h"
 
 
 using EDMatrix = Eigen::MatrixXd;
@@ -45,11 +46,13 @@ public:
         NumLib::TimeDiscretizedODESystem<Matrix, Vector, ODE_::ODETag, NLTag>
                 ode_sys(ode, timeDisc);
 
+        MathLib::SimpleMatrixProvider<Matrix, Vector> mat_prvd;
         auto linear_solver = MathLib::createLinearSolver<Matrix, Vector>(nullptr);
-        std::unique_ptr<NLSolver> nonlinear_solver(new NLSolver(*linear_solver, _tol, _maxiter));
+        std::unique_ptr<NLSolver> nonlinear_solver(
+                    new NLSolver(mat_prvd, *linear_solver, _tol, _maxiter));
 
         NumLib::TimeLoopSingleODE<Matrix, Vector, NLTag> loop(
-            ode_sys, std::move(linear_solver), std::move(nonlinear_solver));
+            mat_prvd, ode_sys, std::move(linear_solver), std::move(nonlinear_solver));
 
         const double t0      = ODET::t0;
         const double t_end   = ODET::t_end;
