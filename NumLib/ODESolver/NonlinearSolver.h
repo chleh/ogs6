@@ -58,7 +58,7 @@ public:
      * \retval true if the equation system could be solved
      * \retval false otherwise
      */
-    virtual bool solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector& x) = 0;
+    virtual bool solve(Vector& x) = 0;
 
     virtual ~NonlinearSolverBase() = default;
 };
@@ -97,9 +97,11 @@ public:
      * \param maxiter the maximum number of iterations used to solve the equation.
      */
     explicit
-    NonlinearSolver(LinearSolver& linear_solver,
+    NonlinearSolver(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
+                    LinearSolver& linear_solver,
                     double const tol, const unsigned maxiter)
-        : _linear_solver(linear_solver)
+        : _matrix_provider(matrix_provider)
+        , _linear_solver(linear_solver)
         , _tol(tol)
         , _maxiter(maxiter)
     {}
@@ -109,9 +111,10 @@ public:
 
     void assemble(Vector const& x) const override;
 
-    bool solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector& x) override;
+    bool solve(Vector& x) override;
 
 private:
+    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     LinearSolver& _linear_solver;
     System*       _equation_system = nullptr;
 
@@ -148,9 +151,11 @@ public:
      * \param maxiter the maximum number of iterations used to solve the equation.
      */
     explicit
-    NonlinearSolver(LinearSolver& linear_solver,
+    NonlinearSolver(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
+                    LinearSolver& linear_solver,
                     double const tol, const unsigned maxiter)
-        : _linear_solver(linear_solver)
+        : _matrix_provider(matrix_provider)
+        , _linear_solver(linear_solver)
         , _tol(tol)
         , _maxiter(maxiter)
     {}
@@ -160,9 +165,10 @@ public:
 
     void assemble(Vector const& x) const override;
 
-    bool solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector& x) override;
+    bool solve(Vector& x) override;
 
 private:
+    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     LinearSolver& _linear_solver;
     System*       _equation_system = nullptr;
 
@@ -175,22 +181,24 @@ private:
     std::size_t _x_new_id;
 };
 
+
 /*! Creates a new nonlinear solver from the given configuration.
  *
- * \param linear_solver the linear solver that will be used by the nonlinear
- *        solver
+ * TODO doc
+ * \param linear_solver the linear solver that will be used by the nonlinear solver
  * \param config configuration settings
  *
- * \return a pair <tt>(nl_slv, tag)</tt> where \c nl_slv is the generated
- *         nonlinear solver instance and the \c tag indicates if it uses the
- *         Picard or Newton-Raphson method
+ * \return a pair <tt>(nl_slv, tag)</tt> where \c nl_slv is the generatored nonlinear
+ *         solver instance and the \c tag indicates if it uses the Picard
+ *         or Newton-Raphson method
  */
 template<typename Matrix, typename Vector>
 std::pair<
     std::unique_ptr<NonlinearSolverBase<Matrix, Vector> >,
     NonlinearSolverTag
 >
-createNonlinearSolver(MathLib::LinearSolver<Matrix, Vector>& linear_solver,
+createNonlinearSolver(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
+                      MathLib::LinearSolver<Matrix, Vector>& linear_solver,
                       BaseLib::ConfigTree const& config);
 
 //! @}

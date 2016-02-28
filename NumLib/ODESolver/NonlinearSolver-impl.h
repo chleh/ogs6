@@ -33,14 +33,14 @@ assemble(Vector const& x) const
 template<typename Matrix, typename Vector>
 bool
 NonlinearSolver<Matrix, Vector, NonlinearSolverTag::Picard>::
-solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector &x)
+solve(Vector &x)
 {
     namespace BLAS = MathLib::BLAS;
     auto& sys = *_equation_system;
 
-    auto& A     = prvd.getMatrix(sys, _A_id);
-    auto& rhs   = prvd.getVector(sys, _rhs_id);
-    auto& x_new = prvd.getVector(sys, _x_new_id);
+    auto& A     = _matrix_provider.getMatrix(sys, _A_id);
+    auto& rhs   = _matrix_provider.getVector(sys, _rhs_id);
+    auto& x_new = _matrix_provider.getVector(sys, _x_new_id);
 
     bool success = false;
 
@@ -85,9 +85,9 @@ solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector &x)
         }
     }
 
-    prvd.releaseMatrix(_A_id, A);
-    prvd.releaseVector(_rhs_id, rhs);
-    prvd.releaseVector(_x_new_id, x_new);
+    _matrix_provider.releaseMatrix(_A_id, A);
+    _matrix_provider.releaseVector(_rhs_id, rhs);
+    _matrix_provider.releaseVector(_x_new_id, x_new);
 
     return success;
 }
@@ -107,14 +107,14 @@ assemble(Vector const& x) const
 template<typename Matrix, typename Vector>
 bool
 NonlinearSolver<Matrix, Vector, NonlinearSolverTag::Newton>::
-solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector &x)
+solve(Vector &x)
 {
     namespace BLAS = MathLib::BLAS;
     auto& sys = *_equation_system;
 
-    auto& res           = prvd.getVector(sys, _res_id);
-    auto& J             = prvd.getMatrix(sys, _J_id);
-    auto& minus_delta_x = prvd.getVector(sys, _minus_delta_x_id);
+    auto& res           = _matrix_provider.getVector(sys, _res_id);
+    auto& J             = _matrix_provider.getMatrix(sys, _J_id);
+    auto& minus_delta_x = _matrix_provider.getVector(sys, _minus_delta_x_id);
 
     bool success = false;
 
@@ -161,9 +161,9 @@ solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector &x)
         }
     }
 
-    prvd.releaseVector(_res_id, res);
-    prvd.releaseMatrix(_J_id, J);
-    prvd.releaseVector(_minus_delta_x_id, minus_delta_x);
+    _matrix_provider.releaseVector(_res_id, res);
+    _matrix_provider.releaseMatrix(_J_id, J);
+    _matrix_provider.releaseVector(_minus_delta_x_id, minus_delta_x);
 
     return success;
 }
@@ -174,7 +174,8 @@ std::pair<
     std::unique_ptr<NonlinearSolverBase<Matrix, Vector> >,
     NonlinearSolverTag
 >
-createNonlinearSolver(MathLib::LinearSolver<Matrix, Vector>& linear_solver,
+createNonlinearSolver(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
+                      MathLib::LinearSolver<Matrix, Vector>& linear_solver,
                       BaseLib::ConfigTree const& config)
 {
     using AbstractNLS = NonlinearSolverBase<Matrix, Vector>;
@@ -188,14 +189,14 @@ createNonlinearSolver(MathLib::LinearSolver<Matrix, Vector>& linear_solver,
         auto const tag = NonlinearSolverTag::Picard;
         using ConcreteNLS = NonlinearSolver<Matrix, Vector, tag>;
         return std::make_pair(std::unique_ptr<AbstractNLS>(
-            new ConcreteNLS{linear_solver, tol, max_iter}), tag);
+            new ConcreteNLS{matrix_provider, linear_solver, tol, max_iter}), tag);
     }
     else if (type == "Newton")
     {
         auto const tag = NonlinearSolverTag::Newton;
         using ConcreteNLS = NonlinearSolver<Matrix, Vector, tag>;
         return std::make_pair(std::unique_ptr<AbstractNLS>(
-            new ConcreteNLS{linear_solver, tol, max_iter}), tag);
+            new ConcreteNLS{matrix_provider, linear_solver, tol, max_iter}), tag);
     }
     std::abort();
 }

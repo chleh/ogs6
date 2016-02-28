@@ -41,10 +41,12 @@ public:
      * \param nonlinear_solver The solver to be used to resolve nonlinearities.
      */
     explicit
-    TimeLoopSingleODE(TDiscODESys& ode_sys,
+    TimeLoopSingleODE(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
+                      TDiscODESys& ode_sys,
                       std::unique_ptr<LinearSolver>&& linear_solver,
                       std::unique_ptr<NLSolver>&& nonlinear_solver)
-        : _ode_sys(ode_sys)
+        : _matrix_provider(matrix_provider)
+        , _ode_sys(ode_sys)
         , _linear_solver   (std::move(linear_solver))
         , _nonlinear_solver(std::move(nonlinear_solver))
     {}
@@ -71,11 +73,10 @@ public:
     void setMatrixProvider(MathLib::MatrixProvider<Matrix, Vector>& prvd) override;
 
 private:
+    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     TDiscODESys& _ode_sys;
     std::unique_ptr<LinearSolver> _linear_solver;
     std::unique_ptr<NLSolver> _nonlinear_solver;
-
-    MathLib::MatrixProvider<Matrix, Vector>* _matrix_provider;
 };
 
 //! @}
@@ -85,7 +86,7 @@ template<typename Matrix, typename Vector, NonlinearSolverTag NLTag>
 void TimeLoopSingleODE<Matrix, Vector, NLTag>::
 setMatrixProvider(MathLib::MatrixProvider<Matrix, Vector> &prvd)
 {
-    _matrix_provider = &prvd;
+    assert(false); // TODO remove method.
 }
 
 template<typename Matrix, typename Vector, NonlinearSolverTag NLTag>
@@ -96,7 +97,7 @@ loop(const double t0, const Vector x0, const double t_end, const double delta_t,
      Callback& post_timestep)
 {
     std::size_t vector_id;
-    Vector& x = _matrix_provider->getVector(_ode_sys, vector_id, x0); // solution vector
+    Vector& x = _matrix_provider.getVector(_ode_sys, vector_id, x0); // solution vector
 
     auto& time_disc = _ode_sys.getTimeDiscretization();
 
@@ -121,7 +122,7 @@ loop(const double t0, const Vector x0, const double t_end, const double delta_t,
         // INFO("time: %e, delta_t: %e", t, delta_t);
         time_disc.nextTimestep(t, delta_t);
 
-        nl_slv_succeeded = _nonlinear_solver->solve(*_matrix_provider, x);
+        nl_slv_succeeded = _nonlinear_solver->solve(x);
         if (!nl_slv_succeeded) break;
 
         time_disc.pushState(t, x, _ode_sys);
@@ -131,7 +132,7 @@ loop(const double t0, const Vector x0, const double t_end, const double delta_t,
         post_timestep(t_cb, x_cb);
     }
 
-    _matrix_provider->releaseVector(vector_id, x);
+    _matrix_provider.releaseVector(vector_id, x);
 
     if (!nl_slv_succeeded) {
         ERR("Nonlinear solver failed in timestep #%u at t = %g s", timestep, t);
