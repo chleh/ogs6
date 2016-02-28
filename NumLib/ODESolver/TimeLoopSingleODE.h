@@ -96,8 +96,7 @@ TimeLoopSingleODE<Matrix, Vector, NLTag>::
 loop(const double t0, const Vector x0, const double t_end, const double delta_t,
      Callback& post_timestep)
 {
-    std::size_t vector_id;
-    Vector& x = _matrix_provider.getVector(_ode_sys, vector_id, x0); // solution vector
+    Vector& x = _matrix_provider.getVector(x0); // solution vector
 
     auto& time_disc = _ode_sys.getTimeDiscretization();
 
@@ -132,7 +131,7 @@ loop(const double t0, const Vector x0, const double t_end, const double delta_t,
         post_timestep(t_cb, x_cb);
     }
 
-    _matrix_provider.releaseVector(vector_id, x);
+    _matrix_provider.releaseVector(x);
 
     if (!nl_slv_succeeded) {
         ERR("Nonlinear solver failed in timestep #%u at t = %g s", timestep, t);

@@ -140,7 +140,7 @@ public:
         // rhs = M * weighted_old_x + b
         BLAS::matMultAdd(M, tmp, b, rhs);
 
-        _matrix_provider.releaseVector(_tmp_id, tmp);
+        _matrix_provider.releaseVector(tmp);
     }
 
     //! Computes \f$ r = M \cdot \hat x + K \cdot x_C - b \f$.
@@ -239,7 +239,7 @@ public:
         BLAS::aypx(rhs, -1.0, b);     // rhs = b - K * x_old
         BLAS::matMultAdd(M, tmp, rhs, rhs); // rhs += M * weighted_old_x
 
-        _matrix_provider.releaseVector(_tmp_id, tmp);
+        _matrix_provider.releaseVector(tmp);
     }
 
     //! Computes \f$ r = M \cdot \hat x + K \cdot x_C - b \f$.
@@ -314,8 +314,8 @@ public:
 
     ~MatrixTranslatorCrankNicolson()
     {
-        _matrix_provider.releaseMatrix(666, _M_bar);
-        _matrix_provider.releaseVector(666, _b_bar);
+        _matrix_provider.releaseMatrix(_M_bar);
+        _matrix_provider.releaseVector(_b_bar);
     }
 
     //! Computes \f$ A = \theta \cdot (M \cdot \alpha + K) + \bar M \cdot \alpha \f$.
@@ -351,7 +351,7 @@ public:
         BLAS::matMultAdd(_M_bar, tmp, rhs, rhs); // rhs += _M_bar * weighted_old_x
         BLAS::axpy(rhs, -1.0, _b_bar); // rhs -= b
 
-        _matrix_provider.releaseVector(_tmp_id, tmp);
+        _matrix_provider.releaseVector(tmp);
     }
     //! Computes \f$ r = \theta \cdot (M \cdot \hat x + K \cdot x_C - b) + \bar M \cdot \hat x + \bar b \f$.
     void computeResidual(Matrix const& M, Matrix const& K, Vector const& b,

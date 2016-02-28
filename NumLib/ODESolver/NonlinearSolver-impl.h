@@ -38,6 +38,7 @@ solve(Vector &x)
     namespace BLAS = MathLib::BLAS;
     auto& sys = *_equation_system;
 
+    // TODO maybe sys can be omitted
     auto& A     = _matrix_provider.getMatrix(sys, _A_id);
     auto& rhs   = _matrix_provider.getVector(sys, _rhs_id);
     auto& x_new = _matrix_provider.getVector(sys, _x_new_id);
@@ -85,9 +86,9 @@ solve(Vector &x)
         }
     }
 
-    _matrix_provider.releaseMatrix(_A_id, A);
-    _matrix_provider.releaseVector(_rhs_id, rhs);
-    _matrix_provider.releaseVector(_x_new_id, x_new);
+    _matrix_provider.releaseMatrix(A);
+    _matrix_provider.releaseVector(rhs);
+    _matrix_provider.releaseVector(x_new);
 
     return success;
 }
@@ -161,9 +162,9 @@ solve(Vector &x)
         }
     }
 
-    _matrix_provider.releaseVector(_res_id, res);
-    _matrix_provider.releaseMatrix(_J_id, J);
-    _matrix_provider.releaseVector(_minus_delta_x_id, minus_delta_x);
+    _matrix_provider.releaseVector(res);
+    _matrix_provider.releaseMatrix(J);
+    _matrix_provider.releaseVector(minus_delta_x);
 
     return success;
 }

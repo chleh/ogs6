@@ -109,10 +109,10 @@ public:
 
     ~TimeDiscretizedODESystem()
     {
-        _matrix_provider.releaseMatrix(_Jac_id, *_Jac);
-        _matrix_provider.releaseMatrix(_M_id, *_M);
-        _matrix_provider.releaseMatrix(_K_id, *_K);
-        _matrix_provider.releaseVector(_b_id, *_b);
+        _matrix_provider.releaseMatrix(*_Jac);
+        _matrix_provider.releaseMatrix(*_M);
+        _matrix_provider.releaseMatrix(*_K);
+        _matrix_provider.releaseVector(*_b);
     }
 
     void assembleResidualNewton(const Vector &x_new_timestep) override
@@ -145,7 +145,7 @@ public:
                               dxdot_dx, *_M, dx_dx, *_K,
                               *_Jac);
 
-        _matrix_provider.releaseVector(_xdot_id, xdot);
+        _matrix_provider.releaseVector(xdot);
     }
 
     void getResidual(Vector const& x_new_timestep, Vector& res) const override
@@ -158,7 +158,7 @@ public:
 
         _mat_trans->computeResidual(*_M, *_K, *_b, x_new_timestep, xdot, res);
 
-        _matrix_provider.releaseVector(_xdot_id, xdot);
+        _matrix_provider.releaseVector(xdot);
     }
 
     void getJacobian(Matrix& Jac) const override
@@ -259,9 +259,9 @@ public:
 
     ~TimeDiscretizedODESystem()
     {
-        _matrix_provider.releaseMatrix(_M_id, *_M);
-        _matrix_provider.releaseMatrix(_K_id, *_K);
-        _matrix_provider.releaseVector(_b_id, *_b);
+        _matrix_provider.releaseMatrix(*_M);
+        _matrix_provider.releaseMatrix(*_K);
+        _matrix_provider.releaseVector(*_b);
     }
 
     void assembleMatricesPicard(const Vector &x_new_timestep) override

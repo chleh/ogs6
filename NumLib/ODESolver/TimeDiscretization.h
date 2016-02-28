@@ -215,7 +215,7 @@ public:
     {}
 
     ~BackwardEuler() {
-        _vector_provider.releaseVector(666, _x_old); // TODO fix
+        _vector_provider.releaseVector(_x_old);
     }
 
     void setInitialState(const double t0, Vector const& x0) override {
@@ -270,7 +270,7 @@ public:
     {}
 
     ~ForwardEuler() {
-        _vector_provider.releaseVector(666, _x_old); // TODO fix
+        _vector_provider.releaseVector(_x_old);
     }
 
     void setInitialState(const double t0, Vector const& x0) override {
@@ -351,7 +351,7 @@ public:
     {}
 
     ~CrankNicolson() {
-        _vector_provider.releaseVector(666, _x_old); // TODO fix
+        _vector_provider.releaseVector(_x_old);
     }
 
     void setInitialState(const double t0, Vector const& x0) override {
@@ -454,7 +454,7 @@ public:
 
     ~BackwardDifferentiationFormula() {
         for (auto* x : _xs_old)
-            _vector_provider.releaseVector(666, *x); // TODO fix
+            _vector_provider.releaseVector(*x);
     }
 
     void setInitialState(const double t0, Vector const& x0) override {
