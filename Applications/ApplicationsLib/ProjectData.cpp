@@ -349,7 +349,7 @@ void ProjectData::parseNonlinearSolvers(BaseLib::ConfigTree const& config)
 		BaseLib::insertIfKeyUniqueElseError(_nonlinear_solvers,
 		    name,
 		    NumLib::createNonlinearSolver<GlobalMatrix, GlobalVector>(
-		        *linear_solver, conf).first,
+		        _matrix_provider, *linear_solver, conf).first,
 		    "The nonlinear solver name is not unique");
 	}
 }

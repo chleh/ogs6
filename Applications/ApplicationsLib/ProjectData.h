@@ -19,6 +19,8 @@
 
 #include "GeoLib/GEOObjects.h"
 
+#include "MathLib/LinAlg/SimpleMatrixProvider.h"
+
 #include "ProcessLib/ProcessVariable.h"
 #include "ProcessLib/Process.h"
 #include "ProcessLib/Parameter.h"
@@ -206,6 +208,8 @@ private:
 
 	using NonlinearSolver = NumLib::NonlinearSolverBase<GlobalMatrix, GlobalVector>;
 	std::map<std::string, std::unique_ptr<NonlinearSolver> > _nonlinear_solvers;
+
+	MathLib::SimpleMatrixProvider<GlobalMatrix, GlobalVector> _matrix_provider;
 };
 
 #endif //PROJECTDATA_H_
