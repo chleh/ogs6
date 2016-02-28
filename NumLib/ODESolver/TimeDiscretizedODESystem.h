@@ -92,11 +92,27 @@ public:
      * \param time_discretization the time discretization to be used.
      */
     explicit
-    TimeDiscretizedODESystem(ODE& ode, TimeDisc& time_discretization)
-        : _ode(ode)
+    TimeDiscretizedODESystem(
+            MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
+            ODE& ode, TimeDisc& time_discretization)
+        : _matrix_provider(matrix_provider)
+        , _ode(ode)
         , _time_disc(time_discretization)
         , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(time_discretization))
-    {}
+    {
+        _Jac  = &_matrix_provider.getMatrix(_ode, _Jac_id);
+        _M    = &_matrix_provider.getMatrix(_ode, _M_id);
+        _K    = &_matrix_provider.getMatrix(_ode, _K_id);
+        _b    = &_matrix_provider.getVector(_ode, _b_id);
+    }
+
+    ~TimeDiscretizedODESystem()
+    {
+        _matrix_provider.releaseMatrix(_Jac_id, *_Jac);
+        _matrix_provider.releaseMatrix(_M_id, *_M);
+        _matrix_provider.releaseMatrix(_K_id, *_K);
+        _matrix_provider.releaseVector(_b_id, *_b);
+    }
 
     void assembleResidualNewton(const Vector &x_new_timestep) override
     {
@@ -118,13 +134,17 @@ public:
         auto const& x_curr   = _time_disc.getCurrentX(x_new_timestep);
         auto const  dxdot_dx = _time_disc.getNewXWeight();
         auto const  dx_dx    = _time_disc.getDxDx();
-        _time_disc.getXdot(x_new_timestep, *_xdot);
+
+        auto& xdot = _matrix_provider.getVector(_ode, _xdot_id);
+        _time_disc.getXdot(x_new_timestep, xdot);
 
         _Jac->setZero();
 
-        _ode.assembleJacobian(t, x_curr, *_xdot,
+        _ode.assembleJacobian(t, x_curr, xdot,
                               dxdot_dx, *_M, dx_dx, *_K,
                               *_Jac);
+
+        _matrix_provider.releaseVector(_xdot_id, xdot);
     }
 
     void getResidual(Vector const& x_new_timestep, Vector& res) const override
@@ -132,9 +152,12 @@ public:
         // TODO Maybe the duplicate calculation of xdot here and in assembleJacobian
         //      can be optimuized. However, that would make the interface a bit more
         //      fragile.
-        _time_disc.getXdot(x_new_timestep, *_xdot);
+        auto& xdot = _matrix_provider.getVector(_ode, _xdot_id);
+        _time_disc.getXdot(x_new_timestep, xdot);
 
-        _mat_trans->computeResidual(*_M, *_K, *_b, x_new_timestep, *_xdot, res);
+        _mat_trans->computeResidual(*_M, *_K, *_b, x_new_timestep, xdot, res);
+
+        _matrix_provider.releaseVector(_xdot_id, xdot);
     }
 
     void getJacobian(Matrix& Jac) const override
@@ -168,19 +191,23 @@ public:
     }
 
 private:
+    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     ODE& _ode;            //!< ode the ODE being wrapped
     TimeDisc& _time_disc; //!< the time discretization to being used
 
     //! the object used to compute the matrix/vector for the nonlinear solver
     std::unique_ptr<MatTrans> _mat_trans;
 
-    Matrix* _Jac = nullptr; //!< the Jacobian of the residual
-    Matrix* _M   = nullptr; //!< Matrix \f$ M \f$.
-    Matrix* _K   = nullptr; //!< Matrix \f$ K \f$.
-    Vector* _b   = nullptr; //!< Matrix \f$ b \f$.
+    Matrix* _Jac; //!< the Jacobian of the residual
+    Matrix* _M;   //!< Matrix \f$ M \f$.
+    Matrix* _K;   //!< Matrix \f$ K \f$.
+    Vector* _b;   //!< Matrix \f$ b \f$.
 
-    // mutable because xdot is computed in the getResidual() method
-    mutable Vector* _xdot = nullptr; //!< Used to cache \f$ \dot x \f$. \todo Save some memory.
+    std::size_t _Jac_id;
+    std::size_t _M_id;
+    std::size_t _K_id;
+    std::size_t _b_id;
+    mutable std::size_t _xdot_id;
 };
 
 
@@ -215,11 +242,25 @@ public:
      * \param time_discretization the time discretization to be used.
      */
     explicit
-    TimeDiscretizedODESystem(ODE& ode, TimeDisc& time_discretization)
-        : _ode(ode)
+    TimeDiscretizedODESystem(
+            MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
+            ODE& ode, TimeDisc& time_discretization)
+        : _matrix_provider(matrix_provider)
+        , _ode(ode)
         , _time_disc(time_discretization)
         , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(time_discretization))
-    {}
+    {
+        _M = &_matrix_provider.getMatrix(ode, _M_id);
+        _K = &_matrix_provider.getMatrix(ode, _K_id);
+        _b = &_matrix_provider.getVector(ode, _b_id);
+    }
+
+    ~TimeDiscretizedODESystem()
+    {
+        _matrix_provider.releaseMatrix(_M_id, *_M);
+        _matrix_provider.releaseMatrix(_K_id, *_K);
+        _matrix_provider.releaseVector(_b_id, *_b);
+    }
 
     void assembleMatricesPicard(const Vector &x_new_timestep) override
     {
@@ -274,15 +315,20 @@ public:
     }
 
 private:
+    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     ODE& _ode;            //!< ode the ODE being wrapped
     TimeDisc& _time_disc; //!< the time discretization to being used
 
     //! the object used to compute the matrix/vector for the nonlinear solver
     std::unique_ptr<MatTrans> _mat_trans;
 
-    Matrix* _M = nullptr; //!< Matrix \f$ M \f$.
-    Matrix* _K = nullptr; //!< Matrix \f$ K \f$.
-    Vector* _b = nullptr; //!< Matrix \f$ b \f$.
+    Matrix* _M; //!< Matrix \f$ M \f$.
+    Matrix* _K; //!< Matrix \f$ K \f$.
+    Vector* _b; //!< Matrix \f$ b \f$.
+
+    std::size_t _M_id;
+    std::size_t _K_id;
+    std::size_t _b_id;
 };
 
 //! @}
