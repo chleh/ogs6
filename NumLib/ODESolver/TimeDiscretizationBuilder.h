@@ -20,7 +20,8 @@ namespace NumLib
 
 template<typename Vector>
 std::unique_ptr<TimeDiscretization<Vector> >
-createTimeDiscretization(BaseLib::ConfigTree const& config)
+createTimeDiscretization(MathLib::VectorProvider<Vector>& vector_provider,
+                         BaseLib::ConfigTree const& config)
 {
     using T = std::unique_ptr<TimeDiscretization<Vector> >;
 
@@ -28,18 +29,18 @@ createTimeDiscretization(BaseLib::ConfigTree const& config)
 
     if (type == "BackwardEuler") {
         using ConcreteTD = BackwardEuler<Vector>;
-        return T(new ConcreteTD);
+        return T(new ConcreteTD{vector_provider});
     } else if (type == "ForwardEuler") {
         using ConcreteTD = ForwardEuler<Vector>;
-        return T(new ConcreteTD);
+        return T(new ConcreteTD{vector_provider});
     } else if (type == "CrankNicolson") {
         auto const theta = config.getConfParam<double>("theta");
         using ConcreteTD = CrankNicolson<Vector>;
-        return T(new ConcreteTD(theta));
+        return T(new ConcreteTD(vector_provider, theta));
     } else if (type == "BackwardDifferentiationFormula") {
         auto const order = config.getConfParam<unsigned>("order");
         using ConcreteTD = BackwardDifferentiationFormula<Vector>;
-        return T(new ConcreteTD(order));
+        return T(new ConcreteTD(vector_provider, order));
     } else {
         ERR("Unrecognized time discretization type `%s'", type.c_str());
         std::abort();

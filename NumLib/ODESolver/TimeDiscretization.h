@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "MathLib/LinAlg/BLAS.h"
+#include "MathLib/LinAlg/MatrixProviderUser.h"
 #include "Types.h"
 
 
@@ -208,14 +209,23 @@ template<typename Vector>
 class BackwardEuler final : public TimeDiscretization<Vector>
 {
 public:
+    BackwardEuler(MathLib::VectorProvider<Vector>& vector_provider)
+        : _vector_provider(vector_provider)
+        , _x_old(_vector_provider.getVector())
+    {}
+
+    ~BackwardEuler() {
+        _vector_provider.releaseVector(666, _x_old); // TODO fix
+    }
+
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
-        *_x_old = x0;
+        _x_old = x0;
     }
 
     void pushState(const double /*t*/, Vector const& x, InternalMatrixStorage const&) override
     {
-        *_x_old = x;
+        _x_old = x;
     }
 
     void nextTimestep(const double t, const double delta_t) override {
@@ -236,14 +246,16 @@ public:
         namespace BLAS = MathLib::BLAS;
 
         // y = x_old / delta_t
-        BLAS::copy(*_x_old, y);
+        BLAS::copy(_x_old, y);
         BLAS::scale(y, 1.0/_delta_t);
     }
 
 private:
-    double _t;       //!< \f$ t_C \f$
-    double _delta_t; //!< the timestep size
-    Vector* _x_old = nullptr; //!< the solution from the preceding timestep
+    MathLib::VectorProvider<Vector>& _vector_provider;
+
+    double  _t;       //!< \f$ t_C \f$
+    double  _delta_t; //!< the timestep size
+    Vector& _x_old;   //!< the solution from the preceding timestep
 };
 
 
@@ -252,15 +264,24 @@ template<typename Vector>
 class ForwardEuler final : public TimeDiscretization<Vector>
 {
 public:
+    ForwardEuler(MathLib::VectorProvider<Vector>& vector_provider)
+        : _vector_provider(vector_provider)
+        , _x_old(_vector_provider.getVector())
+    {}
+
+    ~ForwardEuler() {
+        _vector_provider.releaseVector(666, _x_old); // TODO fix
+    }
+
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
         _t_old = t0;
-        *_x_old = x0;
+        _x_old = x0;
     }
 
     void pushState(const double /*t*/, Vector const& x, InternalMatrixStorage const&) override
     {
-        *_x_old = x;
+        _x_old = x;
     }
 
     void nextTimestep(const double t, const double delta_t) override {
@@ -274,7 +295,7 @@ public:
     }
 
     Vector const& getCurrentX(const Vector& /*x_at_new_timestep*/) const override {
-        return *_x_old;
+        return _x_old;
     }
 
     double getNewXWeight() const override {
@@ -286,7 +307,7 @@ public:
         namespace BLAS = MathLib::BLAS;
 
         // y = x_old / delta_t
-        BLAS::copy(*_x_old, y);
+        BLAS::copy(_x_old, y);
         BLAS::scale(y, 1.0/_delta_t);
     }
 
@@ -299,13 +320,14 @@ public:
     }
 
     //! Returns the solution from the preceding timestep.
-    Vector const& getXOld() const { return *_x_old; }
+    Vector const& getXOld() const { return _x_old; }
 
 private:
-    double _t;       //!< \f$ t_C \f$
-    double _t_old;   //!< the time of the preceding timestep
-    double _delta_t; //!< the timestep size
-    Vector* _x_old = nullptr; //!< the solution from the preceding timestep
+    MathLib::VectorProvider<Vector>& _vector_provider;
+    double  _t;       //!< \f$ t_C \f$
+    double  _t_old;   //!< the time of the preceding timestep
+    double  _delta_t; //!< the timestep size
+    Vector& _x_old;   //!< the solution from the preceding timestep
 };
 
 
@@ -322,18 +344,24 @@ public:
      *              \arg 0.5 traditional Crank-Nicolson scheme.
      */
     explicit
-    CrankNicolson(const double theta)
-        : _theta(theta)
+    CrankNicolson(MathLib::VectorProvider<Vector>& vector_provider, const double theta)
+        : _vector_provider(vector_provider)
+        , _theta(theta)
+        , _x_old(_vector_provider.getVector())
     {}
+
+    ~CrankNicolson() {
+        _vector_provider.releaseVector(666, _x_old); // TODO fix
+    }
 
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
-        *_x_old = x0;
+        _x_old = x0;
     }
 
     void pushState(const double, Vector const& x, InternalMatrixStorage const& strg) override
     {
-        *_x_old = x;
+        _x_old = x;
         strg.pushMatrices();
     }
 
@@ -355,7 +383,7 @@ public:
         namespace BLAS = MathLib::BLAS;
 
         // y = x_old / delta_t
-        BLAS::copy(*_x_old, y);
+        BLAS::copy(_x_old, y);
         BLAS::scale(y, 1.0/_delta_t);
     }
 
@@ -367,13 +395,15 @@ public:
     double getTheta() const { return _theta; }
 
     //! Returns the solution from the preceding timestep.
-    Vector const& getXOld() const { return *_x_old; }
+    Vector const& getXOld() const { return _x_old; }
 
 private:
+    MathLib::VectorProvider<Vector>& _vector_provider;
+
     const double _theta; //!< the implicitness parameter \f$ \theta \f$
-    double _t;       //!< \f$ t_C \f$
-    double _delta_t; //!< the timestep size
-    Vector* _x_old = nullptr; //!< the solution from the preceding timestep
+    double  _t;       //!< \f$ t_C \f$
+    double  _delta_t; //!< the timestep size
+    Vector& _x_old;   //!< the solution from the preceding timestep
 };
 
 
@@ -413,16 +443,23 @@ public:
      *       the first timesteps.
      */
     explicit
-    BackwardDifferentiationFormula(const unsigned num_steps)
-        : _num_steps(num_steps)
+    BackwardDifferentiationFormula(MathLib::VectorProvider<Vector>& vector_provider,
+                                   const unsigned num_steps)
+        : _vector_provider(vector_provider)
+        , _num_steps(num_steps)
     {
         assert(1 <= num_steps && num_steps <= 6);
         _xs_old.reserve(num_steps);
     }
 
+    ~BackwardDifferentiationFormula() {
+        for (auto* x : _xs_old)
+            _vector_provider.releaseVector(666, *x); // TODO fix
+    }
+
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
-        // _xs_old.push_back(x0); // TODO implement
+        _xs_old.push_back(&_vector_provider.getVector(x0));
     }
 
     void pushState(const double, Vector const& x, InternalMatrixStorage const&) override
@@ -431,7 +468,7 @@ public:
 
         // until _xs_old is filled, lower-order BDF formulas are used.
         if (_xs_old.size() < _num_steps) {
-            // _xs_old.push_back(x); // TODO implement
+            _xs_old.push_back(&_vector_provider.getVector(x));
         } else {
             *_xs_old[_offset] = x;
             _offset = (_offset+1) % _num_steps; // treat _xs_old as a circular buffer
@@ -473,6 +510,8 @@ public:
 
 private:
     std::size_t eff_num_steps() const { return _xs_old.size(); }
+
+    MathLib::VectorProvider<Vector>& _vector_provider;
 
     const unsigned _num_steps; //!< The order of the BDF method
     double _t;       //!< \f$ t_C \f$
