@@ -45,7 +45,7 @@ getMatrix(MatrixSpecificationsProvider const& msp, std::size_t& id)
         return *res.first->second;
     }
     else { // unused matrix found
-        return *detail::transfer(_unused_matrices, _used_matrices, it);
+        return *::detail::transfer(_unused_matrices, _used_matrices, it);
     }
 }
 
@@ -66,7 +66,7 @@ getMatrix(MatrixSpecificationsProvider const& msp, std::size_t& id, Matrix const
         return *res.first->second;
     }
     else { // unused matrix found
-        return *detail::transfer(_unused_matrices, _used_matrices, it);
+        return *::detail::transfer(_unused_matrices, _used_matrices, it);
     }
 }
 
@@ -80,7 +80,7 @@ releaseMatrix(std::size_t const id, Matrix const& /*A*/)
         ERR("A matrix with the id %lu has not been found. Cannot release it. Aborting.");
         std::abort();
     } else {
-        detail::transfer(_used_matrices, _unused_matrices, it);
+        ::detail::transfer(_used_matrices, _unused_matrices, it);
     }
 }
 
@@ -100,7 +100,7 @@ getVector(MatrixSpecificationsProvider const& msp, std::size_t& id)
         return *res.first->second;
     }
     else { // unused vector found
-        return *detail::transfer(_unused_vectors, _used_vectors, it);
+        return *::detail::transfer(_unused_vectors, _used_vectors, it);
     }
 }
 
@@ -121,7 +121,7 @@ getVector(MatrixSpecificationsProvider const& msp, std::size_t& id, Vector const
         return *res.first->second;
     }
     else { // unused vector found
-        return *detail::transfer(_unused_vectors, _used_vectors, it);
+        return *::detail::transfer(_unused_vectors, _used_vectors, it);
     }
 }
 
@@ -135,7 +135,7 @@ releaseVector(std::size_t const id, Vector const& /*x*/)
         ERR("A vector with the id %lu has not been found. Cannot release it. Aborting.", id);
         std::abort();
     } else {
-        detail::transfer(_used_vectors, _unused_vectors, it);
+        ::detail::transfer(_used_vectors, _unused_vectors, it);
     }
 }
 

@@ -14,6 +14,12 @@ class SimpleMatrixProvider final
         : public MatrixProvider<Matrix, Vector>
 {
 public:
+    SimpleMatrixProvider() = default;
+
+    // no copies
+    SimpleMatrixProvider(SimpleMatrixProvider const&) = delete;
+    SimpleMatrixProvider& operator=(SimpleMatrixProvider const&) = delete;
+
     using MSP = MatrixSpecificationsProvider;
 
     Matrix& getMatrix(MSP const& msp, std::size_t& id) override;
