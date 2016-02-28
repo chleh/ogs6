@@ -40,6 +40,7 @@ class PETScMatrix
         // TODO preliminary
         PETScMatrix() {
             // TODO implement
+            MatCreate(PETSC_COMM_WORLD, &_A);
         }
 
         /*!

@@ -43,6 +43,7 @@ class PETScVector
         // TODO preliminary
         PETScVector() {
             // TODO implement
+            VecCreate(PETSC_COMM_WORLD, &_v);
         }
 
         /*!
