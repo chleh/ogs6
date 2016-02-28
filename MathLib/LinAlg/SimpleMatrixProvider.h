@@ -48,16 +48,19 @@ public:
 
 private:
     template<bool do_search, typename... Args>
-    Matrix& getMatrix_(std::size_t& id, Args&&... args);
+    std::pair<Matrix*, bool> getMatrix_(std::size_t& id, Args&&... args);
 
     template<bool do_search, typename... Args>
-    Vector& getVector_(std::size_t& id, Args&&... args);
+    std::pair<Vector*, bool> getVector_(std::size_t& id, Args&&... args);
 
+    // returns a pair with the pointer to the matrix/vector and
+    // a boolean indicating if a new object has been built (then true else false)
     template<bool do_search, typename MatVec, typename... Args>
-    MatVec& get_(std::size_t& id,
-                 std::map<std::size_t, MatVec*>& unused_map,
-                 std::map<MatVec*, std::size_t>& used_map,
-                 Args&&... args);
+    std::pair<MatVec*, bool>
+    get_(std::size_t& id,
+         std::map<std::size_t, MatVec*>& unused_map,
+         std::map<MatVec*, std::size_t>& used_map,
+         Args&&... args);
 
     std::size_t _next_id = 1;
 

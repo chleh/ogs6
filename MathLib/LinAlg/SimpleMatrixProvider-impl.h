@@ -3,6 +3,7 @@
 #include <cassert>
 #include <logog/include/logog.hpp>
 
+#include "BLAS.h"
 #include "SimpleMatrixProvider.h"
 
 namespace detail
@@ -45,7 +46,7 @@ namespace MathLib
 
 template<typename Matrix, typename Vector>
 template<bool do_search, typename MatVec, typename... Args>
-MatVec&
+std::pair<MatVec*, bool>
 SimpleMatrixProvider<Matrix, Vector>::
 get_(std::size_t& id,
      std::map<std::size_t, MatVec*>& unused_map,
@@ -56,7 +57,7 @@ get_(std::size_t& id,
     {
         auto it = unused_map.find(id);
         if (it != unused_map.end()) // unused matrix/vector found
-            return *::detail::transfer(unused_map, used_map, it);
+            return { ::detail::transfer(unused_map, used_map, it), false };
     }
 
     // not searched or not found, so create a new one
@@ -64,12 +65,12 @@ get_(std::size_t& id,
     auto res = used_map.emplace(
         new MatVec{std::forward<Args>(args)...}, id);
     assert(res.second && "Emplacement failed.");
-    return *res.first->first;
+    return { res.first->first, true };
 }
 
 template<typename Matrix, typename Vector>
 template<bool do_search, typename... Args>
-Matrix&
+std::pair<Matrix*, bool>
 SimpleMatrixProvider<Matrix, Vector>::
 getMatrix_(std::size_t& id, Args&&... args)
 {
@@ -83,7 +84,7 @@ SimpleMatrixProvider<Matrix, Vector>::
 getMatrix()
 {
     std::size_t id;
-    return getMatrix_<false>(id, 0u, 0u); // TODO default constructor
+    return *getMatrix_<false>(id, 0u, 0u).first; // TODO default constructor
 }
 
 template<typename Matrix, typename Vector>
@@ -91,7 +92,7 @@ Matrix&
 SimpleMatrixProvider<Matrix, Vector>::
 getMatrix(std::size_t& id)
 {
-    return getMatrix_<true>(id, 0u, 0u); // TODO default constructor
+    return *getMatrix_<true>(id, 0u, 0u).first; // TODO default constructor
 }
 
 template<typename Matrix, typename Vector>
@@ -101,7 +102,8 @@ getMatrix(MatrixSpecificationsProvider const& msp)
 {
     std::size_t id;
     auto const mat_spec = msp.getMatrixSpecifications();
-    return getMatrix_<false>(id, mat_spec.nrows, mat_spec.ncols); // TODO change
+    return *getMatrix_<false>(id, mat_spec.nrows, mat_spec.ncols).first;
+    // TODO assert that the returned object always is of the right size
 }
 
 template<typename Matrix, typename Vector>
@@ -110,7 +112,8 @@ SimpleMatrixProvider<Matrix, Vector>::
 getMatrix(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
     auto mat_spec = msp.getMatrixSpecifications();
-    return getMatrix_<true>(id, mat_spec.nrows, mat_spec.ncols); // TODO change
+    return *getMatrix_<true>(id, mat_spec.nrows, mat_spec.ncols).first;
+    // TODO assert that the returned object always is of the right size
 }
 
 template<typename Matrix, typename Vector>
@@ -119,7 +122,10 @@ SimpleMatrixProvider<Matrix, Vector>::
 getMatrix(Matrix const& A)
 {
     std::size_t id;
-    return getMatrix_<false>(id, A); // TODO assert that A is always copied!
+    auto const& res = getMatrix_<false>(id, A);
+    if (!res.second) // no new object has been created
+        BLAS::copy(A, *res.first);
+    return *res.first;
 }
 
 template<typename Matrix, typename Vector>
@@ -127,7 +133,10 @@ Matrix&
 SimpleMatrixProvider<Matrix, Vector>::
 getMatrix(Matrix const& A, std::size_t& id)
 {
-    return getMatrix_<true>(id, A); // TODO assert that A is always copied!
+    auto const& res = getMatrix_<false>(id, A);
+    if (!res.second) // no new object has been created
+        BLAS::copy(A, *res.first);
+    return *res.first;
 }
 
 template<typename Matrix, typename Vector>
@@ -146,7 +155,7 @@ releaseMatrix(Matrix const& A)
 
 template<typename Matrix, typename Vector>
 template<bool do_search, typename... Args>
-Vector&
+std::pair<Vector*, bool>
 SimpleMatrixProvider<Matrix, Vector>::
 getVector_(std::size_t& id, Args&&... args)
 {
@@ -160,7 +169,7 @@ SimpleMatrixProvider<Matrix, Vector>::
 getVector()
 {
     std::size_t id;
-    return getVector_<false>(id); // TODO default constructor
+    return *getVector_<false>(id).first;
 }
 
 template<typename Matrix, typename Vector>
@@ -168,7 +177,7 @@ Vector&
 SimpleMatrixProvider<Matrix, Vector>::
 getVector(std::size_t& id)
 {
-    return getVector_<true>(id); // TODO default constructor
+    return *getVector_<true>(id).first;
 }
 
 template<typename Matrix, typename Vector>
@@ -178,7 +187,8 @@ getVector(MatrixSpecificationsProvider const& msp)
 {
     std::size_t id;
     auto const mat_spec = msp.getMatrixSpecifications();
-    return getVector_<false>(id, mat_spec.nrows); // TODO change
+    return *getVector_<false>(id, mat_spec.nrows).first;
+    // TODO assert that the returned object always is of the right size
 }
 
 template<typename Matrix, typename Vector>
@@ -187,7 +197,8 @@ SimpleMatrixProvider<Matrix, Vector>::
 getVector(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
     auto mat_spec = msp.getMatrixSpecifications();
-    return getVector_<true>(id, mat_spec.nrows); // TODO change
+    return *getVector_<true>(id, mat_spec.nrows).first;
+    // TODO assert that the returned object always is of the right size
 }
 
 template<typename Matrix, typename Vector>
@@ -196,7 +207,10 @@ SimpleMatrixProvider<Matrix, Vector>::
 getVector(Vector const& x)
 {
     std::size_t id;
-    return getVector_<false>(id, x); // TODO assert that A is always copied!
+    auto const& res = getVector_<false>(id, x);
+    if (!res.second) // no new object has been created
+        BLAS::copy(x, *res.first);
+    return *res.first;
 }
 
 template<typename Matrix, typename Vector>
@@ -204,7 +218,10 @@ Vector&
 SimpleMatrixProvider<Matrix, Vector>::
 getVector(Vector const& x, std::size_t& id)
 {
-    return getVector_<true>(id, x); // TODO assert that A is always copied!
+    auto const& res = getVector_<false>(id, x);
+    if (!res.second) // no new object has been created
+        BLAS::copy(x, *res.first);
+    return *res.first;
 }
 
 template<typename Matrix, typename Vector>
