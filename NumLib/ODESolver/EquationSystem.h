@@ -10,6 +10,8 @@
 #ifndef NUMLIB_EQUATIONSYSTEM_H
 #define NUMLIB_EQUATIONSYSTEM_H
 
+#include "MathLib/LinAlg/MatrixProviderUser.h"
+
 namespace NumLib
 {
 
@@ -18,8 +20,10 @@ namespace NumLib
 
 //! Collection of basic methods every equation system must provide.
 class EquationSystem
+        : public MathLib::MatrixSpecificationsProvider
 {
 public:
+    // TODO remove
     //! Return the number of equations.
     virtual std::size_t getNumEquations() const = 0;
 

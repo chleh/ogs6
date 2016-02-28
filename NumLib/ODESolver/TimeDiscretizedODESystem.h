@@ -167,6 +167,9 @@ public:
         return _time_disc;
     }
 
+    MathLib::MatrixSpecifications getMatrixSpecifications() const override {
+        return _ode.getMatrixSpecifications();
+    }
     std::size_t getNumEquations() const override {
         return _ode.getNumEquations();
     }
@@ -276,6 +279,9 @@ public:
         return _time_disc;
     }
 
+    MathLib::MatrixSpecifications getMatrixSpecifications() const override {
+        return _ode.getMatrixSpecifications();
+    }
     std::size_t getNumEquations() const override {
         return _ode.getNumEquations();
     }
