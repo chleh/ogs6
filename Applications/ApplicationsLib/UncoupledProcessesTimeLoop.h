@@ -261,7 +261,7 @@ setInitialConditions(ProjectData& project,
         auto& ode_sys     =  *ppd.tdisc_ode_sys;
         auto const nl_tag =   ppd.nonlinear_solver_tag;
 
-        auto const num_eqs = ode_sys.getNumEquations();
+        auto const num_eqs = ode_sys.getMatrixSpecifications().nrows;
 
         // TODO maybe more is required for PETSc
         // append a solution vector of size num_eqs
