@@ -27,6 +27,8 @@ public:
 
     void releaseMatrix(std::size_t const id, Matrix const& A) override;
 
+    Vector& getVector() override;
+    Vector& getVector(Vector const& x) override;
     Vector& getVector(MSP const& msp, std::size_t& id) override;
     Vector& getVector(MSP const& msp, std::size_t& id, Vector const& x) override;
     void releaseVector(std::size_t const id, Vector const& x);

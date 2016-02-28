@@ -87,6 +87,32 @@ releaseMatrix(std::size_t const id, Matrix const& /*A*/)
 template<typename Matrix, typename Vector>
 Vector&
 SimpleMatrixProvider<Matrix, Vector>::
+getVector()
+{
+    // TODO create an empty zero-size vector
+    std::size_t const id = _next_id++;
+    auto res = _used_vectors.emplace(id,
+        std::unique_ptr<Vector>{new Vector});
+    assert(res.second && "Emplacement failed.");
+    return *res.first->second;
+}
+
+template<typename Matrix, typename Vector>
+Vector&
+SimpleMatrixProvider<Matrix, Vector>::
+getVector(Vector const& x)
+{
+    // TODO create an empty zero-size vector
+    std::size_t const id = _next_id++;
+    auto res = _used_vectors.emplace(id,
+        std::unique_ptr<Vector>{new Vector(x)});
+    assert(res.second && "Emplacement failed.");
+    return *res.first->second;
+}
+
+template<typename Matrix, typename Vector>
+Vector&
+SimpleMatrixProvider<Matrix, Vector>::
 getVector(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
     auto it = _unused_vectors.find(id);
