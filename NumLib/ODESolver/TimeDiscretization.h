@@ -210,12 +210,12 @@ class BackwardEuler final : public TimeDiscretization<Vector>
 public:
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
-        _x_old = x0;
+        *_x_old = x0;
     }
 
     void pushState(const double /*t*/, Vector const& x, InternalMatrixStorage const&) override
     {
-        _x_old = x;
+        *_x_old = x;
     }
 
     void nextTimestep(const double t, const double delta_t) override {
@@ -236,14 +236,14 @@ public:
         namespace BLAS = MathLib::BLAS;
 
         // y = x_old / delta_t
-        BLAS::copy(_x_old, y);
+        BLAS::copy(*_x_old, y);
         BLAS::scale(y, 1.0/_delta_t);
     }
 
 private:
     double _t;       //!< \f$ t_C \f$
     double _delta_t; //!< the timestep size
-    Vector _x_old;   //!< the solution from the preceding timestep
+    Vector* _x_old = nullptr; //!< the solution from the preceding timestep
 };
 
 
@@ -255,12 +255,12 @@ public:
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
         _t_old = t0;
-        _x_old = x0;
+        *_x_old = x0;
     }
 
     void pushState(const double /*t*/, Vector const& x, InternalMatrixStorage const&) override
     {
-        _x_old = x;
+        *_x_old = x;
     }
 
     void nextTimestep(const double t, const double delta_t) override {
@@ -274,7 +274,7 @@ public:
     }
 
     Vector const& getCurrentX(const Vector& /*x_at_new_timestep*/) const override {
-        return _x_old;
+        return *_x_old;
     }
 
     double getNewXWeight() const override {
@@ -286,7 +286,7 @@ public:
         namespace BLAS = MathLib::BLAS;
 
         // y = x_old / delta_t
-        BLAS::copy(_x_old, y);
+        BLAS::copy(*_x_old, y);
         BLAS::scale(y, 1.0/_delta_t);
     }
 
@@ -299,13 +299,13 @@ public:
     }
 
     //! Returns the solution from the preceding timestep.
-    Vector const& getXOld() const { return _x_old; }
+    Vector const& getXOld() const { return *_x_old; }
 
 private:
     double _t;       //!< \f$ t_C \f$
     double _t_old;   //!< the time of the preceding timestep
     double _delta_t; //!< the timestep size
-    Vector _x_old;   //!< the solution from the preceding timestep
+    Vector* _x_old = nullptr; //!< the solution from the preceding timestep
 };
 
 
@@ -328,12 +328,12 @@ public:
 
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
-        _x_old = x0;
+        *_x_old = x0;
     }
 
     void pushState(const double, Vector const& x, InternalMatrixStorage const& strg) override
     {
-        _x_old = x;
+        *_x_old = x;
         strg.pushMatrices();
     }
 
@@ -355,7 +355,7 @@ public:
         namespace BLAS = MathLib::BLAS;
 
         // y = x_old / delta_t
-        BLAS::copy(_x_old, y);
+        BLAS::copy(*_x_old, y);
         BLAS::scale(y, 1.0/_delta_t);
     }
 
@@ -367,13 +367,13 @@ public:
     double getTheta() const { return _theta; }
 
     //! Returns the solution from the preceding timestep.
-    Vector const& getXOld() const { return _x_old; }
+    Vector const& getXOld() const { return *_x_old; }
 
 private:
     const double _theta; //!< the implicitness parameter \f$ \theta \f$
     double _t;       //!< \f$ t_C \f$
     double _delta_t; //!< the timestep size
-    Vector _x_old;   //!< the solution from the preceding timestep
+    Vector* _x_old = nullptr; //!< the solution from the preceding timestep
 };
 
 
@@ -422,7 +422,7 @@ public:
 
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
-        _xs_old.push_back(x0);
+        // _xs_old.push_back(x0); // TODO implement
     }
 
     void pushState(const double, Vector const& x, InternalMatrixStorage const&) override
@@ -431,9 +431,9 @@ public:
 
         // until _xs_old is filled, lower-order BDF formulas are used.
         if (_xs_old.size() < _num_steps) {
-            _xs_old.push_back(x);
+            // _xs_old.push_back(x); // TODO implement
         } else {
-            _xs_old[_offset] = x;
+            *_xs_old[_offset] = x;
             _offset = (_offset+1) % _num_steps; // treat _xs_old as a circular buffer
         }
     }
@@ -460,12 +460,12 @@ public:
         auto const*const BDFk = detail::BDF_Coeffs[k-1];
 
         // compute linear combination \sum_{i=0}^{k-1} BDFk_{k-i} \cdot x_{n+i}
-        BLAS::copy(_xs_old[_offset], y); // _xs_old[offset] = x_n
+        BLAS::copy(*_xs_old[_offset], y); // _xs_old[offset] = x_n
         BLAS::scale(y, BDFk[k]);
 
         for (unsigned i=1; i<k; ++i) {
             auto const off = (_offset + i) % k;
-            BLAS::axpy(y, BDFk[k-i], _xs_old[off]);
+            BLAS::axpy(y, BDFk[k-i], *_xs_old[off]);
         }
 
         BLAS::scale(y, 1.0/_delta_t);
@@ -478,7 +478,7 @@ private:
     double _t;       //!< \f$ t_C \f$
     double _delta_t; //!< the timestep size
 
-    std::vector<Vector> _xs_old; //!< solutions from the preceding timesteps
+    std::vector<Vector*> _xs_old; //!< solutions from the preceding timesteps
     unsigned _offset = 0; //!< allows treating \c _xs_old as circular buffer
 };
 

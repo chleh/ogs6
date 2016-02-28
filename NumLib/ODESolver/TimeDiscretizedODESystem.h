@@ -96,10 +96,6 @@ public:
         : _ode(ode)
         , _time_disc(time_discretization)
         , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(time_discretization))
-        , _Jac(ode.getMatrixSpecifications().nrows, ode.getMatrixSpecifications().ncols)
-        , _M  (ode.getMatrixSpecifications().nrows, ode.getMatrixSpecifications().ncols)
-        , _K  (ode.getMatrixSpecifications().nrows, ode.getMatrixSpecifications().ncols)
-        , _b  (ode.getMatrixSpecifications().nrows)
     {}
 
     void assembleResidualNewton(const Vector &x_new_timestep) override
@@ -107,11 +103,11 @@ public:
         auto const  t      = _time_disc.getCurrentTime();
         auto const& x_curr = _time_disc.getCurrentX(x_new_timestep);
 
-        _M.setZero();
-        _K.setZero();
-        _b.setZero();
+        _M->setZero();
+        _K->setZero();
+        _b->setZero();
 
-        _ode.assemble(t, x_curr, _M, _K, _b);
+        _ode.assemble(t, x_curr, *_M, *_K, *_b);
     }
 
     void assembleJacobian(const Vector &x_new_timestep) override
@@ -122,13 +118,13 @@ public:
         auto const& x_curr   = _time_disc.getCurrentX(x_new_timestep);
         auto const  dxdot_dx = _time_disc.getNewXWeight();
         auto const  dx_dx    = _time_disc.getDxDx();
-        _time_disc.getXdot(x_new_timestep, _xdot);
+        _time_disc.getXdot(x_new_timestep, *_xdot);
 
-        _Jac.setZero();
+        _Jac->setZero();
 
-        _ode.assembleJacobian(t, x_curr, _xdot,
-                              dxdot_dx, _M, dx_dx, _K,
-                              _Jac);
+        _ode.assembleJacobian(t, x_curr, *_xdot,
+                              dxdot_dx, *_M, dx_dx, *_K,
+                              *_Jac);
     }
 
     void getResidual(Vector const& x_new_timestep, Vector& res) const override
@@ -136,14 +132,14 @@ public:
         // TODO Maybe the duplicate calculation of xdot here and in assembleJacobian
         //      can be optimuized. However, that would make the interface a bit more
         //      fragile.
-        _time_disc.getXdot(x_new_timestep, _xdot);
+        _time_disc.getXdot(x_new_timestep, *_xdot);
 
-        _mat_trans->computeResidual(_M, _K, _b, x_new_timestep, _xdot, res);
+        _mat_trans->computeResidual(*_M, *_K, *_b, x_new_timestep, *_xdot, res);
     }
 
     void getJacobian(Matrix& Jac) const override
     {
-        _mat_trans->computeJacobian(_Jac, Jac);
+        _mat_trans->computeJacobian(*_Jac, Jac);
     }
 
     void applyKnownSolutionsNewton(Matrix& Jac, Vector& res,
@@ -160,7 +156,7 @@ public:
 
     void pushMatrices() const override
     {
-        _mat_trans->pushMatrices(_M, _K, _b);
+        _mat_trans->pushMatrices(*_M, *_K, *_b);
     }
 
     TimeDisc& getTimeDiscretization() override {
@@ -178,13 +174,13 @@ private:
     //! the object used to compute the matrix/vector for the nonlinear solver
     std::unique_ptr<MatTrans> _mat_trans;
 
-    Matrix _Jac;  //!< the Jacobian of the residual
-    Matrix _M;    //!< Matrix \f$ M \f$.
-    Matrix _K;    //!< Matrix \f$ K \f$.
-    Vector _b;    //!< Matrix \f$ b \f$.
+    Matrix* _Jac = nullptr; //!< the Jacobian of the residual
+    Matrix* _M   = nullptr; //!< Matrix \f$ M \f$.
+    Matrix* _K   = nullptr; //!< Matrix \f$ K \f$.
+    Vector* _b   = nullptr; //!< Matrix \f$ b \f$.
 
     // mutable because xdot is computed in the getResidual() method
-    mutable Vector _xdot; //!< Used to cache \f$ \dot x \f$. \todo Save some memory.
+    mutable Vector* _xdot = nullptr; //!< Used to cache \f$ \dot x \f$. \todo Save some memory.
 };
 
 
@@ -223,9 +219,6 @@ public:
         : _ode(ode)
         , _time_disc(time_discretization)
         , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(time_discretization))
-        , _M  (ode.getMatrixSpecifications().nrows, ode.getMatrixSpecifications().ncols)
-        , _K  (ode.getMatrixSpecifications().nrows, ode.getMatrixSpecifications().ncols)
-        , _b  (ode.getMatrixSpecifications().nrows)
     {}
 
     void assembleMatricesPicard(const Vector &x_new_timestep) override
@@ -233,21 +226,21 @@ public:
         auto const  t      = _time_disc.getCurrentTime();
         auto const& x_curr = _time_disc.getCurrentX(x_new_timestep);
 
-        _M.setZero();
-        _K.setZero();
-        _b.setZero();
+        _M->setZero();
+        _K->setZero();
+        _b->setZero();
 
-        _ode.assemble(t, x_curr, _M, _K, _b);
+        _ode.assemble(t, x_curr, *_M, *_K, *_b);
     }
 
     void getA(Matrix& A) const override
     {
-        _mat_trans->computeA(_M, _K, A);
+        _mat_trans->computeA(*_M, *_K, A);
     }
 
     void getRhs(Vector& rhs) const override
     {
-        _mat_trans->computeRhs(_M, _K, _b, rhs);
+        _mat_trans->computeRhs(*_M, *_K, *_b, rhs);
     }
 
     void applyKnownSolutionsPicard(Matrix& A, Vector& rhs, Vector& x) override
@@ -269,7 +262,7 @@ public:
 
     void pushMatrices() const override
     {
-        _mat_trans->pushMatrices(_M, _K, _b);
+        _mat_trans->pushMatrices(*_M, *_K, *_b);
     }
 
     TimeDisc& getTimeDiscretization() override {
@@ -287,9 +280,9 @@ private:
     //! the object used to compute the matrix/vector for the nonlinear solver
     std::unique_ptr<MatTrans> _mat_trans;
 
-    Matrix _M;    //!< Matrix \f$ M \f$.
-    Matrix _K;    //!< Matrix \f$ K \f$.
-    Vector _b;    //!< Matrix \f$ b \f$.
+    Matrix* _M = nullptr; //!< Matrix \f$ M \f$.
+    Matrix* _K = nullptr; //!< Matrix \f$ K \f$.
+    Vector* _b = nullptr; //!< Matrix \f$ b \f$.
 };
 
 //! @}

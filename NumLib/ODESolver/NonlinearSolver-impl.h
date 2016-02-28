@@ -40,34 +40,34 @@ solve(Vector &x)
 
     bool success = false;
 
-    BLAS::copy(x, _x_new); // set initial guess, TODO save the copy
+    BLAS::copy(x, *_x_new); // set initial guess, TODO save the copy
 
     for (unsigned iteration=1; iteration<_maxiter; ++iteration)
     {
-        sys.assembleMatricesPicard(_x_new);
-        sys.getA(_A);
-        sys.getRhs(_rhs);
+        sys.assembleMatricesPicard(*_x_new);
+        sys.getA(*_A);
+        sys.getRhs(*_rhs);
 
         // Here _x_new has to be used and it has to be equal to x!
-        sys.applyKnownSolutionsPicard(_A, _rhs, _x_new);
+        sys.applyKnownSolutionsPicard(*_A, *_rhs, *_x_new);
 
         // std::cout << "A:\n" << Eigen::MatrixXd(A) << "\n";
         // std::cout << "rhs:\n" << rhs << "\n\n";
 
-        if (!_linear_solver.solve(_A, _rhs, _x_new)) {
+        if (!_linear_solver.solve(*_A, *_rhs, *_x_new)) {
             ERR("The linear solver failed.");
-            x = _x_new;
+            x = *_x_new;
             success = false;
             break;
         }
 
         // x is used as delta_x in order to compute the error.
-        BLAS::aypx(x, -1.0, _x_new); // x = _x_new - x
+        BLAS::aypx(x, -1.0, *_x_new); // x = _x_new - x
         auto const error = BLAS::norm2(x);
         // INFO("  picard iteration %u error: %e", iteration, error);
 
         // Update x s.t. in the next iteration we will compute the right delta x
-        x = _x_new;
+        x = *_x_new;
 
         if (error < _tol) {
             success = true;
@@ -108,31 +108,31 @@ solve(Vector &x)
 
     // TODO be more efficient
     // init _minus_delta_x to the right size and 0.0
-    BLAS::copy(x, _minus_delta_x);
-    _minus_delta_x.setZero();
+    BLAS::copy(x, *_minus_delta_x);
+    _minus_delta_x->setZero();
 
     for (unsigned iteration=1; iteration<_maxiter; ++iteration)
     {
         sys.assembleResidualNewton(x);
-        sys.getResidual(x, _res);
+        sys.getResidual(x, *_res);
 
         // std::cout << "  res:\n" << res << std::endl;
 
         // TODO streamline that, make consistent with Picard.
-        if (BLAS::norm2(_res) < _tol) {
+        if (BLAS::norm2(*_res) < _tol) {
             success = true;
             break;
         }
 
         sys.assembleJacobian(x);
-        sys.getJacobian(_J);
-        sys.applyKnownSolutionsNewton(_J, _res, _minus_delta_x);
+        sys.getJacobian(*_J);
+        sys.applyKnownSolutionsNewton(*_J, *_res, *_minus_delta_x);
 
         // std::cout << "  J:\n" << Eigen::MatrixXd(J) << std::endl;
 
-        if (!_linear_solver.solve(_J, _res, _minus_delta_x)) {
+        if (!_linear_solver.solve(*_J, *_res, *_minus_delta_x)) {
             ERR("The linear solver failed.");
-            BLAS::axpy(x, -_alpha, _minus_delta_x);
+            BLAS::axpy(x, -_alpha, *_minus_delta_x);
             success = false;
             break;
         }
@@ -140,7 +140,7 @@ solve(Vector &x)
         // auto const dx_norm = _minus_delta_x.norm();
         // INFO("  newton iteration %u, norm of delta x: %e", iteration, dx_norm);
 
-        BLAS::axpy(x, -_alpha, _minus_delta_x);
+        BLAS::axpy(x, -_alpha, *_minus_delta_x);
 
         if (sys.isLinear()) {
             // INFO("  newton linear system. not looping");

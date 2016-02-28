@@ -117,9 +117,9 @@ private:
     const double _tol;       //!< tolerance of the solver
     const unsigned _maxiter; //!< maximum number of iterations
 
-    Vector _res;             //!< The residual.
-    Matrix _J;               //!< The Jacobian of the residual.
-    Vector _minus_delta_x;   //!< The Newton-Raphson method solves the linearized equation
+    Vector* _res           = nullptr; //!< The residual.
+    Matrix* _J             = nullptr; //!< The Jacobian of the residual.
+    Vector* _minus_delta_x = nullptr; //!< The Newton-Raphson method solves the linearized equation
                              //!< \f$ J \cdot (-\Delta x) = r \f$ repeatedly.
     double const _alpha = 1; //!< Damping factor. \todo Add constructor parameter.
 };
@@ -167,9 +167,9 @@ private:
     const double _tol;       //!< tolerance of the solver
     const unsigned _maxiter; //!< maximum number of iterations
 
-    Matrix _A;     //!< \c Matrix describing the linearized system.
-    Vector _rhs;   //!< \c Vector describing the linearized system.
-    Vector _x_new; //!< \c Vector to store solutions of \f$ A \cdot x = \mathit{rhs} \f$.
+    Matrix* _A     = nullptr; //!< \c Matrix describing the linearized system.
+    Vector* _rhs   = nullptr; //!< \c Vector describing the linearized system.
+    Vector* _x_new = nullptr; //!< \c Vector to store solutions of \f$ A \cdot x = \mathit{rhs} \f$.
 };
 
 /*! Creates a new nonlinear solver from the given configuration.
