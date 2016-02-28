@@ -119,11 +119,25 @@ private:
 
 template<typename Matrix, typename Vector, typename TimeDisc, typename ODE,
          NumLib::NonlinearSolverTag NLTag>
-typename std::enable_if<std::is_default_constructible<TimeDisc>::value>::type
-run_test_case(const unsigned num_timesteps, const char* name)
+typename std::enable_if<std::is_same<TimeDisc, NumLib::BackwardEuler<Vector> >::value>::type
+run_test_case(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
+              const unsigned num_timesteps, const char* name)
 {
     ODE ode;
-    TimeDisc timeDisc;
+    TimeDisc timeDisc(matrix_provider); // TODO pass matrix provider on
+
+    TestOutput<Matrix, Vector, NLTag> test(name);
+    test.run_test(ode, timeDisc, num_timesteps);
+}
+
+template<typename Matrix, typename Vector, typename TimeDisc, typename ODE,
+         NumLib::NonlinearSolverTag NLTag>
+typename std::enable_if<std::is_same<TimeDisc, NumLib::ForwardEuler<Vector> >::value>::type
+run_test_case(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
+              const unsigned num_timesteps, const char* name)
+{
+    ODE ode;
+    TimeDisc timeDisc(matrix_provider);
 
     TestOutput<Matrix, Vector, NLTag> test(name);
     test.run_test(ode, timeDisc, num_timesteps);
@@ -132,10 +146,11 @@ run_test_case(const unsigned num_timesteps, const char* name)
 template<typename Matrix, typename Vector, typename TimeDisc, typename ODE,
          NumLib::NonlinearSolverTag NLTag>
 typename std::enable_if<std::is_same<TimeDisc, NumLib::CrankNicolson<Vector> >::value>::type
-run_test_case(const unsigned num_timesteps, const char* name)
+run_test_case(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
+              const unsigned num_timesteps, const char* name)
 {
     ODE ode;
-    TimeDisc timeDisc(0.5);
+    TimeDisc timeDisc(matrix_provider, 0.5);
 
     TestOutput<Matrix, Vector, NLTag> test(name);
     test.run_test(ode, timeDisc, num_timesteps);
@@ -145,10 +160,11 @@ template<typename Matrix, typename Vector, typename TimeDisc, typename ODE,
          NumLib::NonlinearSolverTag NLTag>
 typename std::enable_if<
     std::is_same<TimeDisc, NumLib::BackwardDifferentiationFormula<Vector> >::value>::type
-run_test_case(const unsigned num_timesteps, const char* name)
+run_test_case(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
+              const unsigned num_timesteps, const char* name)
 {
     ODE ode;
-    TimeDisc timeDisc(3);
+    TimeDisc timeDisc(matrix_provider, 3);
 
     TestOutput<Matrix, Vector, NLTag> test(name);
     test.run_test(ode, timeDisc, num_timesteps);
@@ -297,8 +313,11 @@ public:
 
     static void test()
     {
-        for (auto num_timesteps : { 10u, 100u }) {
-            run_test_case<Matrix, Vector, TimeDisc, ODE, NLTag>(num_timesteps, TestParams::name);
+        for (auto num_timesteps : { 10u, 100u })
+        {
+            MathLib::SimpleMatrixProvider<Matrix, Vector> matrix_provider;
+            run_test_case<Matrix, Vector, TimeDisc, ODE, NLTag>(
+                        matrix_provider, num_timesteps, TestParams::name);
         }
     }
 };
@@ -323,17 +342,23 @@ TEST(NumLibODEInt, DISABLED_ODE3)
 #endif
 {
     const char* name = "dummy";
+    {
+        MathLib::SimpleMatrixProvider<EDMatrix, EVector> matrix_provider;
 
-    // only make sure ODE3 compiles
-    run_test_case<EDMatrix, EVector, NumLib::BackwardEuler<EVector>,
-                  ODE3<EDMatrix, EVector>,
-                  NumLib::NonlinearSolverTag::Newton>
-            (0u, name);
+        // only make sure ODE3 compiles
+        run_test_case<EDMatrix, EVector, NumLib::BackwardEuler<EVector>,
+                      ODE3<EDMatrix, EVector>,
+                      NumLib::NonlinearSolverTag::Newton>
+                (matrix_provider, 0u, name);
+    }
 
-    run_test_case<GMatrix, GVector, NumLib::BackwardEuler<GVector>,
-                  ODE3<GMatrix, GVector>,
-                  NumLib::NonlinearSolverTag::Newton>
-            (0u, name);
+    {
+        MathLib::SimpleMatrixProvider<GMatrix, GVector> matrix_provider;
+        run_test_case<GMatrix, GVector, NumLib::BackwardEuler<GVector>,
+                      ODE3<GMatrix, GVector>,
+                      NumLib::NonlinearSolverTag::Newton>
+                (matrix_provider, 0u, name);
+    }
 }
 
 
