@@ -26,14 +26,14 @@ public:
     Matrix& getMatrix(MSP const& msp, std::size_t& id) override;
     Matrix& getMatrix(MSP const& msp, std::size_t& id, Matrix const& A) override;
 
-    void releaseMatrix(std::size_t const id, Matrix const& A) override;
+    void releaseMatrix(Matrix const& A) override;
 
     Vector& getVector() override;
     Vector& getVector(Vector const& x) override;
     Vector& getVector(std::size_t& id) override;
     Vector& getVector(MSP const& msp, std::size_t& id) override;
     Vector& getVector(MSP const& msp, std::size_t& id, Vector const& x) override;
-    void releaseVector(std::size_t const id, Vector const& x);
+    void releaseVector(Vector const& x);
 
     ~SimpleMatrixProvider();
 

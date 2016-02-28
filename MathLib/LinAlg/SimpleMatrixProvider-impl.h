@@ -100,7 +100,7 @@ getMatrix(MatrixSpecificationsProvider const& msp, std::size_t& id, Matrix const
 template<typename Matrix, typename Vector>
 void
 SimpleMatrixProvider<Matrix, Vector>::
-releaseMatrix(std::size_t const /*id*/, Matrix const& A)
+releaseMatrix(Matrix const& A)
 {
     auto it = _used_matrices.find(const_cast<Matrix*>(&A));
     if (it == _used_matrices.end()) {
@@ -197,7 +197,7 @@ getVector(MatrixSpecificationsProvider const& msp, std::size_t& id, Vector const
 template<typename Matrix, typename Vector>
 void
 SimpleMatrixProvider<Matrix, Vector>::
-releaseVector(std::size_t const /*id*/, Vector const& x)
+releaseVector(Vector const& x)
 {
     auto it = _used_vectors.find(const_cast<Vector*>(&x));
     if (it == _used_vectors.end()) {
