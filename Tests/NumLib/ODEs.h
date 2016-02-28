@@ -53,10 +53,6 @@ public:
             BLAS::axpy(Jac, dx_dx, K);
     }
 
-    std::size_t getNumEquations() const override
-    {
-        return N;
-    }
     MathLib::MatrixSpecifications getMatrixSpecifications() const override
     {
         return { N, N };
@@ -130,10 +126,6 @@ public:
             BLAS::axpy(Jac, dx_dx, K);
     }
 
-    std::size_t getNumEquations() const override
-    {
-        return N;
-    }
     MathLib::MatrixSpecifications getMatrixSpecifications() const override
     {
         return { N, N };
@@ -270,10 +262,6 @@ public:
         // INFO("Det J: %e <<<", J.determinant());
     }
 
-    std::size_t getNumEquations() const override
-    {
-        return N;
-    }
     MathLib::MatrixSpecifications getMatrixSpecifications() const override
     {
         return { N, N };
