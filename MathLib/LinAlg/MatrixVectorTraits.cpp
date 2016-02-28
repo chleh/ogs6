@@ -70,7 +70,7 @@ std::unique_ptr<PETScMatrix>
 MatrixVectorTraits<PETScMatrix>::
 newInstance()
 {
-    return std::unique_ptr<PETScMatrix>(new PETScMatrix(0, 0)); // TODO default constructor
+    return std::unique_ptr<PETScMatrix>(new PETScMatrix);
 }
 
 std::unique_ptr<PETScMatrix>
