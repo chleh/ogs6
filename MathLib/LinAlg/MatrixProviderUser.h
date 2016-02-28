@@ -20,8 +20,28 @@ public:
     virtual ~MatrixSpecificationsProvider() = default;
 };
 
+
+template<typename Vector>
+class VectorProvider
+{
+public:
+    using MSP = MatrixSpecificationsProvider;
+
+    virtual Vector& getVector() = 0;
+    virtual Vector& getVector(Vector const& x) = 0;
+    //! get an uninitialized vector (or the one with the given id)
+    virtual Vector& getVector(MSP const& msp, std::size_t& id) = 0;
+    //! get a copy of x
+    virtual Vector& getVector(MSP const& msp, std::size_t& id, Vector const& x) = 0;
+
+    virtual void releaseVector(std::size_t const id, Vector const& x) = 0;
+
+    virtual ~VectorProvider() = default;
+};
+
 template<typename Matrix, typename Vector>
 class MatrixProvider
+        : public VectorProvider<Vector>
 {
 public:
     using MSP = MatrixSpecificationsProvider;
@@ -32,15 +52,6 @@ public:
     virtual Matrix& getMatrix(MSP const& msp, std::size_t& id, Matrix const& A) = 0;
 
     virtual void releaseMatrix(std::size_t const id, Matrix const& A) = 0;
-
-    //! get an uninitialized vector (or the one with the given id)
-    virtual Vector& getVector(MSP const& msp, std::size_t& id) = 0;
-    //! get a copy of x
-    virtual Vector& getVector(MSP const& msp, std::size_t& id, Vector const& x) = 0;
-
-    virtual void releaseVector(std::size_t const id, Vector const& x) = 0;
-
-    virtual ~MatrixProvider() = default;
 };
 
 template<typename Matrix, typename Vector>
