@@ -12,13 +12,21 @@
 
 #include <cstddef>
 
+#include "AssemblerLib/ComputeSparsityPattern.h"
+
 namespace MathLib
 {
 
 struct MatrixSpecifications
 {
+    MatrixSpecifications(std::size_t const nrows_, std::size_t const ncols_,
+                         AssemblerLib::SparsityPattern const*const sparsity_pattern_)
+        : nrows(nrows_), ncols(ncols_), sparsity_pattern(sparsity_pattern_)
+    {}
+
     std::size_t const nrows;
     std::size_t const ncols;
+    AssemblerLib::SparsityPattern const*const sparsity_pattern;
 };
 
 class MatrixSpecificationsProvider

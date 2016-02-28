@@ -134,7 +134,10 @@ std::unique_ptr<EigenMatrix>
 MatrixVectorTraits<EigenMatrix>::
 newInstance(MatrixSpecifications const& spec)
 {
-    return std::unique_ptr<EigenMatrix>(new EigenMatrix(spec.nrows)); // TODO sparsity pattern
+    auto A = std::unique_ptr<EigenMatrix>(new EigenMatrix(spec.nrows));
+    if (spec.sparsity_pattern)
+        setMatrixSparsity(*A, *spec.sparsity_pattern);
+    return A;
 }
 
 std::unique_ptr<EigenVector>
