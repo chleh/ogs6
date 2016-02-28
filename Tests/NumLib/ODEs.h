@@ -57,6 +57,10 @@ public:
     {
         return N;
     }
+    MathLib::MatrixSpecifications getMatrixSpecifications() const override
+    {
+        return { N, N };
+    }
 
     bool isLinear() const override
     {
@@ -129,6 +133,10 @@ public:
     std::size_t getNumEquations() const override
     {
         return N;
+    }
+    MathLib::MatrixSpecifications getMatrixSpecifications() const override
+    {
+        return { N, N };
     }
 
     bool isLinear() const override
@@ -265,6 +273,10 @@ public:
     std::size_t getNumEquations() const override
     {
         return N;
+    }
+    MathLib::MatrixSpecifications getMatrixSpecifications() const override
+    {
+        return { N, N };
     }
 
     bool isLinear() const override
