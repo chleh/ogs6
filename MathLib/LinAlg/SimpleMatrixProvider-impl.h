@@ -31,6 +31,19 @@ namespace MathLib
 template<typename Matrix, typename Vector>
 Matrix&
 SimpleMatrixProvider<Matrix, Vector>::
+getMatrix()
+{
+    // not found, so create a new one
+    auto const id = _next_id++;
+    auto res = _used_matrices.emplace(id,
+        std::unique_ptr<Matrix>{new Matrix(0, 0)}); // TODO improve
+    assert(res.second && "Emplacement failed.");
+    return *res.first->second;
+}
+
+template<typename Matrix, typename Vector>
+Matrix&
+SimpleMatrixProvider<Matrix, Vector>::
 getMatrix(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
     auto it = _unused_matrices.find(id);
@@ -108,6 +121,26 @@ getVector(Vector const& x)
         std::unique_ptr<Vector>{new Vector(x)});
     assert(res.second && "Emplacement failed.");
     return *res.first->second;
+}
+
+template<typename Matrix, typename Vector>
+Vector&
+SimpleMatrixProvider<Matrix, Vector>::
+getVector(std::size_t& id)
+{
+    auto it = _unused_vectors.find(id);
+    if (it == _unused_vectors.end())
+    {
+        // not found, so create a new one
+        id = _next_id++;
+        auto res = _used_vectors.emplace(id,
+            std::unique_ptr<Vector>{new Vector});
+        assert(res.second && "Emplacement failed.");
+        return *res.first->second;
+    }
+    else { // unused vector found
+        return *::detail::transfer(_unused_vectors, _used_vectors, it);
+    }
 }
 
 template<typename Matrix, typename Vector>

@@ -29,6 +29,7 @@ public:
 
     virtual Vector& getVector() = 0;
     virtual Vector& getVector(Vector const& x) = 0;
+    virtual Vector& getVector(std::size_t& id) = 0;
     //! get an uninitialized vector (or the one with the given id)
     virtual Vector& getVector(MSP const& msp, std::size_t& id) = 0;
     //! get a copy of x
@@ -46,6 +47,7 @@ class MatrixProvider
 public:
     using MSP = MatrixSpecificationsProvider;
 
+    virtual Matrix& getMatrix() = 0;
     //! get an uninitialized matrix (or the one with the given id)
     virtual Matrix& getMatrix(MSP const& msp, std::size_t& id) = 0;
     //! get a copy of A
