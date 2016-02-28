@@ -136,7 +136,7 @@ public:
         auto const  dxdot_dx = _time_disc.getNewXWeight();
         auto const  dx_dx    = _time_disc.getDxDx();
 
-        auto& xdot = _matrix_provider.getVector(_ode, _xdot_id);
+        auto& xdot = _matrix_provider.getVector(_xdot_id);
         _time_disc.getXdot(x_new_timestep, xdot);
 
         _Jac->setZero();
@@ -153,7 +153,7 @@ public:
         // TODO Maybe the duplicate calculation of xdot here and in assembleJacobian
         //      can be optimuized. However, that would make the interface a bit more
         //      fragile.
-        auto& xdot = _matrix_provider.getVector(_ode, _xdot_id);
+        auto& xdot = _matrix_provider.getVector(_xdot_id);
         _time_disc.getXdot(x_new_timestep, xdot);
 
         _mat_trans->computeResidual(*_M, *_K, *_b, x_new_timestep, xdot, res);

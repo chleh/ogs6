@@ -39,9 +39,9 @@ solve(Vector &x)
     auto& sys = *_equation_system;
 
     // TODO maybe sys can be omitted
-    auto& A     = _matrix_provider.getMatrix(sys, _A_id);
-    auto& rhs   = _matrix_provider.getVector(sys, _rhs_id);
-    auto& x_new = _matrix_provider.getVector(sys, _x_new_id);
+    auto& A     = _matrix_provider.getMatrix(_A_id);
+    auto& rhs   = _matrix_provider.getVector(_rhs_id);
+    auto& x_new = _matrix_provider.getVector(_x_new_id);
 
     bool success = false;
 
@@ -113,9 +113,9 @@ solve(Vector &x)
     namespace BLAS = MathLib::BLAS;
     auto& sys = *_equation_system;
 
-    auto& res           = _matrix_provider.getVector(sys, _res_id);
-    auto& J             = _matrix_provider.getMatrix(sys, _J_id);
-    auto& minus_delta_x = _matrix_provider.getVector(sys, _minus_delta_x_id);
+    auto& res           = _matrix_provider.getVector(_res_id);
+    auto& J             = _matrix_provider.getMatrix(_J_id);
+    auto& minus_delta_x = _matrix_provider.getVector(_minus_delta_x_id);
 
     bool success = false;
 
