@@ -15,6 +15,7 @@
 #include <logog/include/logog.hpp>
 
 #include "MathLib/LinAlg/LinearSolver.h"
+#include "MathLib/LinAlg/MatrixProviderUser.h"
 
 #include "Types.h"
 #include "NonlinearSystem.h"
@@ -57,7 +58,7 @@ public:
      * \retval true if the equation system could be solved
      * \retval false otherwise
      */
-    virtual bool solve(Vector& x) = 0;
+    virtual bool solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector& x) = 0;
 
     virtual ~NonlinearSolverBase() = default;
 };
@@ -108,7 +109,7 @@ public:
 
     void assemble(Vector const& x) const override;
 
-    bool solve(Vector& x) override;
+    bool solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector& x) override;
 
 private:
     LinearSolver& _linear_solver;
@@ -117,11 +118,12 @@ private:
     const double _tol;       //!< tolerance of the solver
     const unsigned _maxiter; //!< maximum number of iterations
 
-    Vector* _res           = nullptr; //!< The residual.
-    Matrix* _J             = nullptr; //!< The Jacobian of the residual.
-    Vector* _minus_delta_x = nullptr; //!< The Newton-Raphson method solves the linearized equation
-                             //!< \f$ J \cdot (-\Delta x) = r \f$ repeatedly.
     double const _alpha = 1; //!< Damping factor. \todo Add constructor parameter.
+
+    // TODO
+    std::size_t _res_id;
+    std::size_t _J_id;
+    std::size_t _minus_delta_x_id;
 };
 
 
@@ -158,7 +160,7 @@ public:
 
     void assemble(Vector const& x) const override;
 
-    bool solve(Vector& x) override;
+    bool solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector& x) override;
 
 private:
     LinearSolver& _linear_solver;
@@ -167,9 +169,10 @@ private:
     const double _tol;       //!< tolerance of the solver
     const unsigned _maxiter; //!< maximum number of iterations
 
-    Matrix* _A     = nullptr; //!< \c Matrix describing the linearized system.
-    Vector* _rhs   = nullptr; //!< \c Vector describing the linearized system.
-    Vector* _x_new = nullptr; //!< \c Vector to store solutions of \f$ A \cdot x = \mathit{rhs} \f$.
+    // TODO
+    std::size_t _A_id;
+    std::size_t _rhs_id;
+    std::size_t _x_new_id;
 };
 
 /*! Creates a new nonlinear solver from the given configuration.

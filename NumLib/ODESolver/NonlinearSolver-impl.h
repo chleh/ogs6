@@ -33,41 +33,45 @@ assemble(Vector const& x) const
 template<typename Matrix, typename Vector>
 bool
 NonlinearSolver<Matrix, Vector, NonlinearSolverTag::Picard>::
-solve(Vector &x)
+solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector &x)
 {
     namespace BLAS = MathLib::BLAS;
     auto& sys = *_equation_system;
 
+    auto& A     = prvd.getMatrix(sys, _A_id);
+    auto& rhs   = prvd.getVector(sys, _rhs_id);
+    auto& x_new = prvd.getVector(sys, _x_new_id);
+
     bool success = false;
 
-    BLAS::copy(x, *_x_new); // set initial guess, TODO save the copy
+    BLAS::copy(x, x_new); // set initial guess, TODO save the copy
 
     for (unsigned iteration=1; iteration<_maxiter; ++iteration)
     {
-        sys.assembleMatricesPicard(*_x_new);
-        sys.getA(*_A);
-        sys.getRhs(*_rhs);
+        sys.assembleMatricesPicard(x_new);
+        sys.getA(A);
+        sys.getRhs(rhs);
 
         // Here _x_new has to be used and it has to be equal to x!
-        sys.applyKnownSolutionsPicard(*_A, *_rhs, *_x_new);
+        sys.applyKnownSolutionsPicard(A, rhs, x_new);
 
         // std::cout << "A:\n" << Eigen::MatrixXd(A) << "\n";
         // std::cout << "rhs:\n" << rhs << "\n\n";
 
-        if (!_linear_solver.solve(*_A, *_rhs, *_x_new)) {
+        if (!_linear_solver.solve(A, rhs, x_new)) {
             ERR("The linear solver failed.");
-            x = *_x_new;
+            x = x_new;
             success = false;
             break;
         }
 
         // x is used as delta_x in order to compute the error.
-        BLAS::aypx(x, -1.0, *_x_new); // x = _x_new - x
+        BLAS::aypx(x, -1.0, x_new); // x = _x_new - x
         auto const error = BLAS::norm2(x);
         // INFO("  picard iteration %u error: %e", iteration, error);
 
         // Update x s.t. in the next iteration we will compute the right delta x
-        x = *_x_new;
+        x = x_new;
 
         if (error < _tol) {
             success = true;
@@ -80,6 +84,10 @@ solve(Vector &x)
             break;
         }
     }
+
+    prvd.releaseMatrix(_A_id, A);
+    prvd.releaseVector(_rhs_id, rhs);
+    prvd.releaseVector(_x_new_id, x_new);
 
     return success;
 }
@@ -99,40 +107,44 @@ assemble(Vector const& x) const
 template<typename Matrix, typename Vector>
 bool
 NonlinearSolver<Matrix, Vector, NonlinearSolverTag::Newton>::
-solve(Vector &x)
+solve(MathLib::MatrixProvider<Matrix, Vector>& prvd, Vector &x)
 {
     namespace BLAS = MathLib::BLAS;
     auto& sys = *_equation_system;
+
+    auto& res           = prvd.getVector(sys, _res_id);
+    auto& J             = prvd.getMatrix(sys, _J_id);
+    auto& minus_delta_x = prvd.getVector(sys, _minus_delta_x_id);
 
     bool success = false;
 
     // TODO be more efficient
     // init _minus_delta_x to the right size and 0.0
-    BLAS::copy(x, *_minus_delta_x);
-    _minus_delta_x->setZero();
+    BLAS::copy(x, minus_delta_x);
+    minus_delta_x.setZero();
 
     for (unsigned iteration=1; iteration<_maxiter; ++iteration)
     {
         sys.assembleResidualNewton(x);
-        sys.getResidual(x, *_res);
+        sys.getResidual(x, res);
 
         // std::cout << "  res:\n" << res << std::endl;
 
         // TODO streamline that, make consistent with Picard.
-        if (BLAS::norm2(*_res) < _tol) {
+        if (BLAS::norm2(res) < _tol) {
             success = true;
             break;
         }
 
         sys.assembleJacobian(x);
-        sys.getJacobian(*_J);
-        sys.applyKnownSolutionsNewton(*_J, *_res, *_minus_delta_x);
+        sys.getJacobian(J);
+        sys.applyKnownSolutionsNewton(J, res, minus_delta_x);
 
         // std::cout << "  J:\n" << Eigen::MatrixXd(J) << std::endl;
 
-        if (!_linear_solver.solve(*_J, *_res, *_minus_delta_x)) {
+        if (!_linear_solver.solve(J, res, minus_delta_x)) {
             ERR("The linear solver failed.");
-            BLAS::axpy(x, -_alpha, *_minus_delta_x);
+            BLAS::axpy(x, -_alpha, minus_delta_x);
             success = false;
             break;
         }
@@ -140,7 +152,7 @@ solve(Vector &x)
         // auto const dx_norm = _minus_delta_x.norm();
         // INFO("  newton iteration %u, norm of delta x: %e", iteration, dx_norm);
 
-        BLAS::axpy(x, -_alpha, *_minus_delta_x);
+        BLAS::axpy(x, -_alpha, minus_delta_x);
 
         if (sys.isLinear()) {
             // INFO("  newton linear system. not looping");
@@ -148,6 +160,10 @@ solve(Vector &x)
             break;
         }
     }
+
+    prvd.releaseVector(_res_id, res);
+    prvd.releaseMatrix(_J_id, J);
+    prvd.releaseVector(_minus_delta_x_id, minus_delta_x);
 
     return success;
 }
