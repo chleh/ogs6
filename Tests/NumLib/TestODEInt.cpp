@@ -43,10 +43,11 @@ public:
         using ODE_ = ODE<Matrix, Vector>;
         using ODET = ODETraits<Matrix, Vector, ODE>;
 
-        NumLib::TimeDiscretizedODESystem<Matrix, Vector, ODE_::ODETag, NLTag>
-                ode_sys(ode, timeDisc);
-
         MathLib::SimpleMatrixProvider<Matrix, Vector> mat_prvd;
+
+        NumLib::TimeDiscretizedODESystem<Matrix, Vector, ODE_::ODETag, NLTag>
+                ode_sys(mat_prvd, ode, timeDisc);
+
         auto linear_solver = MathLib::createLinearSolver<Matrix, Vector>(nullptr);
         std::unique_ptr<NLSolver> nonlinear_solver(
                     new NLSolver(mat_prvd, *linear_solver, _tol, _maxiter));
