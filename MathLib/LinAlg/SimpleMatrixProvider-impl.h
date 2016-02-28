@@ -1,0 +1,101 @@
+// TODO doc
+
+#include <cassert>
+#include <logog/include/logog.hpp>
+
+#include "SimpleMatrixProvider.h"
+
+namespace detail
+{
+
+template<typename MatVec>
+std::unique_ptr<MatVec>&
+transfer(std::map<std::size_t, std::unique_ptr<MatVec> >& from,
+         std::map<std::size_t, std::unique_ptr<MatVec> >& to,
+         typename std::map<std::size_t, std::unique_ptr<MatVec> >::iterator it)
+{
+    //
+    auto res = to.emplace(std::move(*it));
+    assert(res.second && "Emplacement failed.");
+    from.erase(it);
+    return res.first;
+}
+
+} // detail
+
+
+namespace MathLib
+{
+
+template<typename Matrix, typename Vector>
+Matrix&
+SimpleMatrixProvider::getMatrix(std::size_t const size, std::size_t& id)
+{
+    auto it = _unused_matrices.find(id);
+    if (it == _unused_matrices.end())
+    {
+        // not found, so create a new one
+        id = _next_id++;
+        auto res = _used_matrices.emplace(
+                       new Matrix(_mat_spec.nrows, _mat_spec.nrows));
+        assert(res.second && "Emplacement failed.");
+        return *res.first;
+    }
+    else { // unused matrix found
+        return *detail::transfer(_unused_matrices, _used_matrices, it);
+    }
+}
+
+template<typename Matrix, typename Vector>
+void
+SimpleMatrixProvider::releaseMatrix(std::size_t const id)
+{
+    auto it = _used_matrices.find(id);
+    if (it == _used_matrices.end()) {
+        ERR("A matrix with the id %lu has not been found. Cannot release it. Aborting.");
+        std::abort();
+    } else {
+        detail::transfer(_used_matrices, _unused_matrices, it);
+    }
+}
+
+template<typename Matrix, typename Vector>
+Vector&
+SimpleMatrixProvider::getMatrix(std::size_t const size, std::size_t& id)
+{
+    auto it = _unused_vectors.find(id);
+    if (it == _unused_vectors.end())
+    {
+        // not found, so create a new one
+        id = _next_id++;
+        auto res = _used_vectors.emplace(new Vector(_mat_spec.nrows));
+        assert(res.second && "Emplacement failed.");
+        return *res.first;
+    }
+    else { // unused vector found
+        return *detail::transfer(_unused_vectors, _used_vectors, it);
+    }
+}
+
+template<typename Matrix, typename Vector>
+void
+SimpleMatrixProvider::releaseMatrix(std::size_t const id)
+{
+    auto it = _used_vectors.find(id);
+    if (it == _used_vectors.end()) {
+        ERR("A vector with the id %lu has not been found. Cannot release it. Aborting.", id);
+        std::abort();
+    } else {
+        detail::transfer(_used_vectors, _unused_vectors, it);
+    }
+}
+
+template<typename Matrix, typename Vector>
+void SimpleMatrixProvider::
+setMatrixSpecificationsProvider(MatrixSpecificationsProvider const& spec_prvd)
+{
+    // TODO this is a shortcut and relies on the fact that specs won't change
+    _mat_spec = spec_prvd.getMatrixSpecifications();
+}
+
+} // MathLib
