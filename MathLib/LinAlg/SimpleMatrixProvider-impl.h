@@ -128,7 +128,7 @@ getVector(MatrixSpecificationsProvider const& msp, std::size_t& id, Vector const
 template<typename Matrix, typename Vector>
 void
 SimpleMatrixProvider<Matrix, Vector>::
-releaseVector(std::size_t const id, Vector const& x)
+releaseVector(std::size_t const id, Vector const& /*x*/)
 {
     auto it = _used_vectors.find(id);
     if (it == _used_vectors.end()) {
