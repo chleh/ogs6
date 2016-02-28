@@ -98,6 +98,10 @@ ProjectData::~ProjectData()
 
 	for (MeshLib::Mesh* m : _mesh_vec)
 		delete m;
+
+	// processes must be destroyed before the _matrix_provider, because the
+	// matrix provider is referenced inside them
+	_processes.clear();
 }
 
 void ProjectData::addMesh(MeshLib::Mesh* mesh)
