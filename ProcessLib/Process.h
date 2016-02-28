@@ -20,7 +20,6 @@
 #include "AssemblerLib/VectorMatrixAssembler.h"
 #include "BaseLib/ConfigTree.h"
 #include "FileIO/VtkIO/VtuInterface.h"
-#include "MathLib/LinAlg/SetMatrixSparsity.h"
 #include "MeshGeoToolsLib/MeshNodeSearcher.h"
 #include "MeshLib/MeshSubset.h"
 #include "MeshLib/MeshSubsets.h"
@@ -95,10 +94,8 @@ public:
 		DBUG("Construct dof mappings.");
 		constructDofTable();
 
-#ifndef USE_PETSC
 		DBUG("Compute sparsity pattern");
 		computeSparsityPattern();
-#endif
 
 		DBUG("Create global assembler.");
 		_global_assembler.reset(
@@ -128,7 +125,9 @@ public:
 
 	MathLib::MatrixSpecifications getMatrixSpecifications() const override final
 	{
-		return { _local_to_global_index_map->dofSize(), _local_to_global_index_map->dofSize() };
+		return { _local_to_global_index_map->dofSize(),
+		         _local_to_global_index_map->dofSize(),
+		         &_sparsity_pattern };
 	}
 
 #if 0
@@ -163,9 +162,6 @@ public:
 	void assemble(const double t, GlobalVector const& x,
 	              GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b) override final
 	{
-		MathLib::setMatrixSparsity(M, _sparsity_pattern);
-		MathLib::setMatrixSparsity(K, _sparsity_pattern);
-
 		assembleConcreteProcess(t, x, M, K, b);
 
 		// Call global assembler for each Neumann boundary local assembler.
@@ -179,8 +175,6 @@ public:
 		const double dx_dx, GlobalMatrix const& K,
 		GlobalMatrix& Jac) override final
 	{
-		MathLib::setMatrixSparsity(Jac, _sparsity_pattern);
-
 		assembleJacobianConcreteProcess(t, x, xdot, dxdot_dx, M, dx_dx, K, Jac);
 
 		// TODO In this method one could check if the user wants to use an
