@@ -4,6 +4,7 @@
 #include <logog/include/logog.hpp>
 
 #include "BLAS.h"
+#include "MatrixVectorTraits.h"
 #include "SimpleMatrixProvider.h"
 
 namespace detail
@@ -63,7 +64,7 @@ get_(std::size_t& id,
     // not searched or not found, so create a new one
     id = _next_id++;
     auto res = used_map.emplace(
-        new MatVec{std::forward<Args>(args)...}, id);
+        MatrixVectorTraits<MatVec>::newInstance(std::forward<Args>(args)...), id);
     assert(res.second && "Emplacement failed.");
     return { res.first->first, true };
 }
@@ -84,7 +85,7 @@ SimpleMatrixProvider<Matrix, Vector>::
 getMatrix()
 {
     std::size_t id;
-    return *getMatrix_<false>(id, 0u, 0u).first; // TODO default constructor
+    return *getMatrix_<false>(id).first;
 }
 
 template<typename Matrix, typename Vector>
@@ -92,7 +93,7 @@ Matrix&
 SimpleMatrixProvider<Matrix, Vector>::
 getMatrix(std::size_t& id)
 {
-    return *getMatrix_<true>(id, 0u, 0u).first; // TODO default constructor
+    return *getMatrix_<true>(id).first;
 }
 
 template<typename Matrix, typename Vector>
@@ -102,7 +103,7 @@ getMatrix(MatrixSpecificationsProvider const& msp)
 {
     std::size_t id;
     auto const mat_spec = msp.getMatrixSpecifications();
-    return *getMatrix_<false>(id, mat_spec.nrows, mat_spec.ncols).first;
+    return *getMatrix_<false>(id, mat_spec).first;
     // TODO assert that the returned object always is of the right size
 }
 
@@ -112,7 +113,7 @@ SimpleMatrixProvider<Matrix, Vector>::
 getMatrix(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
     auto mat_spec = msp.getMatrixSpecifications();
-    return *getMatrix_<true>(id, mat_spec.nrows, mat_spec.ncols).first;
+    return *getMatrix_<true>(id, mat_spec).first;
     // TODO assert that the returned object always is of the right size
 }
 
@@ -187,7 +188,7 @@ getVector(MatrixSpecificationsProvider const& msp)
 {
     std::size_t id;
     auto const mat_spec = msp.getMatrixSpecifications();
-    return *getVector_<false>(id, mat_spec.nrows).first;
+    return *getVector_<false>(id, mat_spec).first;
     // TODO assert that the returned object always is of the right size
 }
 
@@ -197,7 +198,7 @@ SimpleMatrixProvider<Matrix, Vector>::
 getVector(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
     auto mat_spec = msp.getMatrixSpecifications();
-    return *getVector_<true>(id, mat_spec.nrows).first;
+    return *getVector_<true>(id, mat_spec).first;
     // TODO assert that the returned object always is of the right size
 }
 
