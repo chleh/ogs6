@@ -25,6 +25,8 @@ public:
     Vector& getVector(MSP const& msp, std::size_t& id, Vector const& x) override;
     void releaseVector(std::size_t const id, Vector const& x);
 
+    ~SimpleMatrixProvider();
+
 private:
     std::size_t _next_id = 1;
 

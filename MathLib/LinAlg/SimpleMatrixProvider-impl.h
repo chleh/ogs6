@@ -139,4 +139,14 @@ releaseVector(std::size_t const id, Vector const& x)
     }
 }
 
+template<typename Matrix, typename Vector>
+SimpleMatrixProvider<Matrix, Vector>::
+~SimpleMatrixProvider()
+{
+    if ((!_used_matrices.empty()) || (!_used_vectors.empty())) {
+        WARN("There are still some matrices and vectors in use."
+             " This might be an indicator of a possible waste of memory.");
+    }
+}
+
 } // MathLib
