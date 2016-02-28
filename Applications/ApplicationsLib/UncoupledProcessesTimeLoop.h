@@ -41,10 +41,12 @@ private:
     //! An abstract time discretization
     using TimeDisc         = NumLib::TimeDiscretization<Vector>;
 
+    MathLib::SimpleMatrixProvider<Matrix, Vector> _matrix_provider;
+
     struct SingleProcessData
     {
         template<NumLib::ODESystemTag ODETag, NumLib::NonlinearSolverTag NLTag>
-        SingleProcessData(
+        SingleProcessData(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
                 NumLib::NonlinearSolver<Matrix, Vector, NLTag>& nonlinear_solver,
                 TimeDisc& time_disc,
                 NumLib::ODESystem<Matrix, Vector, ODETag, NLTag>& ode_sys)
@@ -52,7 +54,7 @@ private:
             , nonlinear_solver(nonlinear_solver)
             , tdisc_ode_sys(
                   new NumLib::TimeDiscretizedODESystem<Matrix, Vector, ODETag, NLTag>(
-                                ode_sys, time_disc))
+                                matrix_provider, ode_sys, time_disc))
             , mat_strg(dynamic_cast<NumLib::InternalMatrixStorage&>(*tdisc_ode_sys))
         {}
 
@@ -88,7 +90,6 @@ private:
      *       to be extended slightly.
      */
     template<NumLib::ODESystemTag ODETag>
-    static
     SingleProcessData
     makeSingleProcessData(
             AbstractNLSolver& nonlinear_solver,
@@ -111,7 +112,8 @@ private:
             // because the Newton ODESystem derives from the Picard ODESystem.
             // So no further checks are needed here.
 
-            return SingleProcessData{ *nonlinear_solver_picard, time_disc, ode_sys };
+            return SingleProcessData{ _matrix_provider,
+                *nonlinear_solver_picard, time_disc, ode_sys };
         }
         else if (auto* nonlinear_solver_newton =
                  dynamic_cast<NonlinearSolverNewton*>(&nonlinear_solver))
@@ -121,7 +123,7 @@ private:
             using ODENewton = NumLib::ODESystem<Matrix, Vector, ODETag, Tag::Newton>;
             if (auto* ode_newton = dynamic_cast<ODENewton*>(&ode_sys))
             {
-                return SingleProcessData{
+                return SingleProcessData{ _matrix_provider,
                     *nonlinear_solver_newton, time_disc, *ode_newton };
             }
             else {
