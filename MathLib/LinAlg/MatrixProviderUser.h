@@ -27,7 +27,10 @@ public:
     virtual Matrix& getMatrix(std::size_t const size, std::size_t& id) = 0;
     virtual void releaseMatrix(std::size_t const id) = 0;
 
-    virtual void setMatrixInfoProvider(MatrixSpecificationsProvider const& info_prvd) = 0;
+    virtual Vector& getVector(std::size_t const size, std::size_t& id) = 0;
+    virtual void releaseVector(std::size_t const id) = 0;
+
+    virtual void setMatrixSpecificationsProvider(MatrixSpecificationsProvider const& spec_prvd) = 0;
 
     virtual ~MatrixProvider() = default;
 };
