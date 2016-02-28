@@ -23,10 +23,6 @@ class EquationSystem
         : public MathLib::MatrixSpecificationsProvider
 {
 public:
-    // TODO remove
-    //! Return the number of equations.
-    virtual std::size_t getNumEquations() const = 0;
-
     /*! Check whether this is actually a linear equation system.
      *
      * \remark

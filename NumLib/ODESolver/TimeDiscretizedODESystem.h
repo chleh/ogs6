@@ -96,10 +96,10 @@ public:
         : _ode(ode)
         , _time_disc(time_discretization)
         , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(time_discretization))
-        , _Jac(ode.getNumEquations(), ode.getNumEquations())
-        , _M  (ode.getNumEquations(), ode.getNumEquations())
-        , _K  (ode.getNumEquations(), ode.getNumEquations())
-        , _b  (ode.getNumEquations())
+        , _Jac(ode.getMatrixSpecifications().nrows, ode.getMatrixSpecifications().ncols)
+        , _M  (ode.getMatrixSpecifications().nrows, ode.getMatrixSpecifications().ncols)
+        , _K  (ode.getMatrixSpecifications().nrows, ode.getMatrixSpecifications().ncols)
+        , _b  (ode.getMatrixSpecifications().nrows)
     {}
 
     void assembleResidualNewton(const Vector &x_new_timestep) override
@@ -170,9 +170,6 @@ public:
     MathLib::MatrixSpecifications getMatrixSpecifications() const override {
         return _ode.getMatrixSpecifications();
     }
-    std::size_t getNumEquations() const override {
-        return _ode.getNumEquations();
-    }
 
 private:
     ODE& _ode;            //!< ode the ODE being wrapped
@@ -226,9 +223,9 @@ public:
         : _ode(ode)
         , _time_disc(time_discretization)
         , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(time_discretization))
-        , _M(ode.getNumEquations(), ode.getNumEquations())
-        , _K(ode.getNumEquations(), ode.getNumEquations())
-        , _b(ode.getNumEquations())
+        , _M  (ode.getMatrixSpecifications().nrows, ode.getMatrixSpecifications().ncols)
+        , _K  (ode.getMatrixSpecifications().nrows, ode.getMatrixSpecifications().ncols)
+        , _b  (ode.getMatrixSpecifications().nrows)
     {}
 
     void assembleMatricesPicard(const Vector &x_new_timestep) override
@@ -281,9 +278,6 @@ public:
 
     MathLib::MatrixSpecifications getMatrixSpecifications() const override {
         return _ode.getMatrixSpecifications();
-    }
-    std::size_t getNumEquations() const override {
-        return _ode.getNumEquations();
     }
 
 private:
