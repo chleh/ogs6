@@ -24,11 +24,6 @@
 #include "MeshLib/MeshSubset.h"
 #include "MeshLib/MeshSubsets.h"
 
-#ifdef USE_PETSC
-#include "MeshLib/NodePartitionedMesh.h"
-#include "MathLib/LinAlg/PETSc/PETScMatrixOption.h"
-#endif
-
 #include "DirichletBc.h"
 #include "NeumannBc.h"
 #include "NeumannBcAssembler.h"
@@ -125,39 +120,10 @@ public:
 
 	MathLib::MatrixSpecifications getMatrixSpecifications() const override final
 	{
-		return { _local_to_global_index_map->dofSize(),
-		         _local_to_global_index_map->dofSize(),
-		         &_sparsity_pattern };
+		return { 0u, 0u,
+		         &_sparsity_pattern,
+		         _local_to_global_index_map.get() };
 	}
-
-#if 0
-	std::size_t getNumEquations() const override final
-	{
-		return _local_to_global_index_map->dofSize();
-
-#ifdef USE_PETSC
-		// TODO for PETSc the method and the interface maybe have to be extended
-		// this is the old code moved here from th deleted createLinearSolver() method.
-
-		MathLib::PETScMatrixOption mat_opt;
-		const MeshLib::NodePartitionedMesh& pmesh =
-		    static_cast<const MeshLib::NodePartitionedMesh&>(_mesh);
-		mat_opt.d_nz = pmesh.getMaximumNConnectedNodesToNode();
-		mat_opt.o_nz = mat_opt.d_nz;
-		mat_opt.is_global_size = false;
-		const std::size_t num_unknowns =
-		    _local_to_global_index_map->dofSizeLocal();
-		_A.reset(_global_setup.createMatrix(num_unknowns, mat_opt));
-		// In the following two lines, false is assigned to
-		// the argument of is_global_size, which indicates num_unknowns
-		// is local.
-		_x.reset( _global_setup.createVector(num_unknowns,
-		          _local_to_global_index_map->getGhostIndices(), false) );
-		_rhs.reset( _global_setup.createVector(num_unknowns,
-		            _local_to_global_index_map->getGhostIndices(), false) );
-#endif
-	}
-#endif
 
 	void assemble(const double t, GlobalVector const& x,
 	              GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b) override final
