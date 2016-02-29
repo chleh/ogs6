@@ -83,25 +83,35 @@ double norm(PETScVector const& x)
 void setVector(PETScVector& v,
                std::initializer_list<double> values)
 {
-    (void) v; (void) values;
-    // TODO implement
-}
+    std::vector<double> const vals(values);
+    std::vector<PETScVector::IndexType> idcs(vals.size());
+    std::iota(idcs.begin(), idcs.end(), 0);
 
+    v.set(idcs, vals);
+}
 
 void setMatrix(PETScMatrix& m,
                PETScMatrix::IndexType const rows,
                PETScMatrix::IndexType const cols,
                std::initializer_list<double> values)
 {
-    (void) m; (void) rows; (void) cols; (void) values;
-    // TODO implement
+    m.setZero();
+    addToMatrix(m, rows, cols, values);
 }
 
 void setMatrix(PETScMatrix& m, Eigen::MatrixXd const& tmp)
 {
+    m.setZero();
+    std::vector<PETScVector::IndexType> rows(tmp.rows());
+    std::vector<PETScVector::IndexType> cols(tmp.cols());
 
-    (void) m; (void) tmp;
-    // TODO implement
+    std::iota(rows.begin(), rows.end(), 0);
+    std::iota(cols.begin(), cols.end(), 0);
+
+    // PETSc wants row-major
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> tmp_ = tmp;
+
+    m.add(rows, cols, tmp_);
 }
 
 void addToMatrix(PETScMatrix& m,
@@ -109,8 +119,24 @@ void addToMatrix(PETScMatrix& m,
                  PETScMatrix::IndexType const cols,
                  std::initializer_list<double> values)
 {
-    (void) m; (void) rows; (void) cols; (void) values;
-    // TODO implement
+    using IndexType = MathLib::PETScMatrix::IndexType;
+    assert((IndexType) values.size() == rows*cols);
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> tmp(rows, cols);
+
+    auto it = values.begin();
+    for (IndexType r=0; r<rows; ++r) {
+        for (IndexType c=0; c<cols; ++c) {
+            tmp(r, c) = *(it++);
+        }
+    }
+
+    std::vector<PETScVector::IndexType> rows_(rows);
+    std::vector<PETScVector::IndexType> cols_(cols);
+
+    std::iota(rows_.begin(), rows_.end(), 0);
+    std::iota(cols_.begin(), cols_.end(), 0);
+
+    m.add(rows_, cols_, tmp);
 }
 
 } // namespace MathLib

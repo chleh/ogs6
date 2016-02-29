@@ -56,12 +56,6 @@ class PETScVector;
 double norm(PETScVector const& x);
 
 void setVector(PETScVector& v,
-                      std::initializer_list<double> values);
-
-
-void setMatrix(PETScMatrix& m,
-               PETScMatrix::IndexType const rows,
-               PETScMatrix::IndexType const cols,
                std::initializer_list<double> values);
 
 void setMatrix(PETScMatrix& m, Eigen::MatrixXd const& tmp);
@@ -70,6 +64,11 @@ void addToMatrix(PETScMatrix& m,
                  PETScMatrix::IndexType const rows,
                  PETScMatrix::IndexType const cols,
                  std::initializer_list<double> values);
+
+void setMatrix(PETScMatrix& m,
+               PETScMatrix::IndexType const rows,
+               PETScMatrix::IndexType const cols,
+               std::initializer_list<double> values);
 
 } // namespace MathLib
 
