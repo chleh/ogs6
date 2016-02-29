@@ -37,11 +37,7 @@ class PETScMatrix
         using IndexType = PetscInt;
 
     public:
-        // TODO preliminary
-        PETScMatrix() {
-            // TODO implement
-            MatCreate(PETSC_COMM_WORLD, &_A);
-        }
+        PETScMatrix() {}
 
         /*!
           \brief        Constructor for a square matrix partitioning with more options
@@ -61,8 +57,11 @@ class PETScMatrix
 
         ~PETScMatrix()
         {
-            MatDestroy(&_A);
+            if (_A) MatDestroy(_A);
+            delete _A;
         }
+
+        PETScMatrix& operator=(PETScMatrix const& B);
 
         /*!
            \brief          Perform MPI collection of assembled entries in buffer
@@ -71,8 +70,8 @@ class PETScMatrix
         */
         void finalizeAssembly(const MatAssemblyType asm_type = MAT_FINAL_ASSEMBLY)
         {
-            MatAssemblyBegin(_A, asm_type);
-            MatAssemblyEnd(_A, asm_type);
+            MatAssemblyBegin(*_A, asm_type);
+            MatAssemblyEnd(*_A, asm_type);
         }
 
         /// Get the number of rows.
@@ -115,20 +114,20 @@ class PETScMatrix
         /// Get matrix reference.
         PETSc_Mat &getRawMatrix()
         {
-            return _A;
+            return *_A;
         }
         // TODO preliminary
         // this method is dangerous insofar you can do arbitrary things also
         // with a const PETSc matrix.
         PETSc_Mat const& getRawMatrix() const
         {
-            return _A;
+            return *_A;
         }
 
         /// Set all entries to zero.
         void setZero()
         {
-            MatZeroEntries(_A);
+            MatZeroEntries(*_A);
         }
 
         /*
@@ -150,7 +149,7 @@ class PETScMatrix
         */
         void multiply(const PETScVector &vec, PETScVector &vec_r)
         {
-            MatMult(_A, vec.getData(), vec_r.getData() );
+            MatMult(*_A, vec.getData(), vec_r.getData() );
         }
 
         /*!
@@ -161,7 +160,7 @@ class PETScMatrix
         */
         void set(const PetscInt i, const PetscInt j, const PetscScalar value)
         {
-            MatSetValue(_A, i, j, value, INSERT_VALUES);
+            MatSetValue(*_A, i, j, value, INSERT_VALUES);
         }
 
         /*!
@@ -172,7 +171,7 @@ class PETScMatrix
         */
         void add(const PetscInt i, const PetscInt j, const PetscScalar value)
         {
-            MatSetValue(_A, i, j, value, ADD_VALUES);
+            MatSetValue(*_A, i, j, value, ADD_VALUES);
         }
 
         /// Add sub-matrix at positions given by \c indices.
@@ -233,7 +232,7 @@ class PETScMatrix
 
     private:
         /// PETSc matrix
-        PETSc_Mat _A;
+        PETSc_Mat* _A;
 
         /// Number of the global rows
         PetscInt _nrows;
@@ -279,7 +278,7 @@ void PETScMatrix::add(std::vector<PetscInt> const& row_pos,
     const PetscInt nrows = static_cast<PetscInt> (row_pos.size());
     const PetscInt ncols = static_cast<PetscInt> (col_pos.size());
 
-    MatSetValues(_A, nrows, &row_pos[0], ncols, &col_pos[0], &sub_mat(0,0), ADD_VALUES);
+    MatSetValues(*_A, nrows, &row_pos[0], ncols, &col_pos[0], &sub_mat(0,0), ADD_VALUES);
 };
 
 /*!
