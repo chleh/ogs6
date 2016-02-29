@@ -20,13 +20,16 @@ namespace MathLib
 struct MatrixSpecifications
 {
     MatrixSpecifications(std::size_t const nrows_, std::size_t const ncols_,
-                         AssemblerLib::SparsityPattern const*const sparsity_pattern_)
+                         AssemblerLib::SparsityPattern const*const sparsity_pattern_,
+                         AssemblerLib::LocalToGlobalIndexMap const*const dof_table_)
         : nrows(nrows_), ncols(ncols_), sparsity_pattern(sparsity_pattern_)
+        , dof_table(dof_table_)
     {}
 
     std::size_t const nrows;
     std::size_t const ncols;
     AssemblerLib::SparsityPattern const*const sparsity_pattern;
+    AssemblerLib::LocalToGlobalIndexMap const*const dof_table;
 };
 
 class MatrixSpecificationsProvider
