@@ -15,6 +15,7 @@
 #include <logog/include/logog.hpp>
 
 #include "BaseLib/ConfigTree.h"
+#include "MathLib/LinAlg/SimpleMatrixProvider.h"
 #include "NumLib/ODESolver/TimeDiscretizedODESystem.h"
 #include "NumLib/ODESolver/NonlinearSolver.h"
 
@@ -31,6 +32,8 @@ class UncoupledProcessesTimeLoop
 public:
     bool loop(ProjectData& project, std::string const& outdir);
 
+    ~UncoupledProcessesTimeLoop();
+
 private:
     //! An abstract nonlinear solver
     using AbstractNLSolver = NumLib::NonlinearSolverBase<Matrix, Vector>;
@@ -42,6 +45,7 @@ private:
     using TimeDisc         = NumLib::TimeDiscretization<Vector>;
 
     MathLib::SimpleMatrixProvider<Matrix, Vector> _matrix_provider;
+    std::vector<Vector*> _process_solutions;
 
     struct SingleProcessData
     {
@@ -144,7 +148,7 @@ private:
 
     //! Sets and returns initial conditions for the given ProjectData and
     //! PerProcessData.
-    std::vector<Vector> setInitialConditions(
+    void setInitialConditions(
             ProjectData& project, double const t0,
             std::vector<SingleProcessData>& per_process_data);
 
@@ -240,7 +244,7 @@ initInternalData(ProjectData& project)
 
 
 template<typename Matrix, typename Vector>
-std::vector<Vector>
+void
 UncoupledProcessesTimeLoop<Matrix, Vector>::
 setInitialConditions(ProjectData& project,
                      double const t0,
@@ -249,8 +253,7 @@ setInitialConditions(ProjectData& project,
     auto const num_processes = std::distance(project.processesBegin(),
                                              project.processesEnd());
 
-    std::vector<Vector> process_solutions;
-    process_solutions.reserve(num_processes);
+    _process_solutions.reserve(num_processes);
 
     unsigned pcs_idx = 0;
     for (auto p = project.processesBegin(); p != project.processesEnd();
@@ -263,13 +266,11 @@ setInitialConditions(ProjectData& project,
         auto& ode_sys     =  *ppd.tdisc_ode_sys;
         auto const nl_tag =   ppd.nonlinear_solver_tag;
 
-        auto const num_eqs = ode_sys.getMatrixSpecifications().nrows;
+        // append a solution vector of suitable size
+        _process_solutions.emplace_back(
+                    &_matrix_provider.getVector(ode_sys));
 
-        // TODO maybe more is required for PETSc
-        // append a solution vector of size num_eqs
-        process_solutions.emplace_back(num_eqs);
-
-        auto& x0 = process_solutions[pcs_idx];
+        auto& x0 = *_process_solutions[pcs_idx];
         pcs.setInitialConditions(x0);
 
         time_disc.setInitialState(t0, x0); // push IC
@@ -284,8 +285,6 @@ setInitialConditions(ProjectData& project,
             time_disc.pushState(t0, x0, mat_strg); // TODO: that might do duplicate work
         }
     }
-
-    return process_solutions;
 }
 
 
@@ -330,7 +329,7 @@ loop(ProjectData& project, std::string const& outdir)
     auto const t0 = 0.0; // time of the IC
 
     // init solution storage
-    auto process_solutions = setInitialConditions(project, t0, per_process_data);
+    setInitialConditions(project, t0, per_process_data);
 
     auto const delta_t = 1.0;
 
@@ -355,7 +354,7 @@ loop(ProjectData& project, std::string const& outdir)
                     // + "_t_"   + std::to_string(t) // TODO: add that later
                     + ".vtu";
 
-            auto& x = process_solutions[pcs_idx];
+            auto& x = *_process_solutions[pcs_idx];
 
             nonlinear_solver_succeeded = solveOneTimeStepOneProcess(
                         timestep, x, t, delta_t,
@@ -376,6 +375,15 @@ loop(ProjectData& project, std::string const& outdir)
     return nonlinear_solver_succeeded;
 }
 
+
+template<typename Matrix, typename Vector>
+UncoupledProcessesTimeLoop<Matrix, Vector>::
+~UncoupledProcessesTimeLoop()
+{
+    for (auto * x : _process_solutions)
+        _matrix_provider.releaseVector(*x);
 }
+
+} // namespace ApplicationsLib
 
 #endif // APPLICATIONSLIB_UNCOUPLED_PROCESSES_TIMELOOP
