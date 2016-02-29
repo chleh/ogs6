@@ -55,7 +55,7 @@ public:
 
     MathLib::MatrixSpecifications getMatrixSpecifications() const override
     {
-        return { N, N, nullptr };
+        return { N, N, nullptr, nullptr };
     }
 
     bool isLinear() const override
@@ -128,7 +128,7 @@ public:
 
     MathLib::MatrixSpecifications getMatrixSpecifications() const override
     {
-        return { N, N, nullptr };
+        return { N, N, nullptr, nullptr };
     }
 
     bool isLinear() const override
@@ -264,7 +264,7 @@ public:
 
     MathLib::MatrixSpecifications getMatrixSpecifications() const override
     {
-        return { N, N, nullptr };
+        return { N, N, nullptr, nullptr };
     }
 
     bool isLinear() const override
