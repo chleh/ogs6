@@ -224,7 +224,7 @@ class PETScVector
         void operator = (const PETScVector &v_in)
         {
             if (!_v) shallowCopy(v_in);
-            VecCopy(*_v, *v_in._v);
+            VecCopy(*v_in._v, *_v);
         }
 
         ///  Overloaded operator: add
@@ -243,12 +243,12 @@ class PETScVector
 
 
         // TODO preliminary
-        PETSc_Vec& getRawVector() { return *_v; }
+        PETSc_Vec* getRawVector() { return _v; }
 
         // TODO preliminary
         // this method is dangerous insofar you can do arbitrary things also
         // with a const PETSc vector.
-        const PETSc_Vec& getRawVector() const {return *_v; }
+        const PETSc_Vec* getRawVector() const {return _v; }
 
 
         /*! View the global vector for test purpose. Do not use it for output a big vector.
@@ -277,6 +277,8 @@ class PETScVector
         void viewer(const std::string &file_name,
                     const PetscViewerFormat vw_format = PETSC_VIEWER_ASCII_MATLAB ) const;
 
+        void shallowCopy(const PETScVector &v);
+
     private:
         PETSc_Vec* _v = nullptr;
         /// Local vector, which is only for the case that  _v is created
@@ -297,8 +299,6 @@ class PETScVector
 
         /// Flag to indicate whether the vector is created with ghost entry indices
         bool _has_ghost_id = false;
-
-        void shallowCopy(const PETScVector &v);
 
         /*!
               \brief  Collect local vectors
