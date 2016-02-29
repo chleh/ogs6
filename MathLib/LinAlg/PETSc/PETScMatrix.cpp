@@ -48,18 +48,35 @@ PETScMatrix::PETScMatrix (const PetscInt nrows, const PetscInt ncols, const PETS
     create(mat_opt.d_nz, mat_opt.o_nz);
 }
 
-PETScMatrix&
-PETScMatrix::operator=(PETScMatrix const& B)
+PETScMatrix::PETScMatrix(const PETScMatrix &A)
+    : _A(new PETSc_Mat)
+    , _nrows(A._nrows)
+    , _ncols(A._ncols)
+    , _n_loc_rows(A._n_loc_rows)
+    , _n_loc_cols(A._n_loc_cols)
+    , _start_rank(A._start_rank)
+    , _end_rank(A._end_rank)
 {
-    _nrows = B._nrows;
-    _ncols = B._ncols;
-    _n_loc_rows = B._n_loc_rows;
-    _n_loc_cols = B._n_loc_cols;
-    _start_rank = B._start_rank;
-    _end_rank = B._end_rank;
+    MatConvert(*A._A, MATSAME, MAT_INITIAL_MATRIX, _A);
+}
 
-    // TODO this is the slowest option for copying
-    MatCopy(*B._A, *_A, DIFFERENT_NONZERO_PATTERN);
+PETScMatrix&
+PETScMatrix::operator=(PETScMatrix const& A)
+{
+    _nrows = A._nrows;
+    _ncols = A._ncols;
+    _n_loc_rows = A._n_loc_rows;
+    _n_loc_cols = A._n_loc_cols;
+    _start_rank = A._start_rank;
+    _end_rank = A._end_rank;
+
+    if (_A) {
+        // TODO this is the slowest option for copying
+        MatCopy(*A._A, *_A, DIFFERENT_NONZERO_PATTERN);
+    } else {
+        _A = new PETSc_Mat;
+        MatConvert(*A._A, MATSAME, MAT_INITIAL_MATRIX, _A);
+    }
 
     return *this;
 }

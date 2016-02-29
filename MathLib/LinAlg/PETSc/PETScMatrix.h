@@ -61,7 +61,9 @@ class PETScMatrix
             delete _A;
         }
 
-        PETScMatrix& operator=(PETScMatrix const& B);
+        PETScMatrix(PETScMatrix const& A);
+
+        PETScMatrix& operator=(PETScMatrix const& A);
 
         /*!
            \brief          Perform MPI collection of assembled entries in buffer
@@ -232,7 +234,7 @@ class PETScMatrix
 
     private:
         /// PETSc matrix
-        PETSc_Mat* _A;
+        PETSc_Mat* _A = nullptr;
 
         /// Number of the global rows
         PetscInt _nrows;
