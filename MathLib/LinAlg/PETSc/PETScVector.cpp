@@ -28,6 +28,8 @@ namespace MathLib
 {
 PETScVector::PETScVector(const PetscInt vec_size, const bool is_global_size)
 {
+    _v = new PETSc_Vec;
+
     if( is_global_size )
     {
         VecCreate(PETSC_COMM_WORLD, _v);
@@ -48,6 +50,8 @@ PETScVector::PETScVector(const PetscInt vec_size,
                          const bool is_global_size) :
                          _size_ghosts(ghost_ids.size()), _has_ghost_id(true)
 {
+    _v = new PETSc_Vec;
+
     PetscInt nghosts = static_cast<PetscInt>( ghost_ids.size() );
     if ( is_global_size )
     {
@@ -67,19 +71,13 @@ PETScVector::PETScVector(const PetscInt vec_size,
 
 PETScVector::PETScVector(const PETScVector &existing_vec, const bool deep_copy)
 {
-    VecDuplicate(*existing_vec._v, _v);
-
-    VecGetOwnershipRange(*_v, &_start_rank,&_end_rank);
-    VecGetLocalSize(*_v, &_size_loc);
-    VecGetSize(*_v, &_size);
+    shallowCopy(existing_vec);
 
     // Copy values
     if(deep_copy)
     {
         VecCopy(*existing_vec._v, *_v);
     }
-
-    VecSetOption(*_v, VEC_IGNORE_NEGATIVE_INDICES, PETSC_TRUE);
 }
 
 void PETScVector::config()
@@ -227,6 +225,21 @@ void PETScVector::viewer(const std::string &file_name, const PetscViewerFormat v
     exit(0);
 #endif
 
+}
+
+void PETScVector::shallowCopy(const PETScVector &v)
+{
+    assert(_v == nullptr);
+
+    _v = new PETSc_Vec;
+
+    VecDuplicate(*v._v, _v);
+
+    VecGetOwnershipRange(*_v, &_start_rank,&_end_rank);
+    VecGetLocalSize(*_v, &_size_loc);
+    VecGetSize(*_v, &_size);
+
+    VecSetOption(*_v, VEC_IGNORE_NEGATIVE_INDICES, PETSC_TRUE);
 }
 
 void finalizeVectorAssembly(PETScVector &vec)

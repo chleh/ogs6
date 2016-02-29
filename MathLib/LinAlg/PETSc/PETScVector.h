@@ -75,7 +75,7 @@ class PETScVector
 
         ~PETScVector()
         {
-            VecDestroy(_v);
+            if (_v) VecDestroy(_v);
             delete _v;
         }
 
@@ -223,18 +223,21 @@ class PETScVector
         /// Overloaded operator: assign
         void operator = (const PETScVector &v_in)
         {
+            if (!_v) shallowCopy(v_in);
             VecCopy(*_v, *v_in._v);
         }
 
         ///  Overloaded operator: add
         void operator += (const PETScVector& v_in)
         {
+            if (!_v) shallowCopy(v_in);
             VecAXPY(*_v, 1.0, *v_in._v);
         }
 
         ///  Overloaded operator: subtract
         void operator -= (const PETScVector& v_in)
         {
+            if (!_v) shallowCopy(v_in);
             VecAXPY(*_v, -1.0, *v_in._v);
         }
 
@@ -294,6 +297,8 @@ class PETScVector
 
         /// Flag to indicate whether the vector is created with ghost entry indices
         bool _has_ghost_id = false;
+
+        void shallowCopy(const PETScVector &v);
 
         /*!
               \brief  Collect local vectors
