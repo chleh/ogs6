@@ -8,46 +8,46 @@
 namespace MathLib
 {
 
-Eigen::MatrixXd*
+std::unique_ptr<Eigen::MatrixXd>
 MatrixVectorTraits<Eigen::MatrixXd>::
 newInstance()
 {
-    return new Eigen::MatrixXd;
+    return std::unique_ptr<Eigen::MatrixXd>(new Eigen::MatrixXd);
 }
 
-Eigen::MatrixXd*
+std::unique_ptr<Eigen::MatrixXd>
 MatrixVectorTraits<Eigen::MatrixXd>::
 newInstance(Eigen::MatrixXd const& A)
 {
-    return new Eigen::MatrixXd(A);
+    return std::unique_ptr<Eigen::MatrixXd>(new Eigen::MatrixXd(A));
 }
 
-Eigen::MatrixXd*
+std::unique_ptr<Eigen::MatrixXd>
 MatrixVectorTraits<Eigen::MatrixXd>::
 newInstance(MatrixSpecifications const& spec)
 {
-    return new Eigen::MatrixXd(spec.nrows, spec.ncols);
+    return std::unique_ptr<Eigen::MatrixXd>(new Eigen::MatrixXd(spec.nrows, spec.ncols));
 }
 
-Eigen::VectorXd*
+std::unique_ptr<Eigen::VectorXd>
 MatrixVectorTraits<Eigen::VectorXd>::
 newInstance()
 {
-    return new Eigen::VectorXd;
+    return std::unique_ptr<Eigen::VectorXd>(new Eigen::VectorXd);
 }
 
-Eigen::VectorXd*
+std::unique_ptr<Eigen::VectorXd>
 MatrixVectorTraits<Eigen::VectorXd>::
 newInstance(Eigen::VectorXd const& A)
 {
-    return new Eigen::VectorXd(A);
+    return std::unique_ptr<Eigen::VectorXd>(new Eigen::VectorXd(A));
 }
 
-Eigen::VectorXd*
+std::unique_ptr<Eigen::VectorXd>
 MatrixVectorTraits<Eigen::VectorXd>::
 newInstance(MatrixSpecifications const& spec)
 {
-    return new Eigen::VectorXd(spec.nrows);
+    return std::unique_ptr<Eigen::VectorXd>(new Eigen::VectorXd(spec.nrows));
 }
 
 } // namespace MathLib
@@ -60,46 +60,46 @@ newInstance(MatrixSpecifications const& spec)
 namespace MathLib
 {
 
-PETScMatrix*
+std::unique_ptr<PETScMatrix>
 MatrixVectorTraits<PETScMatrix>::
 newInstance()
 {
-    return new PETScMatrix(0, 0); // TODO default constructor
+    return std::unique_ptr<PETScMatrix>(new PETScMatrix(0, 0)); // TODO default constructor
 }
 
-PETScMatrix*
+std::unique_ptr<PETScMatrix>
 MatrixVectorTraits<PETScMatrix>::
 newInstance(PETScMatrix const& A)
 {
-    return new PETScMatrix(A);
+    return std::unique_ptr<PETScMatrix>(new PETScMatrix(A));
 }
 
-PETScMatrix*
+std::unique_ptr<PETScMatrix>
 MatrixVectorTraits<PETScMatrix>::
 newInstance(MatrixSpecifications const& spec)
 {
-    return new PETScMatrix(spec.nrows); // TODO sparsity pattern
+    return std::unique_ptr<PETScMatrix>(new PETScMatrix(spec.nrows)); // TODO sparsity pattern
 }
 
-PETScVector*
+std::unique_ptr<PETScVector>
 MatrixVectorTraits<PETScVector>::
 newInstance()
 {
-    return new PETScVector;
+    return std::unique_ptr<PETScVector>(new PETScVector);
 }
 
-PETScVector*
+std::unique_ptr<PETScVector>
 MatrixVectorTraits<PETScVector>::
 newInstance(PETScVector const& x)
 {
-    return new PETScVector(x);
+    return std::unique_ptr<PETScVector>(new PETScVector(x));
 }
 
-PETScVector*
+std::unique_ptr<PETScVector>
 MatrixVectorTraits<PETScVector>::
 newInstance(MatrixSpecifications const& spec)
 {
-    return new PETScVector(spec.nrows);
+    return std::unique_ptr<PETScVector>(new PETScVector(spec.nrows));
 }
 
 } // namespace MathLib
@@ -113,46 +113,46 @@ newInstance(MatrixSpecifications const& spec)
 namespace MathLib
 {
 
-EigenMatrix*
+std::unique_ptr<EigenMatrix>
 MatrixVectorTraits<EigenMatrix>::
 newInstance()
 {
-    return new EigenMatrix(0, 0); // TODO default constructor
+    return std::unique_ptr<EigenMatrix>(new EigenMatrix(0, 0)); // TODO default constructor
 }
 
-EigenMatrix*
+std::unique_ptr<EigenMatrix>
 MatrixVectorTraits<EigenMatrix>::
 newInstance(EigenMatrix const& A)
 {
-    return new EigenMatrix(A);
+    return std::unique_ptr<EigenMatrix>(new EigenMatrix(A));
 }
 
-EigenMatrix*
+std::unique_ptr<EigenMatrix>
 MatrixVectorTraits<EigenMatrix>::
 newInstance(MatrixSpecifications const& spec)
 {
-    return new EigenMatrix(spec.nrows); // TODO sparsity pattern
+    return std::unique_ptr<EigenMatrix>(new EigenMatrix(spec.nrows)); // TODO sparsity pattern
 }
 
-EigenVector*
+std::unique_ptr<EigenVector>
 MatrixVectorTraits<EigenVector>::
 newInstance()
 {
-    return new EigenVector;
+    return std::unique_ptr<EigenVector>(new EigenVector);
 }
 
-EigenVector*
+std::unique_ptr<EigenVector>
 MatrixVectorTraits<EigenVector>::
 newInstance(EigenVector const& x)
 {
-    return new EigenVector(x);
+    return std::unique_ptr<EigenVector>(new EigenVector(x));
 }
 
-EigenVector*
+std::unique_ptr<EigenVector>
 MatrixVectorTraits<EigenVector>::
 newInstance(MatrixSpecifications const& spec)
 {
-    return new EigenVector(spec.nrows);
+    return std::unique_ptr<EigenVector>(new EigenVector(spec.nrows));
 }
 
 } // namespace MathLib

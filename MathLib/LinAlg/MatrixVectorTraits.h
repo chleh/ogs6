@@ -1,6 +1,8 @@
 // TODO
 #pragma once
 
+#include<memory>
+
 #include "MatrixProviderUser.h"
 
 namespace MathLib
@@ -9,14 +11,12 @@ template<typename Matrix>
 struct MatrixVectorTraits;
 }
 
-
-// TODO add vector template param
-#define SpecializeMatrixVectorTraits(MATVEC, IDX) \
+#define SPECIALIZE_MATRIX_VECTOR_TRAITS(MATVEC, IDX) \
     template<> struct MatrixVectorTraits<MATVEC> { \
         using Index = IDX; \
-        static MATVEC* newInstance(); \
-        static MATVEC* newInstance(MATVEC const& A); \
-        static MATVEC* newInstance(MatrixSpecifications const& spec); \
+        static std::unique_ptr<MATVEC> newInstance(); \
+        static std::unique_ptr<MATVEC> newInstance(MATVEC const& A); \
+        static std::unique_ptr<MATVEC> newInstance(MatrixSpecifications const& spec); \
     };
 
 
@@ -26,8 +26,8 @@ struct MatrixVectorTraits;
 
 namespace MathLib
 {
-SpecializeMatrixVectorTraits(Eigen::MatrixXd, Eigen::MatrixXd::Index);
-SpecializeMatrixVectorTraits(Eigen::VectorXd, Eigen::VectorXd::Index);
+SPECIALIZE_MATRIX_VECTOR_TRAITS(Eigen::MatrixXd, Eigen::MatrixXd::Index);
+SPECIALIZE_MATRIX_VECTOR_TRAITS(Eigen::VectorXd, Eigen::VectorXd::Index);
 }
 
 #endif
@@ -40,8 +40,8 @@ SpecializeMatrixVectorTraits(Eigen::VectorXd, Eigen::VectorXd::Index);
 
 namespace MathLib
 {
-SpecializeMatrixVectorTraits(PETScMatrix, PETScMatrix::IndexType);
-SpecializeMatrixVectorTraits(PETScVector, PETScVector::IndexType);
+SPECIALIZE_MATRIX_VECTOR_TRAITS(PETScMatrix, PETScMatrix::IndexType);
+SPECIALIZE_MATRIX_VECTOR_TRAITS(PETScVector, PETScVector::IndexType);
 }
 
 
@@ -52,10 +52,10 @@ SpecializeMatrixVectorTraits(PETScVector, PETScVector::IndexType);
 
 namespace MathLib
 {
-SpecializeMatrixVectorTraits(EigenMatrix, EigenMatrix::IndexType);
-SpecializeMatrixVectorTraits(EigenVector, EigenVector::IndexType);
+SPECIALIZE_MATRIX_VECTOR_TRAITS(EigenMatrix, EigenMatrix::IndexType);
+SPECIALIZE_MATRIX_VECTOR_TRAITS(EigenVector, EigenVector::IndexType);
 }
 
 #endif
 
-#undef SpecializeMatrixVectorTraits
+#undef SPECIALIZE_MATRIX_VECTOR_TRAITS
