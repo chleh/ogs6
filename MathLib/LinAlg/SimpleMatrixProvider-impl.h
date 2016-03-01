@@ -64,7 +64,8 @@ get_(std::size_t& id,
     // not searched or not found, so create a new one
     id = _next_id++;
     auto res = used_map.emplace(
-        MatrixVectorTraits<MatVec>::newInstance(std::forward<Args>(args)...), id);
+        MatrixVectorTraits<MatVec>::newInstance(std::forward<Args>(args)...).release(),
+        id);
     assert(res.second && "Emplacement failed.");
     return { res.first->first, true };
 }
