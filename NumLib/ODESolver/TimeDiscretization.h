@@ -338,6 +338,7 @@ class CrankNicolson final : public TimeDiscretization<Vector>
 public:
     /*! Constructs a new instance.
      *
+     * \param vector_provider where vectors will be obtained from.
      * \param theta The implicitness parameter \f$ \theta \f$. Some special values are:
      *              \arg 1.0 fully implicit (like BackwardEuler).
      *              \arg 0.0 fully explicit (like ForwardEuler).
@@ -434,6 +435,7 @@ class BackwardDifferentiationFormula final : public TimeDiscretization<Vector>
 public:
     /*! Constructs a new instance.
      *
+     * \param vector_provider where vectors will be obtained from.
      * \param num_steps The order of the BDF to be used
      *                  (= the number of timesteps kept in the internal history buffer).
      *                  Valid range: 1 through 6.

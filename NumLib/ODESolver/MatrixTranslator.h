@@ -109,6 +109,7 @@ class MatrixTranslatorGeneral<Matrix, Vector, ODESystemTag::FirstOrderImplicitQu
 public:
     /*! Constructs a new instance.
      *
+     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param timeDisc the time discretization scheme to be used.
      */
     MatrixTranslatorGeneral(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
@@ -204,6 +205,7 @@ class MatrixTranslatorForwardEuler<Matrix, Vector, ODESystemTag::FirstOrderImpli
 public:
     /*! Constructs a new instance.
      *
+     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param timeDisc the time discretization scheme to be used.
      */
     MatrixTranslatorForwardEuler(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
@@ -302,6 +304,7 @@ class MatrixTranslatorCrankNicolson<Matrix, Vector, ODESystemTag::FirstOrderImpl
 public:
     /*! Constructs a new instance.
      *
+     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param timeDisc the time discretization scheme to be used.
      */
     MatrixTranslatorCrankNicolson(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,

@@ -92,6 +92,7 @@ public:
 
     /*! Constructs a new instance.
      *
+     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param linear_solver the linear solver used by this nonlinear solver.
      * \param tol     the tolerance of the solver. \todo Be more specific about that!
      * \param maxiter the maximum number of iterations used to solve the equation.
@@ -146,6 +147,7 @@ public:
 
     /*! Constructs a new instance.
      *
+     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param linear_solver the linear solver used by this nonlinear solver.
      * \param tol     the tolerance of the solver. \todo Be more specific about that!
      * \param maxiter the maximum number of iterations used to solve the equation.
@@ -184,7 +186,7 @@ private:
 
 /*! Creates a new nonlinear solver from the given configuration.
  *
- * TODO doc
+ * \param matrix_provider where matrices and vectors will be obtained from.
  * \param linear_solver the linear solver that will be used by the nonlinear solver
  * \param config configuration settings
  *

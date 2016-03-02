@@ -88,6 +88,7 @@ public:
 
     /*! Constructs a new instance.
      *
+     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param ode the ODE to be wrapped.
      * \param time_discretization the time discretization to be used.
      */
@@ -239,6 +240,7 @@ public:
 
     /*! Constructs a new instance.
      *
+     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param ode the ODE to be wrapped.
      * \param time_discretization the time discretization to be used.
      */

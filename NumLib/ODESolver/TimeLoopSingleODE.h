@@ -35,6 +35,8 @@ public:
     using NLSolver     = NonlinearSolver<Matrix, Vector, NLTag>;
 
     /*! Constructs an new instance.
+     *
+     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param ode_sys The ODE system to be integrated
      * \param linear_solver the linear solver used to solve the linearized ODE system.
      * \param nonlinear_solver The solver to be used to resolve nonlinearities.
