@@ -19,7 +19,7 @@ transfer(std::map<std::size_t, MatVec*>& from_unused,
     auto const id = it->first;
     auto& ptr = it->second;
 
-    auto res = to_used.emplace(std::move(ptr), id);
+    auto res = to_used.emplace(ptr, id);
     assert(res.second && "Emplacement failed.");
     from_unused.erase(it);
     return res.first->first;
@@ -34,8 +34,9 @@ transfer(std::map<MatVec*, std::size_t>& from_used,
     auto& ptr = it->first;
     auto const id = it->second;
 
-    auto res = to_unused.emplace(id, std::move(ptr));
+    auto res = to_unused.emplace(id, ptr);
     assert(res.second && "Emplacement failed.");
+    (void) res; // res unused if NDEBUG
     from_used.erase(it);
 }
 

@@ -31,7 +31,7 @@ public:
     Vector& getVector(MSP const& msp) override;
     Vector& getVector(MSP const& msp, std::size_t& id) override;
 
-    void releaseVector(Vector const& x);
+    void releaseVector(Vector const& x) override;
 
     Matrix& getMatrix() override;
     Matrix& getMatrix(std::size_t& id) override;
