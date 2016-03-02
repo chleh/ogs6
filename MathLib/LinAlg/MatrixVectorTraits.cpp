@@ -69,6 +69,8 @@ newInstance(MatrixSpecifications const& spec)
 
 #ifdef USE_PETSC
 
+#include "MeshLib/NodePartitionedMesh.h"
+
 namespace MathLib
 {
 
@@ -93,10 +95,18 @@ newInstance(MatrixSpecifications const& spec)
     auto const nrows = spec.dof_table ? spec.dof_table->dofSizeLocal() : spec.nrows;
     auto const ncols = spec.dof_table ? nrows : spec.ncols;
 
-    if (spec.sparsity_pattern)
+    // TODO I guess it is not hard to make AssemblerLib::computeSparsityPattern()
+    //      work also for NodePartitionedMesh'es.
+    assert(((!spec.sparsity_pattern) || spec.sparsity_pattern->size() == 0u) &&
+           "The sparsity pattern is not used with PETSc so I rather crash than"
+           " silently accept a precomputed sparsity pattern.");
+
+    if (spec.mesh)
     {
-        auto const& sp = *spec.sparsity_pattern;
-        auto const max_nonzeroes = *std::max_element(sp.begin(), sp.end());
+        assert(dynamic_cast<MeshLib::NodePartitionedMesh const*>(spec.mesh));
+        auto const& mesh = *static_cast<MeshLib::NodePartitionedMesh const*>(spec.mesh);
+
+        auto const max_nonzeroes = mesh.getMaximumNConnectedNodesToNode();
 
         PETScMatrixOption mat_opt;
         mat_opt.d_nz = max_nonzeroes;
