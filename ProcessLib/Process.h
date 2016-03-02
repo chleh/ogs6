@@ -89,8 +89,10 @@ public:
 		DBUG("Construct dof mappings.");
 		constructDofTable();
 
+#ifndef USE_PETSC
 		DBUG("Compute sparsity pattern");
 		computeSparsityPattern();
+#endif
 
 		DBUG("Create global assembler.");
 		_global_assembler.reset(
@@ -122,7 +124,8 @@ public:
 	{
 		return { 0u, 0u,
 		         &_sparsity_pattern,
-		         _local_to_global_index_map.get() };
+		         _local_to_global_index_map.get(),
+		         &_mesh };
 	}
 
 	void assemble(const double t, GlobalVector const& x,
