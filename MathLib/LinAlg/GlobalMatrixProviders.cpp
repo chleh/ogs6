@@ -43,4 +43,3 @@ using GlobalVector = GlobalSetupType::VectorType;
 
 INITIALIZE_GLOBAL_MATRIX_VECTOR_PROVIDER(GlobalMatrix, GlobalVector,
                                          globalSetupGlobalMatrixVectorProvider)
-
