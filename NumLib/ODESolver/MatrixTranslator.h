@@ -109,13 +109,10 @@ class MatrixTranslatorGeneral<Matrix, Vector, ODESystemTag::FirstOrderImplicitQu
 public:
     /*! Constructs a new instance.
      *
-     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param timeDisc the time discretization scheme to be used.
      */
-    MatrixTranslatorGeneral(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
-                            TimeDiscretization<Vector> const& timeDisc)
-        : _matrix_provider(matrix_provider)
-        , _time_disc(timeDisc)
+    MatrixTranslatorGeneral(TimeDiscretization<Vector> const& timeDisc)
+        : _time_disc(timeDisc)
     {}
 
     //! Computes \f$ A = M \cdot \alpha + K \f$.
@@ -135,13 +132,13 @@ public:
     {
         namespace BLAS = MathLib::BLAS;
 
-        auto& tmp = _matrix_provider.getVector(_tmp_id);
+        auto& tmp = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_tmp_id);
         _time_disc.getWeightedOldX(tmp);
 
         // rhs = M * weighted_old_x + b
         BLAS::matMultAdd(M, tmp, b, rhs);
 
-        _matrix_provider.releaseVector(tmp);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(tmp);
     }
 
     //! Computes \f$ r = M \cdot \hat x + K \cdot x_C - b \f$.
@@ -169,7 +166,6 @@ public:
     }
 
 private:
-    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     TimeDiscretization<Vector> const& _time_disc; //!< the time discretization used.
 
     //! ID of the vector storing intermediate computations.
@@ -206,13 +202,10 @@ class MatrixTranslatorForwardEuler<Matrix, Vector, ODESystemTag::FirstOrderImpli
 public:
     /*! Constructs a new instance.
      *
-     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param timeDisc the time discretization scheme to be used.
      */
-    MatrixTranslatorForwardEuler(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
-                                 ForwardEuler<Vector> const& timeDisc)
-        : _matrix_provider(matrix_provider)
-        , _fwd_euler(timeDisc)
+    MatrixTranslatorForwardEuler(ForwardEuler<Vector> const& timeDisc)
+        : _fwd_euler(timeDisc)
     {}
 
     //! Computes \f$ A = M \cdot \alpha \f$.
@@ -232,7 +225,7 @@ public:
     {
         namespace BLAS = MathLib::BLAS;
 
-        auto& tmp = _matrix_provider.getVector(_tmp_id);
+        auto& tmp = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_tmp_id);
         _fwd_euler.getWeightedOldX(tmp);
 
         auto const& x_old          = _fwd_euler.getXOld();
@@ -242,7 +235,7 @@ public:
         BLAS::aypx(rhs, -1.0, b);     // rhs = b - K * x_old
         BLAS::matMultAdd(M, tmp, rhs, rhs); // rhs += M * weighted_old_x
 
-        _matrix_provider.releaseVector(tmp);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(tmp);
     }
 
     //! Computes \f$ r = M \cdot \hat x + K \cdot x_C - b \f$.
@@ -270,7 +263,6 @@ public:
     }
 
 private:
-    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     ForwardEuler<Vector> const& _fwd_euler; //!< the time discretization used.
 
     //! ID of the vector storing intermediate computations.
@@ -306,21 +298,18 @@ class MatrixTranslatorCrankNicolson<Matrix, Vector, ODESystemTag::FirstOrderImpl
 public:
     /*! Constructs a new instance.
      *
-     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param timeDisc the time discretization scheme to be used.
      */
-    MatrixTranslatorCrankNicolson(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
-                                  CrankNicolson<Vector> const& timeDisc)
-        : _matrix_provider(matrix_provider)
-        , _crank_nicolson(timeDisc)
-        , _M_bar(matrix_provider.getMatrix())
-        , _b_bar(matrix_provider.getVector())
+    MatrixTranslatorCrankNicolson(CrankNicolson<Vector> const& timeDisc)
+        : _crank_nicolson(timeDisc)
+        , _M_bar(MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix())
+        , _b_bar(MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector())
     {}
 
     ~MatrixTranslatorCrankNicolson()
     {
-        _matrix_provider.releaseMatrix(_M_bar);
-        _matrix_provider.releaseVector(_b_bar);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(_M_bar);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(_b_bar);
     }
 
     //! Computes \f$ A = \theta \cdot (M \cdot \alpha + K) + \bar M \cdot \alpha \f$.
@@ -344,7 +333,7 @@ public:
     {
         namespace BLAS = MathLib::BLAS;
 
-        auto& tmp = _matrix_provider.getVector(_tmp_id);
+        auto& tmp = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_tmp_id);
         _crank_nicolson.getWeightedOldX(tmp);
 
         auto const  theta          = _crank_nicolson.getTheta();
@@ -356,7 +345,7 @@ public:
         BLAS::matMultAdd(_M_bar, tmp, rhs, rhs); // rhs += _M_bar * weighted_old_x
         BLAS::axpy(rhs, -1.0, _b_bar); // rhs -= b
 
-        _matrix_provider.releaseVector(tmp);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(tmp);
     }
     //! Computes \f$ r = \theta \cdot (M \cdot \hat x + K \cdot x_C - b) + \bar M \cdot \hat x + \bar b \f$.
     void computeResidual(Matrix const& M, Matrix const& K, Vector const& b,
@@ -428,7 +417,6 @@ public:
     }
 
 private:
-    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     CrankNicolson<Vector> const& _crank_nicolson;
 
     Matrix& _M_bar; //!< Used to adjust matrices and vectors assembled by the ODE.
@@ -445,26 +433,22 @@ private:
 //! time discretization scheme.
 template<typename Matrix, typename Vector, ODESystemTag ODETag>
 std::unique_ptr<MatrixTranslator<Matrix, Vector, ODETag>>
-createMatrixTranslator(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
-                       TimeDiscretization<Vector> const& timeDisc)
+createMatrixTranslator(TimeDiscretization<Vector> const& timeDisc)
 {
     if (auto* fwd_euler = dynamic_cast<ForwardEuler<Vector> const*>(&timeDisc))
     {
         return std::unique_ptr<MatrixTranslator<Matrix, Vector, ODETag>>(
-            new MatrixTranslatorForwardEuler<Matrix, Vector, ODETag>(
-                matrix_provider, *fwd_euler));
+            new MatrixTranslatorForwardEuler<Matrix, Vector, ODETag>(*fwd_euler));
     }
     else if (auto* crank = dynamic_cast<CrankNicolson<Vector> const*>(&timeDisc))
     {
         return std::unique_ptr<MatrixTranslator<Matrix, Vector, ODETag>>(
-            new MatrixTranslatorCrankNicolson<Matrix, Vector, ODETag>(
-                matrix_provider, *crank));
+            new MatrixTranslatorCrankNicolson<Matrix, Vector, ODETag>(*crank));
     }
     else
     {
         return std::unique_ptr<MatrixTranslator<Matrix, Vector, ODETag>>(
-            new MatrixTranslatorGeneral<Matrix, Vector, ODETag>(
-                matrix_provider, timeDisc));
+            new MatrixTranslatorGeneral<Matrix, Vector, ODETag>(timeDisc));
     }
 }
 

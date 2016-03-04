@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "MathLib/LinAlg/BLAS.h"
-#include "MathLib/LinAlg/MatrixProviderUser.h"
+#include "MathLib/LinAlg/GlobalMatrixProviders.h"
 #include "Types.h"
 
 
@@ -209,13 +209,12 @@ template<typename Vector>
 class BackwardEuler final : public TimeDiscretization<Vector>
 {
 public:
-    BackwardEuler(MathLib::VectorProvider<Vector>& vector_provider)
-        : _vector_provider(vector_provider)
-        , _x_old(_vector_provider.getVector())
+    BackwardEuler()
+        : _x_old(MathLib::GlobalVectorProvider<Vector>::provider.getVector())
     {}
 
     ~BackwardEuler() {
-        _vector_provider.releaseVector(_x_old);
+        MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(_x_old);
     }
 
     void setInitialState(const double t0, Vector const& x0) override {
@@ -251,8 +250,6 @@ public:
     }
 
 private:
-    MathLib::VectorProvider<Vector>& _vector_provider;
-
     double  _t;       //!< \f$ t_C \f$
     double  _delta_t; //!< the timestep size
     Vector& _x_old;   //!< the solution from the preceding timestep
@@ -264,13 +261,12 @@ template<typename Vector>
 class ForwardEuler final : public TimeDiscretization<Vector>
 {
 public:
-    ForwardEuler(MathLib::VectorProvider<Vector>& vector_provider)
-        : _vector_provider(vector_provider)
-        , _x_old(_vector_provider.getVector())
+    ForwardEuler()
+        : _x_old(MathLib::GlobalVectorProvider<Vector>::provider.getVector())
     {}
 
     ~ForwardEuler() {
-        _vector_provider.releaseVector(_x_old);
+        MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(_x_old);
     }
 
     void setInitialState(const double t0, Vector const& x0) override {
@@ -323,7 +319,6 @@ public:
     Vector const& getXOld() const { return _x_old; }
 
 private:
-    MathLib::VectorProvider<Vector>& _vector_provider;
     double  _t;       //!< \f$ t_C \f$
     double  _t_old;   //!< the time of the preceding timestep
     double  _delta_t; //!< the timestep size
@@ -338,21 +333,19 @@ class CrankNicolson final : public TimeDiscretization<Vector>
 public:
     /*! Constructs a new instance.
      *
-     * \param vector_provider where vectors will be obtained from.
      * \param theta The implicitness parameter \f$ \theta \f$. Some special values are:
      *              \arg 1.0 fully implicit (like BackwardEuler).
      *              \arg 0.0 fully explicit (like ForwardEuler).
      *              \arg 0.5 traditional Crank-Nicolson scheme.
      */
     explicit
-    CrankNicolson(MathLib::VectorProvider<Vector>& vector_provider, const double theta)
-        : _vector_provider(vector_provider)
-        , _theta(theta)
-        , _x_old(_vector_provider.getVector())
+    CrankNicolson(const double theta)
+        : _theta(theta)
+        , _x_old(MathLib::GlobalVectorProvider<Vector>::provider.getVector())
     {}
 
     ~CrankNicolson() {
-        _vector_provider.releaseVector(_x_old);
+        MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(_x_old);
     }
 
     void setInitialState(const double t0, Vector const& x0) override {
@@ -399,8 +392,6 @@ public:
     Vector const& getXOld() const { return _x_old; }
 
 private:
-    MathLib::VectorProvider<Vector>& _vector_provider;
-
     const double _theta; //!< the implicitness parameter \f$ \theta \f$
     double  _t;       //!< \f$ t_C \f$
     double  _delta_t; //!< the timestep size
@@ -435,7 +426,6 @@ class BackwardDifferentiationFormula final : public TimeDiscretization<Vector>
 public:
     /*! Constructs a new instance.
      *
-     * \param vector_provider where vectors will be obtained from.
      * \param num_steps The order of the BDF to be used
      *                  (= the number of timesteps kept in the internal history buffer).
      *                  Valid range: 1 through 6.
@@ -445,10 +435,8 @@ public:
      *       the first timesteps.
      */
     explicit
-    BackwardDifferentiationFormula(MathLib::VectorProvider<Vector>& vector_provider,
-                                   const unsigned num_steps)
-        : _vector_provider(vector_provider)
-        , _num_steps(num_steps)
+    BackwardDifferentiationFormula(const unsigned num_steps)
+        : _num_steps(num_steps)
     {
         assert(1 <= num_steps && num_steps <= 6);
         _xs_old.reserve(num_steps);
@@ -456,12 +444,12 @@ public:
 
     ~BackwardDifferentiationFormula() {
         for (auto* x : _xs_old)
-            _vector_provider.releaseVector(*x);
+            MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(*x);
     }
 
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
-        _xs_old.push_back(&_vector_provider.getVector(x0));
+        _xs_old.push_back(&MathLib::GlobalVectorProvider<Vector>::provider.getVector(x0));
     }
 
     void pushState(const double, Vector const& x, InternalMatrixStorage const&) override
@@ -470,7 +458,7 @@ public:
 
         // until _xs_old is filled, lower-order BDF formulas are used.
         if (_xs_old.size() < _num_steps) {
-            _xs_old.push_back(&_vector_provider.getVector(x));
+            _xs_old.push_back(&MathLib::GlobalVectorProvider<Vector>::provider.getVector(x));
         } else {
             *_xs_old[_offset] = x;
             _offset = (_offset+1) % _num_steps; // treat _xs_old as a circular buffer
@@ -512,8 +500,6 @@ public:
 
 private:
     std::size_t eff_num_steps() const { return _xs_old.size(); }
-
-    MathLib::VectorProvider<Vector>& _vector_provider;
 
     const unsigned _num_steps; //!< The order of the BDF method
     double _t;       //!< \f$ t_C \f$

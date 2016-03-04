@@ -88,32 +88,27 @@ public:
 
     /*! Constructs a new instance.
      *
-     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param ode the ODE to be wrapped.
      * \param time_discretization the time discretization to be used.
      */
     explicit
-    TimeDiscretizedODESystem(
-            MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
-            ODE& ode, TimeDisc& time_discretization)
-        : _matrix_provider(matrix_provider)
-        , _ode(ode)
+    TimeDiscretizedODESystem(ODE& ode, TimeDisc& time_discretization)
+        : _ode(ode)
         , _time_disc(time_discretization)
-        , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(
-                         matrix_provider, time_discretization))
+        , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(time_discretization))
     {
-        _Jac  = &_matrix_provider.getMatrix(_ode, _Jac_id);
-        _M    = &_matrix_provider.getMatrix(_ode, _M_id);
-        _K    = &_matrix_provider.getMatrix(_ode, _K_id);
-        _b    = &_matrix_provider.getVector(_ode, _b_id);
+        _Jac  = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_ode, _Jac_id);
+        _M    = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_ode, _M_id);
+        _K    = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_ode, _K_id);
+        _b    = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_ode, _b_id);
     }
 
     ~TimeDiscretizedODESystem()
     {
-        _matrix_provider.releaseMatrix(*_Jac);
-        _matrix_provider.releaseMatrix(*_M);
-        _matrix_provider.releaseMatrix(*_K);
-        _matrix_provider.releaseVector(*_b);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(*_Jac);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(*_M);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(*_K);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(*_b);
     }
 
     void assembleResidualNewton(const Vector &x_new_timestep) override
@@ -137,7 +132,7 @@ public:
         auto const  dxdot_dx = _time_disc.getNewXWeight();
         auto const  dx_dx    = _time_disc.getDxDx();
 
-        auto& xdot = _matrix_provider.getVector(_xdot_id);
+        auto& xdot = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_xdot_id);
         _time_disc.getXdot(x_new_timestep, xdot);
 
         _Jac->setZero();
@@ -146,7 +141,7 @@ public:
                               dxdot_dx, *_M, dx_dx, *_K,
                               *_Jac);
 
-        _matrix_provider.releaseVector(xdot);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(xdot);
     }
 
     void getResidual(Vector const& x_new_timestep, Vector& res) const override
@@ -154,12 +149,12 @@ public:
         // TODO Maybe the duplicate calculation of xdot here and in assembleJacobian
         //      can be optimuized. However, that would make the interface a bit more
         //      fragile.
-        auto& xdot = _matrix_provider.getVector(_xdot_id);
+        auto& xdot = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_xdot_id);
         _time_disc.getXdot(x_new_timestep, xdot);
 
         _mat_trans->computeResidual(*_M, *_K, *_b, x_new_timestep, xdot, res);
 
-        _matrix_provider.releaseVector(xdot);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(xdot);
     }
 
     void getJacobian(Matrix& Jac) const override
@@ -193,7 +188,6 @@ public:
     }
 
 private:
-    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     ODE& _ode;            //!< ode the ODE being wrapped
     TimeDisc& _time_disc; //!< the time discretization to being used
 
@@ -242,30 +236,26 @@ public:
 
     /*! Constructs a new instance.
      *
-     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param ode the ODE to be wrapped.
      * \param time_discretization the time discretization to be used.
      */
     explicit
-    TimeDiscretizedODESystem(
-            MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
-            ODE& ode, TimeDisc& time_discretization)
-        : _matrix_provider(matrix_provider)
-        , _ode(ode)
+    TimeDiscretizedODESystem(ODE& ode, TimeDisc& time_discretization)
+        : _ode(ode)
         , _time_disc(time_discretization)
         , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(
-                         matrix_provider, time_discretization))
+                         time_discretization))
     {
-        _M = &_matrix_provider.getMatrix(ode, _M_id);
-        _K = &_matrix_provider.getMatrix(ode, _K_id);
-        _b = &_matrix_provider.getVector(ode, _b_id);
+        _M = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(ode, _M_id);
+        _K = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(ode, _K_id);
+        _b = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(ode, _b_id);
     }
 
     ~TimeDiscretizedODESystem()
     {
-        _matrix_provider.releaseMatrix(*_M);
-        _matrix_provider.releaseMatrix(*_K);
-        _matrix_provider.releaseVector(*_b);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(*_M);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(*_K);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(*_b);
     }
 
     void assembleMatricesPicard(const Vector &x_new_timestep) override
@@ -321,7 +311,6 @@ public:
     }
 
 private:
-    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     ODE& _ode;            //!< ode the ODE being wrapped
     TimeDisc& _time_disc; //!< the time discretization to being used
 

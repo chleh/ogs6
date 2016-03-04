@@ -14,6 +14,7 @@
 
 #include "BaseLib/ConfigTree.h"
 #include "MathLib/LinAlg/BLAS.h"
+#include "MathLib/LinAlg/GlobalMatrixProviders.h"
 
 #include "NonlinearSolver.h"
 
@@ -39,9 +40,9 @@ solve(Vector &x)
     auto& sys = *_equation_system;
 
     // TODO maybe sys can be omitted
-    auto& A     = _matrix_provider.getMatrix(_A_id);
-    auto& rhs   = _matrix_provider.getVector(_rhs_id);
-    auto& x_new = _matrix_provider.getVector(_x_new_id);
+    auto& A     = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_A_id);
+    auto& rhs   = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_rhs_id);
+    auto& x_new = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_x_new_id);
 
     bool success = false;
 
@@ -86,9 +87,9 @@ solve(Vector &x)
         }
     }
 
-    _matrix_provider.releaseMatrix(A);
-    _matrix_provider.releaseVector(rhs);
-    _matrix_provider.releaseVector(x_new);
+    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(A);
+    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(rhs);
+    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(x_new);
 
     return success;
 }
@@ -113,9 +114,9 @@ solve(Vector &x)
     namespace BLAS = MathLib::BLAS;
     auto& sys = *_equation_system;
 
-    auto& res           = _matrix_provider.getVector(_res_id);
-    auto& J             = _matrix_provider.getMatrix(_J_id);
-    auto& minus_delta_x = _matrix_provider.getVector(_minus_delta_x_id);
+    auto& res           = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_res_id);
+    auto& J             = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_J_id);
+    auto& minus_delta_x = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_minus_delta_x_id);
 
     bool success = false;
 
@@ -162,9 +163,9 @@ solve(Vector &x)
         }
     }
 
-    _matrix_provider.releaseVector(res);
-    _matrix_provider.releaseMatrix(J);
-    _matrix_provider.releaseVector(minus_delta_x);
+    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(res);
+    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(J);
+    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(minus_delta_x);
 
     return success;
 }
@@ -175,8 +176,7 @@ std::pair<
     std::unique_ptr<NonlinearSolverBase<Matrix, Vector> >,
     NonlinearSolverTag
 >
-createNonlinearSolver(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
-                      MathLib::LinearSolver<Matrix, Vector>& linear_solver,
+createNonlinearSolver(MathLib::LinearSolver<Matrix, Vector>& linear_solver,
                       BaseLib::ConfigTree const& config)
 {
     using AbstractNLS = NonlinearSolverBase<Matrix, Vector>;
@@ -190,14 +190,14 @@ createNonlinearSolver(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
         auto const tag = NonlinearSolverTag::Picard;
         using ConcreteNLS = NonlinearSolver<Matrix, Vector, tag>;
         return std::make_pair(std::unique_ptr<AbstractNLS>(
-            new ConcreteNLS{matrix_provider, linear_solver, tol, max_iter}), tag);
+            new ConcreteNLS{linear_solver, tol, max_iter}), tag);
     }
     else if (type == "Newton")
     {
         auto const tag = NonlinearSolverTag::Newton;
         using ConcreteNLS = NonlinearSolver<Matrix, Vector, tag>;
         return std::make_pair(std::unique_ptr<AbstractNLS>(
-            new ConcreteNLS{matrix_provider, linear_solver, tol, max_iter}), tag);
+            new ConcreteNLS{linear_solver, tol, max_iter}), tag);
     }
     std::abort();
 }

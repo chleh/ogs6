@@ -10,7 +10,7 @@
 #ifndef NUMLIB_TIMELOOP_H
 #define NUMLIB_TIMELOOP_H
 
-#include "MathLib/LinAlg/MatrixProviderUser.h"
+#include "MathLib/LinAlg/GlobalMatrixProviders.h"
 #include "TimeDiscretizedODESystem.h"
 #include "NonlinearSolver.h"
 
@@ -36,18 +36,15 @@ public:
 
     /*! Constructs an new instance.
      *
-     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param ode_sys The ODE system to be integrated
      * \param linear_solver the linear solver used to solve the linearized ODE system.
      * \param nonlinear_solver The solver to be used to resolve nonlinearities.
      */
     explicit
-    TimeLoopSingleODE(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
-                      TDiscODESys& ode_sys,
+    TimeLoopSingleODE(TDiscODESys& ode_sys,
                       std::unique_ptr<LinearSolver>&& linear_solver,
                       std::unique_ptr<NLSolver>&& nonlinear_solver)
-        : _matrix_provider(matrix_provider)
-        , _ode_sys(ode_sys)
+        : _ode_sys(ode_sys)
         , _linear_solver   (std::move(linear_solver))
         , _nonlinear_solver(std::move(nonlinear_solver))
     {}
@@ -72,7 +69,6 @@ public:
               Callback& post_timestep);
 
 private:
-    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     TDiscODESys& _ode_sys;
     std::unique_ptr<LinearSolver> _linear_solver;
     std::unique_ptr<NLSolver> _nonlinear_solver;
@@ -88,7 +84,7 @@ TimeLoopSingleODE<Matrix, Vector, NLTag>::
 loop(const double t0, const Vector x0, const double t_end, const double delta_t,
      Callback& post_timestep)
 {
-    Vector& x = _matrix_provider.getVector(x0); // solution vector
+    Vector& x = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(x0); // solution vector
 
     auto& time_disc = _ode_sys.getTimeDiscretization();
 
@@ -123,7 +119,7 @@ loop(const double t0, const Vector x0, const double t_end, const double delta_t,
         post_timestep(t_cb, x_cb);
     }
 
-    _matrix_provider.releaseVector(x);
+    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(x);
 
     if (!nl_slv_succeeded) {
         ERR("Nonlinear solver failed in timestep #%u at t = %g s", timestep, t);

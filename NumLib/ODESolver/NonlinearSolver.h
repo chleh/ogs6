@@ -15,7 +15,6 @@
 #include <logog/include/logog.hpp>
 
 #include "MathLib/LinAlg/LinearSolver.h"
-#include "MathLib/LinAlg/MatrixProviderUser.h"
 
 #include "Types.h"
 #include "NonlinearSystem.h"
@@ -92,17 +91,14 @@ public:
 
     /*! Constructs a new instance.
      *
-     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param linear_solver the linear solver used by this nonlinear solver.
      * \param tol     the tolerance of the solver. \todo Be more specific about that!
      * \param maxiter the maximum number of iterations used to solve the equation.
      */
     explicit
-    NonlinearSolver(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
-                    LinearSolver& linear_solver,
+    NonlinearSolver(LinearSolver& linear_solver,
                     double const tol, const unsigned maxiter)
-        : _matrix_provider(matrix_provider)
-        , _linear_solver(linear_solver)
+        : _linear_solver(linear_solver)
         , _tol(tol)
         , _maxiter(maxiter)
     {}
@@ -115,7 +111,6 @@ public:
     bool solve(Vector& x) override;
 
 private:
-    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     LinearSolver& _linear_solver;
     System*       _equation_system = nullptr;
 
@@ -146,17 +141,14 @@ public:
 
     /*! Constructs a new instance.
      *
-     * \param matrix_provider where matrices and vectors will be obtained from.
      * \param linear_solver the linear solver used by this nonlinear solver.
      * \param tol     the tolerance of the solver. \todo Be more specific about that!
      * \param maxiter the maximum number of iterations used to solve the equation.
      */
     explicit
-    NonlinearSolver(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
-                    LinearSolver& linear_solver,
+    NonlinearSolver(LinearSolver& linear_solver,
                     double const tol, const unsigned maxiter)
-        : _matrix_provider(matrix_provider)
-        , _linear_solver(linear_solver)
+        : _linear_solver(linear_solver)
         , _tol(tol)
         , _maxiter(maxiter)
     {}
@@ -169,7 +161,6 @@ public:
     bool solve(Vector& x) override;
 
 private:
-    MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     LinearSolver& _linear_solver;
     System*       _equation_system = nullptr;
 
@@ -184,7 +175,6 @@ private:
 
 /*! Creates a new nonlinear solver from the given configuration.
  *
- * \param matrix_provider where matrices and vectors will be obtained from.
  * \param linear_solver the linear solver that will be used by the nonlinear solver
  * \param config configuration settings
  *
@@ -197,8 +187,7 @@ std::pair<
     std::unique_ptr<NonlinearSolverBase<Matrix, Vector> >,
     NonlinearSolverTag
 >
-createNonlinearSolver(MathLib::MatrixProvider<Matrix, Vector>& matrix_provider,
-                      MathLib::LinearSolver<Matrix, Vector>& linear_solver,
+createNonlinearSolver(MathLib::LinearSolver<Matrix, Vector>& linear_solver,
                       BaseLib::ConfigTree const& config);
 
 //! @}
