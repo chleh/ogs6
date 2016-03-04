@@ -1,5 +1,14 @@
-// TODO
-#pragma once
+/**
+ * \copyright
+ * Copyright (c) 2012-2016, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
+#ifndef MATHLIB_MATRIX_VECTOR_TRAITS_H
+#define MATHLIB_MATRIX_VECTOR_TRAITS_H
 
 #include<memory>
 
@@ -59,3 +68,5 @@ SPECIALIZE_MATRIX_VECTOR_TRAITS(EigenVector, EigenVector::IndexType);
 #endif
 
 #undef SPECIALIZE_MATRIX_VECTOR_TRAITS
+
+#endif // MATHLIB_MATRIX_VECTOR_TRAITS_H

@@ -1,5 +1,14 @@
-// TODO
-#pragma once
+/**
+ * \copyright
+ * Copyright (c) 2012-2016, OpenGeoSys Community (http://www.opengeosys.org)
+ *            Distributed under a Modified BSD License.
+ *              See accompanying file LICENSE.txt or
+ *              http://www.opengeosys.org/project/license
+ *
+ */
+
+#ifndef MATHLIB_MATRIX_PROVIDER_USER_H
+#define MATHLIB_MATRIX_PROVIDER_USER_H
 
 #include <cstddef>
 
@@ -66,3 +75,5 @@ public:
 };
 
 } // namespace MathLib
+
+#endif // MATHLIB_MATRIX_PROVIDER_USER_H
