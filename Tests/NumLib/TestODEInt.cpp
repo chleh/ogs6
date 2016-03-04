@@ -43,17 +43,15 @@ public:
         using ODE_ = ODE<Matrix, Vector>;
         using ODET = ODETraits<Matrix, Vector, ODE>;
 
-        MathLib::SimpleMatrixProvider<Matrix, Vector> mat_prvd;
-
         NumLib::TimeDiscretizedODESystem<Matrix, Vector, ODE_::ODETag, NLTag>
-                ode_sys(mat_prvd, ode, timeDisc);
+                ode_sys(ode, timeDisc);
 
         auto linear_solver = MathLib::createLinearSolver<Matrix, Vector>(nullptr);
         std::unique_ptr<NLSolver> nonlinear_solver(
-                    new NLSolver(mat_prvd, *linear_solver, _tol, _maxiter));
+                    new NLSolver(*linear_solver, _tol, _maxiter));
 
         NumLib::TimeLoopSingleODE<Matrix, Vector, NLTag> loop(
-            mat_prvd, ode_sys, std::move(linear_solver), std::move(nonlinear_solver));
+            ode_sys, std::move(linear_solver), std::move(nonlinear_solver));
 
         const double t0      = ODET::t0;
         const double t_end   = ODET::t_end;
@@ -120,11 +118,10 @@ private:
 template<typename Matrix, typename Vector, typename TimeDisc, typename ODE,
          NumLib::NonlinearSolverTag NLTag>
 typename std::enable_if<std::is_same<TimeDisc, NumLib::BackwardEuler<Vector> >::value>::type
-run_test_case(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
-              const unsigned num_timesteps, const char* name)
+run_test_case(const unsigned num_timesteps, const char* name)
 {
     ODE ode;
-    TimeDisc timeDisc(matrix_provider); // TODO pass matrix provider on
+    TimeDisc timeDisc;
 
     TestOutput<Matrix, Vector, NLTag> test(name);
     test.run_test(ode, timeDisc, num_timesteps);
@@ -133,11 +130,10 @@ run_test_case(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
 template<typename Matrix, typename Vector, typename TimeDisc, typename ODE,
          NumLib::NonlinearSolverTag NLTag>
 typename std::enable_if<std::is_same<TimeDisc, NumLib::ForwardEuler<Vector> >::value>::type
-run_test_case(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
-              const unsigned num_timesteps, const char* name)
+run_test_case(const unsigned num_timesteps, const char* name)
 {
     ODE ode;
-    TimeDisc timeDisc(matrix_provider);
+    TimeDisc timeDisc;
 
     TestOutput<Matrix, Vector, NLTag> test(name);
     test.run_test(ode, timeDisc, num_timesteps);
@@ -146,11 +142,10 @@ run_test_case(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
 template<typename Matrix, typename Vector, typename TimeDisc, typename ODE,
          NumLib::NonlinearSolverTag NLTag>
 typename std::enable_if<std::is_same<TimeDisc, NumLib::CrankNicolson<Vector> >::value>::type
-run_test_case(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
-              const unsigned num_timesteps, const char* name)
+run_test_case(const unsigned num_timesteps, const char* name)
 {
     ODE ode;
-    TimeDisc timeDisc(matrix_provider, 0.5);
+    TimeDisc timeDisc(0.5);
 
     TestOutput<Matrix, Vector, NLTag> test(name);
     test.run_test(ode, timeDisc, num_timesteps);
@@ -160,11 +155,10 @@ template<typename Matrix, typename Vector, typename TimeDisc, typename ODE,
          NumLib::NonlinearSolverTag NLTag>
 typename std::enable_if<
     std::is_same<TimeDisc, NumLib::BackwardDifferentiationFormula<Vector> >::value>::type
-run_test_case(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
-              const unsigned num_timesteps, const char* name)
+run_test_case(const unsigned num_timesteps, const char* name)
 {
     ODE ode;
-    TimeDisc timeDisc(matrix_provider, 3);
+    TimeDisc timeDisc(3);
 
     TestOutput<Matrix, Vector, NLTag> test(name);
     test.run_test(ode, timeDisc, num_timesteps);
@@ -315,9 +309,8 @@ public:
     {
         for (auto num_timesteps : { 10u, 100u })
         {
-            MathLib::SimpleMatrixProvider<Matrix, Vector> matrix_provider;
             run_test_case<Matrix, Vector, TimeDisc, ODE, NLTag>(
-                        matrix_provider, num_timesteps, TestParams::name);
+                        num_timesteps, TestParams::name);
         }
     }
 };
@@ -343,21 +336,17 @@ TEST(NumLibODEInt, DISABLED_ODE3)
 {
     const char* name = "dummy";
     {
-        MathLib::SimpleMatrixProvider<EDMatrix, EVector> matrix_provider;
 
         // only make sure ODE3 compiles
         run_test_case<EDMatrix, EVector, NumLib::BackwardEuler<EVector>,
                       ODE3<EDMatrix, EVector>,
-                      NumLib::NonlinearSolverTag::Newton>
-                (matrix_provider, 0u, name);
+                      NumLib::NonlinearSolverTag::Newton>(0u, name);
     }
 
     {
-        MathLib::SimpleMatrixProvider<GMatrix, GVector> matrix_provider;
         run_test_case<GMatrix, GVector, NumLib::BackwardEuler<GVector>,
                       ODE3<GMatrix, GVector>,
-                      NumLib::NonlinearSolverTag::Newton>
-                (matrix_provider, 0u, name);
+                      NumLib::NonlinearSolverTag::Newton>(0u, name);
     }
 }
 
