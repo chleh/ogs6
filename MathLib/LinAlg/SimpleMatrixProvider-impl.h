@@ -55,6 +55,14 @@ get_(std::size_t& id,
      std::map<MatVec*, std::size_t>& used_map,
      Args&&... args)
 {
+    if (id >= _next_id) {
+        ERR("An obviously uninitialized id argument has been passed."
+            " This might not be a serious error for the current implementation,"
+            " but it might become one in the future."
+            " Hence, I will abort now.");
+        std::abort();
+    }
+
     if (do_search)
     {
         auto it = unused_map.find(id);
@@ -149,7 +157,7 @@ releaseMatrix(Matrix const& A)
 {
     auto it = _used_matrices.find(const_cast<Matrix*>(&A));
     if (it == _used_matrices.end()) {
-        ERR("A matrix with the id %lu has not been found. Cannot release it. Aborting.");
+        ERR("The given matrix has not been found. Cannot release it. Aborting.");
         std::abort();
     } else {
         ::detail::transfer(_used_matrices, _unused_matrices, it);
@@ -234,8 +242,7 @@ releaseVector(Vector const& x)
 {
     auto it = _used_vectors.find(const_cast<Vector*>(&x));
     if (it == _used_vectors.end()) {
-        ERR("A vector with the id XXX has not been found. Cannot release it. Aborting.");
-        // TODO message
+        ERR("The given vector has not been found. Cannot release it. Aborting.");
         std::abort();
     } else {
         ::detail::transfer(_used_vectors, _unused_vectors, it);
