@@ -170,8 +170,7 @@ public:
                                     Vector& minus_delta_x) override
     {
         (void) Jac; (void) res; (void) minus_delta_x;
-        ERR("Method not implemented. Aborting"); // TODO implement
-        std::abort();
+        ERR("Method applyKnownSolutionsNewton() not implemented."); // TODO implement
     }
 
     bool isLinear() const override
