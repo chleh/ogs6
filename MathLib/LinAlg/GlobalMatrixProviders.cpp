@@ -43,3 +43,13 @@ using GlobalVector = GlobalSetupType::VectorType;
 
 INITIALIZE_GLOBAL_MATRIX_VECTOR_PROVIDER(GlobalMatrix, GlobalVector,
                                          globalSetupGlobalMatrixVectorProvider)
+
+
+namespace MathLib
+{
+void cleanupGlobalMatrixProviders()
+{
+    eigenGlobalMatrixVectorProvider.reset();
+    globalSetupGlobalMatrixVectorProvider.reset();
+}
+}

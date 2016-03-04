@@ -27,6 +27,8 @@ struct GlobalMatrixProvider
     static MatrixProvider<Matrix, Vector>& provider;
 };
 
+void cleanupGlobalMatrixProviders();
+
 } // MathLib
 
 #endif // MATHLIB_GLOBAL_MATRIX_PROVIDERS
