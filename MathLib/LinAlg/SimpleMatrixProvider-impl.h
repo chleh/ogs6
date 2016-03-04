@@ -94,7 +94,7 @@ Matrix&
 SimpleMatrixProvider<Matrix, Vector>::
 getMatrix()
 {
-    std::size_t id;
+    std::size_t id = 0u;
     return *getMatrix_<false>(id).first;
 }
 
@@ -111,7 +111,7 @@ Matrix&
 SimpleMatrixProvider<Matrix, Vector>::
 getMatrix(MatrixSpecificationsProvider const& msp)
 {
-    std::size_t id;
+    std::size_t id = 0u;
     auto const mat_spec = msp.getMatrixSpecifications();
     return *getMatrix_<false>(id, mat_spec).first;
     // TODO assert that the returned object always is of the right size
@@ -132,7 +132,7 @@ Matrix&
 SimpleMatrixProvider<Matrix, Vector>::
 getMatrix(Matrix const& A)
 {
-    std::size_t id;
+    std::size_t id = 0u;
     auto const& res = getMatrix_<false>(id, A);
     if (!res.second) // no new object has been created
         BLAS::copy(A, *res.first);
@@ -179,7 +179,7 @@ Vector&
 SimpleMatrixProvider<Matrix, Vector>::
 getVector()
 {
-    std::size_t id;
+    std::size_t id = 0u;
     return *getVector_<false>(id).first;
 }
 
@@ -196,7 +196,7 @@ Vector&
 SimpleMatrixProvider<Matrix, Vector>::
 getVector(MatrixSpecificationsProvider const& msp)
 {
-    std::size_t id;
+    std::size_t id = 0u;
     auto const mat_spec = msp.getMatrixSpecifications();
     return *getVector_<false>(id, mat_spec).first;
     // TODO assert that the returned object always is of the right size
@@ -217,7 +217,7 @@ Vector&
 SimpleMatrixProvider<Matrix, Vector>::
 getVector(Vector const& x)
 {
-    std::size_t id;
+    std::size_t id = 0u;
     auto const& res = getVector_<false>(id, x);
     if (!res.second) // no new object has been created
         BLAS::copy(x, *res.first);
