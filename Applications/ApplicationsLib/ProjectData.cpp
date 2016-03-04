@@ -98,10 +98,6 @@ ProjectData::~ProjectData()
 
 	for (MeshLib::Mesh* m : _mesh_vec)
 		delete m;
-
-	// processes must be destroyed before the _matrix_provider, because the
-	// matrix provider is referenced inside them
-	_processes.clear();
 }
 
 void ProjectData::addMesh(MeshLib::Mesh* mesh)
@@ -162,7 +158,6 @@ void ProjectData::buildProcesses()
 		    "A nonlinear solver with the given name has not been defined.");
 
 		auto time_disc = NumLib::createTimeDiscretization<GlobalVector>(
-		        _matrix_provider,
 		        pc.getConfSubtree("time_discretization")
 		    );
 
@@ -354,7 +349,7 @@ void ProjectData::parseNonlinearSolvers(BaseLib::ConfigTree const& config)
 		BaseLib::insertIfKeyUniqueElseError(_nonlinear_solvers,
 		    name,
 		    NumLib::createNonlinearSolver<GlobalMatrix, GlobalVector>(
-		        _matrix_provider, *linear_solver, conf).first,
+		        *linear_solver, conf).first,
 		    "The nonlinear solver name is not unique");
 	}
 }

@@ -44,13 +44,12 @@ private:
     //! An abstract time discretization
     using TimeDisc         = NumLib::TimeDiscretization<Vector>;
 
-    MathLib::SimpleMatrixProvider<Matrix, Vector> _matrix_provider;
     std::vector<Vector*> _process_solutions;
 
     struct SingleProcessData
     {
         template<NumLib::ODESystemTag ODETag, NumLib::NonlinearSolverTag NLTag>
-        SingleProcessData(MathLib::SimpleMatrixProvider<Matrix, Vector>& matrix_provider,
+        SingleProcessData(
                 NumLib::NonlinearSolver<Matrix, Vector, NLTag>& nonlinear_solver,
                 TimeDisc& time_disc,
                 NumLib::ODESystem<Matrix, Vector, ODETag, NLTag>& ode_sys)
@@ -58,7 +57,7 @@ private:
             , nonlinear_solver(nonlinear_solver)
             , tdisc_ode_sys(
                   new NumLib::TimeDiscretizedODESystem<Matrix, Vector, ODETag, NLTag>(
-                                matrix_provider, ode_sys, time_disc))
+                                ode_sys, time_disc))
             , mat_strg(dynamic_cast<NumLib::InternalMatrixStorage&>(*tdisc_ode_sys))
         {}
 
@@ -116,7 +115,7 @@ private:
             // because the Newton ODESystem derives from the Picard ODESystem.
             // So no further checks are needed here.
 
-            return SingleProcessData{ _matrix_provider,
+            return SingleProcessData{
                 *nonlinear_solver_picard, time_disc, ode_sys };
         }
         else if (auto* nonlinear_solver_newton =
@@ -127,7 +126,7 @@ private:
             using ODENewton = NumLib::ODESystem<Matrix, Vector, ODETag, Tag::Newton>;
             if (auto* ode_newton = dynamic_cast<ODENewton*>(&ode_sys))
             {
-                return SingleProcessData{ _matrix_provider,
+                return SingleProcessData{
                     *nonlinear_solver_newton, time_disc, *ode_newton };
             }
             else {
@@ -268,7 +267,7 @@ setInitialConditions(ProjectData& project,
 
         // append a solution vector of suitable size
         _process_solutions.emplace_back(
-                    &_matrix_provider.getVector(ode_sys));
+                    &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(ode_sys));
 
         auto& x0 = *_process_solutions[pcs_idx];
         pcs.setInitialConditions(x0);
@@ -381,7 +380,7 @@ UncoupledProcessesTimeLoop<Matrix, Vector>::
 ~UncoupledProcessesTimeLoop()
 {
     for (auto * x : _process_solutions)
-        _matrix_provider.releaseVector(*x);
+        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(*x);
 }
 
 } // namespace ApplicationsLib
