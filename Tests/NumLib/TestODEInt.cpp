@@ -111,9 +111,6 @@ private:
 };
 
 
-// TODO remove debugging macro
-#if 1
-
 template<typename Matrix, typename Vector, typename TimeDisc, typename ODE,
          NumLib::NonlinearSolverTag NLTag>
 typename std::enable_if<std::is_same<TimeDisc, NumLib::BackwardEuler<Vector> >::value>::type
@@ -162,21 +159,6 @@ run_test_case(const unsigned num_timesteps, const char* name)
     TestOutput<Matrix, Vector, NLTag> test(name);
     test.run_test(ode, timeDisc, num_timesteps);
 }
-
-#else
-
-template<typename Matrix, typename Vector, typename TimeDisc, typename ODE,
-         NumLib::NonlinearSolverTag NLTag>
-void
-run_test_case(const unsigned num_timesteps, const char* name)
-{
-    ODE ode;
-    // TimeDisc timeDisc(3);
-
-    TestOutput<Matrix, Vector, NLTag> test(name);
-    // test.run_test(ode, timeDisc, num_timesteps);
-}
-#endif
 
 
 // This class is only here s.t. I don't have to put the members into
