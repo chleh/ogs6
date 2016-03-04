@@ -19,8 +19,6 @@
 
 #include "GeoLib/GEOObjects.h"
 
-#include "MathLib/LinAlg/SimpleMatrixProvider.h"
-
 #include "ProcessLib/ProcessVariable.h"
 #include "ProcessLib/Process.h"
 #include "ProcessLib/Parameter.h"

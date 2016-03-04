@@ -6,7 +6,6 @@
 #include <typeinfo>
 
 #include "BaseLib/BuildInfo.h"
-#include "MathLib/LinAlg/SimpleMatrixProvider.h"
 #include "NumLib/ODESolver/TimeLoopSingleODE.h"
 #include "ProcessLib/NumericsConfig.h"
 #include "ODEs.h"
