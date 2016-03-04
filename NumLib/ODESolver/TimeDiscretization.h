@@ -156,7 +156,7 @@ public:
 
         // xdot = dxdot_dx * x_at_new_timestep - x_old
         getWeightedOldX(xdot);
-        BLAS::axpby(xdot, dxdot_dx, -1.0, x_at_new_timestep); // TODO consistent
+        BLAS::axpby(xdot, dxdot_dx, -1.0, x_at_new_timestep);
     }
 
     //! Returns \f$ \alpha = \partial \hat x / \partial x_N \f$.

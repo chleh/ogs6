@@ -39,7 +39,6 @@ solve(Vector &x)
     namespace BLAS = MathLib::BLAS;
     auto& sys = *_equation_system;
 
-    // TODO maybe sys can be omitted
     auto& A     = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_A_id);
     auto& rhs   = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_rhs_id);
     auto& x_new = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_x_new_id);
