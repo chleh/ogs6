@@ -124,10 +124,9 @@ private:
 
     double const _alpha = 1; //!< Damping factor. \todo Add constructor parameter.
 
-    // TODO
-    std::size_t _res_id = 0u;
-    std::size_t _J_id = 0u;
-    std::size_t _minus_delta_x_id = 0u;
+    std::size_t _res_id = 0u;           //!< ID of the residual vector.
+    std::size_t _J_id = 0u;             //!< ID of the Jacobian matrix.
+    std::size_t _minus_delta_x_id = 0u; //!< ID of the \f$ -\Delta x\f$ vector.
 };
 
 
@@ -177,10 +176,9 @@ private:
     const double _tol;       //!< tolerance of the solver
     const unsigned _maxiter; //!< maximum number of iterations
 
-    // TODO
-    std::size_t _A_id = 0u;
-    std::size_t _rhs_id = 0u;
-    std::size_t _x_new_id = 0u;
+    std::size_t _A_id = 0u;     //!< ID of the \f$ A \f$ matrix.
+    std::size_t _rhs_id = 0u;   //!< ID of the right-hand side vector.
+    std::size_t _x_new_id = 0u; //!< ID of the vector storing the solution of the linearized equation.
 };
 
 
