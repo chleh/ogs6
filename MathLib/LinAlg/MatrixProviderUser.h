@@ -46,7 +46,6 @@ public:
 
 template<typename Matrix, typename Vector>
 class MatrixProvider
-        : public VectorProvider<Vector>
 {
 public:
     using MSP = MatrixSpecificationsProvider;

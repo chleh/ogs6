@@ -18,7 +18,7 @@
 // Initializes the static members of the structs in the header file
 // associated with this file.
 #define INITIALIZE_GLOBAL_MATRIX_VECTOR_PROVIDER(MAT, VEC, VARNAME) \
-    static std::unique_ptr<MathLib::MatrixProvider<MAT, VEC>> VARNAME{ \
+    static std::unique_ptr<MathLib::SimpleMatrixProvider<MAT, VEC>> VARNAME{ \
         new MathLib::SimpleMatrixProvider<MAT, VEC>}; \
     \
     namespace MathLib { \

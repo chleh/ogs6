@@ -12,6 +12,7 @@ namespace MathLib
 template<typename Matrix, typename Vector>
 class SimpleMatrixProvider final
         : public MatrixProvider<Matrix, Vector>
+        , public VectorProvider<Vector>
 {
 public:
     SimpleMatrixProvider() = default;
