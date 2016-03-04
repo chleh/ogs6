@@ -97,10 +97,14 @@ public:
         , _time_disc(time_discretization)
         , _mat_trans(createMatrixTranslator<Matrix, Vector, ODETag>(time_discretization))
     {
-        _Jac  = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_ode, _Jac_id);
-        _M    = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_ode, _M_id);
-        _K    = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_ode, _K_id);
-        _b    = &MathLib::GlobalVectorProvider<Vector>::provider.getVector(_ode, _b_id);
+        _Jac  = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(
+                    _ode, _Jac_id);
+        _M    = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(
+                    _ode, _M_id);
+        _K    = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(
+                    _ode, _K_id);
+        _b    = &MathLib::GlobalVectorProvider<Vector>::provider.getVector(
+                    _ode, _b_id);
     }
 
     ~TimeDiscretizedODESystem()

@@ -84,7 +84,8 @@ TimeLoopSingleODE<Matrix, Vector, NLTag>::
 loop(const double t0, const Vector x0, const double t_end, const double delta_t,
      Callback& post_timestep)
 {
-    Vector& x = MathLib::GlobalVectorProvider<Vector>::provider.getVector(x0); // solution vector
+    // solution vector
+    Vector& x = MathLib::GlobalVectorProvider<Vector>::provider.getVector(x0);
 
     auto& time_disc = _ode_sys.getTimeDiscretization();
 

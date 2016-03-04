@@ -449,7 +449,8 @@ public:
 
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
-        _xs_old.push_back(&MathLib::GlobalVectorProvider<Vector>::provider.getVector(x0));
+        _xs_old.push_back(
+            &MathLib::GlobalVectorProvider<Vector>::provider.getVector(x0));
     }
 
     void pushState(const double, Vector const& x, InternalMatrixStorage const&) override
@@ -458,7 +459,8 @@ public:
 
         // until _xs_old is filled, lower-order BDF formulas are used.
         if (_xs_old.size() < _num_steps) {
-            _xs_old.push_back(&MathLib::GlobalVectorProvider<Vector>::provider.getVector(x));
+            _xs_old.push_back(
+                &MathLib::GlobalVectorProvider<Vector>::provider.getVector(x));
         } else {
             *_xs_old[_offset] = x;
             _offset = (_offset+1) % _num_steps; // treat _xs_old as a circular buffer

@@ -114,9 +114,12 @@ solve(Vector &x)
     namespace BLAS = MathLib::BLAS;
     auto& sys = *_equation_system;
 
-    auto& res           = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_res_id);
-    auto& minus_delta_x = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_minus_delta_x_id);
-    auto& J             = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_J_id);
+    auto& res =
+            MathLib::GlobalVectorProvider<Vector>::provider.getVector(_res_id);
+    auto& minus_delta_x =
+            MathLib::GlobalVectorProvider<Vector>::provider.getVector(_minus_delta_x_id);
+    auto& J =
+            MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_J_id);
 
     bool success = false;
 
