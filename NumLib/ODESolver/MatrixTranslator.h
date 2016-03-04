@@ -172,7 +172,7 @@ private:
     MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     TimeDiscretization<Vector> const& _time_disc; //!< the time discretization used.
 
-    mutable std::size_t _tmp_id;
+    mutable std::size_t _tmp_id = 0u;
 };
 
 
@@ -272,7 +272,7 @@ private:
     MathLib::MatrixProvider<Matrix, Vector>& _matrix_provider;
     ForwardEuler<Vector> const& _fwd_euler; //!< the time discretization used.
 
-    mutable std::size_t _tmp_id;
+    mutable std::size_t _tmp_id = 0u;
 };
 
 
@@ -433,7 +433,7 @@ private:
                     //!< \see pushMatrices()
     Vector& _b_bar; //!< Used to adjust vectors assembled by the ODE.
                     //!< \see pushMatrices()
-    mutable std::size_t _tmp_id;
+    mutable std::size_t _tmp_id = 0u;
 };
 
 

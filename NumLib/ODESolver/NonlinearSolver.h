@@ -125,9 +125,9 @@ private:
     double const _alpha = 1; //!< Damping factor. \todo Add constructor parameter.
 
     // TODO
-    std::size_t _res_id;
-    std::size_t _J_id;
-    std::size_t _minus_delta_x_id;
+    std::size_t _res_id = 0u;
+    std::size_t _J_id = 0u;
+    std::size_t _minus_delta_x_id = 0u;
 };
 
 
@@ -178,9 +178,9 @@ private:
     const unsigned _maxiter; //!< maximum number of iterations
 
     // TODO
-    std::size_t _A_id;
-    std::size_t _rhs_id;
-    std::size_t _x_new_id;
+    std::size_t _A_id = 0u;
+    std::size_t _rhs_id = 0u;
+    std::size_t _x_new_id = 0u;
 };
 
 
