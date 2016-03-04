@@ -41,8 +41,8 @@ solve(Vector &x)
 
     // TODO maybe sys can be omitted
     auto& A     = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_A_id);
-    auto& rhs   = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_rhs_id);
-    auto& x_new = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_x_new_id);
+    auto& rhs   = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_rhs_id);
+    auto& x_new = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_x_new_id);
 
     bool success = false;
 
@@ -88,8 +88,8 @@ solve(Vector &x)
     }
 
     MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(A);
-    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(rhs);
-    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(x_new);
+    MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(rhs);
+    MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(x_new);
 
     return success;
 }
@@ -114,9 +114,9 @@ solve(Vector &x)
     namespace BLAS = MathLib::BLAS;
     auto& sys = *_equation_system;
 
-    auto& res           = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_res_id);
+    auto& res           = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_res_id);
+    auto& minus_delta_x = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_minus_delta_x_id);
     auto& J             = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_J_id);
-    auto& minus_delta_x = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_minus_delta_x_id);
 
     bool success = false;
 
@@ -163,9 +163,9 @@ solve(Vector &x)
         }
     }
 
-    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(res);
     MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(J);
-    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(minus_delta_x);
+    MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(res);
+    MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(minus_delta_x);
 
     return success;
 }

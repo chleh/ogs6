@@ -100,7 +100,7 @@ public:
         _Jac  = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_ode, _Jac_id);
         _M    = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_ode, _M_id);
         _K    = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_ode, _K_id);
-        _b    = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_ode, _b_id);
+        _b    = &MathLib::GlobalVectorProvider<Vector>::provider.getVector(_ode, _b_id);
     }
 
     ~TimeDiscretizedODESystem()
@@ -108,7 +108,7 @@ public:
         MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(*_Jac);
         MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(*_M);
         MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(*_K);
-        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(*_b);
+        MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(*_b);
     }
 
     void assembleResidualNewton(const Vector &x_new_timestep) override
@@ -132,7 +132,7 @@ public:
         auto const  dxdot_dx = _time_disc.getNewXWeight();
         auto const  dx_dx    = _time_disc.getDxDx();
 
-        auto& xdot = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_xdot_id);
+        auto& xdot = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_xdot_id);
         _time_disc.getXdot(x_new_timestep, xdot);
 
         _Jac->setZero();
@@ -141,7 +141,7 @@ public:
                               dxdot_dx, *_M, dx_dx, *_K,
                               *_Jac);
 
-        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(xdot);
+        MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(xdot);
     }
 
     void getResidual(Vector const& x_new_timestep, Vector& res) const override
@@ -149,12 +149,12 @@ public:
         // TODO Maybe the duplicate calculation of xdot here and in assembleJacobian
         //      can be optimuized. However, that would make the interface a bit more
         //      fragile.
-        auto& xdot = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_xdot_id);
+        auto& xdot = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_xdot_id);
         _time_disc.getXdot(x_new_timestep, xdot);
 
         _mat_trans->computeResidual(*_M, *_K, *_b, x_new_timestep, xdot, res);
 
-        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(xdot);
+        MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(xdot);
     }
 
     void getJacobian(Matrix& Jac) const override
@@ -248,14 +248,14 @@ public:
     {
         _M = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(ode, _M_id);
         _K = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(ode, _K_id);
-        _b = &MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(ode, _b_id);
+        _b = &MathLib::GlobalVectorProvider<Vector>::provider.getVector(ode, _b_id);
     }
 
     ~TimeDiscretizedODESystem()
     {
         MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(*_M);
         MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(*_K);
-        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(*_b);
+        MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(*_b);
     }
 
     void assembleMatricesPicard(const Vector &x_new_timestep) override

@@ -132,13 +132,13 @@ public:
     {
         namespace BLAS = MathLib::BLAS;
 
-        auto& tmp = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_tmp_id);
+        auto& tmp = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_tmp_id);
         _time_disc.getWeightedOldX(tmp);
 
         // rhs = M * weighted_old_x + b
         BLAS::matMultAdd(M, tmp, b, rhs);
 
-        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(tmp);
+        MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(tmp);
     }
 
     //! Computes \f$ r = M \cdot \hat x + K \cdot x_C - b \f$.
@@ -225,7 +225,7 @@ public:
     {
         namespace BLAS = MathLib::BLAS;
 
-        auto& tmp = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_tmp_id);
+        auto& tmp = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_tmp_id);
         _fwd_euler.getWeightedOldX(tmp);
 
         auto const& x_old          = _fwd_euler.getXOld();
@@ -235,7 +235,7 @@ public:
         BLAS::aypx(rhs, -1.0, b);     // rhs = b - K * x_old
         BLAS::matMultAdd(M, tmp, rhs, rhs); // rhs += M * weighted_old_x
 
-        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(tmp);
+        MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(tmp);
     }
 
     //! Computes \f$ r = M \cdot \hat x + K \cdot x_C - b \f$.
@@ -303,13 +303,13 @@ public:
     MatrixTranslatorCrankNicolson(CrankNicolson<Vector> const& timeDisc)
         : _crank_nicolson(timeDisc)
         , _M_bar(MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix())
-        , _b_bar(MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector())
+        , _b_bar(MathLib::GlobalVectorProvider<Vector>::provider.getVector())
     {}
 
     ~MatrixTranslatorCrankNicolson()
     {
         MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(_M_bar);
-        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(_b_bar);
+        MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(_b_bar);
     }
 
     //! Computes \f$ A = \theta \cdot (M \cdot \alpha + K) + \bar M \cdot \alpha \f$.
@@ -333,7 +333,7 @@ public:
     {
         namespace BLAS = MathLib::BLAS;
 
-        auto& tmp = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(_tmp_id);
+        auto& tmp = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_tmp_id);
         _crank_nicolson.getWeightedOldX(tmp);
 
         auto const  theta          = _crank_nicolson.getTheta();
@@ -345,7 +345,7 @@ public:
         BLAS::matMultAdd(_M_bar, tmp, rhs, rhs); // rhs += _M_bar * weighted_old_x
         BLAS::axpy(rhs, -1.0, _b_bar); // rhs -= b
 
-        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(tmp);
+        MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(tmp);
     }
     //! Computes \f$ r = \theta \cdot (M \cdot \hat x + K \cdot x_C - b) + \bar M \cdot \hat x + \bar b \f$.
     void computeResidual(Matrix const& M, Matrix const& K, Vector const& b,

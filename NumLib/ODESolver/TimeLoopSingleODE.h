@@ -84,7 +84,7 @@ TimeLoopSingleODE<Matrix, Vector, NLTag>::
 loop(const double t0, const Vector x0, const double t_end, const double delta_t,
      Callback& post_timestep)
 {
-    Vector& x = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getVector(x0); // solution vector
+    Vector& x = MathLib::GlobalVectorProvider<Vector>::provider.getVector(x0); // solution vector
 
     auto& time_disc = _ode_sys.getTimeDiscretization();
 
@@ -119,7 +119,7 @@ loop(const double t0, const Vector x0, const double t_end, const double delta_t,
         post_timestep(t_cb, x_cb);
     }
 
-    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseVector(x);
+    MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(x);
 
     if (!nl_slv_succeeded) {
         ERR("Nonlinear solver failed in timestep #%u at t = %g s", timestep, t);
