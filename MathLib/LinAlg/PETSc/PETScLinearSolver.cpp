@@ -39,7 +39,8 @@ PETScLinearSolver::PETScLinearSolver(const std::string /*prefix*/,
         }
 
         if (auto const pre = option->getConfParamOptional<std::string>("prefix")) {
-            prefix = *pre;
+            if (!pre->empty())
+                prefix = *pre + "_";
         }
     }
     PetscOptionsInsertString(petsc_options.c_str());
