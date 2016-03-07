@@ -151,6 +151,8 @@ public:
                               dxdot_dx, *_M, dx_dx, *_K,
                               *_Jac);
 
+        MathLib::BLAS::finalizeAssembly(*_Jac);
+
         MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(xdot);
     }
 
