@@ -57,6 +57,7 @@ PETScMatrix::PETScMatrix(const PETScMatrix &A)
     , _start_rank(A._start_rank)
     , _end_rank(A._end_rank)
 {
+    _A.reset(new PETSc_Mat);
     MatConvert(*A._A, MATSAME, MAT_INITIAL_MATRIX, _A.get());
 }
 
@@ -75,6 +76,7 @@ PETScMatrix::operator=(PETScMatrix const& A)
         MatCopy(*A._A, *_A, DIFFERENT_NONZERO_PATTERN);
     } else {
         destroy();
+        _A.reset(new PETSc_Mat);
         MatConvert(*A._A, MATSAME, MAT_INITIAL_MATRIX, _A.get());
     }
 
