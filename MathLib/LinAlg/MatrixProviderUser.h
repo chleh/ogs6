@@ -72,6 +72,8 @@ public:
     virtual Matrix& getMatrix(MSP const& msp, std::size_t& id) = 0;
 
     virtual void releaseMatrix(Matrix const& A) = 0;
+
+    virtual ~MatrixProvider() = default;
 };
 
 } // namespace MathLib
