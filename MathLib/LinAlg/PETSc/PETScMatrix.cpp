@@ -57,7 +57,7 @@ PETScMatrix::PETScMatrix(const PETScMatrix &A)
     , _start_rank(A._start_rank)
     , _end_rank(A._end_rank)
 {
-    MatConvert(*A._A, MATSAME, MAT_INITIAL_MATRIX, _A);
+    MatConvert(*A._A, MATSAME, MAT_INITIAL_MATRIX, _A.get());
 }
 
 PETScMatrix&
@@ -74,8 +74,8 @@ PETScMatrix::operator=(PETScMatrix const& A)
         // TODO this is the slowest option for copying
         MatCopy(*A._A, *_A, DIFFERENT_NONZERO_PATTERN);
     } else {
-        _A = new PETSc_Mat;
-        MatConvert(*A._A, MATSAME, MAT_INITIAL_MATRIX, _A);
+        destroy();
+        MatConvert(*A._A, MATSAME, MAT_INITIAL_MATRIX, _A.get());
     }
 
     return *this;
@@ -121,9 +121,9 @@ void PETScMatrix::viewer(const std::string &file_name, const PetscViewerFormat v
 
 void PETScMatrix::create(const PetscInt d_nz, const PetscInt o_nz)
 {
-    _A = new PETSc_Mat;
+    _A.reset(new PETSc_Mat);
 
-    MatCreate(PETSC_COMM_WORLD, _A);
+    MatCreate(PETSC_COMM_WORLD, _A.get());
     MatSetSizes(*_A, _n_loc_rows, _n_loc_cols, _nrows, _ncols);
 
     MatSetFromOptions(*_A);

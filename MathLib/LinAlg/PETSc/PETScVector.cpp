@@ -28,18 +28,15 @@ namespace MathLib
 {
 PETScVector::PETScVector(const PetscInt vec_size, const bool is_global_size)
 {
-    _v = new PETSc_Vec;
+    _v.reset(new PETSc_Vec);
 
-    if( is_global_size )
-    {
-        VecCreate(PETSC_COMM_WORLD, _v);
+    if( is_global_size ) {
+        VecCreate(PETSC_COMM_WORLD, _v.get());
         VecSetSizes(*_v, PETSC_DECIDE, vec_size);
-    }
-    else
-    {
+    } else {
         // Fix size partitioning
         // the size can be associated to specific memory allocation of a matrix
-        VecCreateMPI(PETSC_COMM_WORLD, vec_size, PETSC_DECIDE, _v);
+        VecCreateMPI(PETSC_COMM_WORLD, vec_size, PETSC_DECIDE, _v.get());
     }
 
     config();
@@ -50,17 +47,17 @@ PETScVector::PETScVector(const PetscInt vec_size,
                          const bool is_global_size) :
                          _size_ghosts(ghost_ids.size()), _has_ghost_id(true)
 {
-    _v = new PETSc_Vec;
+    _v.reset(new PETSc_Vec);
 
     PetscInt nghosts = static_cast<PetscInt>( ghost_ids.size() );
     if ( is_global_size )
     {
         VecCreateGhost(PETSC_COMM_WORLD, PETSC_DECIDE, vec_size, nghosts,
-                       ghost_ids.data(), _v);
+                       ghost_ids.data(), _v.get());
     }
     else
     {
-        VecCreate(PETSC_COMM_WORLD, _v);
+        VecCreate(PETSC_COMM_WORLD, _v.get());
         VecSetType(*_v, VECMPI);
         VecSetSizes(*_v, vec_size, PETSC_DECIDE);
         VecMPISetGhost(*_v, nghosts, ghost_ids.data());
@@ -229,12 +226,13 @@ void PETScVector::viewer(const std::string &file_name, const PetscViewerFormat v
 
 void PETScVector::shallowCopy(const PETScVector &v)
 {
-    assert(_v == nullptr);
+    destroy();
 
-    _v = new PETSc_Vec;
+    _v.reset(new PETSc_Vec);
 
-    VecDuplicate(*v._v, _v);
+    VecDuplicate(*v._v, _v.get());
 
+    // TODO can't that be copied from v?
     VecGetOwnershipRange(*_v, &_start_rank,&_end_rank);
     VecGetLocalSize(*_v, &_size_loc);
     VecGetSize(*_v, &_size);

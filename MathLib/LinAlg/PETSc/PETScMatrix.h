@@ -15,6 +15,7 @@
 #ifndef PETSCMATRIX_H_
 #define PETSCMATRIX_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -57,8 +58,7 @@ class PETScMatrix
 
         ~PETScMatrix()
         {
-            if (_A) MatDestroy(_A);
-            delete _A;
+            destroy();
         }
 
         PETScMatrix(PETScMatrix const& A);
@@ -233,8 +233,10 @@ class PETScMatrix
                     const PetscViewerFormat vw_format = PETSC_VIEWER_ASCII_MATLAB );
 
     private:
+        void destroy() { if (_A) MatDestroy(_A.get()); _A.reset(nullptr); }
+
         /// PETSc matrix
-        PETSc_Mat* _A = nullptr;
+        std::unique_ptr<PETSc_Mat> _A;
 
         /// Number of the global rows
         PetscInt _nrows;

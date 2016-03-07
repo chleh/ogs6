@@ -17,6 +17,7 @@
 #ifndef PETSCVECTOR_H_
 #define PETSCVECTOR_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -75,8 +76,7 @@ class PETScVector
 
         ~PETScVector()
         {
-            if (_v) VecDestroy(_v);
-            delete _v;
+            destroy();
         }
 
         /// Perform MPI collection of assembled entries in buffer
@@ -243,12 +243,12 @@ class PETScVector
 
 
         // TODO preliminary
-        PETSc_Vec* getRawVector() { return _v; }
+        PETSc_Vec* getRawVector() { return _v.get(); }
 
         // TODO preliminary
         // this method is dangerous insofar you can do arbitrary things also
         // with a const PETSc vector.
-        const PETSc_Vec* getRawVector() const {return _v; }
+        const PETSc_Vec* getRawVector() const {return _v.get(); }
 
 
         /*! View the global vector for test purpose. Do not use it for output a big vector.
@@ -280,7 +280,9 @@ class PETScVector
         void shallowCopy(const PETScVector &v);
 
     private:
-        PETSc_Vec* _v = nullptr;
+        void destroy() { if (_v) VecDestroy(_v.get()); _v.reset(nullptr); }
+
+        std::unique_ptr<PETSc_Vec> _v;
         /// Local vector, which is only for the case that  _v is created
         /// with ghost entries. 
         mutable PETSc_Vec _v_loc;
