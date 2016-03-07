@@ -15,7 +15,6 @@
 #include <logog/include/logog.hpp>
 
 #include "BaseLib/ConfigTree.h"
-#include "MathLib/LinAlg/SimpleMatrixProvider.h"
 #include "NumLib/ODESolver/TimeDiscretizedODESystem.h"
 #include "NumLib/ODESolver/NonlinearSolver.h"
 
