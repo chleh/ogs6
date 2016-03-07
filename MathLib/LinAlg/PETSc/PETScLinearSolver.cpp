@@ -25,13 +25,17 @@ PETScLinearSolver::PETScLinearSolver(const std::string prefix,
                                      BaseLib::ConfigTree const* const option)
     : _elapsed_ctime(0.)
 {
-    // Insert options into petsc database if any.
-    if (option)
-    {
+    // Insert options into petsc database. Default options are given in the string below.
+    std::string petsc_options
+            = "-ksp_type cg -pc_type bjacobi -ksp_rtol 1e-16 -ksp_max_it 10000";
+
+    if (option) {
         ignoreOtherLinearSolvers(*option, "petsc");
-        std::string const petsc_options = option->getConfParam<std::string>("petsc", "");
-        PetscOptionsInsertString(petsc_options.c_str());
+        if (auto po = option->getConfParamOptional<std::string>("petsc")) {
+            petsc_options = *po;
+        }
     }
+    PetscOptionsInsertString(petsc_options.c_str());
 
     KSPCreate(PETSC_COMM_WORLD, &_solver);
 
