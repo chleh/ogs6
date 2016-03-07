@@ -141,12 +141,11 @@ private:
         }
     }
 
-    //! Constructs and returns a \c vector of PerProcessData from the given
-    //! ProjectData.
+    //! Constructs and returns a \c vector of SingleProcessData from the given
+    //! \c project.
     std::vector<SingleProcessData> initInternalData(ProjectData& project);
 
-    //! Sets and returns initial conditions for the given ProjectData and
-    //! PerProcessData.
+    //! Sets initial conditions for the given \c project and \c per_process_data.
     void setInitialConditions(
             ProjectData& project, double const t0,
             std::vector<SingleProcessData>& per_process_data);
