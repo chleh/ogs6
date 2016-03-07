@@ -19,16 +19,16 @@ namespace MathLib
 {
 
 template<typename Matrix, typename Vector>
-class SimpleMatrixProvider final
+class SimpleMatrixVectorProvider final
         : public MatrixProvider<Matrix, Vector>
         , public VectorProvider<Vector>
 {
 public:
-    SimpleMatrixProvider() = default;
+    SimpleMatrixVectorProvider() = default;
 
     // no copies
-    SimpleMatrixProvider(SimpleMatrixProvider const&) = delete;
-    SimpleMatrixProvider& operator=(SimpleMatrixProvider const&) = delete;
+    SimpleMatrixVectorProvider(SimpleMatrixVectorProvider const&) = delete;
+    SimpleMatrixVectorProvider& operator=(SimpleMatrixVectorProvider const&) = delete;
 
     using MSP = MatrixSpecificationsProvider;
 
@@ -54,7 +54,7 @@ public:
 
     void releaseMatrix(Matrix const& A) override;
 
-    ~SimpleMatrixProvider();
+    ~SimpleMatrixVectorProvider();
 
 private:
     template<bool do_search, typename... Args>
@@ -85,6 +85,6 @@ private:
 
 } // namespace MathLib
 
-#include "SimpleMatrixProvider-impl.h"
+#include "SimpleMatrixVectorProvider-impl.h"
 
 #endif // MATHLIB_SIMPLE_MATRIX_PROVIDER_H

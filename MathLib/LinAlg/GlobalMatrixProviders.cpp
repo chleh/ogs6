@@ -12,14 +12,14 @@
 #include "ProcessLib/NumericsConfig.h"
 
 #include "GlobalMatrixProviders.h"
-#include "SimpleMatrixProvider.h"
+#include "SimpleMatrixVectorProvider.h"
 
 
 // Initializes the static members of the structs in the header file
 // associated with this file.
 #define INITIALIZE_GLOBAL_MATRIX_VECTOR_PROVIDER(MAT, VEC, VARNAME) \
-    static std::unique_ptr<MathLib::SimpleMatrixProvider<MAT, VEC>> VARNAME{ \
-        new MathLib::SimpleMatrixProvider<MAT, VEC>}; \
+    static std::unique_ptr<MathLib::SimpleMatrixVectorProvider<MAT, VEC>> VARNAME{ \
+        new MathLib::SimpleMatrixVectorProvider<MAT, VEC>}; \
     \
     namespace MathLib { \
     template<> \

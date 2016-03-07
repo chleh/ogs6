@@ -12,7 +12,7 @@
 
 #include "BLAS.h"
 #include "MatrixVectorTraits.h"
-#include "SimpleMatrixProvider.h"
+#include "SimpleMatrixVectorProvider.h"
 
 namespace detail
 {
@@ -56,7 +56,7 @@ namespace MathLib
 template<typename Matrix, typename Vector>
 template<bool do_search, typename MatVec, typename... Args>
 std::pair<MatVec*, bool>
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 get_(std::size_t& id,
      std::map<std::size_t, MatVec*>& unused_map,
      std::map<MatVec*, std::size_t>& used_map,
@@ -89,7 +89,7 @@ get_(std::size_t& id,
 template<typename Matrix, typename Vector>
 template<bool do_search, typename... Args>
 std::pair<Matrix*, bool>
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getMatrix_(std::size_t& id, Args&&... args)
 {
     return get_<do_search>(id, _unused_matrices, _used_matrices, std::forward<Args>(args)...);
@@ -98,7 +98,7 @@ getMatrix_(std::size_t& id, Args&&... args)
 
 template<typename Matrix, typename Vector>
 Matrix&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getMatrix()
 {
     std::size_t id = 0u;
@@ -107,7 +107,7 @@ getMatrix()
 
 template<typename Matrix, typename Vector>
 Matrix&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getMatrix(std::size_t& id)
 {
     return *getMatrix_<true>(id).first;
@@ -115,7 +115,7 @@ getMatrix(std::size_t& id)
 
 template<typename Matrix, typename Vector>
 Matrix&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getMatrix(MatrixSpecificationsProvider const& msp)
 {
     std::size_t id = 0u;
@@ -126,7 +126,7 @@ getMatrix(MatrixSpecificationsProvider const& msp)
 
 template<typename Matrix, typename Vector>
 Matrix&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getMatrix(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
     auto mat_spec = msp.getMatrixSpecifications();
@@ -136,7 +136,7 @@ getMatrix(MatrixSpecificationsProvider const& msp, std::size_t& id)
 
 template<typename Matrix, typename Vector>
 Matrix&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getMatrix(Matrix const& A)
 {
     std::size_t id = 0u;
@@ -148,7 +148,7 @@ getMatrix(Matrix const& A)
 
 template<typename Matrix, typename Vector>
 Matrix&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getMatrix(Matrix const& A, std::size_t& id)
 {
     auto const& res = getMatrix_<false>(id, A);
@@ -159,7 +159,7 @@ getMatrix(Matrix const& A, std::size_t& id)
 
 template<typename Matrix, typename Vector>
 void
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 releaseMatrix(Matrix const& A)
 {
     auto it = _used_matrices.find(const_cast<Matrix*>(&A));
@@ -174,7 +174,7 @@ releaseMatrix(Matrix const& A)
 template<typename Matrix, typename Vector>
 template<bool do_search, typename... Args>
 std::pair<Vector*, bool>
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getVector_(std::size_t& id, Args&&... args)
 {
     return get_<do_search>(id, _unused_vectors, _used_vectors, std::forward<Args>(args)...);
@@ -183,7 +183,7 @@ getVector_(std::size_t& id, Args&&... args)
 
 template<typename Matrix, typename Vector>
 Vector&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getVector()
 {
     std::size_t id = 0u;
@@ -192,7 +192,7 @@ getVector()
 
 template<typename Matrix, typename Vector>
 Vector&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getVector(std::size_t& id)
 {
     return *getVector_<true>(id).first;
@@ -200,7 +200,7 @@ getVector(std::size_t& id)
 
 template<typename Matrix, typename Vector>
 Vector&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getVector(MatrixSpecificationsProvider const& msp)
 {
     std::size_t id = 0u;
@@ -211,7 +211,7 @@ getVector(MatrixSpecificationsProvider const& msp)
 
 template<typename Matrix, typename Vector>
 Vector&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getVector(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
     auto mat_spec = msp.getMatrixSpecifications();
@@ -221,7 +221,7 @@ getVector(MatrixSpecificationsProvider const& msp, std::size_t& id)
 
 template<typename Matrix, typename Vector>
 Vector&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getVector(Vector const& x)
 {
     std::size_t id = 0u;
@@ -233,7 +233,7 @@ getVector(Vector const& x)
 
 template<typename Matrix, typename Vector>
 Vector&
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 getVector(Vector const& x, std::size_t& id)
 {
     auto const& res = getVector_<false>(id, x);
@@ -244,7 +244,7 @@ getVector(Vector const& x, std::size_t& id)
 
 template<typename Matrix, typename Vector>
 void
-SimpleMatrixProvider<Matrix, Vector>::
+SimpleMatrixVectorProvider<Matrix, Vector>::
 releaseVector(Vector const& x)
 {
     auto it = _used_vectors.find(const_cast<Vector*>(&x));
@@ -257,8 +257,8 @@ releaseVector(Vector const& x)
 }
 
 template<typename Matrix, typename Vector>
-SimpleMatrixProvider<Matrix, Vector>::
-~SimpleMatrixProvider()
+SimpleMatrixVectorProvider<Matrix, Vector>::
+~SimpleMatrixVectorProvider()
 {
     if ((!_used_matrices.empty()) || (!_used_vectors.empty())) {
         WARN("There are still some matrices and vectors in use."
