@@ -15,6 +15,9 @@ APPEND_SOURCE_FILES(TEST_SOURCES MathLib)
 APPEND_SOURCE_FILES(TEST_SOURCES MeshLib)
 APPEND_SOURCE_FILES(TEST_SOURCES MeshGeoToolsLib)
 APPEND_SOURCE_FILES(TEST_SOURCES NumLib)
+APPEND_SOURCE_FILES(TEST_SOURCES)
+
+add_library(Tests STATIC TestTools.cpp)
 
 if(QT4_FOUND)
 	APPEND_SOURCE_FILES(TEST_SOURCES FileIO_Qt)
@@ -35,6 +38,7 @@ target_link_libraries(testrunner
 	NumLib
 	GTest
 	Threads::Threads
+	Tests
 )
 ADD_VTK_DEPENDENCY(testrunner)
 
