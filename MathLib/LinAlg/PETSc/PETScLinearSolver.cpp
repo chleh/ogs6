@@ -32,15 +32,18 @@ PETScLinearSolver::PETScLinearSolver(const std::string /*prefix*/,
 
     if (option) {
         ignoreOtherLinearSolvers(*option, "petsc");
-        if (auto const subtree = option->getConfSubtreeOptional("petsc")) {
-            if (auto const parameters = subtree->getConfParamOptional<std::string>(
-                    "parameters"))
-            petsc_options = *parameters;
-        }
 
-        if (auto const pre = option->getConfParamOptional<std::string>("prefix")) {
-            if (!pre->empty())
-                prefix = *pre + "_";
+        if (auto const subtree = option->getConfSubtreeOptional("petsc"))
+        {
+            if (auto const parameters = subtree->getConfParamOptional<std::string>(
+                    "parameters")) {
+                petsc_options = *parameters;
+            }
+
+            if (auto const pre = subtree->getConfParamOptional<std::string>("prefix")) {
+                if (!pre->empty())
+                    prefix = *pre + "_";
+            }
         }
     }
     PetscOptionsInsertString(petsc_options.c_str());
