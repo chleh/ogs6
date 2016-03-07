@@ -302,13 +302,13 @@ public:
      */
     MatrixTranslatorCrankNicolson(CrankNicolson<Vector> const& timeDisc)
         : _crank_nicolson(timeDisc)
-        , _M_bar(MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix())
+        , _M_bar(MathLib::GlobalMatrixProvider<Matrix>::provider.getMatrix())
         , _b_bar(MathLib::GlobalVectorProvider<Vector>::provider.getVector())
     {}
 
     ~MatrixTranslatorCrankNicolson()
     {
-        MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(_M_bar);
+        MathLib::GlobalMatrixProvider<Matrix>::provider.releaseMatrix(_M_bar);
         MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(_b_bar);
     }
 

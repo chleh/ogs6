@@ -39,7 +39,7 @@ solve(Vector &x)
     namespace BLAS = MathLib::BLAS;
     auto& sys = *_equation_system;
 
-    auto& A     = MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_A_id);
+    auto& A     = MathLib::GlobalMatrixProvider<Matrix>::provider.getMatrix(_A_id);
     auto& rhs   = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_rhs_id);
     auto& x_new = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_x_new_id);
 
@@ -86,7 +86,7 @@ solve(Vector &x)
         }
     }
 
-    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(A);
+    MathLib::GlobalMatrixProvider<Matrix>::provider.releaseMatrix(A);
     MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(rhs);
     MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(x_new);
 
@@ -118,7 +118,7 @@ solve(Vector &x)
     auto& minus_delta_x =
             MathLib::GlobalVectorProvider<Vector>::provider.getVector(_minus_delta_x_id);
     auto& J =
-            MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.getMatrix(_J_id);
+            MathLib::GlobalMatrixProvider<Matrix>::provider.getMatrix(_J_id);
 
     bool success = false;
 
@@ -165,7 +165,7 @@ solve(Vector &x)
         }
     }
 
-    MathLib::GlobalMatrixProvider<Matrix, Vector>::provider.releaseMatrix(J);
+    MathLib::GlobalMatrixProvider<Matrix>::provider.releaseMatrix(J);
     MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(res);
     MathLib::GlobalVectorProvider<Vector>::provider.releaseVector(minus_delta_x);
 
