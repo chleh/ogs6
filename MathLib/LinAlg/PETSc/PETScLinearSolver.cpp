@@ -21,18 +21,25 @@
 
 namespace MathLib
 {
-PETScLinearSolver::PETScLinearSolver(const std::string prefix,
+PETScLinearSolver::PETScLinearSolver(const std::string /*prefix*/,
                                      BaseLib::ConfigTree const* const option)
-    : _elapsed_ctime(0.)
 {
     // Insert options into petsc database. Default options are given in the string below.
     std::string petsc_options
             = "-ksp_type cg -pc_type bjacobi -ksp_rtol 1e-16 -ksp_max_it 10000";
 
+    std::string prefix;
+
     if (option) {
         ignoreOtherLinearSolvers(*option, "petsc");
-        if (auto po = option->getConfParamOptional<std::string>("petsc")) {
-            petsc_options = *po;
+        if (auto const subtree = option->getConfSubtreeOptional("petsc")) {
+            if (auto const parameters = subtree->getConfParamOptional<std::string>(
+                    "parameters"))
+            petsc_options = *parameters;
+        }
+
+        if (auto const pre = option->getConfParamOptional<std::string>("prefix")) {
+            prefix = *pre;
         }
     }
     PetscOptionsInsertString(petsc_options.c_str());
@@ -41,13 +48,11 @@ PETScLinearSolver::PETScLinearSolver(const std::string prefix,
 
     KSPGetPC(_solver, &_pc);
 
-    //
-    if ( !prefix.empty() )
-    {
+    if (!prefix.empty()) {
         KSPSetOptionsPrefix(_solver, prefix.c_str());
     }
 
-    KSPSetFromOptions(_solver);  // set running time option
+    KSPSetFromOptions(_solver); // set running time option
 }
 
 bool PETScLinearSolver::solve(PETScMatrix& A, PETScVector &b, PETScVector &x)
