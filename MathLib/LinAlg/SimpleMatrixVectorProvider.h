@@ -18,6 +18,13 @@
 namespace MathLib
 {
 
+/*! Manages storage for matrices and vectors.
+ *
+ * This is a simple implementation of the MatrixProvider and VectorProvider interfaces.
+ *
+ * It is simple insofar it does not reuse released matrices/vectors, but keeps them in
+ * memory until they are acquired again by the user.
+ */
 template<typename Matrix, typename Vector>
 class SimpleMatrixVectorProvider final
         : public MatrixProvider<Matrix>
