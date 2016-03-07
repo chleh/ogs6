@@ -20,7 +20,7 @@ namespace MathLib
 
 template<typename Matrix, typename Vector>
 class SimpleMatrixVectorProvider final
-        : public MatrixProvider<Matrix, Vector>
+        : public MatrixProvider<Matrix>
         , public VectorProvider<Vector>
 {
 public:

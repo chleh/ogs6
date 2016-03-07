@@ -21,10 +21,10 @@ struct GlobalVectorProvider
     static VectorProvider<Vector>& provider;
 };
 
-template<typename Matrix, typename Vector>
+template<typename Matrix>
 struct GlobalMatrixProvider
 {
-    static MatrixProvider<Matrix, Vector>& provider;
+    static MatrixProvider<Matrix>& provider;
 };
 
 void cleanupGlobalMatrixProviders();

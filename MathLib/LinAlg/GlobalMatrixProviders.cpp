@@ -26,7 +26,7 @@
     VectorProvider<VEC>& GlobalVectorProvider<VEC>::provider = *VARNAME; \
     \
     template<> \
-    MatrixProvider<MAT, VEC>& GlobalMatrixProvider<MAT, VEC>::provider = *VARNAME; \
+    MatrixProvider<MAT>& GlobalMatrixProvider<MAT>::provider = *VARNAME; \
     }
 
 

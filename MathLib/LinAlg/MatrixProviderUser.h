@@ -88,12 +88,11 @@ public:
     virtual ~VectorProvider() = default;
 };
 
-// TODO remove Vector template param.
 /*! Manages storage for matrices.
  *
  * This the matrix-analog of VectorProvider. The same notes apply to this class.
  */
-template<typename Matrix, typename Vector>
+template<typename Matrix>
 class MatrixProvider
 {
 public:
