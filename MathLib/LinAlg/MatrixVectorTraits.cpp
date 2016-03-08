@@ -113,9 +113,6 @@ newInstance(MatrixSpecifications const& spec)
 
 #elif defined(OGS_USE_EIGEN)
 
-// #include "MathLib/LinAlg/Eigen/EigenMatrix.h"
-// #include "MathLib/LinAlg/Eigen/EigenVector.h"
-
 namespace MathLib
 {
 
