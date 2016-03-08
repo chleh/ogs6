@@ -14,7 +14,6 @@
  */
 
 #include <gtest/gtest.h>
-#include <boost/property_tree/xml_parser.hpp>
 
 #include "MathLib/LinAlg/Dense/DenseVector.h"
 #include "MathLib/LinAlg/Dense/DenseMatrix.h"
@@ -44,7 +43,7 @@
 #include "MathLib/LinAlg/PETSc/PETScLinearSolver.h"
 #endif
 
-#include "../TestTools.h"
+#include "Tests/TestTools.h"
 
 namespace
 {

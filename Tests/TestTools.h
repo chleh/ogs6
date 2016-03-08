@@ -13,7 +13,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
 
 #ifndef TESTTOOLS_H_
 #define TESTTOOLS_H_
