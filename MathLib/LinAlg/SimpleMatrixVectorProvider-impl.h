@@ -119,7 +119,7 @@ SimpleMatrixVectorProvider<Matrix, Vector>::
 getMatrix(MatrixSpecificationsProvider const& msp)
 {
     std::size_t id = 0u;
-    auto const mat_spec = msp.getMatrixSpecifications();
+    auto const& mat_spec = msp.getMatrixSpecifications();
     return *getMatrix_<false>(id, mat_spec).first;
     // TODO assert that the returned object always is of the right size
 }
@@ -129,7 +129,7 @@ Matrix&
 SimpleMatrixVectorProvider<Matrix, Vector>::
 getMatrix(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
-    auto mat_spec = msp.getMatrixSpecifications();
+    auto const& mat_spec = msp.getMatrixSpecifications();
     return *getMatrix_<true>(id, mat_spec).first;
     // TODO assert that the returned object always is of the right size
 }
@@ -204,7 +204,7 @@ SimpleMatrixVectorProvider<Matrix, Vector>::
 getVector(MatrixSpecificationsProvider const& msp)
 {
     std::size_t id = 0u;
-    auto const mat_spec = msp.getMatrixSpecifications();
+    auto const& mat_spec = msp.getMatrixSpecifications();
     return *getVector_<false>(id, mat_spec).first;
     // TODO assert that the returned object always is of the right size
 }
@@ -214,7 +214,7 @@ Vector&
 SimpleMatrixVectorProvider<Matrix, Vector>::
 getVector(MatrixSpecificationsProvider const& msp, std::size_t& id)
 {
-    auto mat_spec = msp.getMatrixSpecifications();
+    auto const& mat_spec = msp.getMatrixSpecifications();
     return *getVector_<true>(id, mat_spec).first;
     // TODO assert that the returned object always is of the right size
 }
