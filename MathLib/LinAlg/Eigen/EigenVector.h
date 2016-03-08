@@ -14,6 +14,7 @@
 #ifndef NDEBUG
 #include <fstream>
 #include <string>
+#include <iomanip>
 #endif
 
 #include <Eigen/Eigen>
@@ -101,7 +102,15 @@ public:
 
 #ifndef NDEBUG
     /// printout this equation for debugging
-    void write (const std::string &filename) const { std::ofstream os(filename); os << _vec; }
+    void write (const std::string &filename) const
+    {
+        std::ofstream os(filename);
+        os << _vec.size() << "\n";
+        for (int i=0; i<_vec.size(); ++i)
+        {
+            os << std::setprecision(16) << _vec[i] << "\n";
+        }
+    }
 #endif
 
     /// return a raw Eigen vector object
