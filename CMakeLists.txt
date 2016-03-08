@@ -71,6 +71,9 @@ option(OGS_USE_PETSC "Use PETSc routines" OFF)
 # Paralleization
 option(OGS_USE_MPI "Use MPI" OFF)
 
+# MKL
+option(OGS_USE_MKL "Use Intel MKL" OFF)
+
 # Eigen
 option(OGS_USE_EIGEN "Use EIGEN for local matrix and vector" ON)
 option(OGS_EIGEN_DYNAMIC_SHAPE_MATRICES "Use dynamically allocated shape matrices" ON)
