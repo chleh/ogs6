@@ -156,6 +156,21 @@ private:
 		    *Base::_global_assembler, _local_assemblers, t, x, M, K, b);
 	}
 
+	void preTimestep(GlobalVector const& x, double const dt) override
+	{
+		DBUG("PreTimestep SmallDeformationProcess.");
+
+		_dt = dt;
+		// Call global assembler for each local assembly item.
+		Base::_global_setup.execute(
+		    [&](std::size_t const id, LocalAssembler* const local_assembler,
+		        GlobalVector const& x) -> void
+			{
+			    Base::_global_assembler->preTimestep(id, local_assembler, x);
+			},
+		    _local_assemblers, x);
+	}
+
 private:
 	Parameter<double, MeshLib::Element const&> const& _youngs_modulus;
 	Parameter<double, MeshLib::Element const&> const& _poissons_ratio;

@@ -33,6 +33,7 @@ public:
 
 	virtual void assemble(double const t,
 	                      std::vector<double> const& local_x) = 0;
+	virtual void preTimestep(std::vector<double> const& local_x) = 0;
 
 	virtual void addToGlobal(
 	    AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const&,
@@ -170,7 +171,7 @@ public:
 	}
 
 	void assemble(double const /*t*/,
-	              std::vector<double> const& local_x) override
+	              std::vector<double> const& local_x, double const dt) override
 	{
 		_localA->setZero();
 		_localRhs->setZero();
@@ -180,14 +181,11 @@ public:
 
 		NodalDisplacementVectorType local_displacement(
 		    BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns);
-		NodalDisplacementVectorType local_displacement_prev(
-		    BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns);
 		for (int i = 0;
 		     i < BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns;
 		     ++i)
 		{
 			local_displacement(i) = local_x[i];
-			local_displacement_prev(i) = local_x_prev[i];
 		}
 
 		NodalVectorType coords_x(ShapeFunction::NPOINTS);
@@ -208,10 +206,8 @@ public:
 			auto const& wp = integration_method.getWeightedPoint(ip);
 
 			LinearBMatrix::computeStrain(local_displacement, B, _eps[ip]);
-			LinearBMatrix::computeStrain(local_displacement_prev, B,
-			                             _eps_prev[ip]);
 
-			Solids::LinearElasticIsotropic::computeConstitutiveRelation(
+			Solids::LinearElasticIsotropic::computeConstitutiveRelation(dt,
 			    _lambda(), _mu(), _eps_prev[ip], _eps[ip], _sigma_prev[ip],
 			    _sigma[ip], _C[ip]);
 			std::cout << "ip " << ip << ":\t";
@@ -235,6 +231,35 @@ public:
 	{
 		K.add(indices, *_localA);
 		b.add(indices.rows, *_localRhs);
+	}
+
+	void preTimestep(std::vector<double> const& local_x) override
+	{
+		std::cerr << "Pushback.\n";
+
+		/*
+		NodalDisplacementVectorType local_displacement_prev(
+		    BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns);
+
+		IntegrationMethod_ integration_method(_integration_order);
+		std::size_t const n_integration_points =
+		    integration_method.getNPoints();
+		for (int i = 0;
+		     i < BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns;
+		     ++i)
+		{
+		    local_displacement_prev(i) = local_x[i];
+		    for (std::size_t ip(0); ip < n_integration_points; ip++)
+		    {
+		        auto const& B = _b_matrices[ip];
+		        LinearBMatrix::computeStrain(local_displacement_prev, B,
+		                                     _eps_prev[ip]);
+		    }
+		}
+		*/
+
+		_eps_prev = _eps;
+		_sigma_prev = _sigma;
 	}
 
 private:
