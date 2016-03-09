@@ -54,6 +54,26 @@ void printStats(void* cvode_mem)
 namespace MathLib
 {
 
+
+/**
+ * This class provides concrete access to Sundials' CVode solver.
+ *
+ * OdeSolver (implicitly bounds checked, agnostic to concrete ODE solver)
+ *  |
+ *  | Dynamic polymorphism
+ *  v
+ * ConcreteOdeSolver (implicitly bounds checked, interfaces with a specific library)
+ *  |
+ *  | Forward calls, disable bounds checking, no need for templates anymore
+ *  v
+ * Implementation = CVodeSolverInternal (no templates)
+ *  |
+ *  | Pimpl (hide implementation, do not include 3rd party libs in header)
+ *  v
+ * CVodeSolverImpl
+ *
+ * This scheme might be a general way for accessing 3rd party libraries.
+ */
 class CVodeSolverImpl
 {
     static_assert(std::is_same<realtype, double>::value, "cvode's realtype is not the same as double");
@@ -74,11 +94,12 @@ public:
     double const* getSolution() const { return NV_DATA_S(_y); }
     double getTime() const { return _t; }
 
+    bool getYDot(const double t, double const*const y, double *const ydot);
+
     ~CVodeSolverImpl();
 
 private:
     N_Vector _y = nullptr;
-    N_Vector _ydot = nullptr;
 
     realtype _t;
 
@@ -97,8 +118,7 @@ private:
 
 CVodeSolverImpl::CVodeSolverImpl(const CVodeSolverInternal::ConfigTree &config)
 {
-    auto param = config.get_optional<std::string>("linear_multistep_method");
-    if (param)
+    if (auto const param = config.getConfParamOptional<std::string>("linear_multistep_method"))
     {
         DBUG("setting linear multistep method (config: %s)", param->c_str());
 
@@ -110,8 +130,7 @@ CVodeSolverImpl::CVodeSolverImpl(const CVodeSolverInternal::ConfigTree &config)
         }
     }
 
-    param = config.get_optional<std::string>("nonlinear_solver_iteration");
-    if (param)
+    if (auto const param = config.getConfParamOptional<std::string>("nonlinear_solver_iteration"))
     {
         DBUG("setting nonlinear solver iteration (config: %s)", param->c_str());
 
@@ -128,14 +147,13 @@ CVodeSolverImpl::CVodeSolverImpl(const CVodeSolverInternal::ConfigTree &config)
 void CVodeSolverImpl::init(const unsigned num_equations)
 {
     _y      = N_VNew_Serial(num_equations);
-    _ydot   = N_VNew_Serial(num_equations);
     _abstol = N_VNew_Serial(num_equations);
     _num_equations = num_equations;
 
     _cvode_mem = CVodeCreate(_linear_multistep_method, _nonlinear_solver_iteration);
 
     assert(_cvode_mem != nullptr && _y != nullptr
-           && _abstol != nullptr && _ydot != nullptr);
+           && _abstol != nullptr);
 }
 
 void CVodeSolverImpl::setTolerance(const double *abstol, const double reltol)
@@ -162,6 +180,19 @@ void CVodeSolverImpl::setFunction(FunctionHandles* f)
 {
     _f = f;
     assert(_num_equations == f->getNumEquations());
+
+    auto f_wrapped
+			= [](const realtype t, const N_Vector y, N_Vector ydot, void* function_handles)
+			  -> int
+	{
+		bool successful = static_cast<FunctionHandles*>(function_handles)
+						  ->call(t, NV_DATA_S(y), NV_DATA_S(ydot));
+		return successful ? 0 : 1;
+	};
+
+    // TODO: check not run twice! move this call somewhere else
+    int flag = CVodeInit(_cvode_mem, f_wrapped, 0.0, _y);
+    (void) flag;
 }
 
 void CVodeSolverImpl::setIC(const double t0, double const*const y0)
@@ -178,17 +209,9 @@ void CVodeSolverImpl::preSolve()
 {
 	assert(_f != nullptr && "ode function handle was not provided");
 
-	auto f_wrapped
-			= [](const realtype t, const N_Vector y, N_Vector ydot, void* function_handles)
-			  -> int
-	{
-		bool successful = static_cast<FunctionHandles*>(function_handles)
-						  ->call(t, NV_DATA_S(y), NV_DATA_S(ydot));
-		return successful ? 0 : 1;
-	};
 
-
-	int flag = CVodeInit(_cvode_mem, f_wrapped, _t, _y); // TODO: consider CVodeReInit()!
+	// int flag = CVodeInit(_cvode_mem, f_wrapped, _t, _y); // TODO: consider CVodeReInit()!
+	int flag = CVodeReInit(_cvode_mem, _t, _y); // TODO: consider CVodeReInit()!
 	// if (check_flag(&flag, "CVodeInit", 1)) return(1);
 
 	flag = CVodeSetUserData(_cvode_mem, static_cast<void*>(_f));
@@ -236,13 +259,21 @@ void CVodeSolverImpl::solve(const double t_end)
 	}
 }
 
+bool CVodeSolverImpl::getYDot(const double t, double const*const y, double *const ydot)
+{
+    if (_f != nullptr) {
+        return _f->call(t, y, ydot);
+    }
+
+    return false;
+}
+
 CVodeSolverImpl::~CVodeSolverImpl()
 {
     printStats(_cvode_mem);
 
     if (_y) {
         N_VDestroy_Serial(_y);
-        N_VDestroy_Serial(_ydot);
         N_VDestroy_Serial(_abstol);
     }
 
@@ -297,6 +328,11 @@ void CVodeSolverInternal::solve(const double t_end)
 double const* CVodeSolverInternal::getSolution() const
 {
 	return _impl->getSolution();
+}
+
+bool CVodeSolverInternal::getYDot(const double t, double const*const y, double *const ydot) const
+{
+	return _impl->getYDot(t, y, ydot);
 }
 
 double CVodeSolverInternal::getTime() const

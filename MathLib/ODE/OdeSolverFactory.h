@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "boost/property_tree/ptree.hpp"
+#include "BaseLib/ConfigTreeNew.h"
 
 #include "OdeSolver.h"
 
@@ -27,6 +27,8 @@ struct Handles<N, FunctionArgument>
 
     bool call(const double t, const double * const y, double * const ydot) override
     {
+        // looks like f and df could be any callable object with suitable signature
+        // consider omission of data pointer and switch to std::function or alike
         if (f) return f(t,
                         BaseLib::ArrayRef<const double, N>{y},
                         BaseLib::ArrayRef<double, N>{ydot},
@@ -54,6 +56,7 @@ struct Handles<N, FunctionArgument>
         _data = arg;
     }
 
+    // TODO: make private
     Function f = nullptr;
     JacobianFunction df = nullptr;
 
@@ -102,20 +105,30 @@ struct Handles<N>
 
 template <unsigned NumEquations, typename... FunctionArguments>
 std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >
-createOdeSolver(const boost::property_tree::ptree& config);
+createOdeSolver(BaseLib::ConfigTreeNew const& config);
 
 
 /**
- * ODE solver with a bounds-safe interface
+ * ODE solver with a bounds-safe interface.
+ *
+ * This class makes contact between the abstract \c OdeSolver interface and a
+ * certain solver \c Implementation.
+ *
+ * The interface of this class inherits the array bounds checking from \c OdeSolver.
+ * Its methods forward calls to the \c Implementation erasing array bounds info by
+ * passing \c std::array as raw pointer.
+ *
+ * This way the \c Implementation does not need to be templated.
  */
 template<unsigned NumEquations, typename Implementation, typename... FunctionArguments>
-class ConcreteOdeSolver
+class ConcreteOdeSolver final
         : public OdeSolver<NumEquations, FunctionArguments...>,
         private Implementation
 {
 public:
     using Interface = OdeSolver<NumEquations, FunctionArguments...>;
     using Arr = typename Interface::Arr;
+    using ConstArrRef = typename Interface::ConstArrRef;
     using Function = typename Interface::Function;
     using JacobianFunction = typename Interface::JacobianFunction;
 
@@ -149,12 +162,18 @@ public:
         Implementation::solve(t);
     }
 
-    double const* getSolution() const override {
-        return Implementation::getSolution();
+    ConstArrRef getSolution() const override {
+        return ConstArrRef(Implementation::getSolution());
     }
 
     double getTime() const override {
         return Implementation::getTime();
+    }
+
+    Arr getYDot(const double t, const Arr& y) const override {
+        Arr ydot;
+        Implementation::getYDot(t, y.data(), ydot.data());
+        return ydot;
     }
 
 private:
@@ -168,19 +187,18 @@ private:
 
     friend std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >
     createOdeSolver<NumEquations, FunctionArguments...>
-    (const boost::property_tree::ptree& config);
+    (BaseLib::ConfigTreeNew const& config);
 };
 
 
 template <unsigned NumEquations, typename... FunctionArguments>
 std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >
-createOdeSolver(const boost::property_tree::ptree& config)
+createOdeSolver(BaseLib::ConfigTreeNew const& config)
 {
-    auto up = std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >();
-    auto p  = new ConcreteOdeSolver<NumEquations, CVodeSolverInternal, FunctionArguments...>
-            (config);
-    up.reset(p);
-    return up;
+    return std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >(
+                new ConcreteOdeSolver<NumEquations, CVodeSolverInternal, FunctionArguments...>
+                            (config)
+                );
 }
 
 } // namespace MathLib
