@@ -152,7 +152,7 @@ TEST(MathLibCVodeTest, Exponential)
     const double y0 = 1.0;
     const double t0 = 0.0;
 
-    MathLib::CVodeSolverInternal::ConfigTree config;
+    MathLib::CVodeSolverInternal::ConfigTree config(BaseLib::ConfigTree{});
     auto ode_solver = MathLib::createOdeSolver<1>(config);
 
     ode_solver->init();
@@ -172,7 +172,7 @@ TEST(MathLibCVodeTest, Exponential)
 
         ode_solver->solve(time);
 
-        double const* y = ode_solver->getSolution();
+        auto const y = ode_solver->getSolution();
         double time_reached = ode_solver->getTime();
 
         std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
@@ -189,7 +189,7 @@ TEST(MathLibCVodeTest, ExponentialExtraData)
     const double y0 = 1.0;
     const double t0 = 0.0;
 
-    MathLib::CVodeSolverInternal::ConfigTree config;
+    MathLib::CVodeSolverInternal::ConfigTree config(BaseLib::ConfigTree{});
     auto ode_solver = MathLib::createOdeSolver<1, ExtraData>(config);
 
     ode_solver->init();
@@ -210,7 +210,7 @@ TEST(MathLibCVodeTest, ExponentialExtraData)
 
         ode_solver->solve(time);
 
-        double const* y = ode_solver->getSolution();
+        auto const y = ode_solver->getSolution();
         double time_reached = ode_solver->getTime();
 
         std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
@@ -228,7 +228,7 @@ TEST(MathLibCVodeTest, ExponentialWithJacobian)
     const double y0 = 1.0;
     const double t0 = 0.0;
 
-    MathLib::CVodeSolverInternal::ConfigTree config;
+    MathLib::CVodeSolverInternal::ConfigTree config(BaseLib::ConfigTree{});
     auto ode_solver = MathLib::createOdeSolver<1>(config);
 
     ode_solver->init();
@@ -248,7 +248,7 @@ TEST(MathLibCVodeTest, ExponentialWithJacobian)
 
         ode_solver->solve(time);
 
-        double const* y = ode_solver->getSolution();
+        auto const y = ode_solver->getSolution();
         double time_reached = ode_solver->getTime();
 
         std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
@@ -265,9 +265,10 @@ TEST(MathLibCVodeTest, ExponentialWithJacobianNewton)
     const double y0 = 1.0;
     const double t0 = 0.0;
 
-    MathLib::CVodeSolverInternal::ConfigTree config;
-    config.put("linear_multistep_method", "BDF");
-    config.put("nonlinear_solver_iteration", "Newton");
+    BaseLib::ConfigTree conf;
+    conf.put("linear_multistep_method", "BDF");
+    conf.put("nonlinear_solver_iteration", "Newton");
+    MathLib::CVodeSolverInternal::ConfigTree config(conf);
 
     auto ode_solver = MathLib::createOdeSolver<1>(config);
 
@@ -288,7 +289,7 @@ TEST(MathLibCVodeTest, ExponentialWithJacobianNewton)
 
         ode_solver->solve(time);
 
-        double const* y = ode_solver->getSolution();
+        auto const y = ode_solver->getSolution();
         double time_reached = ode_solver->getTime();
 
         std::printf("t: %14.7g, y: %14.7g, diff: %14.7g\n", time_reached, y[0], y[0] - exp(-15.0*time_reached));
