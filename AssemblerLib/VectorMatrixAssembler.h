@@ -53,6 +53,22 @@ public:
         const double t, GlobalVector const& x,
         GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b) const
     {
+        auto cb = [local_assembler](
+                std::vector<double> local_x,
+                LocalToGlobalIndexMap::RowColumnIndices const& r_c_indices,
+                const double t,
+                GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b)
+        {
+            local_assembler->assemble(t, local_x);
+            local_assembler->addToGlobal(r_c_indices, M, K, b);
+        };
+
+        passLocalVector(cb, id, x, t, M, K, b);
+    }
+
+    template<typename Callback, typename... Args>
+    void passLocalVector(Callback& cb, std::size_t const id, GlobalVector const& x, Args&&... args) const
+    {
         assert(_data_pos.size() > id);
 
         std::vector<GlobalIndexType> indices;
@@ -66,6 +82,9 @@ public:
             indices.insert(indices.end(), idcs.begin(), idcs.end());
         }
 
+        LocalToGlobalIndexMap::RowColumnIndices const r_c_indices(
+                    indices, indices);
+
         std::vector<double> local_x;
         local_x.reserve(indices.size());
 
@@ -73,11 +92,7 @@ public:
             local_x.emplace_back(x.get(i));
         }
 
-        LocalToGlobalIndexMap::RowColumnIndices const r_c_indices(
-                    indices, indices);
-
-        local_assembler->assemble(t, local_x);
-        local_assembler->addToGlobal(r_c_indices, M, K, b);
+        cb(local_x, r_c_indices, std::forward<Args>(args)...);
     }
 
 private:
