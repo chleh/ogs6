@@ -163,6 +163,10 @@ if(OGS_BUILD_TESTS)
 	set(Data_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/Tests/Data CACHE INTERNAL "")
 endif()
 
+if (OGS_USE_MKL)
+	add_definitions(-DOGS_USE_MKL)
+endif()
+
 ######################
 ### Subdirectories ###
 ######################
