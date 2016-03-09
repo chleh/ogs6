@@ -16,13 +16,13 @@
 
 namespace
 {
-template<typename Callback, typename GlobalVector, typename... Args>
-void passLocalVector(Callback& cb, std::size_t const id, AssemblerLib::LocalToGlobalIndexMap const& dof_table,
-                     GlobalVector const& x, Args&&... args)
+inline AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices
+getRowColumnIndices(
+        std::size_t const id, AssemblerLib::LocalToGlobalIndexMap const& dof_table,
+        std::vector<GlobalIndexType>& indices)
 {
     assert(dof_table.size() > id);
-
-    std::vector<GlobalIndexType> indices;
+    assert(indices.empty());
 
     // Local matrices and vectors will always be ordered by component,
     // no matter what the order of the global matrix is.
@@ -33,8 +33,16 @@ void passLocalVector(Callback& cb, std::size_t const id, AssemblerLib::LocalToGl
         indices.insert(indices.end(), idcs.begin(), idcs.end());
     }
 
-    AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const r_c_indices(
+    return AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices(
                 indices, indices);
+}
+
+template<typename Callback, typename GlobalVector, typename... Args>
+void passLocalVector(Callback& cb, std::size_t const id, AssemblerLib::LocalToGlobalIndexMap const& dof_table,
+                     GlobalVector const& x, Args&&... args)
+{
+    std::vector<GlobalIndexType> indices;
+    auto const r_c_indices = getRowColumnIndices(id, dof_table, indices);
 
     std::vector<double> local_x;
     local_x.reserve(indices.size());
@@ -125,24 +133,8 @@ public:
         LocalAssembler_* const local_assembler,
         const double t, GlobalVector& b) const
     {
-        // TODO I hope the changes to the VectorMatrixAssembler don't break multi-components
-        assert(_data_pos.size() > id);
-
-        // TODO Refactor: GlobalMatrix and GlobalVector are always given as
-        // template params but GlobalIndexType is a global constant.
         std::vector<GlobalIndexType> indices;
-
-        // Local matrices and vectors will always be ordered by component,
-        // no matter what the order of the global matrix is.
-        for (unsigned c=0; c<_data_pos.getNumComponents(); ++c)
-        {
-            auto const& idcs = _data_pos(id, c).rows;
-            indices.reserve(indices.size() + idcs.size());
-            indices.insert(indices.end(), idcs.begin(), idcs.end());
-        }
-
-        LocalToGlobalIndexMap::RowColumnIndices const r_c_indices(
-                    indices, indices);
+        auto const r_c_indices = getRowColumnIndices(id, _data_pos, indices);
 
         local_assembler->assemble(t);
         local_assembler->addToGlobal(r_c_indices, b);
