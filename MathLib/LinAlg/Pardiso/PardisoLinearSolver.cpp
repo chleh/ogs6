@@ -15,9 +15,9 @@
 
 extern "C"
 {
-#include "mkl_pardiso.h"
-#include "mkl_types.h"
-#include "mkl_spblas.h"
+#include <mkl_pardiso.h>
+#include <mkl_types.h>
+#include <mkl_spblas.h>
 }
 
 
@@ -148,8 +148,6 @@ solve(LOLMatrix &A, DenseVector<double> &rhs, DenseVector<double> &result)
 
     double* x = const_cast<double*>(&result[0]);
 
-    double res, res0;
-
     iparm[11] = 0;
     DBUG("\nSolving system...");
     PARDISO (pt, &maxfct, &mnum, &mtype, &phase,
@@ -167,8 +165,9 @@ solve(LOLMatrix &A, DenseVector<double> &rhs, DenseVector<double> &result)
 
     char* uplo = (char*) "non-transposed";
     mkl_dcsrgemv (uplo, &nrows, a, ia, ja, x, bs);
-    res = 0.0;
-    res0 = 0.0;
+
+    double res = 0.0;
+    double res0 = 0.0;
     for (int j = 1; j <= nrows; j++)
     {
         res += (bs[j - 1] - b[j - 1]) * (bs[j - 1] - b[j - 1]);
@@ -202,7 +201,11 @@ PardisoLinearSolverImpl::~PardisoLinearSolverImpl()
 }
 
 
-PardisoLinearSolver::PardisoLinearSolver(const BaseLib::ConfigTree &/*option*/)
+PardisoLinearSolver::PardisoLinearSolver(
+        LOLMatrix &A, const std::string /*solver_name*/,
+        BaseLib::ConfigTree const*const /*option*/)
+    : _A{A}
+    , _data{new PardisoLinearSolverImpl}
 {
     /*
     boost::optional<std::string> solver_type
@@ -216,19 +219,16 @@ PardisoLinearSolver::PardisoLinearSolver(const BaseLib::ConfigTree &/*option*/)
         ERR("option <solver_type> not given");
     }
     */
-
-    _data.reset(new PardisoLinearSolverImpl);
 }
 
 void PardisoLinearSolver
-::solve(LOLMatrix &A, DenseVector<double> &rhs, DenseVector<double> &result)
+::solve(DenseVector<double> &rhs, DenseVector<double> &result)
 {
-    _data->solve(A, rhs, result);
+    _data->solve(_A, rhs, result);
 }
+
 
 PardisoLinearSolver::~PardisoLinearSolver()
-{
-}
-
+{}
 
 }

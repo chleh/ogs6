@@ -32,7 +32,8 @@ public:
      *                    this argument, default settings follow those of
      *                    LisOption struct.
      */
-    explicit PardisoLinearSolver(BaseLib::ConfigTree const& option);
+    explicit PardisoLinearSolver(LOLMatrix &A, const std::string solver_name = "",
+                                 BaseLib::ConfigTree const*const option = nullptr);
 
 
     /**
@@ -41,11 +42,12 @@ public:
      * @param b     RHS vector
      * @param x     Solution vector
      */
-    void solve(LOLMatrix& A, DenseVector<double> &b, DenseVector<double> &x);
+    void solve(DenseVector<double> &b, DenseVector<double> &x);
 
-    ~PardisoLinearSolver();
+    ~PardisoLinearSolver(); // required for incomplete type in unique_ptr
 
 private:
+    LOLMatrix& _A;
     std::unique_ptr<PardisoLinearSolverImpl> _data;
 };
 

@@ -82,6 +82,30 @@ if (OGS_USE_PETSC)
     target_link_libraries(MathLib INTERFACE ${PETSC_LIBRARIES})
 endif()
 
+
+#if(OGS_USE_EIGEN)
+#	if(OGS_USE_MKL)
+#		find_library(INTEL_MKL_CORE_LIBRARIES NAMES mkl_core PATHS /home/lehmannc/lib/MKL/mkl/lib/intel64)
+#		find_library(INTEL_MKL_LIBRARIES NAMES mkl_intel_lp64 PATHS /home/lehmannc/lib/MKL/mkl/lib/intel64)
+#		message(STATUS "mkl libs: ${INTEL_MKL_CORE_LIBRARIES} ${INTEL_MKL_LIBRARIES}")
+#		# target_link_libraries(ApplicationsLib ${INTEL_MKL_LIBRARIES} PATHS /home/lehmannc/lib/MKL/mkl/lib/intel64)
+#	endif()
+#endif()
+
+if (OGS_USE_MKL)
+	LINK_DIRECTORIES(/home/lehmannc/lib/MKL/mkl/lib/intel64)
+
+	set(MKL_LIBRARIES
+		/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_core.so
+		/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_gnu_thread.so
+		/home/lehmannc/lib/MKL/mkl/lib/intel64/libmkl_intel_lp64.so
+	)
+
+	include_directories(SYSTEM /home/lehmannc/lib/MKL/mkl/include)
+    target_link_libraries(MathLib INTERFACE ${MKL_LIBRARIES})
+endif()
+
+
 if(TARGET Boost)
     add_dependencies(MathLib Boost)
 endif()
