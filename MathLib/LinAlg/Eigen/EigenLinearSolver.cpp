@@ -136,18 +136,16 @@ EigenLinearSolver::EigenLinearSolver(
         _solver.reset(new details::EigenIterativeLinearSolver<SolverType>);
         break;
     }
+#ifdef OGS_USE_MKL
+    case EigenOption::SolverType::PardisoLU: {
+        using SolverType = Eigen::PardisoLU<EigenMatrix::RawMatrixType>;
+        _solver = new details::EigenDirectLinearSolver<SolverType, IEigenSolver>();
+        break;
+    }
+#endif
     case EigenOption::SolverType::INVALID:
         ERR("Invalid Eigen linear solver type. Aborting.");
         std::abort();
-    }
-#ifdef OGS_USE_MKL
-    else if (_option.solver_type == EigenOption::SolverType::PardisoLU) {
-        using SolverType = Eigen::PardisoLU<EigenMatrix::RawMatrixType>;
-        _solver = new details::EigenDirectLinearSolver<SolverType, IEigenSolver>();
-    }
-#endif
-    else {
-        ERR("invalid linear solver type.");
     }
 }
 
