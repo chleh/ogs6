@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "BaseLib/ConfigTreeNew.h"
+#include "BaseLib/ConfigTree.h"
 
 #include "OdeSolver.h"
 
@@ -105,7 +105,7 @@ struct Handles<N>
 
 template <unsigned NumEquations, typename... FunctionArguments>
 std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >
-createOdeSolver(BaseLib::ConfigTreeNew const& config);
+createOdeSolver(BaseLib::ConfigTree const& config);
 
 
 /**
@@ -179,7 +179,7 @@ public:
 private:
     /// instances of this class shall only be constructed by
     /// the friend function listed below
-    ConcreteOdeSolver(typename Implementation::ConfigTree const& config)
+    ConcreteOdeSolver(BaseLib::ConfigTree const& config)
         : Implementation{config}
     {}
 
@@ -187,13 +187,13 @@ private:
 
     friend std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >
     createOdeSolver<NumEquations, FunctionArguments...>
-    (BaseLib::ConfigTreeNew const& config);
+    (BaseLib::ConfigTree const& config);
 };
 
 
 template <unsigned NumEquations, typename... FunctionArguments>
 std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >
-createOdeSolver(BaseLib::ConfigTreeNew const& config)
+createOdeSolver(BaseLib::ConfigTree const& config)
 {
     return std::unique_ptr<OdeSolver<NumEquations, FunctionArguments...> >(
                 new ConcreteOdeSolver<NumEquations, CVodeSolverInternal, FunctionArguments...>

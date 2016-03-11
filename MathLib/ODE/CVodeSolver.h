@@ -3,7 +3,7 @@
 
 #include "declarations.h"
 
-#include "BaseLib/ConfigTreeNew.h"
+#include "BaseLib/ConfigTree.h"
 
 namespace MathLib
 {
@@ -18,11 +18,8 @@ class CVodeSolverImpl;
  */
 class CVodeSolverInternal
 {
-public:
-    using ConfigTree = BaseLib::ConfigTreeNew;
-
 protected:
-    CVodeSolverInternal(ConfigTree const& config);
+    CVodeSolverInternal(BaseLib::ConfigTree const& config);
     void init(const unsigned num_equations);
 
     void setTolerance(double const*const abstol, const double reltol);

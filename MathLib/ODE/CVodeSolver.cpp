@@ -78,7 +78,7 @@ class CVodeSolverImpl
 {
     static_assert(std::is_same<realtype, double>::value, "cvode's realtype is not the same as double");
 public:
-    CVodeSolverImpl(CVodeSolverInternal::ConfigTree const& config);
+    CVodeSolverImpl(BaseLib::ConfigTree const& config);
     void init(const unsigned num_equations);
 
     void setTolerance(const double* abstol, const double reltol);
@@ -116,7 +116,7 @@ private:
 };
 
 
-CVodeSolverImpl::CVodeSolverImpl(const CVodeSolverInternal::ConfigTree &config)
+CVodeSolverImpl::CVodeSolverImpl(const BaseLib::ConfigTree &config)
 {
     if (auto const param = config.getConfParamOptional<std::string>("linear_multistep_method"))
     {
@@ -286,7 +286,7 @@ CVodeSolverImpl::~CVodeSolverImpl()
 
 
 
-CVodeSolverInternal::CVodeSolverInternal(ConfigTree const& config)
+CVodeSolverInternal::CVodeSolverInternal(BaseLib::ConfigTree const& config)
     : _impl(new CVodeSolverImpl(config))
 {}
 
