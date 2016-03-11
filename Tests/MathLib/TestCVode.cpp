@@ -152,7 +152,8 @@ TEST(MathLibCVodeTest, Exponential)
     const double y0 = 1.0;
     const double t0 = 0.0;
 
-    MathLib::CVodeSolverInternal::ConfigTree config(BaseLib::ConfigTree{});
+    BaseLib::ConfigTree config(boost::property_tree::ptree{},
+                               "", BaseLib::ConfigTree::onerror, BaseLib::ConfigTree::onwarning);
     auto ode_solver = MathLib::createOdeSolver<1>(config);
 
     ode_solver->init();
@@ -189,7 +190,8 @@ TEST(MathLibCVodeTest, ExponentialExtraData)
     const double y0 = 1.0;
     const double t0 = 0.0;
 
-    MathLib::CVodeSolverInternal::ConfigTree config(BaseLib::ConfigTree{});
+    BaseLib::ConfigTree config(boost::property_tree::ptree{},
+                               "", BaseLib::ConfigTree::onerror, BaseLib::ConfigTree::onwarning);
     auto ode_solver = MathLib::createOdeSolver<1, ExtraData>(config);
 
     ode_solver->init();
@@ -228,7 +230,8 @@ TEST(MathLibCVodeTest, ExponentialWithJacobian)
     const double y0 = 1.0;
     const double t0 = 0.0;
 
-    MathLib::CVodeSolverInternal::ConfigTree config(BaseLib::ConfigTree{});
+    BaseLib::ConfigTree config(boost::property_tree::ptree{},
+                               "", BaseLib::ConfigTree::onerror, BaseLib::ConfigTree::onwarning);
     auto ode_solver = MathLib::createOdeSolver<1>(config);
 
     ode_solver->init();
@@ -265,10 +268,10 @@ TEST(MathLibCVodeTest, ExponentialWithJacobianNewton)
     const double y0 = 1.0;
     const double t0 = 0.0;
 
-    BaseLib::ConfigTree conf;
+    boost::property_tree::ptree conf;
     conf.put("linear_multistep_method", "BDF");
     conf.put("nonlinear_solver_iteration", "Newton");
-    MathLib::CVodeSolverInternal::ConfigTree config(conf);
+    BaseLib::ConfigTree config(conf, "", BaseLib::ConfigTree::onerror, BaseLib::ConfigTree::onwarning);
 
     auto ode_solver = MathLib::createOdeSolver<1>(config);
 
