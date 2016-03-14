@@ -27,23 +27,23 @@ GET_SOURCE_FILES(SOURCES_ODE ODE)
 set(SOURCES ${SOURCES} ${SOURCES_ODE})
 
 if(OGS_USE_EIGEN)
-    GET_SOURCE_FILES(SOURCES_LINALG_EIGEN LinAlg/Eigen)
-    set(SOURCES ${SOURCES} ${SOURCES_LINALG_EIGEN})
+	GET_SOURCE_FILES(SOURCES_LINALG_EIGEN LinAlg/Eigen)
+	set(SOURCES ${SOURCES} ${SOURCES_LINALG_EIGEN})
 endif()
 
 if(OGS_USE_LIS)
-    GET_SOURCE_FILES(SOURCES_LINALG_LIS LinAlg/Lis)
-    set(SOURCES ${SOURCES} ${SOURCES_LINALG_LIS})
+	GET_SOURCE_FILES(SOURCES_LINALG_LIS LinAlg/Lis)
+	set(SOURCES ${SOURCES} ${SOURCES_LINALG_LIS})
 endif()
 
 if(OGS_USE_EIGEN AND OGS_USE_LIS)
-    GET_SOURCE_FILES(SOURCES_LINALG_EIGENLIS LinAlg/EigenLis)
-    set(SOURCES ${SOURCES} ${SOURCES_LINALG_EIGENLIS})
+	GET_SOURCE_FILES(SOURCES_LINALG_EIGENLIS LinAlg/EigenLis)
+	set(SOURCES ${SOURCES} ${SOURCES_LINALG_EIGENLIS})
 endif()
 
 if(OGS_USE_PETSC)
-    GET_SOURCE_FILES(SOURCES_LINALG_PETSC LinAlg/PETSc)
-    set(SOURCES ${SOURCES} ${SOURCES_LINALG_PETSC})
+	GET_SOURCE_FILES(SOURCES_LINALG_PETSC LinAlg/PETSc)
+	set(SOURCES ${SOURCES} ${SOURCES_LINALG_PETSC})
 endif()
 
 if(METIS_FOUND)
@@ -66,24 +66,24 @@ set_target_properties(MathLib PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(MathLib INTERFACE
 	GeoLib
 	logog
-    sundials_cvode
-    sundials_nvecserial
+	sundials_cvode
+	sundials_nvecserial
 )
 
 if(LAPACK_FOUND)
-    target_link_libraries(MathLib INTERFACE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+	target_link_libraries(MathLib INTERFACE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 endif()
 
 if (OGS_USE_LIS)
-    target_link_libraries(MathLib INTERFACE ${LIS_LIBRARIES})
+	target_link_libraries(MathLib INTERFACE ${LIS_LIBRARIES})
 endif()
 
 if (OGS_USE_PETSC)
-    target_link_libraries(MathLib INTERFACE ${PETSC_LIBRARIES})
+	target_link_libraries(MathLib INTERFACE ${PETSC_LIBRARIES})
 endif()
 
 if(TARGET Boost)
-    add_dependencies(MathLib Boost)
+	add_dependencies(MathLib Boost)
 endif()
 if(TARGET Eigen)
 	add_dependencies(MathLib Eigen)
