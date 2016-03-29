@@ -31,8 +31,8 @@ class LocalAssemblerDataInterface
 public:
 	virtual ~LocalAssemblerDataInterface() = default;
 
-	virtual void assemble(double const t,
-	                      std::vector<double> const& local_x) = 0;
+	virtual void assemble(double const t, std::vector<double> const& local_x,
+	                      double const dt) = 0;
 	virtual void preTimestep(std::vector<double> const& local_x) = 0;
 
 	virtual void addToGlobal(

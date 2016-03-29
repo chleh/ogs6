@@ -18,7 +18,8 @@ template <typename KelvinVectorType, typename KelvinMatrixType>
 typename std::enable_if<KelvinVectorType::RowsAtCompileTime == 6 ||
                             KelvinVectorType::RowsAtCompileTime == 4,
                         void>::type
-computeConstitutiveRelation(double const lambda,
+computeConstitutiveRelation(double const /*dt*/,
+                            double const lambda,
                             double const mu,
                             KelvinVectorType const& eps_prev,
                             KelvinVectorType const& eps,
@@ -41,7 +42,8 @@ computeConstitutiveRelation(double const lambda,
 
 template <typename KelvinVectorType, typename KelvinMatrixType>
 typename std::enable_if<KelvinVectorType::RowsAtCompileTime == 1, void>::type
-computeConstitutiveRelation(double const lambda,
+computeConstitutiveRelation(double const /*dt*/,
+                            double const lambda,
                             double const mu,
                             KelvinVectorType const& eps_prev,
                             KelvinVectorType const& eps,

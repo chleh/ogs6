@@ -156,7 +156,8 @@ private:
 		    *Base::_global_assembler, _local_assemblers, t, x, M, K, b);
 	}
 
-	void preTimestep(GlobalVector const& x, double const dt) override
+	void preTimestep(GlobalVector const& x, double const /*t*/,
+	                 double const dt) override
 	{
 		DBUG("PreTimestep SmallDeformationProcess.");
 
@@ -172,6 +173,7 @@ private:
 	}
 
 private:
+	double _dt;
 	Parameter<double, MeshLib::Element const&> const& _youngs_modulus;
 	Parameter<double, MeshLib::Element const&> const& _poissons_ratio;
 
