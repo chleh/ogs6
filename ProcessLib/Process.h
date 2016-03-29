@@ -150,8 +150,8 @@ public:
 		DBUG("Initialize boundary conditions.");
 		for (ProcessVariable& pv : _process_variables)
 		{
-			createDirichletBcs(pv, 0);  // 0 is the component id
-			createNeumannBcs(pv, 0);    // 0 is the component id
+			createDirichletBcs(pv);
+			createNeumannBcs(pv);
 		}
 
 		for (auto& bc : _neumann_bcs)
@@ -311,19 +311,25 @@ private:
 		}
 	}
 
-	void createDirichletBcs(ProcessVariable& variable, int const component_id)
+	void createDirichletBcs(ProcessVariable& variable)
 	{
 		MeshGeoToolsLib::MeshNodeSearcher& mesh_node_searcher =
 		    MeshGeoToolsLib::MeshNodeSearcher::getMeshNodeSearcher(
 		        variable.getMesh());
 
-		variable.initializeDirichletBCs(std::back_inserter(_dirichlet_bcs),
-		                                mesh_node_searcher,
-		                                *_local_to_global_index_map,
-		                                component_id);
+		// TODO extend component ids to multiple process variables.
+		auto const& n_components = variable.getNumberOfComponents();
+		for (std::size_t component_id = 0; component_id < n_components;
+		     ++component_id)
+		{
+			variable.initializeDirichletBCs(std::back_inserter(_dirichlet_bcs),
+			                                mesh_node_searcher,
+			                                *_local_to_global_index_map,
+			                                component_id);
+		}
 	}
 
-	void createNeumannBcs(ProcessVariable& variable, int const component_id)
+	void createNeumannBcs(ProcessVariable& variable)
 	{
 		// Find mesh nodes.
 		MeshGeoToolsLib::MeshNodeSearcher& mesh_node_searcher =
@@ -334,13 +340,19 @@ private:
 
 		// Create a neumann BC for the process variable storing them in the
 		// _neumann_bcs vector.
-		variable.createNeumannBcs(std::back_inserter(_neumann_bcs),
-		                          mesh_element_searcher,
-		                          _global_setup,
-		                          _integration_order,
-		                          *_local_to_global_index_map,
-		                          0,  // 0 is the variable id TODO
-		                          component_id);
+		// TODO extend component ids to multiple process variables.
+		auto const& n_components = variable.getNumberOfComponents();
+		for (std::size_t component_id = 0; component_id < n_components;
+		     ++component_id)
+		{
+			variable.createNeumannBcs(std::back_inserter(_neumann_bcs),
+			                          mesh_element_searcher,
+			                          _global_setup,
+			                          _integration_order,
+			                          *_local_to_global_index_map,
+			                          0,  // 0 is the variable id TODO
+			                          component_id);
+		}
 	}
 
 	/// Computes and stores global matrix' sparsity pattern from given
