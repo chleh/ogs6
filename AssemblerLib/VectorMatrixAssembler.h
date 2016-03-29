@@ -90,19 +90,25 @@ public:
     /// The positions in the global matrix/vector are taken from
     /// the LocalToGlobalIndexMap provided in the constructor at index \c id.
     /// \attention The index \c id is not necesserily the mesh item's id.
-    template <typename LocalAssembler>
+    template <typename LocalAssembler, typename... Args>
     void operator()(std::size_t const id,
         LocalAssembler& local_assembler,
-        const double t, GlobalVector const& x,
-        GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b) const
+                    const double t,
+                    GlobalVector const& x,
+                    GlobalMatrix& M,
+                    GlobalMatrix& K,
+                    GlobalVector& b,
+                    Args&&... args) const
     {
-        auto cb = [&local_assembler](
-                std::vector<double> const& local_x,
-                LocalToGlobalIndexMap::RowColumnIndices const& r_c_indices,
-                const double t,
-                GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b)
+        auto cb = [&local_assembler, args...](
+            std::vector<double> const& local_x,
+            LocalToGlobalIndexMap::RowColumnIndices const& r_c_indices,
+            const double t,
+            GlobalMatrix& M,
+            GlobalMatrix& K,
+            GlobalVector& b)
         {
-            local_assembler.assemble(t, local_x);
+            local_assembler.assemble(t, local_x, args...);
             local_assembler.addToGlobal(r_c_indices, M, K, b);
         };
 
