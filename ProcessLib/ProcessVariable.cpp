@@ -86,7 +86,17 @@ ProcessVariable::ProcessVariable(
 				                                              bc_config)),
 				    0));
 			}
-
+			if (type == "UniformDisplacement")
+			{
+				UniformDisplacementBoundaryCondition parser(
+				    geometry, bc_config, _n_components);
+				for (int i = 0; i < _n_components; ++i)
+				{
+					if (auto bc = parser.get(i))
+						_dirichlet_bc_configs.emplace_back(
+						    std::make_pair(std::move(bc), i));
+				}
+			}
 			else if (type == "UniformNeumann")
 			{
 				_neumann_bc_configs.emplace_back(
