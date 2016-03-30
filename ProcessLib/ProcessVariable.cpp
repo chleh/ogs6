@@ -12,15 +12,20 @@
 #include "logog/include/logog.hpp"
 
 #include "GeoLib/GEOObjects.h"
+#include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 #include "MeshLib/Mesh.h"
 
 #include "BaseLib/ConfigTree.h"
 
 namespace ProcessLib
 {
-ProcessVariable::ProcessVariable(BaseLib::ConfigTree const& config,
-                                 MeshLib::Mesh& mesh,
-                                 GeoLib::GEOObjects const& geometries)
+ProcessVariable::ProcessVariable(
+    BaseLib::ConfigTree const& config,
+    MeshLib::Mesh& mesh,
+    GeoLib::GEOObjects const& geometries,
+    std::map<std::string,
+             std::unique_ptr<MathLib::PiecewiseLinearInterpolation>> const&
+        curves)
     : _name(config.getConfParam<std::string>("name")),
       _mesh(mesh),
       _n_components(config.getConfParam<int>("components"))
@@ -73,13 +78,17 @@ ProcessVariable::ProcessVariable(BaseLib::ConfigTree const& config,
 
 			if (type == "UniformDirichlet")
 			{
-				_dirichlet_bc_configs.emplace_back(
-				    new UniformDirichletBoundaryCondition(geometry, bc_config));
+				_dirichlet_bc_configs.emplace_back(std::make_pair(
+				    std::unique_ptr<UniformDirichletBoundaryCondition>(
+				        new UniformDirichletBoundaryCondition(geometry, curves,
+				                                              bc_config)),
+				    0));
 			}
+
 			else if (type == "UniformNeumann")
 			{
 				_neumann_bc_configs.emplace_back(
-				    new NeumannBcConfig(geometry, bc_config));
+				    new NeumannBcConfig(geometry, curves, bc_config));
 			}
 			else
 			{

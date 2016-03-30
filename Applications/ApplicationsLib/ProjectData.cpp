@@ -251,7 +251,8 @@ void ProjectData::parseProcessVariables(
 	for (auto var_config
 		 : process_variables_config.getConfSubtreeList("process_variable")) {
 		// TODO Extend to referenced meshes.
-		_process_variables.emplace_back(var_config, *_mesh_vec[0], *_geoObjects);
+		_process_variables.emplace_back(var_config, *_mesh_vec[0], *_geoObjects,
+		                                _curves);
 	}
 }
 
