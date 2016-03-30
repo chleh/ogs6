@@ -17,6 +17,7 @@
 
 #include "BaseLib/ConfigTree.h"
 #include "AssemblerLib/LocalToGlobalIndexMap.h"
+#include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 #include "MeshGeoToolsLib/MeshNodeSearcher.h"
 
 namespace GeoLib
@@ -35,6 +36,9 @@ class UniformDisplacementBoundaryCondition
 public:
 	UniformDisplacementBoundaryCondition(
 	    GeoLib::GeoObject const* const geometry,
+	    std::map<std::string,
+	             std::unique_ptr<MathLib::PiecewiseLinearInterpolation>> const&
+	        curves,
 	    BaseLib::ConfigTree& config, int const tuple_size)
 	{
 		DBUG("Constructing UniformDisplacementBoundaryCondition from config.");

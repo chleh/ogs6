@@ -89,7 +89,7 @@ ProcessVariable::ProcessVariable(
 			if (type == "UniformDisplacement")
 			{
 				UniformDisplacementBoundaryCondition parser(
-				    geometry, bc_config, _n_components);
+				    geometry, curves, bc_config, _n_components);
 				for (int i = 0; i < _n_components; ++i)
 				{
 					if (auto bc = parser.get(i))
