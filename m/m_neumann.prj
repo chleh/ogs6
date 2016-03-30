@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-
 <OpenGeoSysProject>
     <mesh>line_1_line_1e1.vtu</mesh>
     <geometry>line_1.gml</geometry>
@@ -45,7 +44,7 @@
                     <geometrical_set>line_1_geometry</geometrical_set>
                     <geometry>left</geometry>
                     <type>UniformDirichlet</type>
-                    <component_value_>1</component_value_0>
+                    <component_value_0>1</component_value_0>
                 </boundary_condition>
 
                 <boundary_condition>
@@ -67,7 +66,7 @@
 
     <output>
         <type>VTK</type>
-        <file>line_1e1_neumann</file>
+        <prefix>line_1e1_neumann</prefix>
     </output>
 
 </OpenGeoSysProject>

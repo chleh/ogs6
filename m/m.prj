@@ -94,7 +94,7 @@
 
     <output>
         <type>VTK</type>
-        <file>result</file>
+        <prefix>result</prefix>
     </output>
 
 </OpenGeoSysProject>
