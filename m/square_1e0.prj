@@ -107,12 +107,12 @@
         <prefix>result</prefix>
     </output>
 
-    <time_curves>
-        <time_curve>
+    <curves>
+        <curve>
             <name>curveA</name>
             <times>0 10</times>
             <values>0 1</values>
-        </time_curve>
-    </time_curves>
+        </curve>
+    </curves>
 
 </OpenGeoSysProject>
