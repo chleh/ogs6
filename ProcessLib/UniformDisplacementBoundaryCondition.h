@@ -46,6 +46,15 @@ public:
 
 		std::string const name_prefix = "component_value_";
 
+		auto const curve_name =
+		    config.getConfParamOptional<std::string>("scaling");
+		MathLib::PiecewiseLinearInterpolation const* curve = nullptr;
+		if (curve_name)
+		{
+			DBUG("scaling %s", curve_name->c_str());
+			curve = curves.at(*curve_name).get();
+		}
+
 		assert(0 <= tuple_size && tuple_size < 3);
 		for (int i = 0; i < tuple_size; ++i)
 		{
@@ -53,8 +62,8 @@ public:
 			if (config.exists(name))
 			{
 				double const value = config.getConfParam<double>(name);
-				_bcs[i].reset(
-				    new UniformDirichletBoundaryCondition(geometry, value));
+				_bcs[i].reset(new UniformDirichletBoundaryCondition(
+				    geometry, value, curve));
 			}
 		}
 	}
