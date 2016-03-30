@@ -220,8 +220,8 @@ public:
 			_localA->noalias() +=
 			    B.transpose() * _C[ip] * B * sm.detJ * wp.getWeight();
 
-			_localRhs->noalias() -=
-				B.transpose() * _sigma[ip] * sm.detJ * wp.getWeight();
+			//_localRhs->noalias() -=
+				//B.transpose() * _sigma[ip] * sm.detJ * wp.getWeight();
 		}
 	}
 
