@@ -358,18 +358,6 @@ private:
 		}
 	}
 
-    /*
-	void setSolutionDirichletValues()
-	{
-		for (auto const& bc : _dirichlet_bcs)
-		{
-			assert(bc.values.size() == bc.global_ids.size());
-			for (std::size_t i = 0; i < bc.global_ids.size(); ++i)
-				(*_x)[bc.global_ids[i]] = bc.values[i];
-		}
-	}
-    */
-
 	/// Computes and stores global matrix' sparsity pattern from given
 	/// DOF-table.
 	void computeSparsityPattern()
