@@ -156,6 +156,18 @@ private:
 		    *Base::_global_assembler, _local_assemblers, t, x, M, K, b);
 	}
 
+	void assembleJacobianConcreteProcess(
+	    const double t, GlobalVector const& x, GlobalVector const& xdot,
+	    const double dxdot_dx, GlobalMatrix const& M, const double dx_dx,
+	    GlobalMatrix const& K, GlobalMatrix& Jac) override
+	{
+		DBUG("AssembleJacobian SmallDeformationProcess.");
+
+		// Call global assembler for each local assembly item.
+		//Base::_global_setup.execute(*Base::_global_assembler, _local_assemblers,
+		 //                           t, x, M, K, b, _dt);
+	}
+
 	void preTimestep(GlobalVector const& x, double const /*t*/,
 	                 double const dt) override
 	{
