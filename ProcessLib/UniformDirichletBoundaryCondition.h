@@ -69,6 +69,8 @@ public:
 private:
 	double _value;
 	GeoLib::GeoObject const* const _geometry;
+	/// Optional (time-dependent) scaling of the value.
+	MathLib::PiecewiseLinearInterpolation const* const _scaling = nullptr;
 };
 
 
