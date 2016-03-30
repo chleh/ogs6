@@ -219,14 +219,23 @@ public:
 	std::vector<DirichletBc<Index>> const* getKnownSolutions(
 	    double const t) const override final
 	{
-		return &_dirichlet_bcs;
+		for (std::size_t bc_index = 0; bc_index < _dirichlet_bcs.size();
+		     ++bc_index)
+		{
+			auto const& bc = _dirichlet_bcs[bc_index];
+			for (std::size_t i = 0; i < bc.values.size(); ++i)
+			{
+				if (bc.scalings[i])
+					_dirichlet_bcs_scaled[bc_index].values[i] =
+					    bc.values[i] * bc.scalings[i]->getValue(t);
+				else
+					_dirichlet_bcs_scaled[bc_index].values[i] = bc.values[i];
+			}
+		}
+		return &_dirichlet_bcs_scaled;
 	}
 
-	NonlinearSolver& getNonlinearSolver() const
-	{
-		return _nonlinear_solver;
-	}
-
+	NonlinearSolver& getNonlinearSolver() const { return _nonlinear_solver; }
 	TimeDiscretization& getTimeDiscretization() const
 	{
 		return *_time_discretization;
@@ -330,6 +339,7 @@ private:
 			                                *_local_to_global_index_map,
 			                                component_id);
 		}
+		_dirichlet_bcs_scaled = _dirichlet_bcs;  // copy to initialize ids.
 	}
 
 	void createNeumannBcs(ProcessVariable& variable)
@@ -387,6 +397,7 @@ protected:
 	AssemblerLib::SparsityPattern _sparsity_pattern;
 
 	std::vector<DirichletBc<GlobalIndexType>> _dirichlet_bcs;
+	mutable std::vector<DirichletBc<GlobalIndexType>> _dirichlet_bcs_scaled;
 	std::vector<std::unique_ptr<NeumannBc<GlobalSetup>>> _neumann_bcs;
 
 	/// Variables used by this process.
