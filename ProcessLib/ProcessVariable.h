@@ -78,8 +78,9 @@ public:
 	{
 		for (auto& bc_config : _dirichlet_bc_configs)
 		{
+			if (bc_config.second != component_id) continue;
 			DirichletBc<GlobalIndexType> bc;
-			bc_config.first->initialize(searcher, dof_table, component_id, bc);
+			bc_config.first->initialize(searcher, dof_table, bc_config.second, bc);
 			output_bcs++ = bc;
 		}
 	}
