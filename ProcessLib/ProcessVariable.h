@@ -74,12 +74,12 @@ public:
 	    OutputIterator output_bcs,
 	    MeshGeoToolsLib::MeshNodeSearcher& searcher,
 	    const AssemblerLib::LocalToGlobalIndexMap& dof_table,
-	    const unsigned nodal_dof_idx)
+	    const unsigned component_id)
 	{
 		for (auto& bc_config : _dirichlet_bc_configs)
 		{
 			DirichletBc<GlobalIndexType> bc;
-			bc_config.first->initialize(searcher, dof_table, nodal_dof_idx, bc);
+			bc_config.first->initialize(searcher, dof_table, component_id, bc);
 			output_bcs++ = bc;
 		}
 	}
