@@ -34,6 +34,7 @@ public:
 	virtual void assemble(double const t, std::vector<double> const& local_x,
 	                      double const dt) = 0;
 	virtual void preTimestep(std::vector<double> const& local_x) = 0;
+	virtual void postTimestep(std::vector<double> const& local_x) = 0;
 
 	virtual void addToGlobal(
 	    AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const&,
@@ -210,13 +211,6 @@ public:
 			Solids::LinearElasticIsotropic::computeConstitutiveRelation(dt,
 			    _lambda(), _mu(), _eps_prev[ip], _eps[ip], _sigma_prev[ip],
 			    _sigma[ip], _C[ip]);
-			std::cout << "ip " << ip << ":\t";
-			std::cout << "C: " << _C[ip] << "\t";
-			std::cout << "sigma: " << _sigma[ip] << "\t";
-			std::cout << "sigma_prev: " << _sigma_prev[ip] << "\t";
-			std::cout << "eps: " << _eps[ip] << "\t";
-			std::cout << "eps_prev: " << _eps_prev[ip] << "\t";
-			std::cout << std::endl;
 			_localA->noalias() +=
 			    B.transpose() * _C[ip] * B * sm.detJ * wp.getWeight();
 
@@ -260,6 +254,24 @@ public:
 
 		_eps_prev = _eps;
 		_sigma_prev = _sigma;
+	}
+
+	void postTimestep(std::vector<double> const& local_x) override
+	{
+		std::cerr << "SD FEM: Post timestep.\n";
+
+		IntegrationMethod_ integration_method(_integration_order);
+		unsigned const n_integration_points = integration_method.getNPoints();
+		for (std::size_t ip(0); ip < n_integration_points; ip++)
+		{
+			std::cout << "ip " << ip << ":\t";
+			std::cout << "C: " << _C[ip] << "\t";
+			std::cout << "sigma: " << _sigma[ip] << "\t";
+			std::cout << "sigma_prev: " << _sigma_prev[ip] << "\t";
+			std::cout << "eps: " << _eps[ip] << "\t";
+			std::cout << "eps_prev: " << _eps_prev[ip] << "\t";
+			std::cout << std::endl;
+		}
 	}
 
 private:

@@ -184,6 +184,20 @@ private:
 		    _local_assemblers, x);
 	}
 
+	void postTimestep(GlobalVector const& x) override
+	{
+		DBUG("PostTimestep SmallDeformationProcess.");
+
+		// Call global assembler for each local assembly item.
+		Base::_global_setup.execute(
+		    [&](std::size_t const id, LocalAssembler* const local_assembler,
+		        GlobalVector const& x) -> void
+			{
+			    Base::_global_assembler->postTimestep(id, local_assembler, x);
+			},
+		    _local_assemblers, x);
+	}
+
 private:
 	double _dt;
 	Parameter<double, MeshLib::Element const&> const& _youngs_modulus;
