@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <OpenGeoSysProject>
-    <mesh>square_1x1_quad_1e0.vtu</mesh>
-    <geometry>square_1x1.gml</geometry>
+    <mesh>ls2.vtu</mesh>
+    <geometry>ls_2.gml</geometry>
 
     <processes>
         <process>
@@ -42,24 +42,24 @@
 
             <boundary_conditions>
                 <boundary_condition>
-                    <geometrical_set>square_1x1_geometry</geometrical_set>
-                    <geometry>left</geometry>
+                    <geometrical_set>LS2</geometrical_set>
+                    <geometry>LEFT</geometry>
                     <type>UniformDisplacement</type>
                     <component_value_0>0</component_value_0>
                 </boundary_condition>
 
                 <boundary_condition>
-                    <geometrical_set>square_1x1_geometry</geometrical_set>
-                    <geometry>bottom</geometry>
+                    <geometrical_set>LS2</geometrical_set>
+                    <geometry>BOTTOM</geometry>
                     <type>UniformDisplacement</type>
                     <component_value_1>0</component_value_1>
                 </boundary_condition>
 
                 <boundary_condition>
-                    <geometrical_set>square_1x1_geometry</geometrical_set>
-                    <geometry>top</geometry>
+                    <geometrical_set>LS2</geometrical_set>
+                    <geometry>TOP</geometry>
                     <type>UniformDisplacement</type>
-                    <component_value_1>0.05</component_value_1>
+                    <component_value_1>0.1</component_value_1>
                     <scaling>curveA</scaling>
                 </boundary_condition>
             </boundary_conditions>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE OGS-GML-DOM>
 <OpenGeoSysGLI xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.opengeosys.org/images/xsd/OpenGeoSysGLI.xsd" xmlns:ogs="http://www.opengeosys.org">
- <name>ls_2.gli</name>
+ <name>LS2</name>
  <points>
   <point x="0.000000" y="2.000000" z="0.000000" id="0"/>
   <point x="0.000000" y="10.000000" z="0.000000" id="1"/>
