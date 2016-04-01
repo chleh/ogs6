@@ -11,6 +11,8 @@
 #define PROCESS_LIB_SMALLDEFORMATION_FEM_H_
 
 #include <memory>
+#include <sstream>
+#include <fstream>
 #include <vector>
 
 #include "Parameter.h"
@@ -34,7 +36,8 @@ public:
 	virtual void assemble(double const t, std::vector<double> const& local_x,
 	                      double const dt) = 0;
 	virtual void preTimestep(std::vector<double> const& local_x) = 0;
-	virtual void postTimestep(std::vector<double> const& local_x) = 0;
+	virtual void postTimestep(std::vector<double> const& local_x,
+	                          double const t) = 0;
 
 	virtual void addToGlobal(
 	    AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const&,
@@ -256,9 +259,15 @@ public:
 		_sigma_prev = _sigma;
 	}
 
-	void postTimestep(std::vector<double> const& local_x) override
+	void postTimestep(std::vector<double> const& local_x, double const t) override
 	{
-		std::cerr << "SD FEM: Post timestep.\n";
+		std::cerr << "SD FEM: Post timestep, t = " << t << "\n";
+
+		std::ofstream sigma("sigma_" + std::to_string(t), std::ios::app);
+		assert((bool)sigma);
+
+		std::ofstream eps("eps_" + std::to_string(t), std::ios::app);
+		assert((bool)eps);
 
 		IntegrationMethod_ integration_method(_integration_order);
 		unsigned const n_integration_points = integration_method.getNPoints();
@@ -267,8 +276,14 @@ public:
 			std::cout << "ip " << ip << ":\t";
 			std::cout << "C: " << _C[ip] << "\t";
 			std::cout << "sigma: " << _sigma[ip] << "\t";
+			for (int i = 0; i < _sigma[ip].size(); ++i)
+				sigma << _sigma[ip][i] << " ";
+			sigma << "\n";
 			std::cout << "sigma_prev: " << _sigma_prev[ip] << "\t";
 			std::cout << "eps: " << _eps[ip] << "\t";
+			for (int i = 0; i < _eps[ip].size(); ++i)
+				eps << _eps[ip][i] << " ";
+			eps << "\n";
 			std::cout << "eps_prev: " << _eps_prev[ip] << "\t";
 			std::cout << std::endl;
 		}

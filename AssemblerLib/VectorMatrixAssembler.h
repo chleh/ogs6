@@ -136,16 +136,16 @@ public:
     /// Executes the postTimestep() method of the local assembler for the
     /// given mesh item passing the mesh item's nodal d.o.f.
     /// \attention The index \c id is not necesserily the mesh item's id.
-    template <typename LocalAssembler>
+    template <typename LocalAssembler, typename... Args>
     void postTimestep(std::size_t const id,
                       LocalAssembler& local_assembler,
-                      GlobalVector const& x) const
+                      GlobalVector const& x, Args&&... args) const
     {
-        auto cb = [&local_assembler](
+        auto cb = [&local_assembler, args...](
             std::vector<double> const& local_x,
             LocalToGlobalIndexMap::RowColumnIndices const& /*r_c_indices*/)
         {
-            local_assembler.postTimestep(local_x);
+            local_assembler.postTimestep(local_x, args...);
         };
 
         passLocalVector_(cb, id, _data_pos, x);
