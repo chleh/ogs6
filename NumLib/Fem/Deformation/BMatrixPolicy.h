@@ -71,40 +71,45 @@ struct EigenFixedBMatrixPolicy
 	    BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns>;
 };
 
-/*
-/// An implementation of ShapeMatrixPolicy using dynamic size eigen matrices and
-/// vectors.
+/// An implementation of ShapeMatrixPolicy using fixed size (compile-time) eigen
+/// matrices and vectors.
 template <typename ShapeFunction, unsigned GlobalDim>
-struct EigenDynamicShapeMatrixPolicy
+struct EigenDynamicBMatrixPolicy
 {
-    // Dynamic size local matrices are much slower in allocation than their
-    // fixed counterparts.
+	// Dynamic size local matrices are much slower in allocation than their
+	// fixed counterparts.
+	template <int, int>
+	using _MatrixType =
+	    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+	template <int>
+	using _VectorType = Eigen::Matrix<double, Eigen::Dynamic, 1>;
 
-    template <int, int>
-    using _MatrixType =
-        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-    template <int>
-    using _VectorType = Eigen::Matrix<double, Eigen::Dynamic, 1>;
+	using StiffnessMatrixType = _MatrixType<
+	    BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns,
+	    BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns>;
+	/// rhs residual
+	using NodalForceVectorType = _VectorType<
+	    BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns>;
 
-    using NodalMatrixType = _MatrixType<0, 0>;
-    using NodalVectorType = _VectorType<0>;
-    using DimNodalMatrixType = _MatrixType<0, 0>;
-    using DimMatrixType = _MatrixType<0, 0>;
-    using GlobalDimNodalMatrixType = _MatrixType<0, 0>;
-    using GlobalDimMatrixType = _MatrixType<0, 0>;
+	/// sigma
+	using StressVectorType =
+	    _VectorType<BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::rows>;
+	/// C
+	using ModulusMatrixType =
+	    _MatrixType<BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::rows,
+	                BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::rows>;
 
-    using ShapeMatrices =
-        NumLib::ShapeMatrices<
-            NodalVectorType,
-            DimNodalMatrixType,
-            DimMatrixType,
-            GlobalDimNodalMatrixType>;
+	using BMatrixType = _MatrixType<
+	    BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::rows,
+	    BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns>;
 };
-*/
 
-/// Default choice of the ShapeMatrixPolicy.
+#ifdef OGS_EIGEN_DYNAMIC_SHAPE_MATRICES
+template <typename ShapeFunction, unsigned GlobalDim>
+using BMatrixPolicyType = EigenDynamicBMatrixPolicy<ShapeFunction, GlobalDim>;
+#else
 template <typename ShapeFunction, unsigned GlobalDim>
 using BMatrixPolicyType = EigenFixedBMatrixPolicy<ShapeFunction, GlobalDim>;
-// using ShapeMatrixPolicyType = EigenDynamicShapeMatrixPolicy<ShapeFunction,
-// GlobalDim>;
+#endif
+
 #endif  // NUMLIB_FEM_BMATRIXPOLICY_H_

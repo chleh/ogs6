@@ -57,6 +57,40 @@ computeConstitutiveRelation(double const /*dt*/,
 
 	sigma = sigma_prev + C * (eps - eps_prev);
 }
+
+// For dynamic matrices take the size from the parameters.
+template <typename KelvinVectorType, typename KelvinMatrixType>
+typename std::enable_if<KelvinVectorType::RowsAtCompileTime == -1, void>::type
+computeConstitutiveRelation(double const /*dt*/,
+                            double const lambda,
+                            double const mu,
+                            KelvinVectorType const& eps_prev,
+                            KelvinVectorType const& eps,
+                            KelvinVectorType const& sigma_prev,
+                            KelvinVectorType& sigma,
+                            KelvinMatrixType& C)
+{
+	auto const size = eps.size();
+
+	C.setZero(size, size);
+
+	if (size == 1)
+	{
+		C(0, 0) = mu * (3 * lambda + 2 * mu) / (lambda + mu);
+	}
+	else if (size == 4 || size == 6)
+	{
+		// C.topLeftCorner<3, 3>() = lambda;
+		for (int i = 0; i < 3; ++i)
+			for (int j = 0; j < 3; ++j)
+				C(i, j) = lambda;
+		// C.diagonal() += 2 * mu;
+		for (int i = 0; i < size; ++i)
+			C(i, i) += 2 * mu;
+	}
+
+	sigma = sigma_prev + C * (eps - eps_prev);
+}
 }
 }
 
