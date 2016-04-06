@@ -63,12 +63,14 @@ add_library(MathLib STATIC ${SOURCES})
 
 set_target_properties(MathLib PROPERTIES LINKER_LANGUAGE CXX)
 
-target_link_libraries(MathLib INTERFACE
-	GeoLib
-	logog
-	sundials_cvode
-	sundials_nvecserial
-)
+if (CVODE_FOUND)
+	target_link_libraries(MathLib INTERFACE
+		GeoLib
+		logog
+		sundials_cvode
+		sundials_nvecserial
+	)
+endif()
 
 if(LAPACK_FOUND)
 	target_link_libraries(MathLib INTERFACE ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
