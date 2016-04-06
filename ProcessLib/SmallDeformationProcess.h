@@ -153,7 +153,7 @@ private:
 
 		// Call global assembler for each local assembly item.
 		Base::_global_setup.executeDereferenced(
-		    *Base::_global_assembler, _local_assemblers, t, x, M, K, b);
+		    *Base::_global_assembler, _local_assemblers, t, x, M, K, b, _dt);
 	}
 
 	void assembleJacobianConcreteProcess(
@@ -164,7 +164,7 @@ private:
 		DBUG("AssembleJacobian SmallDeformationProcess.");
 
 		// Call global assembler for each local assembly item.
-		//Base::_global_setup.execute(*Base::_global_assembler, _local_assemblers,
+		//Base::_global_setup.executeDereferenced(*Base::_global_assembler, _local_assemblers,
 		 //                           t, x, M, K, b, _dt);
 	}
 
@@ -175,8 +175,8 @@ private:
 
 		_dt = dt;
 		// Call global assembler for each local assembly item.
-		Base::_global_setup.execute(
-		    [&](std::size_t const id, LocalAssembler* const local_assembler,
+		Base::_global_setup.executeDereferenced(
+		    [&](std::size_t const id, LocalAssembler& local_assembler,
 		        GlobalVector const& x) -> void
 			{
 			    Base::_global_assembler->preTimestep(id, local_assembler, x);
@@ -189,8 +189,8 @@ private:
 		DBUG("PostTimestep SmallDeformationProcess.");
 
 		// Call global assembler for each local assembly item.
-		Base::_global_setup.execute(
-		    [&](std::size_t const id, LocalAssembler* const local_assembler,
+		Base::_global_setup.executeDereferenced(
+		    [&](std::size_t const id, LocalAssembler& local_assembler,
 		        GlobalVector const& x, double const t) -> void
 			{
 			    Base::_global_assembler->postTimestep(id, local_assembler, x, t);
