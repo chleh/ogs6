@@ -65,7 +65,8 @@ public:
 
     using Index = typename MathLib::MatrixVectorTraits<Matrix>::Index;
 
-    virtual std::vector<ProcessLib::DirichletBc<Index> > const* getKnownSolutions() const
+    virtual std::vector<ProcessLib::DirichletBc<Index>> const*
+    getKnownSolutions(double const t) const
     {
         return nullptr; // by default there are no known solutions
     }
