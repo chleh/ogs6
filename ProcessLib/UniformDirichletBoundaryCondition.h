@@ -23,6 +23,12 @@ namespace GeoLib
 class GeoObject;
 }
 
+namespace MathLib
+{
+class PiecewiseLinearInterpolation;
+}
+
+
 namespace ProcessLib
 {
 /// The UniformDirichletBoundaryCondition class describes a constant in space
@@ -32,11 +38,17 @@ namespace ProcessLib
 class UniformDirichletBoundaryCondition
 {
 public:
-	UniformDirichletBoundaryCondition(GeoLib::GeoObject const* const geometry,
-	                                  BaseLib::ConfigTree const& config);
+	UniformDirichletBoundaryCondition(
+	    GeoLib::GeoObject const* const geometry,
+	    std::map<std::string,
+	             std::unique_ptr<MathLib::PiecewiseLinearInterpolation>> const&
+	        curves,
+	    BaseLib::ConfigTree const& config);
 
-	UniformDirichletBoundaryCondition(GeoLib::GeoObject const* const geometry,
-	                                  double value);
+	UniformDirichletBoundaryCondition(
+	    GeoLib::GeoObject const* const geometry,
+	    double value,
+	    MathLib::PiecewiseLinearInterpolation const* const);
 
 	/// Initialize Dirichlet type boundary conditions.
 	/// Fills in global_ids of the particular geometry of the boundary condition
@@ -51,6 +63,8 @@ public:
 private:
 	double _value;
 	GeoLib::GeoObject const* const _geometry;
+	/// Optional (time-dependent) scaling of the value.
+	MathLib::PiecewiseLinearInterpolation const* const _scaling = nullptr;
 };
 
 }  // namespace ProcessLib

@@ -13,17 +13,22 @@
 #include <vector>
 
 #include "MeshLib/MeshSearch/NodeSearch.h"
+namespace MathLib
+{
+class PiecewiseLinearInterpolation;
+}
 
 namespace ProcessLib
 {
 
 /// A dirichlet boundary condition is represented by a list of global indices
-/// with corresponding values.
+/// with corresponding values and (time-dependent) scalings.
 template <typename IndexType>
 struct DirichletBc final
 {
 	std::vector<IndexType> global_ids;
 	std::vector<double> values;
+	std::vector<MathLib::PiecewiseLinearInterpolation const*> scalings;
 };
 
 }  // namespace ProcessLib

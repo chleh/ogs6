@@ -14,10 +14,16 @@
 
 #include <logog/include/logog.hpp>
 
+#include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
+
 namespace ProcessLib
 {
 UniformDirichletBoundaryCondition::UniformDirichletBoundaryCondition(
-    GeoLib::GeoObject const* const geometry, BaseLib::ConfigTree const& config)
+    GeoLib::GeoObject const* const geometry,
+    std::map<std::string,
+             std::unique_ptr<MathLib::PiecewiseLinearInterpolation>> const&
+        curves,
+    BaseLib::ConfigTree const& config)
     : _geometry(geometry)
 {
 	DBUG("Constructing UniformDirichletBoundaryCondition from config.");
@@ -28,11 +34,15 @@ UniformDirichletBoundaryCondition::UniformDirichletBoundaryCondition(
 }
 
 UniformDirichletBoundaryCondition::UniformDirichletBoundaryCondition(
-    GeoLib::GeoObject const* const geometry, double value)
-    : _value(value), _geometry(geometry)
+    GeoLib::GeoObject const* const geometry,
+    double value,
+    MathLib::PiecewiseLinearInterpolation const* const scaling = nullptr)
+    : _value(value), _geometry(geometry), _scaling(scaling)
 {
-	DBUG("Constructed UniformDirichletBoundaryCondition using value %g",
-	     _value);
+	DBUG(
+	    "Constructed UniformDirichletBoundaryCondition using value %g and "
+	    "%sscaling",
+	    _value, (_scaling ? "" : " no"));
 }
 
 /// Initialize Dirichlet type boundary conditions.
@@ -53,6 +63,7 @@ void UniformDirichletBoundaryCondition::initialize(
 	// convert mesh node ids to global index for the given component
 	bc.global_ids.reserve(bc.global_ids.size() + ids.size());
 	bc.values.reserve(bc.values.size() + ids.size());
+	bc.scalings.reserve(bc.values.size() + ids.size());
 	for (auto& id : ids)
 	{
 		MeshLib::Location l(
@@ -69,6 +80,7 @@ void UniformDirichletBoundaryCondition::initialize(
 		{
 			bc.global_ids.emplace_back(g_idx);
 			bc.values.emplace_back(_value);
+			bc.scalings.emplace_back(_scaling);
 		}
 	}
 }

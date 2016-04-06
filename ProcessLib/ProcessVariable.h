@@ -22,6 +22,11 @@ class MeshNodeSearcher;
 class BoundaryElementsSearcher;
 }
 
+namespace MathLib
+{
+class PiecewiseLinearInterpolation;
+}
+
 namespace MeshLib
 {
 class Mesh;
@@ -47,8 +52,12 @@ namespace ProcessLib
 class ProcessVariable
 {
 public:
-	ProcessVariable(BaseLib::ConfigTree const& config, MeshLib::Mesh& mesh,
-	                GeoLib::GEOObjects const& geometries);
+	ProcessVariable(
+	    BaseLib::ConfigTree const& config, MeshLib::Mesh& mesh,
+	    GeoLib::GEOObjects const& geometries,
+	    std::map<std::string,
+	             std::unique_ptr<MathLib::PiecewiseLinearInterpolation>> const&
+	        curves);
 
 	ProcessVariable(ProcessVariable&&);
 

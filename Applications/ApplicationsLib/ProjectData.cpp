@@ -21,6 +21,7 @@
 #include "BaseLib/FileTools.h"
 #include "BaseLib/uniqueInsert.h"
 
+#include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 #include "MeshLib/Mesh.h"
 
 #include "NumLib/ODESolver/TimeDiscretizationBuilder.h"
@@ -72,8 +73,10 @@ ProjectData::ProjectData(BaseLib::ConfigTree const& project_config,
 	}
 	_mesh_vec.push_back(mesh);
 
-	// process variables
+	// curves
+	parseCurves(project_config.getConfSubtreeOptional("curves"));
 
+	// process variables
 	parseProcessVariables(project_config.getConfSubtree("process_variables"));
 
 	// parameters
@@ -248,7 +251,8 @@ void ProjectData::parseProcessVariables(
 	for (auto var_config
 		 : process_variables_config.getConfSubtreeList("process_variable")) {
 		// TODO Extend to referenced meshes.
-		_process_variables.emplace_back(var_config, *_mesh_vec[0], *_geoObjects);
+		_process_variables.emplace_back(var_config, *_mesh_vec[0], *_geoObjects,
+		                                _curves);
 	}
 }
 
@@ -350,5 +354,34 @@ void ProjectData::parseNonlinearSolvers(BaseLib::ConfigTree const& config)
 		    NumLib::createNonlinearSolver<GlobalMatrix, GlobalVector>(
 		        *linear_solver, conf).first,
 		    "The nonlinear solver name is not unique");
+	}
+}
+
+static std::unique_ptr<MathLib::PiecewiseLinearInterpolation>
+createPiecewiseLinearInterpolation(BaseLib::ConfigTree const& config)
+{
+	auto const times = config.getConfParam<std::vector<double>>("times");
+	auto const values = config.getConfParam<std::vector<double>>("values");
+	assert(times.size() == values.size());
+
+	return std::unique_ptr<MathLib::PiecewiseLinearInterpolation>{
+	    new MathLib::PiecewiseLinearInterpolation{times, values}};
+}
+
+void ProjectData::parseCurves(
+    boost::optional<BaseLib::ConfigTree> const& config)
+{
+	if (!config) return;
+
+	DBUG("Reading curves configuration.");
+
+	for (auto conf : config->getConfSubtreeList("curve"))
+	{
+		auto const name = conf.getConfParam<std::string>("name");
+		BaseLib::insertIfKeyUniqueElseError(
+		    _curves,
+		    name,
+		    createPiecewiseLinearInterpolation(conf),
+		    "The curve name is not unique.");
 	}
 }

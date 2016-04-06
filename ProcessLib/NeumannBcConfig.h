@@ -14,6 +14,7 @@
 
 #include "BaseLib/ConfigTree.h"
 #include "MathLib/ConstantFunction.h"
+#include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 #include "MeshGeoToolsLib/BoundaryElementsSearcher.h"
 #include "MeshLib/Elements/Element.h"
 
@@ -43,8 +44,12 @@ protected:
 class NeumannBcConfig : public BoundaryConditionConfig
 {
 public:
-    NeumannBcConfig(GeoLib::GeoObject const* const geometry,
-            BaseLib::ConfigTree const& config)
+    NeumannBcConfig(
+        GeoLib::GeoObject const* const geometry,
+        std::map<std::string,
+                 std::unique_ptr<MathLib::PiecewiseLinearInterpolation>> const&
+            curves,
+        BaseLib::ConfigTree const& config)
         : BoundaryConditionConfig(geometry)
     {
         DBUG("Constructing NeumannBcConfig from config.");
