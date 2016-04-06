@@ -199,6 +199,12 @@ private:
 	}
 
 private:
+	struct FEMSharedData
+	{
+	};
+
+	FEMSharedData _fem_shared_data;
+
 	double _dt;
 	Parameter<double, MeshLib::Element const&> const& _youngs_modulus;
 	Parameter<double, MeshLib::Element const&> const& _poissons_ratio;
