@@ -21,15 +21,23 @@
 namespace ProcessLib
 {
 std::unique_ptr<InitialCondition> createUniformInitialCondition(
-    BaseLib::ConfigTree const& config, int const /*n_components*/)
+    BaseLib::ConfigTree const& config, int const n_components)
 {
 	config.checkConfParam("type", "Uniform");
 
-	auto value = config.getConfParam<double>("value");
-	DBUG("Using value %g", value);
+	std::string const name_prefix = "component_value_";
 
-	return std::unique_ptr<InitialCondition>(
-	    new UniformInitialCondition(value));
+	std::vector<double> values(n_components);  // parsed values for later ctor.
+	for (int component_id = 0; component_id < n_components; ++component_id)
+	{
+		auto const name = name_prefix + std::to_string(component_id);
+		double const value = config.getConfParam<double>(name);
+		values[component_id] = value;
+		DBUG("Using value %g for component %d.", value, component_id);
+	}
+
+	return std::unique_ptr<InitialCondition>{
+	    new UniformInitialCondition{values}};
 }
 
 std::unique_ptr<InitialCondition> createMeshPropertyInitialCondition(
@@ -37,6 +45,7 @@ std::unique_ptr<InitialCondition> createMeshPropertyInitialCondition(
     MeshLib::Mesh const& mesh,
     int const n_components)
 {
+	config.checkConfParam("type", "MeshProperty");
 	auto field_name = config.getConfParam<std::string>("field_name");
 	DBUG("Using field_name %s", field_name.c_str());
 
