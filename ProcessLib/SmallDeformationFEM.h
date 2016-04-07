@@ -35,6 +35,9 @@ public:
 
 	virtual void assemble(double const t, std::vector<double> const& local_x,
 	                      double const dt) = 0;
+
+	virtual void assembleJacobian(double const t, std::vector<double> const& local_x) = 0;
+
 	virtual void preTimestep(std::vector<double> const& local_x) = 0;
 	virtual void postTimestep(std::vector<double> const& local_x,
 	                          double const t) = 0;
@@ -42,6 +45,10 @@ public:
 	virtual void addToGlobal(
 	    AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const&,
 	    GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b) const = 0;
+
+	virtual void addJacobianToGlobal(
+	    AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const& indices,
+	    GlobalMatrix& Jac) const = 0;
 };
 
 template <typename ShapeFunction_, typename IntegrationMethod_,
@@ -177,7 +184,6 @@ public:
 	void assemble(double const /*t*/,
 	              std::vector<double> const& local_x, double const dt) override
 	{
-		_localA->setZero();
 		_localRhs->setZero();
 
 		IntegrationMethod_ integration_method(_integration_order);
@@ -185,6 +191,7 @@ public:
 
 		NodalDisplacementVectorType local_displacement(
 		    BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns);
+
 		for (int i = 0;
 		     i < BMatrixDimensions<ShapeFunction::NPOINTS, GlobalDim>::columns;
 		     ++i)
@@ -192,6 +199,8 @@ public:
 			local_displacement(i) = local_x[i];
 		}
 
+		// TODO why needed?
+		/*
 		NodalVectorType coords_x(ShapeFunction::NPOINTS);
 		NodalVectorType coords_y(ShapeFunction::NPOINTS);
 		NodalVectorType coords_z(ShapeFunction::NPOINTS);
@@ -202,6 +211,7 @@ public:
 			coords_y[i] = _coords[1 * ShapeFunction::NPOINTS + i];
 			coords_z[i] = _coords[2 * ShapeFunction::NPOINTS + i];
 		}
+		*/
 
 		for (std::size_t ip(0); ip < n_integration_points; ip++)
 		{
@@ -214,20 +224,52 @@ public:
 			Solids::LinearElasticIsotropic::computeConstitutiveRelation(dt,
 			    _lambda(), _mu(), _eps_prev[ip], _eps[ip], _sigma_prev[ip],
 			    _sigma[ip], _C[ip]);
+
+			_localRhs->noalias() -=
+				B.transpose() * _sigma[ip] * sm.detJ * wp.getWeight();
+		}
+	}
+
+
+	void assembleJacobian(double const /*t*/,
+						  std::vector<double> const& /*local_x*/) override
+	{
+		_localA->setZero();
+
+		IntegrationMethod_ integration_method(_integration_order);
+		unsigned const n_integration_points = integration_method.getNPoints();
+
+		for (std::size_t ip(0); ip < n_integration_points; ip++)
+		{
+			auto const& sm = _shape_matrices[ip];
+			auto const& B = _b_matrices[ip];
+			auto const& wp = integration_method.getWeightedPoint(ip);
+
+			/* // TODO remove; already done in assemble() method
+			LinearBMatrix::computeStrain(local_displacement, B, _eps[ip]);
+
+			Solids::LinearElasticIsotropic::computeConstitutiveRelation(dt,
+			    _lambda(), _mu(), _eps_prev[ip], _eps[ip], _sigma_prev[ip],
+			    _sigma[ip], _C[ip]);
+			*/
+
 			_localA->noalias() +=
 			    B.transpose() * _C[ip] * B * sm.detJ * wp.getWeight();
-
-			//_localRhs->noalias() -=
-				//B.transpose() * _sigma[ip] * sm.detJ * wp.getWeight();
 		}
 	}
 
 	void addToGlobal(
 	    AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const& indices,
-	    GlobalMatrix& /*M*/, GlobalMatrix& K, GlobalVector& b) const override
+	    GlobalMatrix& /*M*/, GlobalMatrix& /*K*/, GlobalVector& b) const override
 	{
-		K.add(indices, *_localA);
 		b.add(indices.rows, *_localRhs);
+	}
+
+	void addJacobianToGlobal(
+	    AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices const& indices,
+	    GlobalMatrix& Jac) const override
+	{
+		Jac.add(indices, *_localA);
 	}
 
 	void preTimestep(std::vector<double> const& /*local_x*/) override

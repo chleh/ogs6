@@ -174,8 +174,18 @@ private:
 
 
 		// Call global assembler for each local assembly item.
-		//Base::_global_setup.executeDereferenced(*Base::_global_assembler, _local_assemblers,
-		 //                           t, x, M, K, b, _dt);
+		Base::_global_setup.executeDereferenced(
+		    [&](std::size_t const id, LocalAssembler& local_assembler,
+					const double t,
+					GlobalVector const& x,
+					GlobalMatrix& Jac) -> void
+			{
+			    Base::_global_assembler->assembleJacobian(id, local_assembler,
+														  t, x, Jac);
+			},
+		    _local_assemblers, t, x, Jac);
+
+
 	}
 
 	void preTimestep(GlobalVector const& x, double const /*t*/,
