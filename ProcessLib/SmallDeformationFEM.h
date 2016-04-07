@@ -196,7 +196,7 @@ public:
 		NodalVectorType coords_y(ShapeFunction::NPOINTS);
 		NodalVectorType coords_z(ShapeFunction::NPOINTS);
 
-		for (int i = 0; i < ShapeFunction::NPOINTS; ++i)
+		for (std::size_t i = 0; i < ShapeFunction::NPOINTS; ++i)
 		{
 			coords_x[i] = _coords[0 * ShapeFunction::NPOINTS + i];
 			coords_y[i] = _coords[1 * ShapeFunction::NPOINTS + i];
@@ -230,7 +230,7 @@ public:
 		b.add(indices.rows, *_localRhs);
 	}
 
-	void preTimestep(std::vector<double> const& local_x) override
+	void preTimestep(std::vector<double> const& /*local_x*/) override
 	{
 		std::cerr << "Pushback.\n";
 
@@ -259,7 +259,7 @@ public:
 		_sigma_prev = _sigma;
 	}
 
-	void postTimestep(std::vector<double> const& local_x, double const t) override
+	void postTimestep(std::vector<double> const& /*local_x*/, double const t) override
 	{
 		std::cerr << "SD FEM: Post timestep, t = " << t << "\n";
 

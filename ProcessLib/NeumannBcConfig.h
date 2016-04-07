@@ -48,7 +48,7 @@ public:
         GeoLib::GeoObject const* const geometry,
         std::map<std::string,
                  std::unique_ptr<MathLib::PiecewiseLinearInterpolation>> const&
-            curves,
+            /*curves*/,
         BaseLib::ConfigTree const& config)
         : BoundaryConditionConfig(geometry)
     {

@@ -163,6 +163,16 @@ private:
 	{
 		DBUG("AssembleJacobian SmallDeformationProcess.");
 
+		(void) t;
+		(void) x;
+		(void) xdot;
+		(void) dxdot_dx;
+		(void) M;
+		(void) dx_dx;
+		(void) K;
+		(void) Jac;
+
+
 		// Call global assembler for each local assembly item.
 		//Base::_global_setup.executeDereferenced(*Base::_global_assembler, _local_assemblers,
 		 //                           t, x, M, K, b, _dt);

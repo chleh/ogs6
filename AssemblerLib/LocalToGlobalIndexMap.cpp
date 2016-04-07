@@ -100,7 +100,7 @@ LocalToGlobalIndexMap::LocalToGlobalIndexMap(
 }
 
 LocalToGlobalIndexMap* LocalToGlobalIndexMap::deriveBoundaryConstrainedMap(
-    std::size_t const variable_id,
+    std::size_t const /*variable_id*/,
     std::size_t const component_id,
     std::unique_ptr<MeshLib::MeshSubsets>&& mesh_subsets,
     std::vector<MeshLib::Element*> const& elements) const
