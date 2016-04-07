@@ -337,12 +337,15 @@ solveOneTimeStepOneProcess(
 
     setEquationSystem(nonlinear_solver, ode_sys, nl_tag);
 
-    applyKnownSolutions(ode_sys, nl_tag, x);
-
-    process.preTimestep(x, t, delta_t);
+    // Note: Order matters!
+    // nextTimestep(); applyKnownSolutions(); preTimestep();
 
     // INFO("time: %e, delta_t: %e", t, delta_t);
     time_disc.nextTimestep(t, delta_t);
+
+    applyKnownSolutions(ode_sys, nl_tag, x);
+
+    process.preTimestep(x, t, delta_t);
 
     bool nonlinear_solver_succeeded = nonlinear_solver.solve(x);
 
