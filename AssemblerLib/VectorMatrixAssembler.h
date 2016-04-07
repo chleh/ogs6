@@ -115,6 +115,30 @@ public:
         passLocalVector_(cb, id, _data_pos, x, t, M, K, b);
     }
 
+    /// Executes the assembleJacobian() method of the local assembler for the
+    /// given mesh item passing the mesh item's nodal d.o.f.
+    /// \attention The index \c id is not necesserily the mesh item's id.
+    template <typename LocalAssembler, typename... Args>
+    void assembleJacobian(std::size_t const id,
+        LocalAssembler& local_assembler,
+                    const double t,
+                    GlobalVector const& x,
+                    GlobalMatrix& Jac,
+                    Args&&... args) const
+    {
+        auto cb = [&local_assembler, args...](
+            std::vector<double> const& local_x,
+            LocalToGlobalIndexMap::RowColumnIndices const& r_c_indices,
+            const double t,
+            GlobalMatrix& Jac)
+        {
+            local_assembler.assembleJacobian(t, local_x, args...);
+            local_assembler.addJacobianToGlobal(r_c_indices, Jac);
+        };
+
+        passLocalVector_(cb, id, _data_pos, x, t, Jac);
+    }
+
     /// Executes the preTimestep() method of the local assembler for the
     /// given mesh item passing the mesh item's nodal d.o.f.
     /// \attention The index \c id is not necesserily the mesh item's id.
