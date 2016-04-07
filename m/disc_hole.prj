@@ -12,7 +12,7 @@
             <youngs_modulus>E</youngs_modulus>
             <poissons_ratio>nu</poissons_ratio>
 
-            <nonlinear_solver>basic_picard</nonlinear_solver>
+            <nonlinear_solver>basic_newton</nonlinear_solver>
             <time_discretization><type>BackwardEuler</type></time_discretization>
         </process>
     </processes>
@@ -71,8 +71,8 @@
 
     <nonlinear_solvers>
         <nonlinear_solver>
-            <name>basic_picard</name>
-            <type>Picard</type>
+            <name>basic_newton</name>
+            <type>Newton</type>
             <tol>1e-6</tol>
             <max_iter>4</max_iter>
             <linear_solver>general_linear_solver</linear_solver>
