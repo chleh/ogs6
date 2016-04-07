@@ -31,6 +31,7 @@ void applyKnownSolutions(std::vector<Solutions> const*const known_solutions,
 
     for (auto const& bc : *known_solutions) {
         for (std::size_t i=0; i<bc.global_ids.size(); ++i) {
+            // TODO that might have bad performance for some Vector types, e.g., PETSc.
             x[bc.global_ids[i]] = bc.values[i];
         }
     }
