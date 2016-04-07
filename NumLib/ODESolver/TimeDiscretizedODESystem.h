@@ -20,6 +20,22 @@
 #include "TimeDiscretization.h"
 #include "MatrixTranslator.h"
 
+namespace detail
+{
+//! Applies known solutions to the solution vector \c x.
+template<typename Solutions, typename Vector>
+void applyKnownSolutions(std::vector<Solutions> const*const known_solutions,
+                         Vector& x)
+{
+    if (!known_solutions) return;
+
+    for (auto const& bc : *known_solutions) {
+        for (std::size_t i=0; i<bc.global_ids.size(); ++i) {
+            x[bc.global_ids[i]] = bc.values[i];
+        }
+    }
+}
+}
 
 namespace NumLib
 {
@@ -174,6 +190,12 @@ public:
         _mat_trans->computeJacobian(*_Jac, Jac);
     }
 
+    void applyKnownSolutions(Vector& x) const override
+    {
+        ::detail::applyKnownSolutions(
+                    _ode.getKnownSolutions(_time_disc.getCurrentTime()), x);
+    }
+
     void applyKnownSolutionsNewton(Matrix& Jac, Vector& res,
                                     Vector& minus_delta_x) override
     {
@@ -306,6 +328,12 @@ public:
     void getRhs(Vector& rhs) const override
     {
         _mat_trans->computeRhs(*_M, *_K, *_b, rhs);
+    }
+
+    void applyKnownSolutions(Vector& x) const override
+    {
+        ::detail::applyKnownSolutions(
+                    _ode.getKnownSolutions(_time_disc.getCurrentTime()), x);
     }
 
     void applyKnownSolutionsPicard(Matrix& A, Vector& rhs, Vector& x) override
