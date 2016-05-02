@@ -114,6 +114,15 @@ TESProcess<GlobalSetup>::TESProcess(
 
     _assembly_params.dielectric_heating_term_enabled = config.getConfParam<bool>("dielectric_heating_term_enabled");
 
+    if (_assembly_params.dielectric_heating_term_enabled)
+    {
+        auto const hps = config.getConfSubtree("heating_power_scaling");
+        _assembly_params.heating_power_scaling =
+            MathLib::PiecewiseLinearInterpolation(
+                hps.getConfParam<std::vector<double>>("times"),
+                hps.getConfParam<std::vector<double>>("scalings"), false);
+    }
+
     // characteristic values of primary variables
     {
         std::vector<std::pair<std::string, Trafo*>> const params{
