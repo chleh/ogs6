@@ -20,6 +20,8 @@
 #include "DensityMette.h"
 #include "DensityNunez.h"
 
+#include "DensityHauerNaYStach.h"
+
 #include "ReactionCaOH2.h"
 #include "ReactionInert.h"
 #include "ReactionSinusoidal.h"
@@ -57,6 +59,8 @@ newInstance(BaseLib::ConfigTree const& conf)
         return std::unique_ptr<Reaction>(new ReactionSinusoidal(conf));
     else if (type == "CaOH2")
         return std::unique_ptr<Reaction>(new ReactionCaOH2(conf));
+    else if (type == "NaYStach")
+        return std::unique_ptr<Reaction>(new DensityHauerNaYStach);
 
     ERR("Unknown reactive system: %s.", type.c_str());
     std::abort();
