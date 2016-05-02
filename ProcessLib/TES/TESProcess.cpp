@@ -112,6 +112,8 @@ TESProcess<GlobalSetup>::TESProcess(
         }
     }
 
+    _assembly_params.dielectric_heating_term_enabled = config.getConfParam<bool>("dielectric_heating_term_enabled");
+
     // characteristic values of primary variables
     {
         std::vector<std::pair<std::string, Trafo*>> const params{

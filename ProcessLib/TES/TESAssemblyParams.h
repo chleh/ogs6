@@ -65,6 +65,8 @@ struct AssemblyParams
     // TODO unify variable names
     double initial_solid_density = std::numeric_limits<double>::quiet_NaN();
 
+    bool dielectric_heating_term_enabled = false;
+
     double delta_t = std::numeric_limits<double>::quiet_NaN();
     unsigned iteration_in_current_timestep = 0;
 
