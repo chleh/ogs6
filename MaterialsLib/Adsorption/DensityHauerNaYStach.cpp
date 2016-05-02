@@ -10,8 +10,7 @@ const double c[] = {
      -1.2548427759398523e-05, /* a3 */
      -2.1060522569568419e-06, /* a4 */
      1.6607622324262219e-08,  /* a5 */
-     5.3419831304985741e-10,  /* a6 */
-
+     5.3419831304985741e-10   /* a6 */
 };
 
 }
@@ -50,6 +49,11 @@ double DensityHauerNaYStach::characteristic_curve(const double A) const
 double DensityHauerNaYStach::d_characteristic_curve(const double A) const
 {
     return d_curve_polyfrac(c, A);
+}
+
+double DensityHauerNaYStach::get_enthalpy(const double, const double, const double) const
+{
+    return 2055.0 * 1000.0; // J/kg value taken from Kraus' PhD thesis
 }
 
 }

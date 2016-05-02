@@ -12,6 +12,7 @@ public:
     double get_alphaT(const double T_Ads) const;
     double characteristic_curve(const double A) const;
     double d_characteristic_curve(const double A) const;
+    double get_enthalpy(const double p_Ads, const double T_Ads, const double M_Ads) const override;
 };
 
 }
