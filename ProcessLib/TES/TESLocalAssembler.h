@@ -38,6 +38,9 @@ public:
 
     virtual bool checkBounds(std::vector<double> const& local_x,
                              std::vector<double> const& local_x_prev_ts) = 0;
+
+    virtual void initializeSolidDensity(MeshLib::MeshItemType item_type,
+                                        std::vector<double> const& values) = 0;
 };
 
 template <typename ShapeFunction_, typename IntegrationMethod_,
@@ -75,6 +78,9 @@ public:
 
     std::vector<double> const& getIntegrationPointValues(
         TESIntPtVariables const var, std::vector<double>& cache) const override;
+
+    void initializeSolidDensity(MeshLib::MeshItemType item_type,
+                                std::vector<double> const& values) override;
 
 private:
     std::vector<ShapeMatrices> _shape_matrices;

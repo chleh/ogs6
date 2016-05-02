@@ -64,6 +64,7 @@ struct AssemblyParams
 
     // TODO unify variable names
     double initial_solid_density = std::numeric_limits<double>::quiet_NaN();
+    std::string initial_solid_density_mesh_property;
 
     bool dielectric_heating_term_enabled = false;
 

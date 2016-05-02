@@ -123,6 +123,13 @@ TESProcess<GlobalSetup>::TESProcess(
                 hps.getConfParam<std::vector<double>>("scalings"), false);
     }
 
+    if (auto prop =
+        config.getConfParamOptional<std::string>("initial_solid_density_mesh_property"))
+    {
+        assert(!prop->empty());
+        _assembly_params.initial_solid_density_mesh_property = *prop;
+    }
+
     // characteristic values of primary variables
     {
         std::vector<std::pair<std::string, Trafo*>> const params{
@@ -251,6 +258,55 @@ void TESProcess<GlobalSetup>::initializeConcreteProcess(
            {std::bind(&Self::computeEquilibriumLoading, this, PH::_1, PH::_2,
                       PH::_3),
             nullptr});
+
+
+    // set initial solid density from mesh property
+    if (!_assembly_params.initial_solid_density_mesh_property.empty())
+    {
+        auto prop = mesh.getProperties().template getPropertyVector<double>(
+            _assembly_params.initial_solid_density_mesh_property);
+        assert(prop->getNumberOfComponents() == 1);
+
+        switch (prop->getMeshItemType())
+        {
+        case MeshLib::MeshItemType::Cell:
+        {
+            auto init_solid_density = [&prop](
+                    std::size_t id, LocalAssembler& loc_asm)
+            {
+                // TODO loc_asm_id is assumed to be the mesh element id.
+                loc_asm.initializeSolidDensity(
+                    MeshLib::MeshItemType::Cell, {{ (*prop)[id] }});
+            };
+
+            GlobalSetup::executeDereferenced(init_solid_density, _local_assemblers);
+            break;
+        }
+        case MeshLib::MeshItemType::Node:
+        {
+            std::vector<GlobalIndexType> indices;
+            std::vector<double> values;
+
+            auto init_solid_density = [&](
+                    std::size_t id, LocalAssembler& loc_asm)
+            {
+                getRowColumnIndices_(id, *_local_to_global_index_map_single_component,
+                                     indices);
+                values.clear();
+                for (auto i : indices) values.push_back((*prop)[i]);
+
+                loc_asm.initializeSolidDensity(
+                    MeshLib::MeshItemType::Node, values);
+            };
+
+            GlobalSetup::executeDereferenced(init_solid_density, _local_assemblers);
+            break;
+        }
+        default:
+            ERR("Unhandled mesh item type for initialization of secondary variable.");
+            std::abort();
+        }
+    }
 }
 
 template <typename GlobalSetup>
