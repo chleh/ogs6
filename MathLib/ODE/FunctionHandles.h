@@ -33,12 +33,12 @@ class FunctionHandles
 {
 public:
     //! Calls a function computing \f$\dot y\f$.
-    //! \returns true or false indicating whethere the function succeeded.
+    //! \returns true or false indicating whether the function succeeded.
     virtual bool call(const double t, double const* const y,
                       double* const ydot) = 0;
 
     //! Calls a function computing \f$\mathtt{jac} := \partial \dot y/\partial y\f$.
-    //! \returns true or false indicating whethere the function succeeded.
+    //! \returns true or false indicating whether the function succeeded.
     virtual bool callJacobian(const double t,
                               double const* const y,
                               double* const ydot,
@@ -68,7 +68,7 @@ struct FunctionHandlesImpl final : public FunctionHandles
      * objects before being passed to \c f. Thereby the information about the
      * size of the vectors is restored. No memory is copied for that.
      *
-     * \returns true or false indicating whethere the function succeeded.
+     * \returns true or false indicating whether the function succeeded.
      */
     bool call(const double t, const double* const y,
               double* const ydot) override
@@ -83,7 +83,7 @@ struct FunctionHandlesImpl final : public FunctionHandles
     /*! Calls the stored function computing
      *  \f$\mathtt{jac} := \partial \dot y/\partial y\f$.
      *
-     * \returns true or false indicating whethere the function succeeded.
+     * \returns true or false indicating whether the function succeeded.
      * \see call()
      */
     bool callJacobian(const double t, const double* const y, double* const ydot,
