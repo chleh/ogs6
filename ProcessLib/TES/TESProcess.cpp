@@ -122,6 +122,10 @@ TESProcess<GlobalSetup>::TESProcess(
                 hps.getConfParam<std::vector<double>>("times"),
                 hps.getConfParam<std::vector<double>>("scalings"), false);
     }
+    else
+    {
+        config.ignoreConfParam("heating_power_scaling");
+    }
 
     if (auto prop =
         config.getConfParamOptional<std::string>("initial_solid_density_mesh_property"))
