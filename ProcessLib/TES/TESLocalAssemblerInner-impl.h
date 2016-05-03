@@ -242,7 +242,6 @@ TESLocalAssemblerInner<Traits>::getIntegrationPointValues(
         {
             auto& Cs = cache;
             Cs.clear();
-            Cs.reserve(_d.solid_density.size());
 
             for (auto rho_SR : _d.solid_density)
             {
@@ -263,6 +262,32 @@ TESLocalAssemblerInner<Traits>::getIntegrationPointValues(
 
             return alphas;
         }
+    case TESIntPtVariables::VOLUMETRIC_JOULE_HEATING_POWER:
+    {
+        auto& heat_power = cache;
+        heat_power.clear();
+
+        if (_d.ap.dielectric_heating_term_enabled)
+        {
+            for (auto rho_SR : _d.solid_density) {
+                auto const loading = Adsorption::AdsorptionReaction::get_loading(
+                    rho_SR, _d.ap.rho_SR_dry);
+
+                /* The factor (1.0 - _d.ap.poro) does not need to be taken into account here,
+                 * because the experimental data from Kraus is already for a bed.
+                 * TODO maybe reformulate and include (1.0-phi) here.
+                 */
+                heat_power.push_back(
+                    _d.ap.heating_power_scaling.getValue(_d.ap.current_time)
+                         * getVolumetricJouleHeatingPower(_d.T, loading));
+            }
+        } else {
+            auto const num_integration_points = _d.solid_density.size();
+            heat_power.resize(num_integration_points);
+        }
+
+        return heat_power;
+    }
     }
 
     cache.clear();

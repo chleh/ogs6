@@ -31,7 +31,8 @@ enum class TESIntPtVariables : unsigned
     VELOCITY_Y,
     VELOCITY_Z,
     LOADING,
-    REACTION_DAMPING_FACTOR
+    REACTION_DAMPING_FACTOR,
+    VOLUMETRIC_JOULE_HEATING_POWER
 };
 
 template <typename Traits>

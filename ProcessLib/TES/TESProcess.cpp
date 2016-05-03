@@ -244,9 +244,12 @@ void TESProcess<GlobalSetup>::initializeConcreteProcess(
     if (mesh.getDimension() >= 3)
         add2nd("velocity_z", 1, makeEx(TESIntPtVariables::VELOCITY_Z));
 
-    add2nd("loading", 1, makeEx(TESIntPtVariables::LOADING));
-    add2nd("reaction_damping_factor", 1,
-           makeEx(TESIntPtVariables::REACTION_DAMPING_FACTOR));
+    add2nd("loading",        1, makeEx(TESIntPtVariables::LOADING));
+    add2nd("reaction_damping_factor",
+                             1, makeEx(TESIntPtVariables::REACTION_DAMPING_FACTOR));
+    add2nd("vol_joule_heating_power",
+                             1,
+           makeEx(TESIntPtVariables::VOLUMETRIC_JOULE_HEATING_POWER));
 
     namespace PH = std::placeholders;
     using Self = TESProcess<GlobalSetup>;
@@ -355,6 +358,7 @@ template <typename GlobalSetup>
 NumLib::IterationResult TESProcess<GlobalSetup>::postIteration(
     GlobalVector const& x)
 {
+    // TODO move to Process?
     if (this->_process_output.output_iteration_results)
     {
         DBUG("output results of iteration %li",

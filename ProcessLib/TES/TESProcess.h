@@ -127,10 +127,12 @@ std::unique_ptr<TESProcess<GlobalSetup>> createTESProcess(
     SecondaryVariableCollection<typename GlobalSetup::VectorType>
         secondary_variables{
             config.getConfigSubtreeOptional("secondary_variables"),
-            {"solid_density", "reaction_rate", "velocity_x", "velocity_y",
-             "velocity_z", "loading", "reaction_damping_factor",
-             "vapour_partial_pressure", "relative_humidity",
-             "equilibrium_loading"}};
+            { "solid_density", "reaction_rate",
+              "velocity_x", "velocity_y", "velocity_z",
+              "loading", "reaction_damping_factor",
+              "vapour_partial_pressure", "relative_humidity",
+              "equilibrium_loading", "vol_joule_heating_power"
+            }};
 
     ProcessOutput<typename GlobalSetup::VectorType> process_output{
         config.getConfigSubtree("output"), process_variables,
