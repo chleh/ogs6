@@ -87,16 +87,21 @@ TESFEMReactionAdaptorAdsorption::initReaction_slowDownUndershootStrategy(
                        ? _reaction_damping_factor * react_rate_R
                        : 0.0;
 
-    if (_d.p_V <
-            0.01 * Adsorption::AdsorptionReaction::getEquilibriumVapourPressure(
-                       _d.T) &&
-        react_rate_R > 0.0)
+    // TODO these parameters are process-specific
+    const double hard_lower_relative_humidity_limit = 1.3e-4;
+    const double hard_react_rate_limit = 2e-3;
+
+    const double soft_lower_vapour_partial_pressure_limit = 17.0; // Pa
+    const double soft_lower_relative_humidity_limit = 1.7e-4;
+
+    if (_d.p_V < hard_lower_relative_humidity_limit
+                 * Adsorption::AdsorptionReaction::getEquilibriumVapourPressure(_d.T)
+        && std::abs(react_rate_R) > hard_react_rate_limit)
     {
         react_rate_R = 0.0;
     }
-    else if (_d.p_V < 100.0 ||
-             _d.p_V < 0.05 * Adsorption::AdsorptionReaction::
-                                 getEquilibriumVapourPressure(_d.T))
+    else if (_d.p_V < soft_lower_vapour_partial_pressure_limit
+             || _d.p_V < soft_lower_relative_humidity_limit * Adsorption::AdsorptionReaction::getEquilibriumVapourPressure(_d.T))
     {
         // use equilibrium reaction for dry regime
 
@@ -120,14 +125,18 @@ TESFEMReactionAdaptorAdsorption::initReaction_slowDownUndershootStrategy(
             react_rate_R2 *= 0.5;
         }
 
-        // 0th try: make sure reaction is not slower than allowed by local
-        // estimation
-        // nth try: make sure reaction is not made faster by local estimation
-        if ((_d.ap.number_of_try_of_iteration == 1 &&
-             std::abs(react_rate_R2) > std::abs(react_rate_R)) ||
-            (_d.ap.number_of_try_of_iteration > 1 &&
-             std::abs(react_rate_R2) < std::abs(react_rate_R)))
+        // 1st try: make sure reaction is not slower than allowed by local estimation
+        if (_d.ap.number_of_try_of_iteration == 1
+             && std::abs(react_rate_R2) > std::abs(react_rate_R) )
         {
+            react_rate_R = react_rate_R2;
+        }
+        // nth try: make sure reaction is not made faster by local estimation
+        if (_d.ap.number_of_try_of_iteration > 1
+             && std::abs(react_rate_R2) < std::abs(react_rate_R))
+        {
+             // only make damping stronger here.
+            _reaction_damping_factor *= std::abs(react_rate_R2 / react_rate_R);
             react_rate_R = react_rate_R2;
         }
     }
