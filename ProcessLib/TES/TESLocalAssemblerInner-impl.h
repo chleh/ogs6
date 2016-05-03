@@ -279,7 +279,9 @@ TESLocalAssemblerInner<Traits>::getIntegrationPointValues(
                  */
                 heat_power.push_back(
                     _d.ap.heating_power_scaling.getValue(_d.ap.current_time)
-                         * getVolumetricJouleHeatingPower(_d.T, loading));
+                            // TODO here I also need to access nodal values.
+                            // TODO T set to constant value.
+                         * getVolumetricJouleHeatingPower(373.15, loading));
             }
         } else {
             auto const num_integration_points = _d.solid_density.size();
