@@ -383,6 +383,8 @@ loop(ProjectData& project)
              ++p, ++pcs_idx)
         {
             auto const& x0 = *_process_solutions[pcs_idx];
+
+            (*p)->preTimestep(x0, t0, _timestepper->getTimeStep().dt());
             out_ctrl.doOutput(**p, 0, t0, x0);
         }
     }
