@@ -23,6 +23,7 @@
 #include "TESLocalAssemblerInner-fwd.h"
 #include "TESOGS5MaterialModels.h"
 #include "TESReactionAdaptor.h"
+#include "TESDielectricByKraus.h"
 
 namespace ProcessLib
 {
@@ -162,15 +163,28 @@ Eigen::Vector3d TESLocalAssemblerInner<Traits>::getRHSCoeffVector(
     const double rhs_p =
         (_d.ap.poro - 1.0) * _d.qR;  // TODO [CL] body force term
 
-    const double rhs_T =
-        _d.rho_GR * _d.ap.poro * _d.ap.fluid_specific_heat_source +
-        (1.0 - _d.ap.poro) * _d.qR * reaction_enthalpy +
-        _d.solid_density[int_pt] * (1.0 - _d.ap.poro) *
-            _d.ap.solid_specific_heat_source;
-    // TODO [CL] momentum production term
+    double rhs_T =
+        _d.rho_GR * _d.ap.poro * _d.ap.fluid_specific_heat_source
+        + (1.0 - _d.ap.poro) * _d.qR * reaction_enthalpy
+        + _d.solid_density[int_pt] * (1.0 - _d.ap.poro) * _d.ap.solid_specific_heat_source
+        + _d.ap.volumetric_heat_loss_coeff * (_d.ap.ambient_temperature - _d.T);
+        // TODO [CL] momentum production term
 
-    const double rhs_x =
-        (_d.ap.poro - 1.0) * _d.qR;  // TODO [CL] what if x < 0.0
+    if (_d.ap.dielectric_heating_term_enabled)
+    {
+        auto const loading = Adsorption::AdsorptionReaction::getLoading(
+            _d.solid_density[int_pt], _d.ap.rho_SR_dry);
+
+        /* The factor (1.0 - _d.ap.poro) does not need to be taken into account here,
+         * because the experimental data from Kraus is already for a bed.
+         * TODO maybe reformulate and include (1.0-phi) here.
+         */
+        rhs_T += _d.ap.heating_power_scaling.getValue(_d.ap.current_time)
+                 * getVolumetricJouleHeatingPower(_d.T, loading);
+    }
+
+    const double rhs_x = (_d.ap.poro - 1.0) * _d.qR; // TODO [CL] what if x < 0.0
+
 
     Eigen::Vector3d rhs;
     rhs << rhs_p, rhs_T, rhs_x;

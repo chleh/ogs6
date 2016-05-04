@@ -86,20 +86,20 @@ TESProcess<GlobalSetup>::TESProcess(
 
     // physical parameters for local assembly
     {
-        std::vector<std::pair<std::string, double*>> params{
-            {"fluid_specific_heat_source",
-             &_assembly_params.fluid_specific_heat_source},
-            {"fluid_specific_isobaric_heat_capacity", &_assembly_params.cpG},
-            {"solid_specific_heat_source",
-             &_assembly_params.solid_specific_heat_source},
-            {"solid_heat_conductivity", &_assembly_params.solid_heat_cond},
-            {"solid_specific_isobaric_heat_capacity", &_assembly_params.cpS},
-            {"tortuosity", &_assembly_params.tortuosity},
-            {"diffusion_coefficient",
-             &_assembly_params.diffusion_coefficient_component},
-            {"porosity", &_assembly_params.poro},
-            {"solid_density_dry", &_assembly_params.rho_SR_dry},
-            {"solid_density_initial", &_assembly_params.initial_solid_density}};
+        std::vector<std::pair<std::string, double*> > params{
+            { "fluid_specific_heat_source",            &_assembly_params.fluid_specific_heat_source },
+            { "fluid_specific_isobaric_heat_capacity", &_assembly_params.cpG },
+            { "solid_specific_heat_source",            &_assembly_params.solid_specific_heat_source },
+            { "solid_heat_conductivity",               &_assembly_params.solid_heat_cond },
+            { "solid_specific_isobaric_heat_capacity", &_assembly_params.cpS },
+            { "tortuosity",                            &_assembly_params.tortuosity },
+            { "diffusion_coefficient",                 &_assembly_params.diffusion_coefficient_component },
+            { "porosity",                              &_assembly_params.poro },
+            { "solid_density_dry",                     &_assembly_params.rho_SR_dry },
+            { "solid_density_initial",                 &_assembly_params.initial_solid_density },
+            { "volumetric_heat_loss_coeff",            &_assembly_params.volumetric_heat_loss_coeff },
+            { "ambient_temperature",                   &_assembly_params.ambient_temperature }
+        };
 
         for (auto const& p : params)
         {

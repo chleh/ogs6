@@ -51,6 +51,9 @@ struct AssemblyParams
     double cpS = std::numeric_limits<
         double>::quiet_NaN();  // specific isobaric solid heat capacity
 
+    double volumetric_heat_loss_coeff = std::numeric_limits<double>::quiet_NaN();
+    double ambient_temperature = std::numeric_limits<double>::quiet_NaN();
+
     double tortuosity = std::numeric_limits<double>::quiet_NaN();
     double diffusion_coefficient_component =
         std::numeric_limits<double>::quiet_NaN();
