@@ -200,6 +200,9 @@ double TESFEMReactionAdaptorAdsorption::estimateAdsorptionEquilibrium(
             : Adsorption::AdsorptionReaction::getEquilibriumVapourPressure(
                   _d.T);
 
+    // TODO find better solution.
+    if (std::signbit(f(p_V0)) == std::signbit(f(limit))) return p_V0;
+
     // search for roots
     auto rf = MathLib::Nonlinear::makeRegulaFalsi<MathLib::Nonlinear::Pegasus>(
         f, p_V0, limit);
