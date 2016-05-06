@@ -12,7 +12,7 @@
 #include "MaterialsLib/PhysicalConstant.h"
 
 namespace {
-    const double k_rate = 6.0e-3; // to be specified
+    const double k_rate = 6.0e-3; // TODO to be specified
 
     template <typename T>
     T square(const T& v)
