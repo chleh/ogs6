@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# expect input from get-project-params.sh
+
+base="Documentation/ProjectFile"
+
+while read -r fn lno content; do
+    [ "$content" = "${content#//!}" ] && continue
+    tag_name="$(echo "$content" | sed -n -e 'sX^//! \\ogs_project_file_parameter{\([a-z_0-9]\+\)}$X\1Xp')"
+    [ -z "$tag_name" ] && continue
+    tag_name="${tag_name//__/\/}"
+    echo "$base/$tag_name"
+done \
+| sort -r \
+| while read path; do
+    mkdir -p "`dirname "$path"`"
+
+    if [ -d "$path" ]; then
+        bn="`basename "$path"`"
+        if ! [ -f "$path/_$bn.md" ]; then
+            echo "creating $path/_$bn.md"
+            echo '\todo document' >"$path/_$bn.md"
+        fi
+    elif ! [ -f "$path.md" ]; then
+        echo "creating $path.md"
+        echo '\todo document' >"$path.md"
+    fi
+done
