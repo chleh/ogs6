@@ -19,7 +19,7 @@ if not os.path.isdir(docauxdir):
 excluded = set(("MathLib/LinAlg/LinearSolverOptions.cpp", ))
 
 # capture #1 is the parameter path
-comment = re.compile(r"^//! \\ogs_project_file_parameter\{([a-z_0-9]+)\}$")
+comment = re.compile(r"^//! \\ogs_project_file_parameter\{([A-Za-z_0-9]+)\}$")
 
 # capture #4 is the parameter name
 getter = re.compile(r'^(get|check|ignore|peek)Conf(Param|Attribute|Subtree)(List|Optional)?'

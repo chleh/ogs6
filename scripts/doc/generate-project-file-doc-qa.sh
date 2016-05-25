@@ -14,6 +14,8 @@ datadir="$3"
 doxdir="$builddir/DocAux/dox"
 toolsdir="$srcdir/scripts/doc"
 
+mkdir -p "$doxdir"
+
 qafile="$doxdir/project-file-doc-qa.dox"
 
 cat <<"EOF" >"$qafile"
@@ -23,7 +25,7 @@ This is the QA page
 
 EOF
 
-"$toolsdir/get-project-params.sh" "$srcdir" "$doxdir" >>"$qafile"
+"$toolsdir/get-project-params.sh" "$srcdir" "$doxdir/ProjectFile" >>"$qafile"
 
 cat <<EOF >>"$qafile"
 
