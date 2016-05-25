@@ -3,7 +3,7 @@ function(documentationProjectFilePutIntoPlace p)
     get_filename_component(dir_name ${relative_path} DIRECTORY)
 
     get_filename_component(otagname ${relative_path} NAME_WE)
-    if (otagname MATCHES ^__)
+    if (otagname MATCHES ^[ic]_)
         # if the file name starts with an underscore, then this files is
         # the "table of contents of the current directory
         
@@ -21,14 +21,19 @@ function(documentationProjectFilePutIntoPlace p)
             # if the file name starts with an underscore, then this
             # is the "table of contents" file already processed outside
             # of this loop
-            if (NOT rel_pf MATCHES ^__)
+            if (NOT rel_pf MATCHES ^[ic]_)
                 if(IS_DIRECTORY ${pf})
                     set(pf_tagname ${rel_pf})
                 else()
-                    string(SUBSTRING ${rel_pf} 2 -1 pf_tagname)
+                    if (NOT "${rel_pf}" MATCHES ^._)
+                        message("==== rel_pf: ${rel_pf}")
+                        continue()
+                    endif()
+
+                    string(SUBSTRING "${rel_pf}" 2 -1 pf_tagname)
                 endif()
 
-                if ("${dir_name}" STREQUAL "") # toplevel dir must be trested slightly different
+                if ("${dir_name}" STREQUAL "") # toplevel dir must be treated slightly different
                     set(pf_tagpath "${pf_tagname}")
                 else()
                     set(pf_tagpath "${dir_name}/${pf_tagname}")
@@ -51,7 +56,7 @@ function(documentationProjectFilePutIntoPlace p)
     if (dir_name STREQUAL "") # toplevel dir must be treated slightly different
         set(tagpath "${tagname}")
     else()
-        if (otagname MATCHES ^__) # treat "table of contents" file special
+        if (otagname MATCHES ^[ic]_) # treat "table of contents" file special
             string(REPLACE "/" "__" tagpath "${dir_name}")
         else()
             string(REPLACE "/" "__" tagpath "${dir_name}/${tagname}")
@@ -59,8 +64,10 @@ function(documentationProjectFilePutIntoPlace p)
     endif()
     message("  child param  ${tagpath}")
 
-    if (otagname MATCHES ^__ AND dir_name STREQUAL "")
+    if (otagname MATCHES ^i_ AND dir_name STREQUAL "")
         set(pagetitle "Project File Parameters")
+    elseif(otagname MATCHES ^c_)
+        set(pagetitle "[case]&emsp;${tagname}")
     else()
         set(pagetitle "[tag]&emsp;${tagname}")
     endif()
@@ -86,7 +93,7 @@ if (IS_DIRECTORY ${DocumentationProjectFileBuildDir})
 	file(REMOVE_RECURSE ${DocumentationProjectFileBuildDir})
 endif()
 
-file(GLOB_RECURSE input_paths ${DocumentationProjectFileInputDir}/__*)
+file(GLOB_RECURSE input_paths ${DocumentationProjectFileInputDir}/c_* ${DocumentationProjectFileInputDir}/i_*)
 
 foreach(p ${input_paths})
 	message("directory index file ${p}")

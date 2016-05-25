@@ -78,7 +78,7 @@ for (dirpath, _, filenames) in os.walk(docdir):
     for f in filenames:
         if not f.endswith(".dox"): continue
 
-        if f.startswith("__"):
+        if f.startswith("i_") or f.startswith("c_"):
             tagpath = reldirpath
         elif f.startswith("t_"):
             tagpath = os.path.join(reldirpath, f[2:-len(".dox")])
