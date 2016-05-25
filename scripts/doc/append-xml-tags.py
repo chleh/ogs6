@@ -49,6 +49,7 @@ def print_tags(node, path, level, filepath):
         print_tags(child, tagpath, level + 1, filepath)
 
 
+print("data dir", datadir)
 for (dirpath, _, filenames) in os.walk(datadir):
     for f in filenames:
         if not f.endswith(extension): continue
@@ -86,7 +87,9 @@ for (dirpath, _, filenames) in os.walk(docdir):
             tagpath = os.path.join(reldirpath, f[2:-len(".dox")])
             istag = False
 
+        # TODO make work for IC etc, too
         tagpath = tagpath.replace(os.sep, ".")
+        tagpath = ".".join(tagpath.split(".")[1:])
 
         path = os.path.join(dirpath, f)
         with open(path, "a") as fh:
@@ -104,4 +107,3 @@ for (dirpath, _, filenames) in os.walk(docdir):
                 pass
 
             fh.write("\n*/\n")
-

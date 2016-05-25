@@ -59,7 +59,7 @@ if(DOXYGEN_FOUND)
 
         # TODO also check python
         if (doc_use_external_tools)
-            set(data_dir "${PROJECT_BINARY_DIR}/Tests/Data")
+            set(data_dir "${PROJECT_SOURCE_DIR}/Tests/Data")
             add_custom_target(internal_pre_doc2
                     ${BASH_TOOL_PATH}
                     "${PROJECT_SOURCE_DIR}/scripts/doc/generate-project-file-doc-qa.sh"
