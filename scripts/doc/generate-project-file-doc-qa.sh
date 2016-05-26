@@ -23,8 +23,8 @@ check_quality_script="$toolsdir/check-project-params.py"
 mkdir -p "$doxdir"
 
 # gather information about documented parameters
-"$toolsdir/get-project-params.sh" "$srcdir" >"$param_cache"
-cat "$param_cache" | "$toolsdir/normalize-param-cache.py" >"${param_cache}-normalized"
+"$toolsdir/get-project-params.sh" "$srcdir" \
+    | "$toolsdir/normalize-param-cache.py" >"$param_cache"
 
 # write QA information
 cat <<"EOF" >"$qafile"

@@ -40,9 +40,9 @@ for inline in sys.stdin:
             write_out("UNNEEDED", oldpath, oldlineno, oldline)
         state = "comment"
 
-        tag_path_comment = m.group(1)
+        tag_path_comment = m.group(1).replace("__", ".")
         debug(" {:>5}  //! {}".format(lineno, tag_path_comment))
-        tag_name_comment = tag_path_comment.split("__")[-1]
+        tag_name_comment = tag_path_comment.split(".")[-1]
 
         continue
 
@@ -53,23 +53,23 @@ for inline in sys.stdin:
         method = m.group(1) + "Conf" + m.group(2) + (m.group(3) or "")
 
         if state != "comment" or oldpath != path:
-            write_out("NODOC", "NONE", path, lineno, param, paramtype, method)
+            write_out("NODOC", path, lineno, "NONE", param, paramtype, method)
         else:
             debug(" {:>5}  {} {} ".format(lineno, param, paramtype))
 
             if param != tag_name_comment:
                 debug("error: parameter name from comment and code do not match: "
                         + tag_name_comment + " vs. " + param)
-                write_out("NODOC", tag_path_comment, path, lineno, param, paramtype, method)
+                write_out("NODOC", path, lineno, tag_path_comment, param, paramtype, method)
             elif lineno != oldlineno+1:
                 debug("error: the associated comment is not on the line preceding this one."
                         + " line numbers {} vs. {}".format(oldlineno, lineno))
-                write_out("NODOC", tag_path_comment, path, lineno, param, paramtype, method)
+                write_out("NODOC", path, lineno, tag_path_comment, param, paramtype, method)
             else:
-                write_out("OK", tag_path_comment, path, lineno, param, paramtype, method)
+                write_out("OK", path, lineno, tag_path_comment, param, paramtype, method)
 
         state = "getter"
         continue
 
-    write_out("WRONGIN", inline.strip())
+    write_out("WRONGIN", path, lineno, line.strip())
     state = "getter" # reset state in order to avoid warnings
