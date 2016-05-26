@@ -12,6 +12,7 @@ def write_out(*args):
 
 # capture #1 is the parameter path
 comment = re.compile(r"^//! \\ogs_file_(param|attr)\{([A-Za-z_0-9]+)\}( \\todo .*)?$")
+comment_special = re.compile(r"^//! \\ogs_file_special$")
 
 # capture #5 is the parameter name
 getter = re.compile(r'^(get|check|ignore|peek)Conf(Param|Attribute|Subtree)(List|Optional|All)?'
@@ -48,6 +49,15 @@ for inline in sys.stdin:
         tag_path_comment = m.group(2).replace("__", ".")
         debug(" {:>5}  //! {}".format(lineno, tag_path_comment))
         tag_name_comment = tag_path_comment.split(".")[-1]
+
+        continue
+
+    m = comment_special.fullmatch(line)
+    if m:
+        if state != "getter":
+            write_out("UNNEEDED", oldpath, oldlineno, oldline)
+        state = "comment"
+        param_or_attr_comment = "special"
 
         continue
 
