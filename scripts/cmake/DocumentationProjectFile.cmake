@@ -41,7 +41,7 @@ function(documentationProjectFilePutIntoPlace p)
                 endif()
                 message("  t.o.c. entry ${pf_tagpath}")
 
-                set(postfix "${postfix} - \\subpage ogs_project_file_parameter__${pf_tagpath}\n")
+                set(postfix "${postfix} - \\subpage ogs_file_param__${pf_tagpath}\n")
 
                 if (NOT IS_DIRECTORY "${pf}")
                     documentationProjectFilePutIntoPlace("${pf}")
@@ -74,7 +74,7 @@ function(documentationProjectFilePutIntoPlace p)
 
     # read, augment, write file content
     file(READ ${p} content)
-    set(content "/*! \\page ogs_project_file_parameter__${tagpath} ${pagetitle}\n${content}\n\n${postfix}\n")
+    set(content "/*! \\page ogs_file_param__${tagpath} ${pagetitle}\n${content}\n\n${postfix}\n")
     if (NOT doc_use_external_tools)
         set(ending "\n*/\n")
     else()

@@ -18,8 +18,8 @@ def add_doc_stubs(fn, lnos):
     for lno in lnos:
         cmd.append("-e")
         cmd.append(str(lno) + r""" i \
-//! \\ogs_project_file_parameter{todo_document_parameter} \\todo project_file_docu
-//! \\ogs_project_file_parameter{todo_document_parameter} \\todo project_file_docu
+//! \\ogs_file_param{todo_document_parameter} \\todo project_file_docu
+//! \\ogs_file_param{todo_document_parameter} \\todo project_file_docu
 """)
     cmd.append(fn)
     subprocess.run(cmd)

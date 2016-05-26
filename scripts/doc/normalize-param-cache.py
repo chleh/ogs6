@@ -11,7 +11,7 @@ def write_out(*args):
     print("@@@".join([str(a) for a in args]))
 
 # capture #1 is the parameter path
-comment = re.compile(r"^//! \\ogs_project_file_parameter\{([A-Za-z_0-9]+)\}( \\todo .*)?$")
+comment = re.compile(r"^//! \\ogs_file_param\{([A-Za-z_0-9]+)\}( \\todo .*)?$")
 
 # capture #5 is the parameter name
 getter = re.compile(r'^(get|check|ignore|peek)Conf(Param|Attribute|Subtree)(List|Optional|All)?'

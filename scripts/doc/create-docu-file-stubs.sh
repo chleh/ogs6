@@ -6,8 +6,10 @@ base="Documentation/ProjectFile"
 
 while IFS=":" read -r fn lno content; do
     [ "$content" = "${content#*//!}" ] && continue
-    tag_name="$(echo "$content" | sed -n -e 'sX^\s*//! \\ogs_project_file_parameter{\([A-Za-z_0-9]\+\)}$X\1Xp')"
+    tag_name="$(echo "$content" | sed -n -e 'sX^\s*//! \\ogs_file_\(param\|attr\){\([A-Za-z_0-9]\+\)}$X\1 \2Xp')"
     [ -z "$tag_name" ] && continue
+    param_or_attr="${tag_name%% *}"
+    tag_name="${tag_name#* }"
     tag_name="${tag_name//__/\/}"
     echo "$base/$tag_name"
 done \
@@ -37,9 +39,12 @@ done \
             echo "creating $path/c_$bn.md"
             echo '\todo document' >"$path/c_$bn.md"
         fi
-    elif [ ! -f "$dn/t_$bn.md" ] && [ ! -f "$dn/a_$bn.md" ]; then
+    elif [ "$param_or_attr" == param ] && [ ! -f "$dn/t_$bn.md" ]; then
         echo "creating $dn/t_$bn.md"
         echo '\todo document' >"$dn/t_$bn.md"
+    elif [ "$param_or_attr" == attr ] && [ ! -f "$dn/a_$bn.md" ]; then
+        echo "creating $dn/a_$bn.md"
+        echo '\todo document' >"$dn/a_$bn.md"
     # else
     #     echo "OK $path"
     fi
