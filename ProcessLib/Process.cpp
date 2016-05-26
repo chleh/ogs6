@@ -16,7 +16,7 @@ ProcessVariable& findProcessVariable(
     BaseLib::ConfigTree const& pv_config, std::string const& tag)
 {
     // Find process variable name in process config.
-//! \ogs_file_param{todo_document_parameter} \todo project_file_docu
+    //! \ogs_file_special
     std::string const name = pv_config.getConfParam<std::string>(tag);
 
         // Find corresponding variable by name.
