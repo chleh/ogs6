@@ -12,14 +12,15 @@ github_data_url = "https://github.com/ufz/ogs-data/tree/master"
 
 parser = argparse.ArgumentParser(description="Print XML tags")
 
-parser.add_argument("ext",     help="Extension of files to consider")
-parser.add_argument("datadir", help="data directory")
-parser.add_argument("docdir",  help="doc output directory")
+parser.add_argument("ext",       help="Extension of files to consider")
+parser.add_argument("datadir",   help="data directory")
+parser.add_argument("docauxdir", help="directory of auxiliary doc files")
 
 args = parser.parse_args()
 extension = '.' + args.ext
-datadir = os.path.abspath(args.datadir)
-docdir  = os.path.abspath(args.docdir)
+datadir   = os.path.abspath(args.datadir)
+docauxdir = os.path.abspath(args.docauxdir)
+docdir    = os.path.join(docauxdir, "dox", "ProjectFile")
 
 # maps tags to the set of xml files they appear in
 dict_tag_files = dict()
