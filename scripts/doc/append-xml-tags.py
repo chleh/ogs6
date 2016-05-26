@@ -8,6 +8,7 @@ import os
 import xml.etree.cElementTree as ET
 import argparse
 
+github_src_url  = "https://github.com/ufz/ogs/tree/master"
 github_data_url = "https://github.com/ufz/ogs-data/tree/master"
 
 parser = argparse.ArgumentParser(description="Print XML tags")
@@ -24,6 +25,9 @@ docdir    = os.path.join(docauxdir, "dox", "ProjectFile")
 
 # maps tags to the set of xml files they appear in
 dict_tag_files = dict()
+
+# maps tags to additional parameter info obtained prior to this script
+dict_tag_info = dict()
 
 def dict_of_set_append(dict_, key, value):
     if key in dict_:
@@ -49,8 +53,7 @@ def print_tags(node, path, level, filepath):
     for child in node:
         print_tags(child, tagpath, level + 1, filepath)
 
-
-print("data dir", datadir)
+# gather info from xml files
 for (dirpath, _, filenames) in os.walk(datadir):
     for f in filenames:
         if not f.endswith(extension): continue
@@ -71,7 +74,17 @@ if False:
         for f in sorted(files):
             print("   ", f)
 
+# read parameter cache
+with open(os.path.join(docauxdir, "documented-parameters-cache.txt")) as fh:
+    for line in fh:
+        line = line.strip().split("@@@")
+        if line[0] == "OK":
+            tagpath = line[3]
+            if tagpath in dict_tag_info:
+                print("ERROR: duplicate info for tag", tagpath)
+            dict_tag_info[tagpath] = line
 
+# traverse dox file hierarchy
 for (dirpath, _, filenames) in os.walk(docdir):
     reldirpath = dirpath[len(docdir)+1:]
     istag = True
@@ -90,20 +103,39 @@ for (dirpath, _, filenames) in os.walk(docdir):
 
         # TODO make work for IC etc, too
         tagpath = tagpath.replace(os.sep, ".")
-        tagpath = ".".join(tagpath.split(".")[1:])
 
         path = os.path.join(dirpath, f)
         with open(path, "a") as fh:
+            tagpathtail = ".".join(tagpath.split(".")[1:])
             if tagpath:
-                fh.write("\n DBUG tagpath {}".format(tagpath))
-                fh.write("\n# Used in the following test data files\n\n")
+                fh.write("\n\n# Additional info\n\n")
+                if tagpath in dict_tag_info:
+                    info = dict_tag_info[tagpath]
+
+                    method = info[6]
+                    if method.endswith("Optional"):
+                        fh.write("- This is an optional parameter.\n")
+                    else:
+                        fh.write("- This is a required parameter.\n")
+
+                    datatype = info[5]
+                    if datatype: fh.write("- Data type: <tt>{}</tt>\n".format(datatype))
+
+                    path = info[1]; line = info[2]
+                    fh.write("- Read at {0} line {1} &emsp; [&rarr; ufz/ogs/master]({2}/{0}#L{1})\n"
+                            .format(path, line, github_src_url))
+                else:
+                    fh.write("No additional info.\n")
+
+            if tagpathtail:
+                fh.write("\n\n# Used in the following test data files\n\n")
                 try:
-                    datafiles = dict_tag_files[(istag, tagpath)]
+                    datafiles = dict_tag_files[(istag, tagpathtail)]
 
                     for df in sorted(datafiles):
                         fh.write("- {0}&emsp;[&rarr; ogs-data/master]({1}/{0})\n".format(df, github_data_url))
                 except KeyError:
-                    fh.write("Used in no data files.\n")
+                    fh.write("Used in no end-to-end test cases.\n")
             else:
                 # no additional output for the main doc page
                 pass
