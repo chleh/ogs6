@@ -34,6 +34,7 @@ ProcessVariable::ProcessVariable(BaseLib::ConfigTree const& config,
     //! \ogs_file_param{prj__process_variables__process_variable__initial_condition}
     if (auto ic_config = config.getConfSubtreeOptional("initial_condition"))
     {
+        //! \ogs_file_param{initial_condition__type}
         auto const type = ic_config->peekConfParam<std::string>("type");
         if (type == "Uniform")
         {
@@ -77,6 +78,7 @@ ProcessVariable::ProcessVariable(BaseLib::ConfigTree const& config,
                 GeoLib::convertGeoTypeToString(geometry->getGeoType()).c_str());
 
             // Construct type dependent boundary condition
+            //! \ogs_file_param{boundary_condition__type}
             auto const type = bc_config.peekConfParam<std::string>("type");
 
             if (type == "UniformDirichlet")

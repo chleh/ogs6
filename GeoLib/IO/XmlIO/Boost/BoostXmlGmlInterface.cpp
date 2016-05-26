@@ -190,14 +190,14 @@ void BoostXmlGmlInterface::readSurfaces(
     //! \ogs_file_param{gml__surfaces__surface}
     for (auto const& sfc : surfacesRoot.getConfSubtreeList("surface"))
     {
-        //! \ogs_file_param{gml__surfaces__surface__id}
+        //! \ogs_file_attr{gml__surfaces__surface__id}
         auto const id = sfc.getConfAttribute<std::size_t>("id");
         // The id is not used but must be present in the GML file.
         // That's why sfc.ignore...() cannot be used.
         (void) id;
         surfaces.push_back(new GeoLib::Surface(points));
 
-        //! \ogs_file_param{gml__surfaces__surface__name}
+        //! \ogs_file_attr{gml__surfaces__surface__name}
         if (auto const s_name = sfc.getConfAttributeOptional<std::string>("name"))
         {
             if (s_name->empty()) {

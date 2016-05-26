@@ -157,6 +157,7 @@ void ProjectData::buildProcesses()
 {
     for (auto const& pc : _process_configs)
     {
+        //! \ogs_file_param{process__type}
         auto const type = pc.peekConfParam<std::string>("type");
 
         //! \ogs_file_param{process__nonlinear_solver}
@@ -303,6 +304,7 @@ void ProjectData::parseProcesses(BaseLib::ConfigTree const& processes_config)
     //! \ogs_file_param{prj__processes__process}
     for (auto process_config : processes_config.getConfSubtreeList("process")) {
         // process type must be specified.
+        //! \ogs_file_param{process__type}
         process_config.peekConfParam<std::string>("type");
         process_config.ignoreConfParam("name");
         _process_configs.push_back(std::move(process_config));
