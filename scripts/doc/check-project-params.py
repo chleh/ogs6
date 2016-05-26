@@ -4,6 +4,8 @@ import sys
 import re
 import os.path
 
+github_src_url = "https://github.com/ufz/ogs/tree/master"
+
 def debug(msg):
     sys.stderr.write(msg+"\n")
 
@@ -74,9 +76,10 @@ for inline in sys.stdin:
     if m:
         param = m.group(5)
         paramtype = m.group(4)[1:-1] if m.group(4) else ""
+        method = m.group(1) + "Conf" + m.group(2) + (m.group(3) or "")
 
         if state != "comment" or oldpath != path:
-            undocumented.append((path, lineno, param, paramtype))
+            undocumented.append((path, lineno, param, paramtype, method))
         else:
             debug(" {:>5}  {} {} ".format(lineno, param, paramtype))
 
@@ -98,10 +101,11 @@ for inline in sys.stdin:
 if (undocumented):
     print()
     print("# Undocumented parameters")
-    print("| File | Line | Parameter | Type |")
-    print("| ---- | ---- | --------- | ---- |")
+    print("| File | Line | Parameter | Type | Method | Link |")
+    print("| ---- | ---- | --------- | ---- | ------ | ---- |")
     for u in sorted(undocumented):
-        print("| {} | {} | {} | <tt>{}</tt> |".format(*u))
+        print(("| {0} | {1} | {2} | <tt>{3}</tt> | <tt>{4}</tt> "
+                + "| [&rarr; ufz/ogs/master]({5}/{0}#L{1})").format(*u, github_src_url))
 
 if (unneeded_comments):
     print()
