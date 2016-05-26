@@ -43,10 +43,10 @@ public:
         : _geometry(geometry)
     {
         DBUG("Constructing UniformDirichletBoundaryCondition from config.");
-        //! \ogs_project_file_parameter{boundary_condition__type}
+        //! \ogs_file_param{boundary_condition__type}
         config.checkConfParam("type", "UniformDirichlet");
 
-        //! \ogs_project_file_parameter{boundary_condition__UniformDirichlet__value}
+        //! \ogs_file_param{boundary_condition__UniformDirichlet__value}
         _value = config.getConfParam<double>("value");
         DBUG("Using value %g", _value);
     }

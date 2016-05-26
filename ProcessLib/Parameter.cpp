@@ -19,9 +19,9 @@ namespace ProcessLib
 std::unique_ptr<ParameterBase> createConstParameter(
     BaseLib::ConfigTree const& config)
 {
-    //! \ogs_project_file_parameter{parameter__type}
+    //! \ogs_file_param{parameter__type}
     config.checkConfParam("type", "Constant");
-    //! \ogs_project_file_parameter{parameter__Constant__value}
+    //! \ogs_file_param{parameter__Constant__value}
     auto value = config.getConfParam<double>("value");
     DBUG("Using value %g", value);
 
@@ -31,9 +31,9 @@ std::unique_ptr<ParameterBase> createConstParameter(
 std::unique_ptr<ParameterBase> createMeshPropertyParameter(
     BaseLib::ConfigTree const& config, MeshLib::Mesh const& mesh)
 {
-    //! \ogs_project_file_parameter{parameter__type}
+    //! \ogs_file_param{parameter__type}
     config.checkConfParam("type", "MeshProperty");
-    //! \ogs_project_file_parameter{parameter__MeshProperty__field_name}
+    //! \ogs_file_param{parameter__MeshProperty__field_name}
     auto field_name = config.getConfParam<std::string>("field_name");
     DBUG("Using field_name %s", field_name.c_str());
 

@@ -57,7 +57,7 @@ bool BoostXmlGmlInterface::readFile(const std::string &fname)
     std::unique_ptr<MapNameId> ply_names{new MapNameId};
     std::unique_ptr<MapNameId> sfc_names{new MapNameId};
 
-    //! \ogs_project_file_parameter{gml__name}
+    //! \ogs_file_param{gml__name}
     auto geo_name = doc->getConfParam<std::string>("name");
     if (geo_name.empty())
     {
@@ -65,14 +65,14 @@ bool BoostXmlGmlInterface::readFile(const std::string &fname)
         std::abort();
     }
 
-    //! \ogs_project_file_parameter{gml__points}
+    //! \ogs_file_param{gml__points}
     for (auto st : doc->getConfSubtreeList("points"))
     {
         readPoints(st, *points, *pnt_names);
         _geo_objects.addPointVec(std::move(points), geo_name, pnt_names.release());
     }
 
-    //! \ogs_project_file_parameter{gml__polylines}
+    //! \ogs_file_param{gml__polylines}
     for (auto st : doc->getConfSubtreeList("polylines"))
     {
         readPolylines(st,
@@ -82,7 +82,7 @@ bool BoostXmlGmlInterface::readFile(const std::string &fname)
                       *ply_names);
     }
 
-    //! \ogs_project_file_parameter{gml__surfaces}
+    //! \ogs_file_param{gml__surfaces}
     for (auto st : doc->getConfSubtreeList("surfaces"))
     {
         readSurfaces(st,
@@ -107,16 +107,16 @@ void BoostXmlGmlInterface::readPoints(BaseLib::ConfigTree const& pointsRoot,
                                       std::vector<GeoLib::Point*>& points,
                                       std::map<std::string, std::size_t>& pnt_names )
 {
-    //! \ogs_project_file_parameter{gml__points__point}
+    //! \ogs_file_param{gml__points__point}
     for (auto const pt : pointsRoot.getConfParamList("point"))
     {
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+        //! \ogs_file_attr{gml__points__point__id}
         auto const p_id = pt.getConfAttribute<std::size_t>("id");
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+        //! \ogs_file_attr{gml__points__point__x}
         auto const p_x  = pt.getConfAttribute<double>("x");
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+        //! \ogs_file_attr{gml__points__point__y}
         auto const p_y  = pt.getConfAttribute<double>("y");
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+        //! \ogs_file_attr{gml__points__point__z}
         auto const p_z  = pt.getConfAttribute<double>("z");
 
         auto const p_size = points.size();
@@ -124,7 +124,7 @@ void BoostXmlGmlInterface::readPoints(BaseLib::ConfigTree const& pointsRoot,
             "The point id is not unique.");
         points.push_back(new GeoLib::Point(p_x, p_y, p_z, p_id));
 
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+        //! \ogs_file_attr{gml__points__point__name}
         if (auto const p_name = pt.getConfAttributeOptional<std::string>("name"))
         {
             if (p_name->empty()) {
@@ -145,10 +145,10 @@ void BoostXmlGmlInterface::readPolylines(
     std::vector<std::size_t> const& pnt_id_map,
     std::map<std::string, std::size_t>& ply_names)
 {
-    //! \ogs_project_file_parameter{gml__polylines__polyline}
+    //! \ogs_file_param{gml__polylines__polyline}
     for (auto const pl : polylinesRoot.getConfSubtreeList("polyline"))
     {
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+        //! \ogs_file_attr{gml__polylines__polyline__id}
         auto const id = pl.getConfAttribute<std::size_t>("id");
         // The id is not used but must be present in the GML file.
         // That's why pl.ignore...() cannot be used.
@@ -156,7 +156,7 @@ void BoostXmlGmlInterface::readPolylines(
 
         polylines.push_back(new GeoLib::Polyline(points));
 
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+        //! \ogs_file_attr{gml__polylines__polyline__name}
         if (auto const p_name = pl.getConfAttributeOptional<std::string>("name"))
         {
             if (p_name->empty()) {
@@ -167,7 +167,7 @@ void BoostXmlGmlInterface::readPolylines(
             BaseLib::insertIfKeyUniqueElseError(ply_names, *p_name, polylines.size()-1,
                 "The polyline name is not unique.");
 
-            //! \ogs_project_file_parameter{gml__polylines__polyline__pnt}
+            //! \ogs_file_param{gml__polylines__polyline__pnt}
             for (auto const pt : pl.getConfParamList<std::size_t>("pnt")) {
                 polylines.back()->addPoint(pnt_id_map[_idx_map[pt]]);
             }
@@ -187,17 +187,17 @@ void BoostXmlGmlInterface::readSurfaces(
     const std::vector<std::size_t>& pnt_id_map,
     std::map<std::string, std::size_t>& sfc_names)
 {
-    //! \ogs_project_file_parameter{gml__surfaces__surface}
+    //! \ogs_file_param{gml__surfaces__surface}
     for (auto const& sfc : surfacesRoot.getConfSubtreeList("surface"))
     {
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+        //! \ogs_file_param{gml__surfaces__surface__id}
         auto const id = sfc.getConfAttribute<std::size_t>("id");
         // The id is not used but must be present in the GML file.
         // That's why sfc.ignore...() cannot be used.
         (void) id;
         surfaces.push_back(new GeoLib::Surface(points));
 
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+        //! \ogs_file_param{gml__surfaces__surface__name}
         if (auto const s_name = sfc.getConfAttributeOptional<std::string>("name"))
         {
             if (s_name->empty()) {
@@ -208,13 +208,13 @@ void BoostXmlGmlInterface::readSurfaces(
             BaseLib::insertIfKeyUniqueElseError(sfc_names, *s_name, surfaces.size()-1,
                 "The surface name is not unique.");
 
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+            //! \ogs_file_param{gml__surfaces__surface__element}
             for (auto const& element : sfc.getConfParamList("element")) {
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+                //! \ogs_file_attr{gml__surfaces__surface__element__p1}
                 auto const p1_attr = element.getConfAttribute<std::size_t>("p1");
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+                //! \ogs_file_attr{gml__surfaces__surface__element__p2}
                 auto const p2_attr = element.getConfAttribute<std::size_t>("p2");
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+                //! \ogs_file_attr{gml__surfaces__surface__element__p3}
                 auto const p3_attr = element.getConfAttribute<std::size_t>("p3");
 
                 auto const p1 = pnt_id_map[_idx_map[p1_attr]];

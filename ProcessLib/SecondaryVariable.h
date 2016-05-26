@@ -115,7 +115,7 @@ public:
 
         // read which variables are defined in the config
         for (auto const& tag_name : tag_names) {
-//! \ogs_project_file_parameter{todo_document_parameter} \todo project_file_docu
+//! \ogs_file_param{todo_document_parameter} \todo project_file_docu
             if (auto var_name = config->getConfParamOptional<std::string>(tag_name))
             {
                 // TODO check primary vars, too
