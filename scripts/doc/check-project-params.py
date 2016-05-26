@@ -21,7 +21,7 @@ if not os.path.isdir(docauxdir):
 excluded = set(("MathLib/LinAlg/LinearSolverOptions.cpp", ))
 
 # capture #1 is the parameter path
-comment = re.compile(r"^//! \\ogs_project_file_parameter\{([A-Za-z_0-9]+)\}$")
+comment = re.compile(r"^//! \\ogs_project_file_parameter\{([A-Za-z_0-9]+)\}( \\todo .*)?$")
 
 # capture #4 is the parameter name
 getter = re.compile(r'^(get|check|ignore|peek)Conf(Param|Attribute|Subtree)(List|Optional)?'
@@ -84,13 +84,13 @@ for inline in sys.stdin:
             debug(" {:>5}  {} {} ".format(lineno, param, paramtype))
 
             if param != tag_name_comment:
-                debug("error: parameter name from comment and code do not match:",
-                        tag_name_comment, "vs.", param)
-                undocumented.append((path, lineno, param, paramtype))
+                debug("error: parameter name from comment and code do not match: "
+                        + tag_name_comment + " vs. " + param)
+                undocumented.append((path, lineno, param, paramtype, method))
             elif lineno != oldlineno+1:
                 debug("error: the associated comment is not on the line preceding this one."
                         + " line numbers {} vs. {}".format(oldlineno, lineno))
-                undocumented.append((path, lineno, param, paramtype))
+                undocumented.append((path, lineno, param, paramtype, method))
 
         state = "getter"
         continue
@@ -105,15 +105,16 @@ if (undocumented):
     print("| ---- | ---- | --------- | ---- | ------ | ---- |")
     for u in sorted(undocumented):
         print(("| {0} | {1} | {2} | <tt>{3}</tt> | <tt>{4}</tt> "
-                + "| [&rarr; ufz/ogs/master]({5}/{0}#L{1})").format(*u, github_src_url))
+            + "| [&rarr; ufz/ogs/master]({5}/{0}#L{1})").format(*u, github_src_url))
 
 if (unneeded_comments):
     print()
     print("# Comments not documenting anything")
-    print("| File | Line | Comment |")
-    print("| ---- | ---- | ------- |")
+    print("| File | Line | Comment | Link |")
+    print("| ---- | ---- | ------- | ---- |")
     for u in sorted(unneeded_comments):
-        print("| {} | {} | {} |".format(*u))
+        print(("| {0} | {1} | {2} "
+            + "| [&rarr; ufz/ogs/master]({3}/{0}#L{1}) |").format(*u, github_src_url))
 
 if (wrong_input):
     print()
@@ -124,11 +125,11 @@ if (wrong_input):
 if (no_doc_page):
     print()
     print("# No documentation page")
-    print("| Parameter | File | Line |")
-    print("| --------- | ---- | ---- |")
+    print("| Parameter | File | Line | Link |")
+    print("| --------- | ---- | ---- | ---- |")
     for n in sorted(no_doc_page):
-        print("| {} | {} | {} |".format(*n))
-
+        print(("| {0} | {1} | {2} "
+            + "| [&rarr; ufz/ogs/master]({3}/{1}#L{2})").format(*n, github_src_url))
 
 # exit with error status if something was not documented.
 if (not not undocumented) or (not not unneeded_comments) \
