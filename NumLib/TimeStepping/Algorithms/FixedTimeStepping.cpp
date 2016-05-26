@@ -60,7 +60,7 @@ FixedTimeStepping::newInstance(BaseLib::ConfigTree const& config)
     {
         //! \ogs_file_param{prj__time_stepping__FixedTimeStepping__timesteps__pair__repeat}
         auto const repeat = pair.getConfParam<std::size_t>("repeat");
-        //! \ogs_file_param{prj__time_stepping__FixedTimeStepping__timesteps__pair__each_steps}
+        //! \ogs_file_param{prj__time_stepping__FixedTimeStepping__timesteps__pair__delta_t}
         delta_t           = pair.getConfParam<double>("delta_t");
 
         if (repeat == 0) {
