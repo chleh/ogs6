@@ -24,7 +24,11 @@ docauxdir = os.path.abspath(args.docauxdir)
 docdir    = os.path.join(docauxdir, "dox", "ProjectFile")
 
 tag_path_expansion_table = {
-    "ic": "process_variables.process_variable.initial_condition",
+    "initial_condition":  "process_variables.process_variable.initial_condition",
+    "boundary_condition": "process_variables.process_variable.boundary_conditions.boundary_condition",
+    "linear_solver":      "linear_solvers.linear_solver",
+    "process":            "processes.process",
+    "parameter":          "parameters.parameter",
     "prj": "",
 }
 
