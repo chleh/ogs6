@@ -94,6 +94,7 @@ for (dirpath, _, filenames) in os.walk(docdir):
         path = os.path.join(dirpath, f)
         with open(path, "a") as fh:
             if tagpath:
+                fh.write("\n DBUG tagpath {}".format(tagpath))
                 fh.write("\n# Used in the following test data files\n\n")
                 try:
                     datafiles = dict_tag_files[(istag, tagpath)]

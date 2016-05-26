@@ -13,6 +13,7 @@ datadir="$3"
 
 doxdir="$builddir/DocAux/dox"
 toolsdir="$srcdir/scripts/doc"
+check_quality_script="`dirname "$0"`/check-project-params.py"
 
 mkdir -p "$doxdir"
 
@@ -25,7 +26,8 @@ This is the QA page
 
 EOF
 
-"$toolsdir/get-project-params.sh" "$srcdir" "$doxdir/ProjectFile" >>"$qafile"
+"$toolsdir/get-project-params.sh" "$srcdir" \
+    | "$check_quality_script" "$doxdir/ProjectFile" >>"$qafile"
 
 cat <<EOF >>"$qafile"
 
