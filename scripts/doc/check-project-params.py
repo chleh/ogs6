@@ -34,6 +34,7 @@ for inline in sys.stdin:
         dirs = tag_path_comment.split(".")[:-1]
         p = os.path.join(docauxdir, *dirs, )
         if     (not os.path.isfile(os.path.join(p,                   "t_" + tag_name_comment + ".dox"))) \
+           and (not os.path.isfile(os.path.join(p,                   "a_" + tag_name_comment + ".dox"))) \
            and (not os.path.isfile(os.path.join(p, tag_name_comment, "i_" + tag_name_comment + ".dox"))) \
            and (not os.path.isfile(os.path.join(p, tag_name_comment, "c_" + tag_name_comment + ".dox"))) :
             no_doc_page.append((tag_path_comment, inline[1], inline[2]))
@@ -74,7 +75,7 @@ if (wrong_input):
     print("| ---- | ---: | ------- | ---- |")
     for w in sorted(wrong_input):
         print(("| {0} | {1} | {2} "
-            + "| [&rarr; ufz/ogs/master]({3}/{0}#L{1})").format(*w, github_src_url))
+            + "| [&rarr; ufz/ogs/master]({3}/{0}#L{1}) |").format(*w, github_src_url))
 
 if (no_doc_page):
     print()
@@ -83,7 +84,7 @@ if (no_doc_page):
     print("| --------- | ---- | ---: | ---- |")
     for n in sorted(no_doc_page):
         print(("| {0} | {1} | {2} "
-            + "| [&rarr; ufz/ogs/master]({3}/{1}#L{2})").format(*n, github_src_url))
+            + "| [&rarr; ufz/ogs/master]({3}/{1}#L{2}) |").format(*n, github_src_url))
 
 # exit with error status if something was not documented.
 if (not not undocumented) or (not not unneeded_comments) \

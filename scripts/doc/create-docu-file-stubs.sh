@@ -11,12 +11,13 @@ while IFS=":" read -r fn lno content; do
     param_or_attr="${tag_name%% *}"
     tag_name="${tag_name#* }"
     tag_name="${tag_name//__/\/}"
-    echo "$base/$tag_name"
+    echo "$param_or_attr $base/$tag_name"
 done \
 | sort -r \
-| while read path; do
+| while read param_or_attr path; do
     dn="`dirname "$path"`"
     bn="`basename "$path"`"
+    # echo "$param_or_attr $path"
 
     if [ ! -d "$dn" ]; then
         mkdir -p "$dn"
@@ -39,10 +40,10 @@ done \
             echo "creating $path/c_$bn.md"
             echo '\todo document' >"$path/c_$bn.md"
         fi
-    elif [ "$param_or_attr" == param ] && [ ! -f "$dn/t_$bn.md" ]; then
+    elif [ "$param_or_attr" = param ] && [ ! -f "$dn/t_$bn.md" ]; then
         echo "creating $dn/t_$bn.md"
         echo '\todo document' >"$dn/t_$bn.md"
-    elif [ "$param_or_attr" == attr ] && [ ! -f "$dn/a_$bn.md" ]; then
+    elif [ "$param_or_attr" = attr ] && [ ! -f "$dn/a_$bn.md" ]; then
         echo "creating $dn/a_$bn.md"
         echo '\todo document' >"$dn/a_$bn.md"
     # else

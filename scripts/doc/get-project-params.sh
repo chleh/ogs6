@@ -19,7 +19,7 @@ cat <<"EOF" \
     --exclude 'ConfigTree*.*' \
     -f - -r -n -o $color \
 | cut -c $((`expr length "$srcdir"` + 2))-
-^\s*//! \\ogs_file_param{[A-Za-z_0-9]\+}\( \\todo .*\)\?$
+^\s*//! \\ogs_file_\(param\|attr\){[A-Za-z_0-9]\+}\( \\todo .*\)\?$
 checkConfParam.*)
 getConfAttribute.*)
 getConfParam.*)

@@ -68,8 +68,14 @@ function(documentationProjectFilePutIntoPlace p)
         set(pagetitle "Project File Parameters")
     elseif(otagname MATCHES ^c_)
         set(pagetitle "[case]&emsp;${tagname}")
-    else()
+    elseif(otagname MATCHES ^t_ OR otagname MATCHES ^i_)
         set(pagetitle "[tag]&emsp;${tagname}")
+    elseif(otagname MATCHES ^a_)
+        set(pagetitle "[attr]&emsp;${tagname}")
+    else()
+        message(WARNING "Tag name ${otagname} does not match in any case."
+            " Maybe there is a file with a wrong name in the documentation"
+            " directory.")
     endif()
 
     # read, augment, write file content
