@@ -159,13 +159,13 @@ void ProjectData::buildProcesses()
     {
         auto const type = pc.peekConfParam<std::string>("type");
 
-        //! \ogs_project_file_parameter{prj__processes__process__nonlinear_solver}
+        //! \ogs_project_file_parameter{process__nonlinear_solver}
         auto const nl_slv_name = pc.getConfParam<std::string>("nonlinear_solver");
         auto& nl_slv = BaseLib::getOrError(_nonlinear_solvers, nl_slv_name,
             "A nonlinear solver with the given name has not been defined.");
 
         auto time_disc = NumLib::createTimeDiscretization<GlobalVector>(
-                //! \ogs_project_file_parameter{prj__processes__process__time_discretization}
+                //! \ogs_project_file_parameter{process__time_discretization}
                 pc.getConfSubtree("time_discretization")
             );
 
@@ -269,9 +269,9 @@ void ProjectData::parseParameters(BaseLib::ConfigTree const& parameters_config)
     //! \ogs_project_file_parameter{prj__parameters__parameter}
     for (auto parameter_config : parameters_config.getConfSubtreeList("parameter"))
     {
-        //! \ogs_project_file_parameter{prj__parameters__parameter__name}
+        //! \ogs_project_file_parameter{parameter__name}
         auto name = parameter_config.getConfParam<std::string>("name");
-        //! \ogs_project_file_parameter{prj__parameters__parameter__type}
+        //! \ogs_project_file_parameter{parameter__type}
         auto type = parameter_config.peekConfParam<std::string>("type");
 
         // Create parameter based on the provided type.

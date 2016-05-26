@@ -35,10 +35,14 @@ FixedTimeStepping::FixedTimeStepping(double t0, double tn, double dt)
 std::unique_ptr<ITimeStepAlgorithm>
 FixedTimeStepping::newInstance(BaseLib::ConfigTree const& config)
 {
+    //! \ogs_project_file_parameter{prj__time_stepping__type}
     config.checkConfParam("type", "FixedTimeStepping");
 
+    //! \ogs_project_file_parameter{prj__time_stepping__FixedTimeStepping__t_initial}
     auto const t_initial = config.getConfParam<double>("t_initial");
+    //! \ogs_project_file_parameter{prj__time_stepping__FixedTimeStepping__t_end}
     auto const t_end     = config.getConfParam<double>("t_end");
+    //! \ogs_project_file_parameter{prj__time_stepping__FixedTimeStepping__timesteps}
     auto const delta_ts  = config.getConfSubtree("timesteps");
 
     std::vector<double> timesteps;
@@ -46,6 +50,7 @@ FixedTimeStepping::newInstance(BaseLib::ConfigTree const& config)
     double delta_t = 0.0;
 
     // TODO: consider adding call "listNonEmpty" to config tree
+    //! \ogs_project_file_parameter{prj__time_stepping__FixedTimeStepping__timesteps__pair}
     auto const range = delta_ts.getConfSubtreeList("pair");
     if (range.begin() == range.end()) {
         ERR("no timesteps have been given");
@@ -53,7 +58,9 @@ FixedTimeStepping::newInstance(BaseLib::ConfigTree const& config)
     }
     for (auto const pair : range)
     {
+        //! \ogs_project_file_parameter{prj__time_stepping__FixedTimeStepping__timesteps__pair__repeat}
         auto const repeat = pair.getConfParam<std::size_t>("repeat");
+        //! \ogs_project_file_parameter{prj__time_stepping__FixedTimeStepping__timesteps__pair__each_steps}
         delta_t           = pair.getConfParam<double>("delta_t");
 
         if (repeat == 0) {
