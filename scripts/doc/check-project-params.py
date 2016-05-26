@@ -48,6 +48,11 @@ for inline in sys.stdin:
             undocumented.append(inline[1:])
     elif status == "UNNEEDED":
         unneeded.append(inline[1:])
+    elif status == "SPECIAL":
+        debug("SPECIAL: " + " ".join(inline[1:]))
+        # unneeded.append(inline[1:])
+    else:
+        debug("ERROR: unrecognized status {}".format(status))
 
 
 if (undocumented):

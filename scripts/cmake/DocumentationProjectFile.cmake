@@ -26,7 +26,7 @@ function(documentationProjectFilePutIntoPlace p)
                     set(pf_tagname ${rel_pf})
                 else()
                     if (NOT "${rel_pf}" MATCHES ^._)
-                        message("==== rel_pf: ${rel_pf}")
+                        message("==== rel_pf: ${rel_pf}") # TODO error?
                         continue()
                     endif()
 
@@ -41,7 +41,13 @@ function(documentationProjectFilePutIntoPlace p)
                 endif()
                 message("  t.o.c. entry ${pf_tagpath}")
 
-                set(postfix "${postfix} - \\subpage ogs_file_param__${pf_tagpath}\n")
+                if (rel_pf MATCHES ^a_)
+                    set(pagenameprefix "ogs_file_attr__")
+                else()
+                    set(pagenameprefix "ogs_file_param__")
+                endif()
+
+                set(postfix "${postfix} - \\subpage ${pagenameprefix}${pf_tagpath}\n")
 
                 if (NOT IS_DIRECTORY "${pf}")
                     documentationProjectFilePutIntoPlace("${pf}")
@@ -64,6 +70,7 @@ function(documentationProjectFilePutIntoPlace p)
     endif()
     message("  child param  ${tagpath}")
 
+    set(pagenameprefix "ogs_file_param__")
     if (otagname MATCHES ^i_ AND dir_name STREQUAL "")
         set(pagetitle "Project File Parameters")
     elseif(otagname MATCHES ^c_)
@@ -72,6 +79,7 @@ function(documentationProjectFilePutIntoPlace p)
         set(pagetitle "[tag]&emsp;${tagname}")
     elseif(otagname MATCHES ^a_)
         set(pagetitle "[attr]&emsp;${tagname}")
+        set(pagenameprefix "ogs_file_attr__")
     else()
         message(WARNING "Tag name ${otagname} does not match in any case."
             " Maybe there is a file with a wrong name in the documentation"
@@ -80,7 +88,7 @@ function(documentationProjectFilePutIntoPlace p)
 
     # read, augment, write file content
     file(READ ${p} content)
-    set(content "/*! \\page ogs_file_param__${tagpath} ${pagetitle}\n${content}\n\n${postfix}\n")
+    set(content "/*! \\page ${pagenameprefix}${tagpath} ${pagetitle}\n${content}\n\n${postfix}\n")
     if (NOT doc_use_external_tools)
         set(ending "\n*/\n")
     else()
