@@ -5,10 +5,10 @@ from signal import signal, SIGPIPE, SIG_DFL
 signal(SIGPIPE,SIG_DFL)
 
 import os
-
 import xml.etree.cElementTree as ET
-
 import argparse
+
+github_data_url = "https://github.com/ufz/ogs-data/tree/master"
 
 parser = argparse.ArgumentParser(description="Print XML tags")
 
@@ -99,7 +99,7 @@ for (dirpath, _, filenames) in os.walk(docdir):
                     datafiles = dict_tag_files[(istag, tagpath)]
 
                     for df in sorted(datafiles):
-                        fh.write("- {}\n".format(df))
+                        fh.write("- {0}&emsp;[&rarr; ogs-data/master]({1}/{0})\n".format(df, github_data_url))
                 except KeyError:
                     fh.write("Used in no data files.\n")
             else:
