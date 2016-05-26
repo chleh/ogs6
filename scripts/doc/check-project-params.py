@@ -41,7 +41,10 @@ for inline in sys.stdin:
     elif status == "WRONGIN":
         wrong_input.append(inline[1:])
     elif status == "NODOC":
-        undocumented.append(inline[1:])
+        method = inline[6]
+        # ignored parameters need not be documented
+        if not method.startswith("ignore"):
+            undocumented.append(inline[1:])
     elif status == "UNNEEDED":
         unneeded.append(inline[1:])
 
