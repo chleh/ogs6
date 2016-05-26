@@ -18,12 +18,13 @@ toolsdir="$srcdir/scripts/doc"
 param_cache="$docauxdir/documented-parameters-cache.txt"
 
 qafile="$doxdir/project-file-doc-qa.dox"
-check_quality_script="`dirname "$0"`/check-project-params.py"
+check_quality_script="$toolsdir/check-project-params.py"
 
 mkdir -p "$doxdir"
 
 # gather information about documented parameters
 "$toolsdir/get-project-params.sh" "$srcdir" >"$param_cache"
+cat "$param_cache" | "$toolsdir/normalize-param-cache.py" >"${param_cache}-normalized"
 
 # write QA information
 cat <<"EOF" >"$qafile"
