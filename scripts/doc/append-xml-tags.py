@@ -23,6 +23,11 @@ datadir   = os.path.abspath(args.datadir)
 docauxdir = os.path.abspath(args.docauxdir)
 docdir    = os.path.join(docauxdir, "dox", "ProjectFile")
 
+tag_path_expansion_table = {
+    "ic": "process_variables.process_variable.initial_condition",
+    "prj": "",
+}
+
 # maps tags to the set of xml files they appear in
 dict_tag_files = dict()
 
@@ -101,12 +106,18 @@ for (dirpath, _, filenames) in os.walk(docdir):
             tagpath = os.path.join(reldirpath, f[2:-len(".dox")])
             istag = False
 
-        # TODO make work for IC etc, too
         tagpath = tagpath.replace(os.sep, ".")
 
         path = os.path.join(dirpath, f)
         with open(path, "a") as fh:
-            tagpathtail = ".".join(tagpath.split(".")[1:])
+            # TODO this can currently only expand the top level
+            tagpathparts = tagpath.split(".")
+            if tagpathparts[0] in tag_path_expansion_table:
+                tagpathhead = tag_path_expansion_table[tagpathparts[0]]
+            else:
+                tagpathhead = "NONEXISTENT"
+            tagpath_expanded = ".".join((tagpathhead, *tagpathparts[1:])).lstrip(".")
+
             if tagpath:
                 fh.write("\n\n# Additional info\n\n")
                 if tagpath in dict_tag_info:
@@ -124,13 +135,15 @@ for (dirpath, _, filenames) in os.walk(docdir):
                     path = info[1]; line = info[2]
                     fh.write("- Read at {0} line {1} &emsp; [&rarr; ufz/ogs/master]({2}/{0}#L{1})\n"
                             .format(path, line, github_src_url))
+
+                    fh.write("- Expanded tag path: {}\n".format(tagpath_expanded))
                 else:
                     fh.write("No additional info.\n")
 
-            if tagpathtail:
+            if tagpath_expanded:
                 fh.write("\n\n# Used in the following test data files\n\n")
                 try:
-                    datafiles = dict_tag_files[(istag, tagpathtail)]
+                    datafiles = dict_tag_files[(istag, tagpath_expanded)]
 
                     for df in sorted(datafiles):
                         fh.write("- {0}&emsp;[&rarr; ogs-data/master]({1}/{0})\n".format(df, github_data_url))
