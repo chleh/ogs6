@@ -26,7 +26,7 @@ function(documentationProjectFilePutIntoPlace p)
                     set(pf_tagname ${rel_pf})
                 else()
                     if (NOT "${rel_pf}" MATCHES ^._)
-                        message("==== rel_pf: ${rel_pf}") # TODO error?
+                        message(SEND_ERROR "Path ${rel_pf} has a wrong name.")
                         continue()
                     endif()
 
