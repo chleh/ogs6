@@ -9,16 +9,16 @@ function(documentationProjectFilePutIntoPlace p)
         
         file(MAKE_DIRECTORY "${DocumentationProjectFileBuildDir}/${dir_name}")
 
-        set(postfix "# Parameters used at this level\n\n")
+        set(postfix "# Child parameters, attributes and cases\n\n")
 
         # gather other parameter files
         # the loop below will effects a page hierarchy to be built
         file(GLOB param_files ${DocumentationProjectFileInputDir}/${dir_name}/*)
-        list(SORT param_files)
+        set(subpagelist "")
         foreach(pf ${param_files})
             get_filename_component(rel_pf ${pf} NAME_WE)
 
-            # if the file name starts with an underscore, then this
+            # if the file name matches ^[ic]_, then this
             # is the "table of contents" file already processed outside
             # of this loop
             if (NOT rel_pf MATCHES ^[ic]_)
@@ -47,12 +47,24 @@ function(documentationProjectFilePutIntoPlace p)
                     set(pagenameprefix "ogs_file_param__")
                 endif()
 
-                set(postfix "${postfix} - \\subpage ${pagenameprefix}${pf_tagpath}\n")
+                list(FIND subpagelist "${pagenameprefix}${pf_tagpath}" idx)
+                if (NOT idx EQUAL -1)
+                    message(SEND_ERROR "The subpagelist already contains"
+                        " ${pagenameprefix}${pf_tagpath}. Maybe there are"
+                        " duplicate documentation files.")
+                else()
+                    list(APPEND subpagelist "${pagenameprefix}${pf_tagpath}")
+                endif()
 
                 if (NOT IS_DIRECTORY "${pf}")
                     documentationProjectFilePutIntoPlace("${pf}")
                 endif()
             endif()
+        endforeach()
+
+        list(SORT subpagelist)
+        foreach(subpage ${subpagelist})
+            set(postfix "${postfix} - \\subpage ${subpage}\n")
         endforeach()
     else()
         set(postfix "")
@@ -72,7 +84,7 @@ function(documentationProjectFilePutIntoPlace p)
 
     set(pagenameprefix "ogs_file_param__")
     if (otagname MATCHES ^i_ AND dir_name STREQUAL "")
-        set(pagetitle "Project File Parameters")
+        set(pagetitle "OGS Input File Parameters")
     elseif(otagname MATCHES ^c_)
         set(pagetitle "[case]&emsp;${tagname}")
     elseif(otagname MATCHES ^t_ OR otagname MATCHES ^i_)
@@ -81,7 +93,7 @@ function(documentationProjectFilePutIntoPlace p)
         set(pagetitle "[attr]&emsp;${tagname}")
         set(pagenameprefix "ogs_file_attr__")
     else()
-        message(WARNING "Tag name ${otagname} does not match in any case."
+        message(SEND_ERROR "Tag name ${otagname} does not match in any case."
             " Maybe there is a file with a wrong name in the documentation"
             " directory.")
     endif()

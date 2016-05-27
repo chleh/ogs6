@@ -130,6 +130,8 @@ for (dirpath, _, filenames) in os.walk(docdir):
                     method = info[6]
                     if method.endswith("Optional"):
                         fh.write("- This is an optional parameter.\n")
+                    elif method.endswith("List"):
+                        fh.write("- This parameter can be given arbitrarily many times.\n")
                     else:
                         fh.write("- This is a required parameter.\n")
 

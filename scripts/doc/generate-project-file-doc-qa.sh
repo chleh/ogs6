@@ -28,7 +28,7 @@ mkdir -p "$doxdir"
 
 # write QA information
 cat <<"EOF" >"$qafile"
-/*! \page project_file_doc_qa Project File Parameters&mdash;Quality Assurance
+/*! \page project_file_doc_qa OGS Input File Parameters&mdash;Quality Assurance
 
 This is the QA page
 
