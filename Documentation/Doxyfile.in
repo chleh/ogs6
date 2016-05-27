@@ -238,9 +238,9 @@ TAB_SIZE               = 4
 # "Side Effects:". You can put \n's in the value part of an alias to insert
 # newlines.
 
-ALIASES                = "ogs_file_param{1} = \xrefitem ogs_file_param \"Project File Parameter\" \"List of all Project File Parameters\" \ref ogs_file_param__\1 \"\1\""
-ALIASES                += "ogs_file_attr{1} = \xrefitem ogs_file_param \"Project File Parameter\" \"List of all Project File Parameters\" \ref ogs_file_attr__\1 \"\1\""
-ALIASES                += "ogs_file_special = \xrefitem ogs_file_param \"Project File Parameter\" \"List of all Project File Parameters\" special OGS input file parameter
+ALIASES                = "ogs_file_param{1} = \xrefitem ogs_file_param \"Project File Parameter\" \"List of all Input File Parameters\" \ref ogs_file_param__\1 \"\1\""
+ALIASES                += "ogs_file_attr{1} = \xrefitem ogs_file_param \"Project File Parameter\" \"List of all Input File Parameters\" \ref ogs_file_attr__\1 \"\1\""
+ALIASES                += "ogs_file_special = \xrefitem ogs_file_param \"Project File Parameter\" \"List of all Input File Parameters\" special OGS input file parameter
 
 # This tag can be used to specify a number of word-keyword mappings (TCL only).
 # A mapping has the form "name=value". For example adding "class=itcl::class"
