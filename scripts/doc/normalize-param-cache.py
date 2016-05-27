@@ -12,7 +12,8 @@ def write_out(*args):
 
 # capture #1 is the parameter path
 comment = re.compile(r"^//! \\ogs_file_(param|attr)\{([A-Za-z_0-9]+)\}( \\todo .*)?$")
-comment_special = re.compile(r"^//! \\ogs_file_special$")
+comment_special = re.compile(r"^//! \\ogs_file(_param|_attr)?_special(\{[A-Za-z_0-9]+\})?( \\todo .*)?$")
+#comment_special = re.compile(r"^//! \\ogs_file_special$")
 
 # capture #5 is the parameter name
 getter = re.compile(r'^(get|check|ignore|peek)Conf(Param|Attribute|Subtree)(List|Optional|All)?'
@@ -58,6 +59,15 @@ for inline in sys.stdin:
             write_out("UNNEEDED", oldpath, oldlineno, oldline)
         state = "comment"
         param_or_attr_comment = "special"
+
+        if m.group(1): # param|attr matched
+            # second group must not be empty!
+            tag_path_comment = m.group(2).strip("{}").replace("__", ".")
+            param = tag_path_comment.split(".")[-1]
+            paramtype = ""
+            method = ""
+            write_out("OK", path, lineno, tag_path_comment, param, paramtype, method)
+            state = "getter" # reset state s.t. next time a comment is accepted
 
         continue
 

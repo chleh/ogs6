@@ -139,7 +139,7 @@ for (dirpath, _, filenames) in os.walk(docdir):
                             fh.write("- This is an optional parameter.\n")
                         elif method.endswith("List"):
                             fh.write("- This parameter can be given arbitrarily many times.\n")
-                        else:
+                        elif method: # method not empty
                             fh.write("- This is a required parameter.\n")
 
                         datatype = info[5]

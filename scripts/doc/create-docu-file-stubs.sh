@@ -6,7 +6,8 @@ base="Documentation/ProjectFile"
 
 while IFS=":" read -r fn lno content; do
     [ "$content" = "${content#*//!}" ] && continue
-    tag_name="$(echo "$content" | sed -n -e 'sX^\s*//! \\ogs_file_\(param\|attr\){\([A-Za-z_0-9]\+\)}$X\1 \2Xp')"
+    tag_name="$(echo "$content" \
+        | sed -n -e 'sX^\s*//! \\ogs_file_\(param\|attr\)\(_special\)\?{\([A-Za-z_0-9]\+\)}$X\1 \3Xp')"
     [ -z "$tag_name" ] && continue
     param_or_attr="${tag_name%% *}"
     tag_name="${tag_name#* }"

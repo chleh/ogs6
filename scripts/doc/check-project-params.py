@@ -47,7 +47,7 @@ for inline in sys.stdin:
         if not method.startswith("ignore"):
             undocumented.append(inline[1:])
     elif status == "UNNEEDED":
-        unneeded.append(inline[1:])
+        unneeded_comments.append(inline[1:])
     elif status == "SPECIAL":
         debug("SPECIAL: " + " ".join(inline[1:])) # TODO implement proper handling
         # unneeded.append(inline[1:])
@@ -70,8 +70,10 @@ if (unneeded_comments):
     print("| File | Line | Comment | Link |")
     print("| ---- | ---: | ------- | ---- |")
     for u in sorted(unneeded_comments):
+        u2 = list(u)
+        u2[2] = re.sub(r'([\\@&$#<>%".|])', r"\\\1", u2[2])
         print(("| {0} | {1} | {2} "
-            + "| [&rarr; ufz/ogs/master]({3}/{0}#L{1}) |").format(*u, github_src_url))
+            + "| [&rarr; ufz/ogs/master]({3}/{0}#L{1}) |").format(*u2, github_src_url))
 
 if (wrong_input):
     print()
@@ -79,8 +81,10 @@ if (wrong_input):
     print("| File | Line | Content | Link |")
     print("| ---- | ---: | ------- | ---- |")
     for w in sorted(wrong_input):
+        w2 = list(w)
+        w2[2] = re.sub(r'([\\@&$#<>%".|])', r"\\\1", w2[2])
         print(("| {0} | {1} | {2} "
-            + "| [&rarr; ufz/ogs/master]({3}/{0}#L{1}) |").format(*w, github_src_url))
+            + "| [&rarr; ufz/ogs/master]({3}/{0}#L{1}) |").format(*w2, github_src_url))
 
 if (no_doc_page):
     print()

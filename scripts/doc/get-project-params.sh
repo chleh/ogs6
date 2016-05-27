@@ -21,6 +21,7 @@ cat <<"EOF" \
 | cut -c $((`expr length "$srcdir"` + 2))-
 ^\s*//! \\ogs_file_\(param\|attr\){[A-Za-z_0-9]\+}\( \\todo .*\)\?$
 ^\s*//! \\ogs_file_special$
+^\s*//! \\ogs_file_\(param\|attr\)_special{[A-Za-z_0-9]\+}\( \\todo .*\)\?$
 checkConfParam.*)
 getConfAttribute.*)
 getConfParam.*)
