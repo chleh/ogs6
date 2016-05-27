@@ -49,7 +49,7 @@ for inline in sys.stdin:
     elif status == "UNNEEDED":
         unneeded.append(inline[1:])
     elif status == "SPECIAL":
-        debug("SPECIAL: " + " ".join(inline[1:]))
+        debug("SPECIAL: " + " ".join(inline[1:])) # TODO implement proper handling
         # unneeded.append(inline[1:])
     else:
         debug("ERROR: unrecognized status {}".format(status))

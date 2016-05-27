@@ -44,6 +44,12 @@ def dict_of_set_append(dict_, key, value):
     else:
         dict_[key] = set((value,))
 
+def dict_of_list_append(dict_, key, value):
+    if key in dict_:
+        dict_[key].append(value)
+    else:
+        dict_[key] = [value]
+
 
 def print_tags(node, path, level, filepath):
     global dict_tag_files
@@ -89,9 +95,7 @@ with open(os.path.join(docauxdir, "documented-parameters-cache.txt")) as fh:
         line = line.strip().split("@@@")
         if line[0] == "OK":
             tagpath = line[3]
-            if tagpath in dict_tag_info:
-                print("ERROR: duplicate info for tag", tagpath)
-            dict_tag_info[tagpath] = line
+            dict_of_list_append(dict_tag_info, tagpath, line)
 
 # traverse dox file hierarchy
 for (dirpath, _, filenames) in os.walk(docdir):
@@ -123,28 +127,30 @@ for (dirpath, _, filenames) in os.walk(docdir):
             tagpath_expanded = ".".join((tagpathhead, *tagpathparts[1:])).lstrip(".")
 
             if tagpath:
-                fh.write("\n\n# Additional info\n\n")
+                fh.write("\n\n# Additional info\n")
                 if tagpath in dict_tag_info:
-                    info = dict_tag_info[tagpath]
+                    for info in dict_tag_info[tagpath]:
+                        path = info[1]; line = info[2]
+                        fh.write(("\n## From {0} line {1}\n\n")
+                                .format(path, line))
 
-                    method = info[6]
-                    if method.endswith("Optional"):
-                        fh.write("- This is an optional parameter.\n")
-                    elif method.endswith("List"):
-                        fh.write("- This parameter can be given arbitrarily many times.\n")
-                    else:
-                        fh.write("- This is a required parameter.\n")
+                        method = info[6]
+                        if method.endswith("Optional"):
+                            fh.write("- This is an optional parameter.\n")
+                        elif method.endswith("List"):
+                            fh.write("- This parameter can be given arbitrarily many times.\n")
+                        else:
+                            fh.write("- This is a required parameter.\n")
 
-                    datatype = info[5]
-                    if datatype: fh.write("- Data type: <tt>{}</tt>\n".format(datatype))
+                        datatype = info[5]
+                        if datatype: fh.write("- Data type: <tt>{}</tt>\n".format(datatype))
 
-                    path = info[1]; line = info[2]
-                    fh.write("- Read at {0} line {1} &emsp; [&rarr; ufz/ogs/master]({2}/{0}#L{1})\n"
-                            .format(path, line, github_src_url))
+                        fh.write("- Expanded tag path: {}\n".format(tagpath_expanded))
 
-                    fh.write("- Expanded tag path: {}\n".format(tagpath_expanded))
+                        fh.write("- Go to source code: [&rarr; ufz/ogs/master]({2}/{0}#L{1})\n"
+                                .format(path, line, github_src_url))
                 else:
-                    fh.write("No additional info.\n")
+                    fh.write("\nNo additional info.\n")
 
             if tagpath_expanded:
                 fh.write("\n\n# Used in the following test data files\n\n")
@@ -152,7 +158,8 @@ for (dirpath, _, filenames) in os.walk(docdir):
                     datafiles = dict_tag_files[(istag, tagpath_expanded)]
 
                     for df in sorted(datafiles):
-                        fh.write("- {0}&emsp;[&rarr; ogs-data/master]({1}/{0})\n".format(df, github_data_url))
+                        fh.write("- \\[[&rarr; ogs-data/master]({1}/{0})\\]&emsp;{0}\n"
+                                .format(df, github_data_url))
                 except KeyError:
                     fh.write("Used in no end-to-end test cases.\n")
             else:
