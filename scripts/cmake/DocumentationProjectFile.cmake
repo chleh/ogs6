@@ -116,12 +116,12 @@ set(DocumentationProjectFileInputDir ${PROJECT_SOURCE_DIR}/Documentation/Project
 
 # remove old output
 if (IS_DIRECTORY ${DocumentationProjectFileBuildDir})
-	file(REMOVE_RECURSE ${DocumentationProjectFileBuildDir})
+    file(REMOVE_RECURSE ${DocumentationProjectFileBuildDir})
 endif()
 
 file(GLOB_RECURSE input_paths ${DocumentationProjectFileInputDir}/c_* ${DocumentationProjectFileInputDir}/i_*)
 
 foreach(p ${input_paths})
-	message("directory index file ${p}")
-	documentationProjectFilePutIntoPlace(${p})
+    message("directory index file ${p}")
+    documentationProjectFilePutIntoPlace(${p})
 endforeach()
