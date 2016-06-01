@@ -86,20 +86,23 @@ TESProcess<GlobalSetup>::TESProcess(
 
     // physical parameters for local assembly
     {
-        std::vector<std::pair<std::string, double*> > params{
-            { "fluid_specific_heat_source",            &_assembly_params.fluid_specific_heat_source },
-            { "fluid_specific_isobaric_heat_capacity", &_assembly_params.cpG },
-            { "solid_specific_heat_source",            &_assembly_params.solid_specific_heat_source },
-            { "solid_heat_conductivity",               &_assembly_params.solid_heat_cond },
-            { "solid_specific_isobaric_heat_capacity", &_assembly_params.cpS },
-            { "tortuosity",                            &_assembly_params.tortuosity },
-            { "diffusion_coefficient",                 &_assembly_params.diffusion_coefficient_component },
-            { "porosity",                              &_assembly_params.poro },
-            { "solid_density_dry",                     &_assembly_params.rho_SR_dry },
-            { "solid_density_initial",                 &_assembly_params.initial_solid_density },
-            { "volumetric_heat_loss_coeff",            &_assembly_params.volumetric_heat_loss_coeff },
-            { "ambient_temperature",                   &_assembly_params.ambient_temperature }
-        };
+        std::vector<std::pair<std::string, double*>> params{
+            {"fluid_specific_heat_source",
+             &_assembly_params.fluid_specific_heat_source},
+            {"fluid_specific_isobaric_heat_capacity", &_assembly_params.cpG},
+            {"solid_specific_heat_source",
+             &_assembly_params.solid_specific_heat_source},
+            {"solid_heat_conductivity", &_assembly_params.solid_heat_cond},
+            {"solid_specific_isobaric_heat_capacity", &_assembly_params.cpS},
+            {"tortuosity", &_assembly_params.tortuosity},
+            {"diffusion_coefficient",
+             &_assembly_params.diffusion_coefficient_component},
+            {"porosity", &_assembly_params.poro},
+            {"solid_density_dry", &_assembly_params.rho_SR_dry},
+            {"solid_density_initial", &_assembly_params.initial_solid_density},
+            {"volumetric_heat_loss_coeff",
+             &_assembly_params.volumetric_heat_loss_coeff},
+            {"ambient_temperature", &_assembly_params.ambient_temperature}};
 
         for (auto const& p : params)
         {
@@ -112,7 +115,8 @@ TESProcess<GlobalSetup>::TESProcess(
         }
     }
 
-    _assembly_params.dielectric_heating_term_enabled = config.getConfParam<bool>("dielectric_heating_term_enabled");
+    _assembly_params.dielectric_heating_term_enabled =
+        config.getConfParam<bool>("dielectric_heating_term_enabled");
 
     if (_assembly_params.dielectric_heating_term_enabled)
     {
@@ -127,8 +131,8 @@ TESProcess<GlobalSetup>::TESProcess(
         config.ignoreConfParam("heating_power_scaling");
     }
 
-    if (auto prop =
-        config.getConfParamOptional<std::string>("initial_solid_density_mesh_property"))
+    if (auto prop = config.getConfParamOptional<std::string>(
+            "initial_solid_density_mesh_property"))
     {
         assert(!prop->empty());
         _assembly_params.initial_solid_density_mesh_property = *prop;
@@ -244,11 +248,11 @@ void TESProcess<GlobalSetup>::initializeConcreteProcess(
     if (mesh.getDimension() >= 3)
         add2nd("velocity_z", 1, makeEx(TESIntPtVariables::VELOCITY_Z));
 
-    add2nd("loading",        1, makeEx(TESIntPtVariables::LOADING));
-    add2nd("reaction_damping_factor",
-                             1, makeEx(TESIntPtVariables::REACTION_DAMPING_FACTOR));
+    add2nd("loading", 1, makeEx(TESIntPtVariables::LOADING));
+    add2nd("reaction_damping_factor", 1,
+           makeEx(TESIntPtVariables::REACTION_DAMPING_FACTOR));
     add2nd("vol_joule_heating_power",
-                             1,
+           1,
            makeEx(TESIntPtVariables::VOLUMETRIC_JOULE_HEATING_POWER));
 
     namespace PH = std::placeholders;
@@ -266,7 +270,6 @@ void TESProcess<GlobalSetup>::initializeConcreteProcess(
                       PH::_3),
             nullptr});
 
-
     // set initial solid density from mesh property
     if (!_assembly_params.initial_solid_density_mesh_property.empty())
     {
@@ -276,42 +279,45 @@ void TESProcess<GlobalSetup>::initializeConcreteProcess(
 
         switch (prop->getMeshItemType())
         {
-        case MeshLib::MeshItemType::Cell:
-        {
-            auto init_solid_density = [&prop](
-                    std::size_t id, LocalAssembler& loc_asm)
+            case MeshLib::MeshItemType::Cell:
             {
-                // TODO loc_asm_id is assumed to be the mesh element id.
-                loc_asm.initializeSolidDensity(
-                    MeshLib::MeshItemType::Cell, {{ (*prop)[id] }});
-            };
+                auto init_solid_density = [&prop](std::size_t id,
+                                                  LocalAssembler& loc_asm) {
+                    // TODO loc_asm_id is assumed to be the mesh element id.
+                    loc_asm.initializeSolidDensity(MeshLib::MeshItemType::Cell,
+                                                   {{(*prop)[id]}});
+                };
 
-            GlobalSetup::executeDereferenced(init_solid_density, _local_assemblers);
-            break;
-        }
-        case MeshLib::MeshItemType::Node:
-        {
-            std::vector<GlobalIndexType> indices;
-            std::vector<double> values;
-
-            auto init_solid_density = [&](
-                    std::size_t id, LocalAssembler& loc_asm)
+                GlobalSetup::executeDereferenced(init_solid_density,
+                                                 _local_assemblers);
+                break;
+            }
+            case MeshLib::MeshItemType::Node:
             {
-                getRowColumnIndices_(id, *_local_to_global_index_map_single_component,
-                                     indices);
-                values.clear();
-                for (auto i : indices) values.push_back((*prop)[i]);
+                std::vector<GlobalIndexType> indices;
+                std::vector<double> values;
 
-                loc_asm.initializeSolidDensity(
-                    MeshLib::MeshItemType::Node, values);
-            };
+                auto init_solid_density = [&](std::size_t id,
+                                              LocalAssembler& loc_asm) {
+                    getRowColumnIndices_(
+                        id, *_local_to_global_index_map_single_component,
+                        indices);
+                    values.clear();
+                    for (auto i : indices)
+                        values.push_back((*prop)[i]);
 
-            GlobalSetup::executeDereferenced(init_solid_density, _local_assemblers);
-            break;
-        }
-        default:
-            ERR("Unhandled mesh item type for initialization of secondary variable.");
-            std::abort();
+                    loc_asm.initializeSolidDensity(MeshLib::MeshItemType::Node,
+                                                   values);
+                };
+
+                GlobalSetup::executeDereferenced(init_solid_density,
+                                                 _local_assemblers);
+                break;
+            }
+            default:
+                ERR("Unhandled mesh item type for initialization of secondary "
+                    "variable.");
+                std::abort();
         }
     }
 }

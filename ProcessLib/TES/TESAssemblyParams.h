@@ -15,7 +15,7 @@
 
 #include "MaterialsLib/Adsorption/Reaction.h"
 #include "MaterialsLib/PhysicalConstant.h"
-
+#include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 #include "ProcessLib/VariableTransformation.h"
 
 namespace ProcessLib
@@ -71,6 +71,9 @@ struct AssemblyParams
     std::string initial_solid_density_mesh_property;
 
     bool dielectric_heating_term_enabled = false;
+    MathLib::PiecewiseLinearInterpolation heating_power_scaling =
+        MathLib::PiecewiseLinearInterpolation(std::vector<double>{},
+                                              std::vector<double>{}, true);
 
     double delta_t = std::numeric_limits<double>::quiet_NaN();
     unsigned iteration_in_current_timestep = 0;

@@ -91,17 +91,24 @@ TESFEMReactionAdaptorAdsorption::initReaction_slowDownUndershootStrategy(
     const double hard_lower_relative_humidity_limit = 1.3e-4;
     const double hard_react_rate_limit = 2e-3;
 
-    const double soft_lower_vapour_partial_pressure_limit = 17.0; // Pa
+    const double soft_lower_vapour_partial_pressure_limit = 17.0;  // Pa
     const double soft_lower_relative_humidity_limit = 1.7e-4;
 
-    if (_d.p_V < hard_lower_relative_humidity_limit
-                 * Adsorption::AdsorptionReaction::getEquilibriumVapourPressure(_d.T)
-        && std::abs(react_rate_R) > hard_react_rate_limit)
+    if (_d.p_V <
+            hard_lower_relative_humidity_limit *
+                Adsorption::AdsorptionReaction::getEquilibriumVapourPressure(
+                    _d.T) &&
+        std::abs(react_rate_R) > hard_react_rate_limit)
     {
-        react_rate_R = 0.0;
+        _reaction_damping_factor *=
+            hard_react_rate_limit / std::abs(react_rate_R);
+        react_rate_R = (react_rate_R >= 0.0) ? hard_react_rate_limit
+                                             : -hard_react_rate_limit;
     }
-    else if (_d.p_V < soft_lower_vapour_partial_pressure_limit
-             || _d.p_V < soft_lower_relative_humidity_limit * Adsorption::AdsorptionReaction::getEquilibriumVapourPressure(_d.T))
+    else if (_d.p_V < soft_lower_vapour_partial_pressure_limit ||
+             _d.p_V < soft_lower_relative_humidity_limit *
+                          Adsorption::AdsorptionReaction::
+                              getEquilibriumVapourPressure(_d.T))
     {
         // use equilibrium reaction for dry regime
 
@@ -125,17 +132,18 @@ TESFEMReactionAdaptorAdsorption::initReaction_slowDownUndershootStrategy(
             react_rate_R2 *= 0.5;
         }
 
-        // 1st try: make sure reaction is not slower than allowed by local estimation
-        if (_d.ap.number_of_try_of_iteration == 1
-             && std::abs(react_rate_R2) > std::abs(react_rate_R) )
+        // 1st try: make sure reaction is not slower than allowed by local
+        // estimation
+        if (_d.ap.number_of_try_of_iteration == 1 &&
+            std::abs(react_rate_R2) > std::abs(react_rate_R))
         {
             react_rate_R = react_rate_R2;
         }
         // nth try: make sure reaction is not made faster by local estimation
-        if (_d.ap.number_of_try_of_iteration > 1
-             && std::abs(react_rate_R2) < std::abs(react_rate_R))
+        if (_d.ap.number_of_try_of_iteration > 1 &&
+            std::abs(react_rate_R2) < std::abs(react_rate_R))
         {
-             // only make damping stronger here.
+            // only make damping stronger here.
             _reaction_damping_factor *= std::abs(react_rate_R2 / react_rate_R);
             react_rate_R = react_rate_R2;
         }
@@ -201,7 +209,8 @@ double TESFEMReactionAdaptorAdsorption::estimateAdsorptionEquilibrium(
                   _d.T);
 
     // TODO find better solution.
-    if (std::signbit(f(p_V0)) == std::signbit(f(limit))) return p_V0;
+    if (std::signbit(f(p_V0)) == std::signbit(f(limit)))
+        return p_V0;
 
     // search for roots
     auto rf = MathLib::Nonlinear::makeRegulaFalsi<MathLib::Nonlinear::Pegasus>(

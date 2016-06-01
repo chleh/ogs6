@@ -288,7 +288,7 @@ TESLocalAssemblerInner<Traits>::getIntegrationPointValues(
                 for (auto rho_SR : _d.solid_density)
                 {
                     auto const loading =
-                        Adsorption::AdsorptionReaction::get_loading(
+                        Adsorption::AdsorptionReaction::getLoading(
                             rho_SR, _d.ap.rho_SR_dry);
 
                     /* The factor (1.0 - _d.ap.poro) does not need to be taken
