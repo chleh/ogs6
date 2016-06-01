@@ -18,14 +18,14 @@ const double c[] = {
 namespace Adsorption
 {
 
-double DensityHauerNaYStach::get_adsorbate_density(const double T_Ads) const
+double DensityHauerNaYStach::getAdsorbateDensity(const double T_Ads) const
 {
-    return rho_water_Hauer(T_Ads);
+    return rhoWaterHauer(T_Ads);
 }
 
 
 //Thermal expansivity model for water found in the works of Hauer
-double DensityHauerNaYStach::get_alphaT(const double T_Ads) const
+double DensityHauerNaYStach::getAlphaT(const double T_Ads) const
 {
     // data like in python script
     const double T0 = 283.15, alpha0 = 3.781e-4; //K; 1/K
@@ -35,9 +35,9 @@ double DensityHauerNaYStach::get_alphaT(const double T_Ads) const
 
 
 //Characteristic curve. Return W (A)
-double DensityHauerNaYStach::characteristic_curve(const double A) const
+double DensityHauerNaYStach::characteristicCurve(const double A) const
 {
-    double W = curve_polyfrac(c, A); //cm^3/g
+    double W = curvePolyfrac(c, A); //cm^3/g
 
     if (W < 0.0) {
         W = 0.0; // TODO [CL] debug output
@@ -46,12 +46,12 @@ double DensityHauerNaYStach::characteristic_curve(const double A) const
     return W/1.e3; //m^3/kg
 }
 
-double DensityHauerNaYStach::d_characteristic_curve(const double A) const
+double DensityHauerNaYStach::dCharacteristicCurve(const double A) const
 {
-    return d_curve_polyfrac(c, A);
+    return dCurvePolyfrac(c, A);
 }
 
-double DensityHauerNaYStach::get_enthalpy(const double, const double, const double) const
+double DensityHauerNaYStach::getEnthalpy(const double, const double, const double) const
 {
     return 2055.0 * 1000.0; // J/kg value taken from Kraus' PhD thesis
 }
