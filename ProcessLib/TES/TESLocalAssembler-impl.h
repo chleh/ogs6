@@ -218,48 +218,41 @@ bool TESLocalAssembler<
     return _d.getReactionAdaptor().checkBounds(local_x, local_x_prev_ts);
 }
 
-
-template <typename ShapeFunction_,
-          typename IntegrationMethod_,
-          typename GlobalMatrix,
-          typename GlobalVector,
-          unsigned GlobalDim>
-void
-TESLocalAssembler<ShapeFunction_,
-    IntegrationMethod_,
-    GlobalMatrix,
-    GlobalVector,
-    GlobalDim>::
-initializeSolidDensity(MeshLib::MeshItemType item_type,
-                       std::vector<double> const& values)
+template <typename ShapeFunction_, typename IntegrationMethod_,
+          typename GlobalMatrix, typename GlobalVector, unsigned GlobalDim>
+void TESLocalAssembler<
+    ShapeFunction_, IntegrationMethod_, GlobalMatrix, GlobalVector,
+    GlobalDim>::initializeSolidDensity(MeshLib::MeshItemType item_type,
+                                       std::vector<double> const& values)
 {
-
     switch (item_type)
     {
-    case MeshLib::MeshItemType::Cell:
-    {
-        assert(values.size() == 1);
-
-        std::fill(_d.getData().solid_density.begin(),
-                  _d.getData().solid_density.end(),
-                  values.front());
-        break;
-    }
-    case MeshLib::MeshItemType::Node:
-    {
-        assert((int)values.size() == _shape_matrices[0].N.rows());
-
-        auto& densities = _d.getData().solid_density;
-
-        for (std::size_t i=0; i<_shape_matrices.size(); ++i)
+        case MeshLib::MeshItemType::Cell:
         {
-            NumLib::shapeFunctionInterpolate(values, _shape_matrices[i].N, densities[i]);
+            assert(values.size() == 1);
+
+            std::fill(_d.getData().solid_density.begin(),
+                      _d.getData().solid_density.end(),
+                      values.front());
+            break;
         }
-        break;
-    }
-    default:
-        ERR("Unhandled mesh item type for initialization of secondary variable.");
-        std::abort();
+        case MeshLib::MeshItemType::Node:
+        {
+            assert((int)values.size() == _shape_matrices[0].N.rows());
+
+            auto& densities = _d.getData().solid_density;
+
+            for (std::size_t i = 0; i < _shape_matrices.size(); ++i)
+            {
+                NumLib::shapeFunctionInterpolate(values, _shape_matrices[i].N,
+                                                 densities[i]);
+            }
+            break;
+        }
+        default:
+            ERR("Unhandled mesh item type for initialization of secondary "
+                "variable.");
+            std::abort();
     }
 }
 

@@ -66,16 +66,9 @@ public:
     {
         return *_d.reaction_adaptor;
     }
-    TESFEMReactionAdaptor& getReactionAdaptor() {
-        return *_d.reaction_adaptor;
-    }
-    TESLocalAssemblerData const& getData() const {
-        return _d;
-    }
-    TESLocalAssemblerData& getData() {
-        return _d;
-    }
-
+    TESFEMReactionAdaptor& getReactionAdaptor() { return *_d.reaction_adaptor; }
+    TESLocalAssemblerData const& getData() const { return _d; }
+    TESLocalAssemblerData& getData() { return _d; }
 private:
     Eigen::Matrix3d getMassCoeffMatrix(const unsigned int_pt);
     typename Traits::LaplaceMatrix getLaplaceCoeffMatrix(const unsigned int_pt,

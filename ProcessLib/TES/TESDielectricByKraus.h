@@ -13,10 +13,9 @@ namespace ProcessLib
 {
 namespace TES
 {
-
 //! Computes the dielectric heating power in W/m^3 for the given
 //! temperature \c T and \c loading.
 double getVolumetricJouleHeatingPower(const double T, const double loading);
 
-} // namespace TES
-} // namespace ProcessLib
+}  // namespace TES
+}  // namespace ProcessLib

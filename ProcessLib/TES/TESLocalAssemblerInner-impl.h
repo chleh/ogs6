@@ -20,10 +20,10 @@
 
 #include "NumLib/Function/Interpolation.h"
 
+#include "TESDielectricByKraus.h"
 #include "TESLocalAssemblerInner-fwd.h"
 #include "TESOGS5MaterialModels.h"
 #include "TESReactionAdaptor.h"
-#include "TESDielectricByKraus.h"
 
 namespace ProcessLib
 {
@@ -164,27 +164,29 @@ Eigen::Vector3d TESLocalAssemblerInner<Traits>::getRHSCoeffVector(
         (_d.ap.poro - 1.0) * _d.qR;  // TODO [CL] body force term
 
     double rhs_T =
-        _d.rho_GR * _d.ap.poro * _d.ap.fluid_specific_heat_source
-        + (1.0 - _d.ap.poro) * _d.qR * reaction_enthalpy
-        + _d.solid_density[int_pt] * (1.0 - _d.ap.poro) * _d.ap.solid_specific_heat_source
-        + _d.ap.volumetric_heat_loss_coeff * (_d.ap.ambient_temperature - _d.T);
-        // TODO [CL] momentum production term
+        _d.rho_GR * _d.ap.poro * _d.ap.fluid_specific_heat_source +
+        (1.0 - _d.ap.poro) * _d.qR * reaction_enthalpy +
+        _d.solid_density[int_pt] * (1.0 - _d.ap.poro) *
+            _d.ap.solid_specific_heat_source +
+        _d.ap.volumetric_heat_loss_coeff * (_d.ap.ambient_temperature - _d.T);
+    // TODO [CL] momentum production term
 
     if (_d.ap.dielectric_heating_term_enabled)
     {
         auto const loading = Adsorption::AdsorptionReaction::getLoading(
             _d.solid_density[int_pt], _d.ap.rho_SR_dry);
 
-        /* The factor (1.0 - _d.ap.poro) does not need to be taken into account here,
+        /* The factor (1.0 - _d.ap.poro) does not need to be taken into account
+         * here,
          * because the experimental data from Kraus is already for a bed.
          * TODO maybe reformulate and include (1.0-phi) here.
          */
-        rhs_T += _d.ap.heating_power_scaling.getValue(_d.ap.current_time)
-                 * getVolumetricJouleHeatingPower(_d.T, loading);
+        rhs_T += _d.ap.heating_power_scaling.getValue(_d.ap.current_time) *
+                 getVolumetricJouleHeatingPower(_d.T, loading);
     }
 
-    const double rhs_x = (_d.ap.poro - 1.0) * _d.qR; // TODO [CL] what if x < 0.0
-
+    const double rhs_x =
+        (_d.ap.poro - 1.0) * _d.qR;  // TODO [CL] what if x < 0.0
 
     Eigen::Vector3d rhs;
     rhs << rhs_p, rhs_T, rhs_x;
@@ -276,34 +278,41 @@ TESLocalAssemblerInner<Traits>::getIntegrationPointValues(
 
             return alphas;
         }
-    case TESIntPtVariables::VOLUMETRIC_JOULE_HEATING_POWER:
-    {
-        auto& heat_power = cache;
-        heat_power.clear();
-
-        if (_d.ap.dielectric_heating_term_enabled)
+        case TESIntPtVariables::VOLUMETRIC_JOULE_HEATING_POWER:
         {
-            for (auto rho_SR : _d.solid_density) {
-                auto const loading = Adsorption::AdsorptionReaction::get_loading(
-                    rho_SR, _d.ap.rho_SR_dry);
+            auto& heat_power = cache;
+            heat_power.clear();
 
-                /* The factor (1.0 - _d.ap.poro) does not need to be taken into account here,
-                 * because the experimental data from Kraus is already for a bed.
-                 * TODO maybe reformulate and include (1.0-phi) here.
-                 */
-                heat_power.push_back(
-                    _d.ap.heating_power_scaling.getValue(_d.ap.current_time)
-                            // TODO here I also need to access nodal values.
-                            // TODO T set to constant value.
-                         * getVolumetricJouleHeatingPower(373.15, loading));
+            if (_d.ap.dielectric_heating_term_enabled)
+            {
+                for (auto rho_SR : _d.solid_density)
+                {
+                    auto const loading =
+                        Adsorption::AdsorptionReaction::get_loading(
+                            rho_SR, _d.ap.rho_SR_dry);
+
+                    /* The factor (1.0 - _d.ap.poro) does not need to be taken
+                     * into account here,
+                     * because the experimental data from Kraus is already for a
+                     * bed.
+                     * TODO maybe reformulate and include (1.0-phi) here.
+                     */
+                    heat_power.push_back(
+                        _d.ap.heating_power_scaling.getValue(_d.ap.current_time)
+                        // TODO here I also need to access nodal values.
+                        // TODO T set to constant value.
+                        *
+                        getVolumetricJouleHeatingPower(373.15, loading));
+                }
             }
-        } else {
-            auto const num_integration_points = _d.solid_density.size();
-            heat_power.resize(num_integration_points);
-        }
+            else
+            {
+                auto const num_integration_points = _d.solid_density.size();
+                heat_power.resize(num_integration_points);
+            }
 
-        return heat_power;
-    }
+            return heat_power;
+        }
     }
 
     cache.clear();

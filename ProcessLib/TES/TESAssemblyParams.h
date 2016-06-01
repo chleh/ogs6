@@ -13,8 +13,8 @@
 #include <Eigen/Eigen>
 #include <Eigen/Sparse>
 
-#include "MaterialsLib/PhysicalConstant.h"
 #include "MaterialsLib/Adsorption/Reaction.h"
+#include "MaterialsLib/PhysicalConstant.h"
 
 #include "ProcessLib/VariableTransformation.h"
 
@@ -51,7 +51,8 @@ struct AssemblyParams
     double cpS = std::numeric_limits<
         double>::quiet_NaN();  // specific isobaric solid heat capacity
 
-    double volumetric_heat_loss_coeff = std::numeric_limits<double>::quiet_NaN();
+    double volumetric_heat_loss_coeff =
+        std::numeric_limits<double>::quiet_NaN();
     double ambient_temperature = std::numeric_limits<double>::quiet_NaN();
 
     double tortuosity = std::numeric_limits<double>::quiet_NaN();
