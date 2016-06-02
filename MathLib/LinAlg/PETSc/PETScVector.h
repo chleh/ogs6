@@ -106,17 +106,6 @@ class PETScVector
         }
 
         /*!
-           Insert a single entry with value.
-           \param i     Entry index
-           \param value Entry value
-
-        */
-        void set(const PetscInt i, const PetscScalar value)
-        {
-            VecSetValue(*_v, i, value, INSERT_VALUES);
-        }
-
-        /*!
            Add a value to an entry.
            \param i     Number of the entry
            \param value Value.
@@ -173,15 +162,6 @@ class PETScVector
            \param u Preallocated vector for the values of local entries.
         */
         void copyValues(std::vector<double>& u) const;
-
-        /// Get an entry value. This is an expensive operation,
-        /// and it only get local value. Use it for only test purpose
-        PetscScalar get(const PetscInt idx) const
-        {
-            PetscScalar x;
-            VecGetValues(*_v, 1, &idx, &x);
-            return x;
-        }
 
         // TODO eliminate in favour of getRawVector()
         /// Get PETsc vector. Use it only for test purpose

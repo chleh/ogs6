@@ -100,7 +100,8 @@ void setVector(PETScVector& v,
 void setVector(PETScVector& v, MatrixVectorTraits<PETScVector>::Index const index,
                double const value)
 {
-    v.set(index, value); // TODO handle negative indices
+    // TODO handle negative indices
+    VecSetValue(*v.getRawVector(), index, value, INSERT_VALUES);
 }
 
 void setMatrix(PETScMatrix& m,
