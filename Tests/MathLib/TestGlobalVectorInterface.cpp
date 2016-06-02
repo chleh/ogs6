@@ -49,7 +49,7 @@ void checkGlobalVectorInterface()
     ASSERT_EQ(1.0, MathLib::BLAS::getComponent(x, 0));
     ASSERT_EQ(0.0, MathLib::BLAS::getComponent(x, 1));
 
-    x.add(0, 1.0);
+    x.add({0}, std::vector<double>{1.0});
     ASSERT_EQ(2.0, MathLib::BLAS::getComponent(x, 0));
 
     T_VECTOR y(x);
@@ -60,9 +60,11 @@ void checkGlobalVectorInterface()
     ASSERT_EQ(4.0, MathLib::BLAS::getComponent(y, 0));
     MathLib::BLAS::axpy(y, -1.0, x);
     ASSERT_EQ(2.0, MathLib::BLAS::getComponent(y, 0));
-    y = 1.0;
+    for (int i=0; i<MathLib::BLAS::sizeLocalWithoutGhosts(y); ++i)
+        MathLib::setVector(y, y.getRangeBegin()+i, 1.0);
+    MathLib::BLAS::finalizeAssembly(y);
     ASSERT_EQ(1.0, MathLib::BLAS::getComponent(y, 0));
-    y = x;
+    MathLib::BLAS::copy(x, y);
     ASSERT_EQ(2.0, MathLib::BLAS::getComponent(y, 0));
 
     std::vector<double> local_vec(2, 1.0);
@@ -96,14 +98,19 @@ void checkGlobalVectorInterfacePETSc()
     //x.get(0) is expensive, only get local value. Use it for test purpose
     ASSERT_EQ(.0, MathLib::BLAS::getComponent(x, r0));
 
-    x = 10.;
+    for (int i=0; i<MathLib::BLAS::sizeLocalWithoutGhosts(x); ++i)
+        MathLib::setVector(x, x.getRangeBegin()+i, 10.0);
+    MathLib::BLAS::finalizeAssembly(x);
+    ASSERT_EQ(10.0, MathLib::BLAS::getComponent(x, r0));
 
     // Value of x is not copied to y
     const bool deep_copy = false;
     T_VECTOR y(x, deep_copy);
     ASSERT_EQ(0, MathLib::BLAS::getComponent(y, r0));
 
-    y = 10.0;
+    for (int i=0; i<MathLib::BLAS::sizeLocalWithoutGhosts(y); ++i)
+        MathLib::setVector(y, y.getRangeBegin()+i, 10.0);
+    MathLib::BLAS::finalizeAssembly(y);
     ASSERT_EQ(10, MathLib::BLAS::getComponent(y, r0));
 
     MathLib::BLAS::axpy(y, 1.0, x);

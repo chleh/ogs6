@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include "MathLib/LinAlg/BLAS.h"
+#include "MathLib/LinAlg/UnifiedMatrixSetters.h"
 
 #if defined(USE_LIS)
 #include "MathLib/LinAlg/Lis/LisMatrix.h"
@@ -97,7 +98,9 @@ void checkGlobalMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
     MathLib::finalizeMatrixAssembly(m);
 
     // Multiply by a vector
-    v = 1.;
+    for (int i=0; i<MathLib::BLAS::sizeLocalWithoutGhosts(v); ++i)
+        MathLib::setVector(v, v.getRangeBegin()+i, 1.0);
+    MathLib::BLAS::finalizeAssembly(v);
     const bool deep_copy = false;
     T_VECTOR y(v, deep_copy);
     m.multiply(v, y);
@@ -157,7 +160,9 @@ void checkGlobalRectangularMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
     MathLib::finalizeMatrixAssembly(m);
 
     // Multiply by a vector
-    v = 1.;
+    for (int i=0; i<MathLib::BLAS::sizeLocalWithoutGhosts(v); ++i)
+        MathLib::setVector(v,  v.getRangeBegin()+i, 1.0);
+    MathLib::BLAS::finalizeAssembly(v);
     T_VECTOR y(m.getNRows());
     m.multiply(v, y);
 
