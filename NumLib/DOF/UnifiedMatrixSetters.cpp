@@ -89,11 +89,6 @@ void setVector(Eigen::VectorXd& v, MatrixVectorTraits<Eigen::VectorXd>::Index co
 namespace MathLib
 {
 
-double norm(PETScVector const& x)
-{
-    return x.getNorm();
-}
-
 void setVector(PETScVector& v,
                std::initializer_list<double> values)
 {
