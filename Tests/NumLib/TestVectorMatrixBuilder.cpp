@@ -15,7 +15,7 @@
 #include "MeshLib/MeshGenerators/MeshGenerator.h"
 #include "MeshLib/MeshSubsets.h"
 
-#include "NumLib/Assembler/VectorMatrixBuilder.h"
+#include "AssemblerLib/VectorMatrixBuilder.h"
 
 template <typename Builder>
 class NumLibVectorMatrixBuilder : public ::testing::Test
@@ -101,34 +101,24 @@ REGISTER_TYPED_TEST_CASE_P(NumLibVectorMatrixBuilder,
     DISABLED_createVector, DISABLED_createMatrix);
 #endif
 
-#ifdef USE_LIS
-#include "MathLib/LinAlg/Lis/LisVector.h"
-#include "MathLib/LinAlg/Lis/LisMatrix.h"
-#endif  // USE_LIS
-
 #ifdef USE_PETSC
 #include "MathLib/LinAlg/PETSc/PETScVector.h"
 #include "MathLib/LinAlg/PETSc/PETScMatrix.h"
-#endif  // USE_PETSC
-
-#ifdef OGS_USE_EIGEN
+#elif defined(OGS_USE_EIGEN)
 #include "MathLib/LinAlg/Eigen/EigenVector.h"
 #include "MathLib/LinAlg/Eigen/EigenMatrix.h"
 #endif  // OGS_USE_EIGEN
 
-typedef ::testing::Types
-    <
-      NumLib::VectorMatrixBuilder<
-      MathLib::EigenMatrix, MathLib::EigenVector>
-#ifdef USE_LIS
-    , NumLib::VectorMatrixBuilder<
-        MathLib::LisMatrix, MathLib::LisVector>
-#endif  // USE_LIS
+typedef ::testing::Types<
 #ifdef USE_PETSC
-    , NumLib::VectorMatrixBuilder<
-        MathLib::PETScMatrix, MathLib::PETScVector>
-#endif  // USE_PETSC
-    > TestTypes;
+    NumLib::VectorMatrixBuilder<MathLib::PETScMatrix,
+                                MathLib::PETScVector>
+#elif defined(OGS_USE_EIGEN)
+    NumLib::VectorMatrixBuilder<MathLib::EigenMatrix,
+                                MathLib::EigenVector>
+#endif
+    >
+    TestTypes;
 
 INSTANTIATE_TYPED_TEST_CASE_P(templated, NumLibVectorMatrixBuilder,
     TestTypes);
