@@ -219,12 +219,12 @@ public:
 
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
-        _x_old = x0;
+        MathLib::BLAS::copy(x0, _x_old);
     }
 
     void pushState(const double /*t*/, Vector const& x, InternalMatrixStorage const&) override
     {
-        _x_old = x;
+        MathLib::BLAS::copy(x, _x_old);
     }
 
     void nextTimestep(const double t, const double delta_t) override {
@@ -272,12 +272,12 @@ public:
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
         _t_old = t0;
-        _x_old = x0;
+        MathLib::BLAS::copy(x0, _x_old);
     }
 
     void pushState(const double /*t*/, Vector const& x, InternalMatrixStorage const&) override
     {
-        _x_old = x;
+        MathLib::BLAS::copy(x, _x_old);
     }
 
     void nextTimestep(const double t, const double delta_t) override {
@@ -350,12 +350,12 @@ public:
 
     void setInitialState(const double t0, Vector const& x0) override {
         _t = t0;
-        _x_old = x0;
+        MathLib::BLAS::copy(x0, _x_old);
     }
 
     void pushState(const double, Vector const& x, InternalMatrixStorage const& strg) override
     {
-        _x_old = x;
+        MathLib::BLAS::copy(x, _x_old);
         strg.pushMatrices();
     }
 
@@ -462,7 +462,7 @@ public:
             _xs_old.push_back(
                 &MathLib::GlobalVectorProvider<Vector>::provider.getVector(x));
         } else {
-            *_xs_old[_offset] = x;
+            MathLib::BLAS::copy(x, *_xs_old[_offset]);
             _offset = (_offset+1) % _num_steps; // treat _xs_old as a circular buffer
         }
     }
