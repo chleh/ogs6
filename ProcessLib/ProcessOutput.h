@@ -10,6 +10,7 @@
 #ifndef PROCESSLIB_PROCESSOUTPUT_H
 #define PROCESSLIB_PROCESSOUTPUT_H
 
+#include "MathLib/LinAlg/BLAS.h"
 #include "MeshLib/IO/VtkIO/VtuInterface.h"
 #include "ProcessVariable.h"
 #include "SecondaryVariable.h"
@@ -97,14 +98,10 @@ void doProcessOutput(
     DBUG("Process output.");
 
     // Copy result
-#ifdef USE_PETSC
     // TODO It is also possible directly to copy the data for single process
     // variable to a mesh property. It needs a vector of global indices and
     // some PETSc magic to do so.
-    std::vector<double> x_copy(x.getLocalSize() + x.getGhostSize());
-#else
-    std::vector<double> x_copy(x.size());
-#endif
+    std::vector<double> x_copy(MathLib::BLAS::sizeLocalWithGhosts(x));
     x.copyValues(x_copy);
 
     auto const& output_variables = process_output.output_variables;

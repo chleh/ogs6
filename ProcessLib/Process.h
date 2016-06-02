@@ -259,7 +259,7 @@ private:
             // To assign the initial value for the ghost entries,
             // the negative indices of the ghost entries are restored to zero.
             // checked hereby.
-            if ( global_index == x.size() )
+            if (global_index == MathLib::BLAS::sizeGlobal(x))
                 global_index = 0;
 #endif
             x.set(global_index,

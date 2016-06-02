@@ -49,7 +49,8 @@ LocalLinearLeastSquaresExtrapolator<GlobalVector, PropertyTag, LocalAssembler>::
 calculateResiduals(LocalAssemblers const& local_assemblers,
                    PropertyTag const property)
 {
-    assert(static_cast<std::size_t>(_residuals.size()) == local_assemblers.size());
+    assert(static_cast<std::size_t>(MathLib::BLAS::sizeLocalWithoutGhosts(
+               _residuals)) == local_assemblers.size());
 
     using Self = LocalLinearLeastSquaresExtrapolator<
         GlobalVector, PropertyTag, LocalAssembler>;
