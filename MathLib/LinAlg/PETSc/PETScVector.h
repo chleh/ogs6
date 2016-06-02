@@ -27,6 +27,15 @@
 
 namespace MathLib
 {
+namespace BLAS
+{
+namespace detail
+{
+template <typename MatVec>
+class BLASHelper;
+}  // namespace detail
+}  // namespace BLAS
+
 /*!
    \class PETScVector
 
@@ -83,24 +92,6 @@ class PETScVector
 
         /// Perform MPI collection of assembled entries in buffer
         void finalizeAssembly();
-
-        /// Get the global size of the vector
-        PetscInt size() const
-        {
-            return _size;
-        }
-
-        /// Get the number of entries in the same rank
-        PetscInt getLocalSize() const
-        {
-            return _size_loc;
-        }
-
-        /// Get the number of ghost entries in the same rank
-        PetscInt getGhostSize() const
-        {
-            return _size_ghosts;
-        }
 
         /// Get the start index of the local vector
         PetscInt getRangeBegin() const
@@ -289,6 +280,8 @@ class PETScVector
                     const PetscViewerFormat vw_format = PETSC_VIEWER_ASCII_MATLAB ) const;
 
         void shallowCopy(const PETScVector &v);
+
+        friend class MathLib::BLAS::detail::BLASHelper<PETScVector>;
 
     private:
         void destroy() { if (_v) VecDestroy(_v.get()); _v.reset(nullptr); }

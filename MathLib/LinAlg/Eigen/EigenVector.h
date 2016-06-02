@@ -43,14 +43,11 @@ public:
     /// copy constructor
     EigenVector(EigenVector const &src) : _vec(src._vec) {}
 
-    /// return a vector length
-    std::size_t size() const { return _vec.size(); }
-
     /// return a start index of the active data range
     std::size_t getRangeBegin() const { return 0;}
 
     /// return an end index of the active data range
-    std::size_t getRangeEnd() const { return size(); }
+    std::size_t getRangeEnd() const { return _vec.size(); }
 
     /// set all values in this vector
     EigenVector& operator= (double v) { _vec.setConstant(v); return *this; }
