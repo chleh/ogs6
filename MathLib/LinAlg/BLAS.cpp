@@ -9,6 +9,19 @@
 
 #include "BLAS.h"
 
+namespace MathLib
+{
+namespace BLAS
+{
+namespace detail
+{
+template <typename MatVec>
+class BLASHelper;
+}  // namespace detail
+}  // namespace BLAS
+}  // namespace MathLib
+
+
 // TODO reorder BLAS function signatures?
 
 // Dense Eigen matrices and vectors ////////////////////////////////////////
@@ -16,7 +29,9 @@
 
 #include <Eigen/Core>
 
-namespace MathLib { namespace BLAS
+namespace MathLib
+{
+namespace BLAS
 {
 
 // Explicit specialization
@@ -52,6 +67,11 @@ double normMax(Eigen::VectorXd const& x)
     return x.lpNorm<Eigen::Infinity>();
 }
 
+template<>
+MatrixVectorTraits<Eigen::VectorXd>::Index sizeGlobal(Eigen::VectorXd const& x)
+{
+    return x.size();
+}
 } } // namespaces
 
 #endif
@@ -196,6 +216,54 @@ void finalizeAssembly(PETScVector& x)
     x.finalizeAssembly();
 }
 
+namespace detail
+{
+template <>
+class BLASHelper<PETScVector>
+{
+public:
+    static MatrixVectorTraits<PETScVector>::Index sizeGlobal(
+        PETScVector const& x)
+    {
+        return x._size;
+    }
+
+    static MatrixVectorTraits<PETScVector>::Index sizeLocalWithoutGhosts(
+        PETScVector const& x)
+    {
+        return x._size_loc;
+    }
+
+    static MatrixVectorTraits<PETScVector>::Index numberOfGhosts(
+        PETScVector const& x)
+    {
+        return x._size_ghosts;
+    }
+};
+}
+
+template<>
+MatrixVectorTraits<PETScVector>::Index sizeGlobal(PETScVector const& x)
+{
+    return detail::BLASHelper<PETScVector>::sizeGlobal(x);
+}
+
+MatrixVectorTraits<PETScVector>::Index sizeLocalWithoutGhosts(
+    PETScVector const& x)
+{
+    return detail::BLASHelper<PETScVector>::sizeLocalWithoutGhosts(x);
+}
+
+MatrixVectorTraits<PETScVector>::Index sizeLocalWithGhosts(PETScVector const& x)
+{
+    return detail::BLASHelper<PETScVector>::sizeLocalWithoutGhosts(x)
+            + detail::BLASHelper<PETScVector>::numberOfGhosts(x);
+}
+
+MatrixVectorTraits<PETScVector>::Index numberOfGhosts(PETScVector const& x)
+{
+    return detail::BLASHelper<PETScVector>::numberOfGhosts(x);;
+}
 }} // namespaces
 
 
@@ -326,6 +394,12 @@ void matMultAdd(EigenMatrix const& A, EigenVector const& v1, EigenVector const& 
 void finalizeAssembly(EigenMatrix& x)
 {
     x.getRawMatrix().makeCompressed();
+}
+
+template<>
+MatrixVectorTraits<EigenVector>::Index sizeGlobal(EigenVector const& x)
+{
+    return x.getRawVector().size();
 }
 
 } // namespace BLAS

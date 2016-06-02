@@ -10,12 +10,11 @@
 #ifndef MATHLIB_BLAS_H
 #define MATHLIB_BLAS_H
 
-#include<cassert>
-
+#include <cassert>
+#include "MatrixVectorTraits.h"
 
 namespace MathLib
 {
-
 /*! \namespace MathLib::BLAS
  * Some general linear algebra functionality.
  *
@@ -28,65 +27,95 @@ namespace MathLib
  */
 namespace BLAS
 {
-
 // Matrix or Vector
 
 //! Copies \c x to \c y.
-template<typename MatrixOrVector>
+template <typename MatrixOrVector>
 void copy(MatrixOrVector const& x, MatrixOrVector& y)
 {
     y = x;
 }
 
 //! Scales \c x by \c a
-template<typename MatrixOrVector>
+template <typename MatrixOrVector>
 void scale(MatrixOrVector& x, double const a)
 {
     x *= a;
 }
 
 //! Computes \f$ y = a \cdot y + x \f$.
-template<typename MatrixOrVector>
+template <typename MatrixOrVector>
 void aypx(MatrixOrVector& y, double const a, MatrixOrVector const& x)
 {
-    y = a*y + x;
+    y = a * y + x;
 }
 
 //! Computes \f$ y = a \cdot x + y \f$.
-template<typename MatrixOrVector>
+template <typename MatrixOrVector>
 void axpy(MatrixOrVector& y, double const a, MatrixOrVector const& x)
 {
-    y += a*x;
+    y += a * x;
 }
 
 //! Computes \f$ y = a \cdot x + b \cdot y \f$.
-template<typename MatrixOrVector>
-void axpby(MatrixOrVector& y, double const a, double const b, MatrixOrVector const& x)
+template <typename MatrixOrVector>
+void axpby(MatrixOrVector& y, double const a, double const b,
+           MatrixOrVector const& x)
 {
-    y = a*x + b*y;
+    y = a * x + b * y;
 }
 
 //! Computes \f$w = x/y\f$ componentwise.
-template<typename MatrixOrVector>
-void componentwiseDivide(MatrixOrVector& w,
-                         MatrixOrVector const& x, MatrixOrVector const& y);
+template <typename MatrixOrVector>
+void componentwiseDivide(MatrixOrVector& w, MatrixOrVector const& x,
+                         MatrixOrVector const& y);
 
 //! Computes the Manhattan norm of \c x.
-template<typename MatrixOrVector>
+template <typename MatrixOrVector>
 double norm1(MatrixOrVector const& x);
 
 //! Computes the Euclidean norm of \c x.
-template<typename MatrixOrVector>
+template <typename MatrixOrVector>
 double norm2(MatrixOrVector const& x);
 
 //! Computes the maximum norm of \c x.
-template<typename MatrixOrVector>
+template <typename MatrixOrVector>
 double normMax(MatrixOrVector const& x);
 
-template<typename Matrix>
+template <typename Matrix>
 void finalizeAssembly(Matrix& /*A*/)
 {
     // By default do nothing.
+}
+
+//! Get the global size of the vector \c x.
+template <typename Vector>
+typename MatrixVectorTraits<Vector>::Index sizeGlobal(
+    Vector const& x);
+
+//! Get the local size excluding ghost nodes of the vector \c x.
+template <typename Vector>
+typename MatrixVectorTraits<Vector>::Index sizeLocalWithoutGhosts(
+    Vector const& x)
+{
+    return sizeGlobal(x);
+}
+
+//! Get the local size including ghost nodes of the vector \c x.
+template <typename Vector>
+typename MatrixVectorTraits<Vector>::Index sizeLocalWithGhosts(
+    Vector const& x)
+{
+    return sizeGlobal(x);
+}
+
+//! Get the number of ghost nodes of the vector \c x.
+template <typename Vector>
+typename MatrixVectorTraits<Vector>::Index numberOfGhosts(
+    Vector const& x)
+{
+    (void) x;
+    return 0;
 }
 
 // Matrix and Vector
@@ -97,11 +126,11 @@ void finalizeAssembly(Matrix& /*A*/)
  *       This restirction has been chosen in order to fulfill
  *       the requirements of the respective PETSc function.
  */
-template<typename Matrix, typename Vector>
+template <typename Matrix, typename Vector>
 void matMult(Matrix const& A, Vector const& x, Vector& y)
 {
     assert(&x != &y);
-    y = A*x;
+    y = A * x;
 }
 
 /*! Computes \f$ v_3 = A \cdot v_1 + v_2 \f$.
@@ -110,27 +139,25 @@ void matMult(Matrix const& A, Vector const& x, Vector& y)
  *       This restirction has been chosen in order to fulfill
  *       the requirements of the respective PETSc function.
  */
-template<typename Matrix, typename Vector>
+template <typename Matrix, typename Vector>
 void matMultAdd(Matrix const& A, Vector const& v1, Vector const& v2, Vector& v3)
 {
     assert(&v1 != &v3);
-    v3 = v2 + A*v1;
+    v3 = v2 + A * v1;
 }
-
-}} // namespaces
-
+}
+}  // namespaces
 
 // Global PETScMatrix/PETScVector //////////////////////////////////////////
 #ifdef USE_PETSC
 
-namespace MathLib {
-
+namespace MathLib
+{
 class PETScMatrix;
 class PETScVector;
 
 namespace BLAS
 {
-
 // Vector
 
 void copy(PETScVector const& x, PETScVector& y);
@@ -144,8 +171,8 @@ void aypx(PETScVector& y, double const a, PETScVector const& x);
 void axpy(PETScVector& y, double const a, PETScVector const& x);
 
 // y = a*x + y
-void axpby(PETScVector& y, double const a, double const b, PETScVector const& x);
-
+void axpby(PETScVector& y, double const a, double const b,
+           PETScVector const& x);
 
 // Matrix
 
@@ -160,7 +187,6 @@ void aypx(PETScMatrix& Y, double const a, PETScMatrix const& X);
 // Y = a*X + Y
 void axpy(PETScMatrix& Y, double const a, PETScMatrix const& X);
 
-
 // Matrix and Vector
 
 // v3 = A*v1 + v2
@@ -168,25 +194,32 @@ void matMult(PETScMatrix const& A, PETScVector const& x, PETScVector& y);
 
 // y = A*x
 void matMultAdd(PETScMatrix const& A, PETScVector const& v1,
-                       PETScVector const& v2, PETScVector& v3);
+                PETScVector const& v2, PETScVector& v3);
 
 void finalizeAssembly(PETScMatrix& A);
 void finalizeAssembly(PETScVector& x);
 
-}} // namespaces
+MatrixVectorTraits<PETScVector>::Index sizeLocalWithoutGhosts(
+    PETScVector const& x);
 
+MatrixVectorTraits<PETScVector>::Index sizeLocalWithGhosts(
+    PETScVector const& x);
 
-// Sparse global EigenMatrix/EigenVector //////////////////////////////////////////
+MatrixVectorTraits<PETScVector>::Index numberOfGhosts(PETScVector const& x);
+}
+}  // namespaces
+
+// Sparse global EigenMatrix/EigenVector
+// //////////////////////////////////////////
 #elif defined(OGS_USE_EIGEN)
 
-namespace MathLib {
-
+namespace MathLib
+{
 class EigenMatrix;
 class EigenVector;
 
 namespace BLAS
 {
-
 // Vector
 
 void copy(EigenVector const& x, EigenVector& y);
@@ -200,8 +233,8 @@ void aypx(EigenVector& y, double const a, EigenVector const& x);
 void axpy(EigenVector& y, double const a, EigenVector const& x);
 
 // y = a*x + y
-void axpby(EigenVector& y, double const a, double const b, EigenVector const& x);
-
+void axpby(EigenVector& y, double const a, double const b,
+           EigenVector const& x);
 
 // Matrix
 
@@ -216,7 +249,6 @@ void aypx(EigenMatrix& Y, double const a, EigenMatrix const& X);
 // Y = a*X + Y
 void axpy(EigenMatrix& Y, double const a, EigenMatrix const& X);
 
-
 // Matrix and Vector
 
 // y = A*x
@@ -228,10 +260,10 @@ void matMultAdd(EigenMatrix const& A, EigenVector const& v1,
 
 void finalizeAssembly(EigenMatrix& A);
 
-} // namespace BLAS
+}  // namespace BLAS
 
-} // namespace MathLib
+}  // namespace MathLib
 
 #endif
 
-#endif // MATHLIB_BLAS_H
+#endif  // MATHLIB_BLAS_H
