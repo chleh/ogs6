@@ -202,28 +202,6 @@ void checkLinearSolverInterface(T_MATRIX& A, T_VECTOR& b,
 
 } // end namespace
 
-#ifdef OGS_USE_EIGEN
-TEST(Math, CheckInterface_Eigen)
-{
-    // set solver options using Boost property tree
-    boost::property_tree::ptree t_root;
-    boost::property_tree::ptree t_solver;
-    t_solver.put("solver_type", "CG");
-    t_solver.put("precon_type", "NONE");
-    t_solver.put("error_tolerance", 1e-15);
-    t_solver.put("max_iteration_step", 1000);
-    t_root.put_child("eigen", t_solver);
-    BaseLib::ConfigTree conf(t_root, "",
-        BaseLib::ConfigTree::onerror, BaseLib::ConfigTree::onwarning);
-
-    using IntType = MathLib::EigenMatrix::IndexType;
-
-    MathLib::EigenMatrix A(Example1<IntType>::dim_eqs);
-    checkLinearSolverInterface<MathLib::EigenMatrix, MathLib::EigenVector,
-                               MathLib::EigenLinearSolver, IntType>(A, conf);
-}
-#endif
-
 #if defined(OGS_USE_EIGEN) && defined(USE_LIS)
 TEST(Math, CheckInterface_EigenLis)
 {
@@ -347,6 +325,26 @@ TEST(MPITest_Math, CheckInterface_PETSc_Linear_Solver_gmres_amg)
     );
 }
 
+#elif defined(OGS_USE_EIGEN)
+TEST(Math, CheckInterface_Eigen)
+{
+    // set solver options using Boost property tree
+    boost::property_tree::ptree t_root;
+    boost::property_tree::ptree t_solver;
+    t_solver.put("solver_type", "CG");
+    t_solver.put("precon_type", "NONE");
+    t_solver.put("error_tolerance", 1e-15);
+    t_solver.put("max_iteration_step", 1000);
+    t_root.put_child("eigen", t_solver);
+    BaseLib::ConfigTree conf(t_root, "",
+        BaseLib::ConfigTree::onerror, BaseLib::ConfigTree::onwarning);
+
+    using IntType = MathLib::EigenMatrix::IndexType;
+
+    MathLib::EigenMatrix A(Example1<IntType>::dim_eqs);
+    checkLinearSolverInterface<MathLib::EigenMatrix, MathLib::EigenVector,
+                               MathLib::EigenLinearSolver, IntType>(A, conf);
+}
 #endif
 
 

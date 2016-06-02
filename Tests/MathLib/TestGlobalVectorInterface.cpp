@@ -55,10 +55,10 @@ void checkGlobalVectorInterface()
     T_VECTOR y(x);
     ASSERT_EQ(2.0, MathLib::BLAS::getComponent(y, 0));
     ASSERT_EQ(0.0, MathLib::BLAS::getComponent(y, 1));
-    y += x;
+    MathLib::BLAS::axpy(y, 1.0, x);
 
     ASSERT_EQ(4.0, MathLib::BLAS::getComponent(y, 0));
-    y -= x;
+    MathLib::BLAS::axpy(y, -1.0, x);
     ASSERT_EQ(2.0, MathLib::BLAS::getComponent(y, 0));
     y = 1.0;
     ASSERT_EQ(1.0, MathLib::BLAS::getComponent(y, 0));
@@ -106,11 +106,11 @@ void checkGlobalVectorInterfacePETSc()
     y = 10.0;
     ASSERT_EQ(10, MathLib::BLAS::getComponent(y, r0));
 
-    y += x;
+    MathLib::BLAS::axpy(y, 1.0, x);
     ASSERT_EQ(20, MathLib::BLAS::getComponent(y, r0));
     ASSERT_EQ(80., MathLib::BLAS::norm2(y));
 
-    y -= x;
+    MathLib::BLAS::axpy(y, -1.0, x);
     ASSERT_EQ(10, MathLib::BLAS::getComponent(y, r0));
     ASSERT_EQ(40., MathLib::BLAS::norm2(y));
 
