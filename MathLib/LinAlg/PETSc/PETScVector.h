@@ -162,14 +162,6 @@ class PETScVector
             VecGetValues(*_v, e_idxs.size(), &e_idxs[0], &sub_vec[0]);
         }
 
-        // TODO preliminary
-        double operator[] (PetscInt idx) const
-        {
-            double value;
-            VecGetValues(*_v, 1, &idx, &value);
-            return value;
-        }
-
         /*!
            Get global vector
            \param u Array to store the global vector. Memory allocation is needed in advance

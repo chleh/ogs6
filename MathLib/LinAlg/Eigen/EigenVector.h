@@ -58,10 +58,6 @@ public:
     /// set all values in this vector
     EigenVector& operator*= (double v) { _vec *= v; return *this; }
 
-    /// access entry
-    double const & operator[] (IndexType rowId) const { return _vec[rowId]; }
-    double& operator[] (IndexType rowId) { return _vec[rowId]; }
-
     /// get entry
     double get(IndexType rowId) const
     {
