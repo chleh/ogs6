@@ -107,7 +107,7 @@ public:
                   Matrix& M, Matrix& K, Vector& b) override
     {
         MathLib::setMatrix(M, { 1.0 });
-        MathLib::setMatrix(K, { x[0] });
+        MathLib::setMatrix(K, { MathLib::BLAS::getComponent(x, 0) });
         MathLib::setVector(b, { 0.0 });
     }
 
@@ -122,7 +122,8 @@ public:
         BLAS::copy(M, Jac);
         BLAS::scale(Jac, dxdot_dx);
 
-        MathLib::addToMatrix(Jac, { x[0] }); // add dK_dx
+        MathLib::addToMatrix(Jac,
+                             {MathLib::BLAS::getComponent(x, 0)});  // add dK_dx
 
         if (dx_dx != 0.0)
         {
@@ -189,9 +190,9 @@ public:
     void assemble(const double t, Vector const& x_curr,
                   Matrix& M, Matrix& K, Vector& b) override
     {
-        auto const x = x_curr[0];
-        auto const y = x_curr[1];
-        auto const z = x_curr[2];
+        auto const x = MathLib::BLAS::getComponent(x_curr, 0);
+        auto const y = MathLib::BLAS::getComponent(x_curr, 1);
+        auto const z = MathLib::BLAS::getComponent(x_curr, 2);
 
         MathLib::
         setMatrix(M, {       t*y, 1.0,     0.0,
@@ -212,12 +213,12 @@ public:
                           const double dx_dx, Matrix const& K,
                           Matrix &Jac) override
     {
-        auto const x = x_curr[0];
-        auto const y = x_curr[1];
-        auto const z = x_curr[2];
+        auto const x = MathLib::BLAS::getComponent(x_curr, 0);
+        auto const y = MathLib::BLAS::getComponent(x_curr, 1);
+        auto const z = MathLib::BLAS::getComponent(x_curr, 2);
 
-        auto const dx = xdot[0];
-        auto const dz = xdot[2];
+        auto const dx = MathLib::BLAS::getComponent(xdot, 0);
+        auto const dz = MathLib::BLAS::getComponent(xdot, 2);
 
         namespace BLAS = MathLib::BLAS;
 

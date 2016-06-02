@@ -95,10 +95,10 @@ private:
 
         *_file << t;
         for (auto i = decltype(size_num)(0); i < size_num; ++i)
-            *_file << '\t' << x_num[i];
+            *_file << '\t' << MathLib::BLAS::getComponent(x_num, i);
         for (auto i = decltype(size_ana)(0); i < size_ana; ++i)
-            *_file << '\t' << x_ana[i];
-        *_file << "\n";
+            *_file << '\t' << MathLib::BLAS::getComponent(x_ana, i);
+        *_file << '\n';
     }
 
     template<template<typename /*Matrix*/, typename /*Vector*/> class Ode>

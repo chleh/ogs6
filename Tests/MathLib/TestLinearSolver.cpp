@@ -127,8 +127,9 @@ void checkLinearSolverInterface(T_MATRIX &A, BaseLib::ConfigTree const& ls_optio
     T_LINEAR_SOVLER ls("dummy_name", &ls_option);
     ls.solve(A, rhs, x);
 
-    ASSERT_ARRAY_NEAR(ex1.exH, x, ex1.dim_eqs, 1e-5);
-
+    for (std::size_t i=0; i<ex1.dim_eqs; ++i) {
+        ASSERT_NEAR(ex1.exH[i], x.get(i), 1e-5);
+    }
 }
 
 #ifdef USE_PETSC

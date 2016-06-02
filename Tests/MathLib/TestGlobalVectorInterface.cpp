@@ -265,12 +265,7 @@ void checkGlobalVectorInterfacePETSc()
 } // end namespace
 
 //--------------------------------------------
-#if defined(USE_LIS)
-TEST(Math, CheckInterface_LisVector)
-{
-    checkGlobalVectorInterface<MathLib::LisVector >();
-}
-#elif defined(USE_PETSC)
+#if defined(USE_PETSC)
 TEST(MPITest_Math, CheckInterface_PETScVector)
 {
     checkGlobalVectorInterfacePETSc<MathLib::PETScVector >();
@@ -279,6 +274,11 @@ TEST(MPITest_Math, CheckInterface_PETScVector)
 TEST(Math, CheckInterface_EigenVector)
 {
     checkGlobalVectorInterface<MathLib::EigenVector >();
+}
+#elif defined(USE_LIS)
+TEST(Math, CheckInterface_LisVector)
+{
+    checkGlobalVectorInterface<MathLib::LisVector >();
 }
 #else
 TEST(Math, CheckInterface_DenseVector)

@@ -156,7 +156,7 @@ TEST(NumLibSerialLinearSolver, Steady2DdiffusionQuadElem)
     auto const size = static_cast<std::size_t>(MathLib::BLAS::sizeGlobal(*x));
     std::vector<double> solution(size);
     for (std::size_t i = 0; i < size; ++i)
-        solution[i] = (*x)[i];
+        solution[i] = x->get(i);
 
     ASSERT_ARRAY_NEAR(&ex1.exact_solutions[0], &solution[0], ex1.dim_eqs, 1.e-5);
 
