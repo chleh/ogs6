@@ -34,6 +34,18 @@ namespace MathLib
 namespace BLAS
 {
 
+template <>
+void setZero(Eigen::VectorXd& x)
+{
+    x.setZero();
+}
+
+template <>
+void setZero(Eigen::MatrixXd& A)
+{
+    A.setZero();
+}
+
 // Explicit specialization
 // Computes w = x/y componentwise.
 template<>
@@ -87,6 +99,18 @@ namespace MathLib { namespace BLAS
 {
 
 // Vector
+
+template <>
+void setZero(PETScVector& x)
+{
+    x = 0.0;
+}
+
+template <>
+void setZero(PETScMatrix& A)
+{
+    MatZeroEntries(A.getRawMatrix());
+}
 
 void copy(PETScVector const& x, PETScVector& y)
 {
@@ -290,6 +314,18 @@ double getComponent(PETScVector const& x,
 
 namespace MathLib { namespace BLAS
 {
+
+template <>
+void setZero(EigenVector& x)
+{
+    x.getRawVector().setZero();
+}
+
+template <>
+void setZero(EigenMatrix& A)
+{
+    A.setZero();
+}
 
 // Vector
 

@@ -176,9 +176,6 @@ class PETScVector
             VecSet(*_v, val);
         }
 
-        // TODO preliminary
-        void setZero() { *this = 0.0; }
-
         /// Overloaded operator: assign
         PETScVector& operator = (const PETScVector &v_in)
         {

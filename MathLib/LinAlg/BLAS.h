@@ -29,6 +29,10 @@ namespace BLAS
 {
 // Matrix or Vector
 
+//! Sets all components of \c x to zero.
+template <typename MatrixOrVector>
+void setZero(MatrixOrVector& x);
+
 //! Copies \c x to \c y.
 template <typename MatrixOrVector>
 void copy(MatrixOrVector const& x, MatrixOrVector& y)
