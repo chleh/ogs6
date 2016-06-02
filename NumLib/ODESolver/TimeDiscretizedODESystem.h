@@ -140,9 +140,9 @@ public:
         auto const  t      = _time_disc.getCurrentTime();
         auto const& x_curr = _time_disc.getCurrentX(x_new_timestep);
 
-        _M->setZero();
-        _K->setZero();
-        _b->setZero();
+        BLAS::setZero(*_M);
+        BLAS::setZero(*_K);
+        BLAS::setZero(*_b);
 
         _ode.assemble(t, x_curr, *_M, *_K, *_b);
 
@@ -326,9 +326,9 @@ public:
         auto const  t      = _time_disc.getCurrentTime();
         auto const& x_curr = _time_disc.getCurrentX(x_new_timestep);
 
-        _M->setZero();
-        _K->setZero();
-        _b->setZero();
+        BLAS::setZero(*_M);
+        BLAS::setZero(*_K);
+        BLAS::setZero(*_b);
 
         _ode.assemble(t, x_curr, *_M, *_K, *_b);
 

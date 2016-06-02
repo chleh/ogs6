@@ -162,7 +162,7 @@ solve(Vector &x)
     // TODO be more efficient
     // init _minus_delta_x to the right size and 0.0
     BLAS::copy(x, minus_delta_x);
-    minus_delta_x.setZero();
+    BLAS::setZero(minus_delta_x);
 
     unsigned iteration=1;
     for (; iteration<_maxiter; ++iteration)

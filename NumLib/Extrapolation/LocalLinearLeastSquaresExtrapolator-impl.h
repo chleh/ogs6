@@ -27,13 +27,13 @@ void
 LocalLinearLeastSquaresExtrapolator<GlobalVector, PropertyTag, LocalAssembler>::
 extrapolate(LocalAssemblers const& local_assemblers, PropertyTag const property)
 {
-    _nodal_values.setZero();
+    MathLib::BLAS::setZero(_nodal_values);
 
     // counts the writes to each nodal value, i.e., the summands in order to
     // compute the average afterwards
     auto counts =
         MathLib::MatrixVectorTraits<GlobalVector>::newInstance(_nodal_values);
-    counts->setZero(); // TODO BLAS?
+    MathLib::BLAS::setZero(*counts);
 
     using Self = LocalLinearLeastSquaresExtrapolator<
         GlobalVector, PropertyTag, LocalAssembler>;
