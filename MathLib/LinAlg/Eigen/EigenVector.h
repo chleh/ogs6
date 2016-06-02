@@ -94,12 +94,6 @@ public:
     /// vector operation: set data
     EigenVector& operator= (const EigenVector &src) { _vec = src._vec; return *this; }
 
-    /// vector operation: add
-    void operator+= (const EigenVector& v) { _vec += v._vec; }
-
-    /// vector operation: subtract
-    void operator-= (const EigenVector& v) { _vec -= v._vec; }
-
 private:
     RawVectorType _vec;
 };

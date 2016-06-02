@@ -193,20 +193,6 @@ class PETScVector
         ///       general cleanup of all matrix and vector classes.
         PETScVector& operator = (PETScVector &&) = delete;
 
-        ///  Overloaded operator: add
-        void operator += (const PETScVector& v_in)
-        {
-            if (!_v) shallowCopy(v_in);
-            VecAXPY(*_v, 1.0, *v_in._v);
-        }
-
-        ///  Overloaded operator: subtract
-        void operator -= (const PETScVector& v_in)
-        {
-            if (!_v) shallowCopy(v_in);
-            VecAXPY(*_v, -1.0, *v_in._v);
-        }
-
         //! Exposes the underlying PETSc vector.
         PETSc_Vec* getRawVector() { return _v.get(); }
 
