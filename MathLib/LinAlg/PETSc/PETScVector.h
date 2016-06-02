@@ -106,12 +106,6 @@ class PETScVector
         }
 
         /*!
-          Get norm of vector
-          \param nmtype Norm type, default Euclidean norm
-        */
-        PetscScalar getNorm(const MathLib::VecNormType nmtype = MathLib::VecNormType::NORM2) const;
-
-        /*!
            Insert a single entry with value.
            \param i     Entry index
            \param value Entry value

@@ -133,7 +133,9 @@ void componentwiseDivide(PETScVector& w,
 template<>
 double norm1(PETScVector const& x)
 {
-    return x.getNorm(MathLib::VecNormType::NORM1);
+    PetscScalar norm = 0;
+    VecNorm(*x.getRawVector(), NORM_1, &norm);
+    return norm;
 }
 
 // Explicit specialization
@@ -141,7 +143,9 @@ double norm1(PETScVector const& x)
 template<>
 double norm2(PETScVector const& x)
 {
-    return x.getNorm(MathLib::VecNormType::NORM2);
+    PetscScalar norm = 0;
+    VecNorm(*x.getRawVector(), NORM_2, &norm);
+    return norm;
 }
 
 // Explicit specialization
@@ -149,7 +153,9 @@ double norm2(PETScVector const& x)
 template<>
 double normMax(PETScVector const& x)
 {
-    return x.getNorm(MathLib::VecNormType::INFINITY_N);
+    PetscScalar norm = 0;
+    VecNorm(*x.getRawVector(), NORM_INFINITY, &norm);
+    return norm;
 }
 
 
