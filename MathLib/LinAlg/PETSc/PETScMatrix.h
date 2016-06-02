@@ -155,7 +155,7 @@ class PETScMatrix
         */
         void multiply(const PETScVector &vec, PETScVector &vec_r)
         {
-            MatMult(*_A, vec.getData(), vec_r.getData() );
+            MatMult(*_A, *vec.getRawVector(), *vec_r.getRawVector());
         }
 
         /*!

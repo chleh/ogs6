@@ -106,16 +106,6 @@ class PETScVector
         }
 
         /*!
-           Add a value to an entry.
-           \param i     Number of the entry
-           \param value Value.
-        */
-        void add(const PetscInt i, const PetscScalar value)
-        {
-            VecSetValue(*_v, i, value,  ADD_VALUES);
-        }
-
-        /*!
            Add values to several entries
            \param e_idxs  Indicies of entries to be added
                           Note: std::size_t cannot be the type of e_idxs template argument
@@ -162,28 +152,6 @@ class PETScVector
            \param u Preallocated vector for the values of local entries.
         */
         void copyValues(std::vector<double>& u) const;
-
-        // TODO eliminate in favour of getRawVector()
-        /// Get PETsc vector. Use it only for test purpose
-        const PETSc_Vec &getData() const
-        {
-            return *_v;
-        }
-
-        /// Initialize the vector with a constant value
-        void operator = (const PetscScalar val)
-        {
-            VecSet(*_v, val);
-        }
-
-        /// Overloaded operator: assign
-        PETScVector& operator = (const PETScVector &v_in)
-        {
-            if (!_v) shallowCopy(v_in);
-            VecCopy(*v_in._v, *_v);
-
-            return *this;
-        }
 
         /// Disallow moving.
         /// \todo This operator should be implemented properly when doing a

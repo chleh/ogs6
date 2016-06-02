@@ -95,15 +95,53 @@ MatrixVectorTraits<Eigen::VectorXd>::Index sizeGlobal(Eigen::VectorXd const& x)
 #include "MathLib/LinAlg/PETSc/PETScVector.h"
 #include "MathLib/LinAlg/PETSc/PETScMatrix.h"
 
-namespace MathLib { namespace BLAS
+namespace MathLib
 {
+namespace BLAS
+{
+namespace detail
+{
+template <>
+class BLASHelper<PETScVector>
+{
+public:
+    static MatrixVectorTraits<PETScVector>::Index sizeGlobal(
+        PETScVector const& x)
+    {
+        return x._size;
+    }
+
+    static MatrixVectorTraits<PETScVector>::Index sizeLocalWithoutGhosts(
+        PETScVector const& x)
+    {
+        return x._size_loc;
+    }
+
+    static MatrixVectorTraits<PETScVector>::Index numberOfGhosts(
+        PETScVector const& x)
+    {
+        return x._size_ghosts;
+    }
+
+    static void copy(PETScVector const& x, PETScVector& y)
+    {
+        if (!y._v) y.shallowCopy(x);
+        VecCopy(*x._v, *y._v);
+    }
+
+    static void setZero(PETScVector& x)
+    {
+        VecSet(*x._v, 0.0);
+    }
+};
+}  // namespace detail
 
 // Vector
 
 template <>
 void setZero(PETScVector& x)
 {
-    x = 0.0;
+    detail::BLASHelper<PETScVector>::setZero(x);
 }
 
 template <>
@@ -114,7 +152,7 @@ void setZero(PETScMatrix& A)
 
 void copy(PETScVector const& x, PETScVector& y)
 {
-    y = x;
+    detail::BLASHelper<PETScVector>::copy(x, y);
 }
 
 void scale(PETScVector& x, double const a)
@@ -246,32 +284,6 @@ void finalizeAssembly(PETScVector& x)
     x.finalizeAssembly();
 }
 
-namespace detail
-{
-template <>
-class BLASHelper<PETScVector>
-{
-public:
-    static MatrixVectorTraits<PETScVector>::Index sizeGlobal(
-        PETScVector const& x)
-    {
-        return x._size;
-    }
-
-    static MatrixVectorTraits<PETScVector>::Index sizeLocalWithoutGhosts(
-        PETScVector const& x)
-    {
-        return x._size_loc;
-    }
-
-    static MatrixVectorTraits<PETScVector>::Index numberOfGhosts(
-        PETScVector const& x)
-    {
-        return x._size_ghosts;
-    }
-};
-}
-
 template<>
 MatrixVectorTraits<PETScVector>::Index sizeGlobal(PETScVector const& x)
 {
@@ -331,12 +343,12 @@ void setZero(EigenMatrix& A)
 
 void copy(EigenVector const& x, EigenVector& y)
 {
-    y = x;
+    y.getRawVector() = x.getRawVector();
 }
 
 void scale(EigenVector& x, double const a)
 {
-    x *= a;
+    x.getRawVector() *= a;
 }
 
 // y = a*y + X

@@ -49,24 +49,12 @@ public:
     /// return an end index of the active data range
     std::size_t getRangeEnd() const { return _vec.size(); }
 
-    /// set all values in this vector
-    EigenVector& operator= (double v) { _vec.setConstant(v); return *this; }
-
-    /// set all values in this vector
-    EigenVector& operator*= (double v) { _vec *= v; return *this; }
-
-    /// add entry
-    void add(IndexType rowId, double v)
-    {
-        _vec[rowId] += v;
-    }
-
     /// add entries
     template<class T_SUBVEC>
     void add(const std::vector<IndexType> &pos, const T_SUBVEC &sub_vec)
     {
         for (std::size_t i=0; i<pos.size(); ++i) {
-            add(pos[i], sub_vec[i]);
+            _vec[pos[i]] += sub_vec[i];
         }
     }
 
@@ -88,8 +76,7 @@ public:
     /// return a raw Eigen vector object
     const RawVectorType& getRawVector() const {return _vec; }
 
-    /// vector operation: set data
-    EigenVector& operator= (const EigenVector &src) { _vec = src._vec; return *this; }
+    EigenVector& operator=(const EigenVector&) = delete;
 
 private:
     RawVectorType _vec;
