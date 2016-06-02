@@ -107,11 +107,11 @@ void checkGlobalVectorInterfacePETSc()
 
     y += x;
     ASSERT_EQ(20, y.get(r0));
-    ASSERT_EQ(80., y.getNorm());
+    ASSERT_EQ(80., MathLib::BLAS::norm2(y));
 
     y -= x;
     ASSERT_EQ(10, y.get(r0));
-    ASSERT_EQ(40., y.getNorm());
+    ASSERT_EQ(40., MathLib::BLAS::norm2(y));
 
     std::vector<double> local_vec(2, 10.0);
     std::vector<GlobalIndexType> vec_pos(2);
@@ -123,7 +123,7 @@ void checkGlobalVectorInterfacePETSc()
 
     double normy = std::sqrt(6.0*400+10.0*100);
 
-    ASSERT_NEAR(0.0, normy-y.getNorm(), 1.e-10);
+    ASSERT_NEAR(0.0, normy - MathLib::BLAS::norm2(y), 1.e-10);
 
     double x0[16];
     double z[] =
@@ -189,7 +189,7 @@ void checkGlobalVectorInterfacePETSc()
     // Deep copy
     MathLib::finalizeVectorAssembly(x_fixed_p);
     T_VECTOR x_deep_copied(x_fixed_p);
-    ASSERT_NEAR(sqrt(3.0*5), x_deep_copied.getNorm(), 1.e-10);
+    ASSERT_NEAR(sqrt(3.0*5), MathLib::BLAS::norm2(x_deep_copied), 1.e-10);
 
     // -----------------------------------------------------------------
     // Vector with ghost entries

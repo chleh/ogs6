@@ -15,6 +15,8 @@
 
 #include <gtest/gtest.h>
 
+#include "MathLib/LinAlg/BLAS.h"
+
 #if defined(USE_LIS)
 #include "MathLib/LinAlg/Lis/LisMatrix.h"
 #elif defined(USE_PETSC)
@@ -100,7 +102,7 @@ void checkGlobalMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
     T_VECTOR y(v, deep_copy);
     m.multiply(v, y);
 
-    ASSERT_EQ(sqrt(3*(3*3 + 7*7)), y.getNorm());
+    ASSERT_EQ(sqrt(3*(3*3 + 7*7)), MathLib::BLAS::norm2(y));
 
     // set a value
     m.set(2 * mrank, 2 * mrank, 5.0);
@@ -110,7 +112,7 @@ void checkGlobalMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
     MathLib::finalizeMatrixAssembly(m);
     m.multiply(v, y);
 
-    ASSERT_EQ(sqrt((3*7*7 + 3*12*12)), y.getNorm());
+    ASSERT_EQ(sqrt((3*7*7 + 3*12*12)), MathLib::BLAS::norm2(y));
 
 }
 
@@ -159,7 +161,7 @@ void checkGlobalRectangularMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
     T_VECTOR y(m.getNRows());
     m.multiply(v, y);
 
-    ASSERT_NEAR(6.*sqrt(6.), y.getNorm(), 1.e-10);
+    ASSERT_NEAR(6.*sqrt(6.), MathLib::BLAS::norm2(y), 1.e-10);
 }
 
 #endif // end of: ifdef USE_PETSC // or MPI
