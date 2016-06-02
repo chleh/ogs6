@@ -270,6 +270,14 @@ MatrixVectorTraits<PETScVector>::Index numberOfGhosts(PETScVector const& x)
 {
     return detail::BLASHelper<PETScVector>::numberOfGhosts(x);;
 }
+
+double getComponent(PETScVector const& x,
+                    MatrixVectorTraits<PETScVector>::Index const i)
+{
+    PetscScalar value;
+    VecGetValues(*x.getRawVector(), 1, &i, &value);
+    return value;
+}
 }} // namespaces
 
 
@@ -400,6 +408,12 @@ void matMultAdd(EigenMatrix const& A, EigenVector const& v1, EigenVector const& 
 void finalizeAssembly(EigenMatrix& x)
 {
     x.getRawMatrix().makeCompressed();
+}
+
+double getComponent(EigenVector const& x,
+                    MatrixVectorTraits<EigenVector>::Index const i)
+{
+    return x.getRawVector()[i];
 }
 
 template<>

@@ -118,6 +118,14 @@ typename MatrixVectorTraits<Vector>::Index numberOfGhosts(
     return 0;
 }
 
+//! Get the \c i'th component of the vector \c x.
+template <typename Vector>
+double getComponent(Vector const& x,
+                    typename MatrixVectorTraits<Vector>::Index const i)
+{
+    return x[i];
+}
+
 // Matrix and Vector
 
 /*! Computes \f$ y = A \cdot x \f$.
@@ -145,8 +153,8 @@ void matMultAdd(Matrix const& A, Vector const& v1, Vector const& v2, Vector& v3)
     assert(&v1 != &v3);
     v3 = v2 + A * v1;
 }
-}
-}  // namespaces
+}  // namespace BLAS
+}  // namespace MathLib
 
 // Global PETScMatrix/PETScVector //////////////////////////////////////////
 #ifdef USE_PETSC
@@ -206,6 +214,9 @@ MatrixVectorTraits<PETScVector>::Index sizeLocalWithGhosts(
     PETScVector const& x);
 
 MatrixVectorTraits<PETScVector>::Index numberOfGhosts(PETScVector const& x);
+
+double getComponent(PETScVector const& x,
+                    MatrixVectorTraits<PETScVector>::Index const i);
 }
 }  // namespaces
 
@@ -259,6 +270,9 @@ void matMultAdd(EigenMatrix const& A, EigenVector const& v1,
                 EigenVector const& v2, EigenVector& v3);
 
 void finalizeAssembly(EigenMatrix& A);
+
+double getComponent(EigenVector const& x,
+                    MatrixVectorTraits<EigenVector>::Index const i);
 
 }  // namespace BLAS
 
