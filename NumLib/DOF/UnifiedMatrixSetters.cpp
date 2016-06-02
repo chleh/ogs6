@@ -58,8 +58,6 @@ void addToMatrix(Eigen::MatrixXd& m,
     }
 }
 
-double norm(Eigen::VectorXd const& x) { return x.norm(); }
-
 void setVector(Eigen::VectorXd& v, std::initializer_list<double> values)
 {
     assert((std::size_t) v.size() == values.size());

@@ -32,8 +32,6 @@ void setMatrix(Eigen::MatrixXd& m, Eigen::MatrixXd const& tmp);
 void addToMatrix(Eigen::MatrixXd& m,
                  std::initializer_list<double> values);
 
-double norm(Eigen::VectorXd const& x);
-
 void setVector(Eigen::VectorXd& v, std::initializer_list<double> values);
 
 void setVector(Eigen::VectorXd& v, MatrixVectorTraits<Eigen::VectorXd>::Index const index,
