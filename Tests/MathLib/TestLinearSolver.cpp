@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 
+#include "MathLib/LinAlg/BLAS.h"
 #include "MathLib/LinAlg/Dense/DenseMatrix.h"
 #include "MathLib/LinAlg/FinalizeMatrixAssembly.h"
 #include "MathLib/LinAlg/ApplyKnownSolution.h"
@@ -128,7 +129,7 @@ void checkLinearSolverInterface(T_MATRIX &A, BaseLib::ConfigTree const& ls_optio
     ls.solve(A, rhs, x);
 
     for (std::size_t i=0; i<ex1.dim_eqs; ++i) {
-        ASSERT_NEAR(ex1.exH[i], x.get(i), 1e-5);
+        ASSERT_NEAR(ex1.exH[i], MathLib::BLAS::getComponent(x, i), 1e-5);
     }
 }
 

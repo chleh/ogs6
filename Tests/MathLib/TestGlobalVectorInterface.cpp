@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 #include "MathLib/LinAlg/BLAS.h"
+#include "MathLib/LinAlg/UnifiedMatrixSetters.h"
 #include "../TestTools.h"
 
 #if defined(USE_LIS)
@@ -42,36 +43,36 @@ void checkGlobalVectorInterface()
     ASSERT_EQ(0u, x.getRangeBegin());
     ASSERT_EQ(10u, x.getRangeEnd());
 
-    ASSERT_EQ(.0, x.get(0));
-    x.set(0, 1.0);
+    ASSERT_EQ(.0, MathLib::BLAS::getComponent(x, 0));
+    MathLib::setVector(x, 0, 1.0);
 
-    ASSERT_EQ(1.0, x.get(0));
-    ASSERT_EQ(0.0, x.get(1));
+    ASSERT_EQ(1.0, MathLib::BLAS::getComponent(x, 0));
+    ASSERT_EQ(0.0, MathLib::BLAS::getComponent(x, 1));
 
     x.add(0, 1.0);
-    ASSERT_EQ(2.0, x.get(0));
+    ASSERT_EQ(2.0, MathLib::BLAS::getComponent(x, 0));
 
     T_VECTOR y(x);
-    ASSERT_EQ(2.0, y.get(0));
-    ASSERT_EQ(0.0, y.get(1));
+    ASSERT_EQ(2.0, MathLib::BLAS::getComponent(y, 0));
+    ASSERT_EQ(0.0, MathLib::BLAS::getComponent(y, 1));
     y += x;
 
-    ASSERT_EQ(4.0, y.get(0));
+    ASSERT_EQ(4.0, MathLib::BLAS::getComponent(y, 0));
     y -= x;
-    ASSERT_EQ(2.0, y.get(0));
+    ASSERT_EQ(2.0, MathLib::BLAS::getComponent(y, 0));
     y = 1.0;
-    ASSERT_EQ(1.0, y.get(0));
+    ASSERT_EQ(1.0, MathLib::BLAS::getComponent(y, 0));
     y = x;
-    ASSERT_EQ(2.0, y.get(0));
+    ASSERT_EQ(2.0, MathLib::BLAS::getComponent(y, 0));
 
     std::vector<double> local_vec(2, 1.0);
     std::vector<GlobalIndexType> vec_pos(2);
     vec_pos[0] = 0;
     vec_pos[1] = 3;
     y.add(vec_pos, local_vec);
-    ASSERT_EQ(3.0, y.get(0));
-    ASSERT_EQ(0.0, y.get(1));
-    ASSERT_EQ(1.0, y.get(3));
+    ASSERT_EQ(3.0, MathLib::BLAS::getComponent(y, 0));
+    ASSERT_EQ(0.0, MathLib::BLAS::getComponent(y, 1));
+    ASSERT_EQ(1.0, MathLib::BLAS::getComponent(y, 3));
 }
 
 #ifdef USE_PETSC
@@ -93,24 +94,24 @@ void checkGlobalVectorInterfacePETSc()
 
     const int r0 = x.getRangeBegin();
     //x.get(0) is expensive, only get local value. Use it for test purpose
-    ASSERT_EQ(.0, x.get(r0));
+    ASSERT_EQ(.0, MathLib::BLAS::getComponent(x, r0));
 
     x = 10.;
 
     // Value of x is not copied to y
     const bool deep_copy = false;
     T_VECTOR y(x, deep_copy);
-    ASSERT_EQ(0, y.get(r0));
+    ASSERT_EQ(0, MathLib::BLAS::getComponent(y, r0));
 
     y = 10.0;
-    ASSERT_EQ(10, y.get(r0));
+    ASSERT_EQ(10, MathLib::BLAS::getComponent(y, r0));
 
     y += x;
-    ASSERT_EQ(20, y.get(r0));
+    ASSERT_EQ(20, MathLib::BLAS::getComponent(y, r0));
     ASSERT_EQ(80., MathLib::BLAS::norm2(y));
 
     y -= x;
-    ASSERT_EQ(10, y.get(r0));
+    ASSERT_EQ(10, MathLib::BLAS::getComponent(y, r0));
     ASSERT_EQ(40., MathLib::BLAS::norm2(y));
 
     std::vector<double> local_vec(2, 10.0);
