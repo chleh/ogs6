@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include "MathLib/LinAlg/BLAS.h"
 #include "../TestTools.h"
 
 #if defined(USE_LIS)
@@ -37,7 +38,7 @@ void checkGlobalVectorInterface()
 {
     T_VECTOR x(10);
 
-    ASSERT_EQ(10u, x.size());
+    ASSERT_EQ(10u, MathLib::BLAS::sizeGlobal(x));
     ASSERT_EQ(0u, x.getRangeBegin());
     ASSERT_EQ(10u, x.getRangeEnd());
 
@@ -86,8 +87,9 @@ void checkGlobalVectorInterfacePETSc()
     // PETSc determined partitioning
     T_VECTOR x(16);
 
-    ASSERT_EQ(16u, x.size());
-    ASSERT_EQ(x.getRangeEnd()-x.getRangeBegin(), x.getLocalSize());
+    ASSERT_EQ(16u, MathLib::BLAS::sizeGlobal(x));
+    ASSERT_EQ(x.getRangeEnd() - x.getRangeBegin(),
+              MathLib::BLAS::sizeLocalWithoutGhosts(x));
 
     const int r0 = x.getRangeBegin();
     //x.get(0) is expensive, only get local value. Use it for test purpose
@@ -153,7 +155,7 @@ void checkGlobalVectorInterfacePETSc()
     const bool is_global_size = false;
     T_VECTOR x_fixed_p(2, is_global_size);
 
-    ASSERT_EQ(6u, x_fixed_p.size());
+    ASSERT_EQ(6u, MathLib::BLAS::sizeGlobal(x_fixed_p));
 
     int mrank;
     MPI_Comm_rank(PETSC_COMM_WORLD, &mrank);
@@ -177,8 +179,7 @@ void checkGlobalVectorInterfacePETSc()
     ASSERT_ARRAY_NEAR(z, x0, 6, 1e-10);
 
     // check local array
-    std::vector<double> loc_v(  x_fixed_p.getLocalSize()
-                              + x_fixed_p.getGhostSize() );
+    std::vector<double> loc_v(MathLib::BLAS::sizeLocalWithGhosts(x_fixed_p));
     x_fixed_p.copyValues(loc_v);
     z[0] = 1.0;
     z[1] = 2.0;
@@ -249,10 +250,10 @@ void checkGlobalVectorInterfacePETSc()
     x_with_ghosts.set(non_ghost_ids, non_ghost_vals);
     MathLib::finalizeVectorAssembly(x_with_ghosts);
 
-    ASSERT_EQ(12u, x_with_ghosts.size());
+    ASSERT_EQ(12u, MathLib::BLAS::sizeGlobal(x_with_ghosts));
 
-    std::vector<double> loc_v1(  x_with_ghosts.getLocalSize()
-                               + x_with_ghosts.getGhostSize() );
+    std::vector<double> loc_v1(
+        MathLib::BLAS::sizeLocalWithGhosts(x_with_ghosts));
     x_with_ghosts.copyValues(loc_v1);
     for (std::size_t i=0; i<expected.size(); i++)
     {

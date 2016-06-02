@@ -6,6 +6,7 @@
 #include <typeinfo>
 
 #include "BaseLib/BuildInfo.h"
+#include "MathLib/LinAlg/BLAS.h"
 #include "NumLib/ODESolver/TimeLoopSingleODE.h"
 #include "NumLib/NumericsConfig.h"
 #include "ODEs.h"
@@ -89,10 +90,13 @@ private:
 
     void write(double const t, Vector const& x_num, Vector const& x_ana)
     {
+        auto const size_num = MathLib::BLAS::sizeGlobal(x_num);
+        auto const size_ana = MathLib::BLAS::sizeGlobal(x_ana);
+
         *_file << t;
-        for (decltype(x_num.size()) i = 0; i < x_num.size(); ++i)
+        for (auto i = decltype(size_num)(0); i < size_num; ++i)
             *_file << '\t' << x_num[i];
-        for (decltype(x_ana.size()) i = 0; i < x_ana.size(); ++i)
+        for (auto i = decltype(size_ana)(0); i < size_ana; ++i)
             *_file << '\t' << x_ana[i];
         *_file << "\n";
     }

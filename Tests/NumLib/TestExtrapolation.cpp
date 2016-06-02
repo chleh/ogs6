@@ -54,10 +54,9 @@ void fillVectorRandomly(Vector& x)
     std::uniform_real_distribution<double> rnd;
     std::vector<GeoLib::Point> pnts;
 
-    using Index = typename MathLib::MatrixVectorTraits<Vector>::Index;
-    Index const size = x.size();
+    auto const size = MathLib::BLAS::sizeGlobal(x);
 
-    for (Index i=0; i<size; ++i) {
+    for (auto i = decltype(size)(0); i<size; ++i) {
         MathLib::setVector(x, i, rnd(random_number_generator));
     }
 }
@@ -279,8 +278,8 @@ void extrapolate(TestProcess<GlobalSetup> const& pcs,
     auto const& x_extra  = *result.first;
     auto const& residual = *result.second;
 
-    ASSERT_EQ(nnodes,    x_extra.size());
-    ASSERT_EQ(nelements, residual.size());
+    ASSERT_EQ(nnodes,    MathLib::BLAS::sizeGlobal(x_extra));
+    ASSERT_EQ(nelements, MathLib::BLAS::sizeGlobal(residual));
 
     auto const res_norm = BLAS::normMax(residual);
     DBUG("maximum norm of residual: %g", res_norm);

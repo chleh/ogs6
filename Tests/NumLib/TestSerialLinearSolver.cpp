@@ -19,6 +19,7 @@
 #include "NumLib/Assembler/VectorMatrixAssembler.h"
 
 #include "MathLib/LinAlg/ApplyKnownSolution.h"
+#include "MathLib/LinAlg/BLAS.h"
 #include "MathLib/LinAlg/Solvers/GaussAlgorithm.h"
 #include "MathLib/LinAlg/FinalizeMatrixAssembly.h"
 #include "MathLib/MathTools.h"
@@ -152,8 +153,9 @@ TEST(NumLibSerialLinearSolver, Steady2DdiffusionQuadElem)
     ls.solve(*A, *rhs, *x);
 
     // copy solution to double vector
-    std::vector<double> solution(x->size());
-    for (std::size_t i = 0; i < x->size(); ++i)
+    auto const size = static_cast<std::size_t>(MathLib::BLAS::sizeGlobal(*x));
+    std::vector<double> solution(size);
+    for (std::size_t i = 0; i < size; ++i)
         solution[i] = (*x)[i];
 
     ASSERT_ARRAY_NEAR(&ex1.exact_solutions[0], &solution[0], ex1.dim_eqs, 1.e-5);
