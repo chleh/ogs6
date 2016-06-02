@@ -134,7 +134,7 @@ calculateResiudalElement(std::size_t const element_index,
     nodal_vals_element.resize(global_indices.size());
     for (unsigned i=0; i<global_indices.size(); ++i) {
         // TODO PETSc negative indices?
-        nodal_vals_element[i] = _nodal_values[global_indices[i]];
+        nodal_vals_element[i] = _nodal_values.get(global_indices[i]);
     }
 
     double residual = 0.0;
