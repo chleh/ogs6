@@ -13,6 +13,7 @@
 #include <Eigen/Core>
 
 #include "MathLib/LinAlg/BLAS.h"
+#include "MathLib/LinAlg/UnifiedMatrixSetters.h"
 #include "NumLib/Assembler/SerialExecutor.h"
 #include "NumLib/DOF/MatrixVectorTraits.h"
 #include "NumLib/Function/Interpolation.h"
@@ -134,7 +135,8 @@ calculateResiudalElement(std::size_t const element_index,
     nodal_vals_element.resize(global_indices.size());
     for (unsigned i=0; i<global_indices.size(); ++i) {
         // TODO PETSc negative indices?
-        nodal_vals_element[i] = _nodal_values.get(global_indices[i]);
+        nodal_vals_element[i] =
+            MathLib::BLAS::getComponent(_nodal_values, global_indices[i]);
     }
 
     double residual = 0.0;
@@ -148,7 +150,7 @@ calculateResiudalElement(std::size_t const element_index,
         residual += ax_m_b * ax_m_b;
     }
 
-    _residuals.set(element_index, std::sqrt(residual / ni));
+    MathLib::setVector(_residuals, element_index, std::sqrt(residual / ni));
 }
 
 } // namespace ProcessLib

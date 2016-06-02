@@ -10,6 +10,7 @@
 #ifndef NUMLIB_VECTORMATRIXASSEMBLER_H_
 #define NUMLIB_VECTORMATRIXASSEMBLER_H_
 
+#include "MathLib/LinAlg/BLAS.h"
 #include "NumLib/DOF/LocalToGlobalIndexMap.h"
 #include "NumLib/ODESolver/Types.h"
 

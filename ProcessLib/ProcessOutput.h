@@ -201,8 +201,9 @@ void doProcessOutput(
             // Copy result
             for (std::size_t i = 0; i < mesh.getNNodes(); ++i)
             {
-                assert(!std::isnan(nodal_values.get(i)));
-                (*result)[i] = nodal_values.get(i);
+                assert(
+                    !std::isnan(MathLib::BLAS::getComponent(nodal_values, i)));
+                (*result)[i] = MathLib::BLAS::getComponent(nodal_values, i);
             }
         }
 
@@ -222,8 +223,8 @@ void doProcessOutput(
             // Copy result
             for (std::size_t i = 0; i < mesh.getNElements(); ++i)
             {
-                assert(!std::isnan(residuals.get(i)));
-                (*result)[i] = residuals.get(i);
+                assert(!std::isnan(MathLib::BLAS::getComponent(residuals, i)));
+                (*result)[i] = MathLib::BLAS::getComponent(residuals, i);
             }
         }
     };

@@ -10,6 +10,7 @@
 #ifndef PROCESS_LIB_PROCESS_H_
 #define PROCESS_LIB_PROCESS_H_
 
+#include "MathLib/LinAlg/UnifiedMatrixSetters.h"
 #include "MeshLib/IO/VtkIO/VtuInterface.h"
 #include "NumLib/DOF/ComputeSparsityPattern.h"
 #include "NumLib/ODESolver/ODESystem.h"
@@ -190,7 +191,7 @@ public:
 private:
     /// Process specific initialization called by initialize().
     virtual void initializeConcreteProcess(
-        NumLib::LocalToGlobalIndexMap const& dof_table,
+        AssemblerLib::LocalToGlobalIndexMap const& dof_table,
         MeshLib::Mesh const& mesh,
         unsigned const integration_order) = 0;
 
@@ -262,9 +263,9 @@ private:
             if (global_index == MathLib::BLAS::sizeGlobal(x))
                 global_index = 0;
 #endif
-            x.set(global_index,
-                  variable.getInitialConditionValue(*_mesh.getNode(node_id),
-                                                    component_id));
+            MathLib::setVector(x, global_index,
+                               variable.getInitialConditionValue(
+                                   *_mesh.getNode(node_id), component_id));
         }
     }
 

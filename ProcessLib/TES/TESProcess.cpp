@@ -43,7 +43,7 @@ void getVectorValues(
 
     for (auto i : indices)
     {
-        local_x.emplace_back(x.get(i));
+        local_x.emplace_back(MathLib::BLAS::getComponent(x, i));
     }
 }
 
@@ -60,7 +60,7 @@ double getNodalValue(GlobalVector const& x, MeshLib::Mesh const& mesh,
     auto const index = dof_table.getLocalIndex(
         l, global_component_id, x.getRangeBegin(), x.getRangeEnd());
 
-    return x.get(index);
+    return MathLib::BLAS::getComponent(x, index);
 }
 
 namespace ProcessLib
@@ -360,7 +360,7 @@ TESProcess<GlobalSetup>::computeVapourPartialPressure(
             x_mV, _assembly_params.M_react, _assembly_params.M_inert);
 
         // TODO Problems with PETSc? (local vs. global index)
-        result_cache->set(node_id, p * x_nV);
+        MathLib::setVector(*result_cache, node_id, p * x_nV);
     }
 
     return *result_cache;
@@ -397,7 +397,7 @@ TESProcess<GlobalSetup>::computeRelativeHumidity(
             Adsorption::AdsorptionReaction::getEquilibriumVapourPressure(T);
 
         // TODO Problems with PETSc? (local vs. global index)
-        result_cache->set(node_id, p * x_nV / p_S);
+        MathLib::setVector(*result_cache, node_id, p * x_nV / p_S);
     }
 
     return *result_cache;
@@ -437,7 +437,7 @@ TESProcess<GlobalSetup>::computeEquilibriumLoading(
                                p_V, T, _assembly_params.M_react);
 
         // TODO Problems with PETSc? (local vs. global index)
-        result_cache->set(node_id, C_eq);
+        MathLib::setVector(*result_cache, node_id, C_eq);
     }
 
     return *result_cache;
