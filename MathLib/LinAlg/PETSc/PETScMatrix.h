@@ -141,17 +141,6 @@ class PETScMatrix
         */
         void setRowsColumnsZero(std::vector<PetscInt> const& row_pos);
 
-        /*
-           \brief       Perform operation \f$ y = A x \f$
-           \param vec   The given vector, e.g. \f$ x \f$
-           \param vec_r The result vector, e.g. \f$ y \f$
-            Both of the two arguments must be created prior to be used.
-        */
-        void multiply(const PETScVector &vec, PETScVector &vec_r)
-        {
-            MatMult(*_A, *vec.getRawVector(), *vec_r.getRawVector());
-        }
-
         /*!
            \brief       Set a single entry with a value.
            \param i     The row index.

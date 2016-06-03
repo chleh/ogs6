@@ -128,10 +128,6 @@ public:
         if (!y._v) y.shallowCopy(x);
         VecCopy(*x._v, *y._v);
     }
-
-    static void setZero(PETScVector& x)
-    {
-    }
 };
 }  // namespace detail
 
@@ -445,7 +441,7 @@ void axpy(EigenMatrix& Y, double const a, EigenMatrix const& X)
 void matMult(EigenMatrix const& A, EigenVector const& x, EigenVector& y)
 {
     assert(&x != &y);
-    A.multiply(x, y);
+    y.getRawVector() = A.getRawMatrix() * x.getRawVector();
 }
 
 // v3 = A*v1 + v2
