@@ -171,7 +171,7 @@ void checkLinearSolverInterface(T_MATRIX& A, T_VECTOR& b,
     double x1[6];
     x.getGlobalVector(x0);
 
-    A.multiply(x, b);
+    MathLib::BLAS::matMult(A, x, b);
 
     // apply BC
     std::vector<int> bc_id;  // Type must be int to match Petsc_Int

@@ -103,7 +103,7 @@ void checkGlobalMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
     MathLib::BLAS::finalizeAssembly(v);
     const bool deep_copy = false;
     T_VECTOR y(v, deep_copy);
-    m.multiply(v, y);
+    MathLib::BLAS::matMult(m, v, y);
 
     ASSERT_EQ(sqrt(3*(3*3 + 7*7)), MathLib::BLAS::norm2(y));
 
@@ -113,7 +113,7 @@ void checkGlobalMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
     // add a value
     m.add(2 * mrank+1, 2 * mrank+1, 5.0);
     MathLib::finalizeMatrixAssembly(m);
-    m.multiply(v, y);
+    MathLib::BLAS::matMult(m, v, y);
 
     ASSERT_EQ(sqrt((3*7*7 + 3*12*12)), MathLib::BLAS::norm2(y));
 
@@ -164,7 +164,7 @@ void checkGlobalRectangularMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
         MathLib::setVector(v,  v.getRangeBegin()+i, 1.0);
     MathLib::BLAS::finalizeAssembly(v);
     T_VECTOR y(m.getNRows());
-    m.multiply(v, y);
+    MathLib::BLAS::matMult(m, v, y);
 
     ASSERT_NEAR(6.*sqrt(6.), MathLib::BLAS::norm2(y), 1.e-10);
 }
