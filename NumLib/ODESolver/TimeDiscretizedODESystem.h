@@ -163,7 +163,7 @@ public:
         auto& xdot = MathLib::GlobalVectorProvider<Vector>::provider.getVector(_xdot_id);
         _time_disc.getXdot(x_new_timestep, xdot);
 
-        _Jac->setZero();
+        MathLib::BLAS::setZero(*_Jac);
 
         _ode.assembleJacobian(t, x_curr, xdot,
                               dxdot_dx, *_M, dx_dx, *_K,
