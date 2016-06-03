@@ -104,7 +104,7 @@ void checkLinearSolverInterface(T_MATRIX &A, BaseLib::ConfigTree const& ls_optio
     Example1<IntType> ex1;
 
     // set a coefficient matrix
-    A.setZero();
+    MathLib::BLAS::setZero(A);
     for (std::size_t i=0; i<ex1.dim_eqs; i++)
     {
         for (std::size_t j=0; j<ex1.dim_eqs; j++)

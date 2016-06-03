@@ -70,7 +70,7 @@ TEST(NumLibSerialLinearSolver, Steady2DdiffusionQuadElem)
     typedef GlobalSetup::MatrixType GlobalMatrix;
     auto A = std::unique_ptr<GlobalMatrix>{
              GlobalSetup::createMatrix(local_to_global_index_map.dofSizeWithGhosts())};
-    A->setZero();
+    MathLib::BLAS::setZero(*A);
     auto rhs = std::unique_ptr<GlobalVector>{
                GlobalSetup::createVector(local_to_global_index_map.dofSizeWithGhosts())};
     auto x   = std::unique_ptr<GlobalVector>{
@@ -112,7 +112,7 @@ TEST(NumLibSerialLinearSolver, Steady2DdiffusionQuadElem)
     // Call global assembler for each mesh element.
     auto M_dummy = std::unique_ptr<GlobalMatrix>{
         GlobalSetup::createMatrix(local_to_global_index_map.dofSizeWithGhosts())};
-    A->setZero();
+    MathLib::BLAS::setZero(*A);
     auto const t = 0.0;
     GlobalSetup::executeMemberDereferenced(
                 assembler, &GlobalAssembler::assemble,
