@@ -8,6 +8,7 @@
  */
 
 #include <cassert>
+#include "BLAS.h"
 #include "UnifiedMatrixSetters.h"
 
 #ifdef OGS_USE_EIGEN
@@ -107,7 +108,7 @@ void setVector(PETScVector& v, MatrixVectorTraits<PETScVector>::Index const inde
 void setMatrix(PETScMatrix& m,
                std::initializer_list<double> values)
 {
-    m.setZero();
+    BLAS::setZero(m);
     addToMatrix(m, values);
 }
 
@@ -120,7 +121,7 @@ void setMatrix(PETScMatrix& m, Eigen::MatrixXd const& tmp)
 
     assert(rows == m.getNRows() && cols == m.getNCols());
 
-    m.setZero();
+    BLAS::setZero(m);
     std::vector<IndexType> row_idcs(rows);
     std::vector<IndexType> col_idcs(cols);
 

@@ -60,15 +60,6 @@ public:
     /// return an end index of the active data range
     std::size_t getRangeEnd() const  { return getNRows(); }
 
-    /// reset data entries to zero.
-    void setZero()
-    {
-        auto const N = _mat.nonZeros();
-        for (auto i = decltype(N){0}; i<N; i++)
-            _mat.valuePtr()[i] = 0;
-        // don't use _mat.setZero(). it makes a matrix uncompressed
-    }
-
     /// set a value to the given entry. If the entry doesn't exist, this class
     /// dynamically allocates it.
     int setValue(IndexType row, IndexType col, double val)

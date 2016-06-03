@@ -130,12 +130,6 @@ class PETScMatrix
             return *_A;
         }
 
-        /// Set all entries to zero.
-        void setZero()
-        {
-            MatZeroEntries(*_A);
-        }
-
         /*
            \brief Set the specified rows to zero except diagonal entries, i.e.
                   \f$A(k, j) = \begin{cases}

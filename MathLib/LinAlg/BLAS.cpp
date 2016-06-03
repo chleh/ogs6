@@ -131,7 +131,6 @@ public:
 
     static void setZero(PETScVector& x)
     {
-        VecSet(*x._v, 0.0);
     }
 };
 }  // namespace detail
@@ -141,7 +140,7 @@ public:
 template <>
 void setZero(PETScVector& x)
 {
-    detail::BLASHelper<PETScVector>::setZero(x);
+    VecSet(*x.getRawVector(), 0.0);
 }
 
 template <>
@@ -336,7 +335,11 @@ void setZero(EigenVector& x)
 template <>
 void setZero(EigenMatrix& A)
 {
-    A.setZero();
+    auto& mat = A.getRawMatrix();
+    auto const N = mat.nonZeros();
+    for (auto i = decltype(N){0}; i<N; i++)
+        mat.valuePtr()[i] = 0;
+    // don't use mat.setZero(). it makes a matrix uncompressed
 }
 
 // Vector
