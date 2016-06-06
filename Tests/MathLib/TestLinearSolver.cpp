@@ -17,7 +17,6 @@
 
 #include "MathLib/LinAlg/BLAS.h"
 #include "MathLib/LinAlg/Dense/DenseMatrix.h"
-#include "MathLib/LinAlg/FinalizeMatrixAssembly.h"
 #include "MathLib/LinAlg/ApplyKnownSolution.h"
 #include "MathLib/LinAlg/Solvers/GaussAlgorithm.h"
 
@@ -123,7 +122,7 @@ void checkLinearSolverInterface(T_MATRIX &A, BaseLib::ConfigTree const& ls_optio
     // apply BC
     MathLib::applyKnownSolution(A, rhs, x, ex1.vec_dirichlet_bc_id, ex1.vec_dirichlet_bc_value);
 
-    MathLib::finalizeMatrixAssembly(A);
+    MathLib::BLAS::finalizeAssembly(A);
 
     // solve
     T_LINEAR_SOVLER ls("dummy_name", &ls_option);
@@ -158,7 +157,7 @@ void checkLinearSolverInterface(T_MATRIX& A, T_VECTOR& b,
 
     A.add(row_pos, col_pos, loc_m);
 
-    MathLib::finalizeMatrixAssembly(A);
+    MathLib::BLAS::finalizeAssembly(A);
 
     const bool deep_copy = false;
     T_VECTOR x(b, deep_copy);
@@ -187,7 +186,7 @@ void checkLinearSolverInterface(T_MATRIX& A, T_VECTOR& b,
 
     MathLib::applyKnownSolution(A, b, x, bc_id, bc_value);
 
-    MathLib::finalizeMatrixAssembly(A);
+    MathLib::BLAS::finalizeAssembly(A);
 
     // solve
     T_LINEAR_SOVLER ls(prefix_name, &ls_option);

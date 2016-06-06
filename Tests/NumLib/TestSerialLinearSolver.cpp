@@ -21,7 +21,6 @@
 #include "MathLib/LinAlg/ApplyKnownSolution.h"
 #include "MathLib/LinAlg/BLAS.h"
 #include "MathLib/LinAlg/Solvers/GaussAlgorithm.h"
-#include "MathLib/LinAlg/FinalizeMatrixAssembly.h"
 #include "MathLib/MathTools.h"
 
 #include "MeshLib/Elements/Element.h"
@@ -131,7 +130,7 @@ TEST(NumLibSerialLinearSolver, Steady2DdiffusionQuadElem)
     //std::cout << "rhs=\n";
     //rhs->write(std::cout);
 
-    MathLib::finalizeMatrixAssembly(*A);
+    MathLib::BLAS::finalizeAssembly(*A);
     //--------------------------------------------------------------------------
     // solve x=A^-1 rhs
     //--------------------------------------------------------------------------

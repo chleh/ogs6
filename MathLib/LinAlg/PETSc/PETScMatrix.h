@@ -240,8 +240,6 @@ class PETScMatrix
                  (same value is used for all local rows)
         */
         void create(const PetscInt d_nz, const PetscInt o_nz);
-
-        friend bool finalizeMatrixAssembly(PETScMatrix &mat, const MatAssemblyType asm_type);
 };
 
 /*!
@@ -260,14 +258,6 @@ void PETScMatrix::add(std::vector<PetscInt> const& row_pos,
 
     MatSetValues(*_A, nrows, &row_pos[0], ncols, &col_pos[0], &sub_mat(0,0), ADD_VALUES);
 }
-
-/*!
-    \brief          General interface for the matrix assembly.
-    \param mat      The matrix to be finalized.
-    \param asm_type Assmebly type, either MAT_FLUSH_ASSEMBLY
-                     or MAT_FINAL_ASSEMBLY.
-*/
-bool finalizeMatrixAssembly(PETScMatrix &mat, const MatAssemblyType asm_type = MAT_FINAL_ASSEMBLY);
 
 } // end namespace
 #endif

@@ -141,11 +141,5 @@ void PETScMatrix::create(const PetscInt d_nz, const PetscInt o_nz)
     MatGetLocalSize(*_A, &_n_loc_rows, &_n_loc_cols);
 }
 
-bool finalizeMatrixAssembly(PETScMatrix &mat, const MatAssemblyType asm_type)
-{
-    mat.finalizeAssembly(asm_type);
-    return true;
-}
-
 } //end of namespace
 

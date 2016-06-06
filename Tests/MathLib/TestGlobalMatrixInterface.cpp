@@ -29,7 +29,6 @@
 #endif
 
 #include "MathLib/LinAlg/Dense/DenseMatrix.h"
-#include "MathLib/LinAlg/FinalizeMatrixAssembly.h"
 
 #include "NumLib/NumericsConfig.h"
 
@@ -54,7 +53,7 @@ void checkGlobalMatrixInterface(T_MATRIX &m)
     vec_pos[1] = 3;
     m.add(vec_pos, vec_pos, local_m);
 
-    ASSERT_TRUE(finalizeMatrixAssembly(m));
+    MathLib::BLAS::finalizeAssembly(m);
 }
 
 #ifdef USE_PETSC // or MPI
@@ -95,7 +94,7 @@ void checkGlobalMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
 
     m.add(row_pos, col_pos, loc_m);
 
-    MathLib::finalizeMatrixAssembly(m);
+    MathLib::BLAS::finalizeAssembly(m);
 
     // Multiply by a vector
     for (int i=0; i<MathLib::BLAS::sizeLocalWithoutGhosts(v); ++i)
@@ -110,10 +109,10 @@ void checkGlobalMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
 #if 0 // TODO fix and re-enable this test
     // set a value
     m.set(2 * mrank, 2 * mrank, 5.0);
-    MathLib::finalizeMatrixAssembly(m);
+    MathLib::BLAS::finalizeAssembly(m);
     // add a value
     m.add(2 * mrank+1, 2 * mrank+1, 5.0);
-    MathLib::finalizeMatrixAssembly(m);
+    MathLib::BLAS::finalizeAssembly(m);
     MathLib::BLAS::matMult(m, v, y);
 
     ASSERT_EQ(sqrt((3*7*7 + 3*12*12)), MathLib::BLAS::norm2(y));
@@ -158,7 +157,7 @@ void checkGlobalRectangularMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
 
     m.add(row_pos, col_pos, loc_m);
 
-    MathLib::finalizeMatrixAssembly(m);
+    MathLib::BLAS::finalizeAssembly(m);
 
     // Multiply by a vector
     for (int i=0; i<MathLib::BLAS::sizeLocalWithoutGhosts(v); ++i)
