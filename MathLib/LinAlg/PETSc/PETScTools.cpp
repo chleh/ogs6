@@ -14,6 +14,7 @@
                http://www.opengeosys.org/project/license
 */
 
+#include "MathLib/LinAlg/BLAS.h"
 #include "PETScTools.h"
 
 namespace MathLib
@@ -28,16 +29,16 @@ void applyKnownSolution(PETScMatrix &A, PETScVector &b, PETScVector &x,
     A.setRowsColumnsZero(vec_knownX_id);
     A.finalizeAssembly();
 
-    x.finalizeAssembly();
-    b.finalizeAssembly();
+    BLAS::finalizeAssembly(x);
+    BLAS::finalizeAssembly(b);
     if(vec_knownX_id.size() > 0)
     {
         x.set(vec_knownX_id, vec_knownX_x);
         b.set(vec_knownX_id, vec_knownX_x);
     }
 
-    x.finalizeAssembly();
-    b.finalizeAssembly();
+    BLAS::finalizeAssembly(x);
+    BLAS::finalizeAssembly(b);
 }
 
 } // end of namespace MathLib

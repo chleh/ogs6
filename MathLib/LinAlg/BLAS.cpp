@@ -276,7 +276,9 @@ void finalizeAssembly(PETScMatrix& A)
 
 void finalizeAssembly(PETScVector& x)
 {
-    x.finalizeAssembly();
+    auto& x_ = *x.getRawVector();
+    VecAssemblyBegin(x_);
+    VecAssemblyEnd(x_);
 }
 
 template<>

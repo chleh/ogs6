@@ -90,9 +90,6 @@ class PETScVector
             destroy();
         }
 
-        /// Perform MPI collection of assembled entries in buffer
-        void finalizeAssembly();
-
         /// Get the start index of the local vector
         PetscInt getRangeBegin() const
         {
@@ -220,12 +217,7 @@ class PETScVector
 
         /// A funtion called by constructors to configure members
         void config();
-
-        friend void finalizeVectorAssembly(PETScVector &vec);
 };
-
-/// Function to finalize the vector assembly
-void finalizeVectorAssembly(PETScVector &vec);
 
 } // end namespace
 #endif

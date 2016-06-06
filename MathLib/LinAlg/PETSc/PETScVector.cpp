@@ -101,12 +101,6 @@ void PETScVector::config()
     VecSetOption(*_v, VEC_IGNORE_NEGATIVE_INDICES, PETSC_TRUE);
 }
 
-void PETScVector::finalizeAssembly()
-{
-    VecAssemblyBegin(*_v);
-    VecAssemblyEnd(*_v);
-}
-
 void PETScVector::copyValues(std::vector<double>& u) const
 {
     assert(u.size() == static_cast<std::size_t>(_size_loc + _size_ghosts));
@@ -176,11 +170,6 @@ void PETScVector::shallowCopy(const PETScVector &v)
     _has_ghost_id = v._has_ghost_id;
 
     VecSetOption(*_v, VEC_IGNORE_NEGATIVE_INDICES, PETSC_TRUE);
-}
-
-void finalizeVectorAssembly(PETScVector &vec)
-{
-    vec.finalizeAssembly();
 }
 
 } //end of namespace

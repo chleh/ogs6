@@ -28,7 +28,6 @@
 #include "MathLib/LinAlg/Dense/DenseVector.h"
 #endif
 
-#include "MathLib/LinAlg/FinalizeVectorAssembly.h"
 #include "NumLib/NumericsConfig.h"
 
 namespace
@@ -160,7 +159,7 @@ void checkGlobalVectorInterfacePETSc()
     ASSERT_ARRAY_NEAR(z, loc_v, 2, 1e-10);
 
     // Deep copy
-    MathLib::finalizeVectorAssembly(x_fixed_p);
+    MathLib::BLAS::finalizeAssembly(x_fixed_p);
     T_VECTOR x_deep_copied(x_fixed_p);
     ASSERT_NEAR(sqrt(3.0*5), MathLib::BLAS::norm2(x_deep_copied), 1.e-10);
 
@@ -221,7 +220,7 @@ void checkGlobalVectorInterfacePETSc()
     }
     T_VECTOR x_with_ghosts(local_vec_size, ghost_ids, is_global_size);
     x_with_ghosts.set(non_ghost_ids, non_ghost_vals);
-    MathLib::finalizeVectorAssembly(x_with_ghosts);
+    MathLib::BLAS::finalizeAssembly(x_with_ghosts);
 
     ASSERT_EQ(12u, MathLib::BLAS::sizeGlobal(x_with_ghosts));
 
