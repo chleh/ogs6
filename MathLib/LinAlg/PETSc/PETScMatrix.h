@@ -142,17 +142,6 @@ class PETScMatrix
         void setRowsColumnsZero(std::vector<PetscInt> const& row_pos);
 
         /*!
-           \brief       Set a single entry with a value.
-           \param i     The row index.
-           \param j     The column index.
-           \param value The entry value.
-        */
-        void set(const PetscInt i, const PetscInt j, const PetscScalar value)
-        {
-            MatSetValue(*_A, i, j, value, INSERT_VALUES);
-        }
-
-        /*!
            \brief Add value to a single entry.
            \param i     The row index.
            \param j     The column index.
@@ -270,7 +259,7 @@ void PETScMatrix::add(std::vector<PetscInt> const& row_pos,
     const PetscInt ncols = static_cast<PetscInt> (col_pos.size());
 
     MatSetValues(*_A, nrows, &row_pos[0], ncols, &col_pos[0], &sub_mat(0,0), ADD_VALUES);
-};
+}
 
 /*!
     \brief          General interface for the matrix assembly.

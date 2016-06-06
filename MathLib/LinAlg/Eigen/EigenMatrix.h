@@ -60,15 +60,6 @@ public:
     /// return an end index of the active data range
     std::size_t getRangeEnd() const  { return getNRows(); }
 
-    /// set a value to the given entry. If the entry doesn't exist, this class
-    /// dynamically allocates it.
-    int setValue(IndexType row, IndexType col, double val)
-    {
-        assert(row < (IndexType) getNRows() && col < (IndexType) getNCols());
-        if (val != 0.0) _mat.coeffRef(row, col) = val;
-        return 0;
-    }
-
     /// add a value to the given entry. If the entry doesn't exist, the value is
     /// inserted.
     int add(IndexType row, IndexType col, double val)

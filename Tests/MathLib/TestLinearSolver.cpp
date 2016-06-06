@@ -62,9 +62,10 @@ void setMatrix9x9(T_Mat &mat)
         0, 0, 0, -3.33333e-012, -3.33333e-012, -3.33333e-012, -1.66667e-012, 1.33333e-011, -1.66667e-012,
         0, 0, 0, 0, -3.33333e-012, -1.66667e-012, 0, -1.66667e-012, 6.66667e-012
     };
+    MathLib::BLAS::setZero(mat);
     for (unsigned i = 0; i < 9; i++)
         for (unsigned j = 0; j < 9; j++)
-            mat.setValue(i, j, d_mat[i*9+j]);
+            mat.add(i, j, d_mat[i*9+j]);
 }
 
 template<typename IntType> struct Example1
