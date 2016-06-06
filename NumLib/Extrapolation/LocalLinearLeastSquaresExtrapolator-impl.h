@@ -15,7 +15,7 @@
 #include "MathLib/LinAlg/BLAS.h"
 #include "MathLib/LinAlg/UnifiedMatrixSetters.h"
 #include "NumLib/Assembler/SerialExecutor.h"
-#include "NumLib/DOF/MatrixVectorTraits.h"
+#include "MathLib/LinAlg/MatrixVectorTraits.h"
 #include "NumLib/Function/Interpolation.h"
 #include "LocalLinearLeastSquaresExtrapolator.h"
 
