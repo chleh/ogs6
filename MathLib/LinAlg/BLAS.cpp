@@ -129,6 +129,34 @@ public:
         VecCopy(*x._v, *y._v);
     }
 };
+template <>
+class BLASHelper<PETScMatrix>
+{
+public:
+    static MatrixVectorTraits<PETScMatrix>::Index rowsGlobal(
+        PETScMatrix const& A)
+    {
+        return A._nrows;
+    }
+
+    static MatrixVectorTraits<PETScMatrix>::Index rowsLocal(
+        PETScMatrix const& A)
+    {
+        return A._n_loc_rows;
+    }
+
+    static MatrixVectorTraits<PETScMatrix>::Index columnsGlobal(
+        PETScMatrix const& A)
+    {
+        return A._ncols;
+    }
+
+    static MatrixVectorTraits<PETScMatrix>::Index columnsLocal(
+        PETScMatrix const& A)
+    {
+        return A._n_loc_cols;
+    }
+};
 }  // namespace detail
 
 // Vector
@@ -311,6 +339,28 @@ double getComponent(PETScVector const& x,
     VecGetValues(*x.getRawVector(), 1, &i, &value);
     return value;
 }
+
+template <>
+MatrixVectorTraits<PETScMatrix>::Index rowsGlobal(PETScMatrix const& A)
+{
+    return detail::BLASHelper<PETScMatrix>::rowsGlobal(A);
+}
+
+MatrixVectorTraits<PETScMatrix>::Index rowsLocal(PETScMatrix const& A)
+{
+    return detail::BLASHelper<PETScMatrix>::rowsLocal(A);
+}
+
+template <>
+MatrixVectorTraits<PETScMatrix>::Index columnsGlobal(PETScMatrix const& A)
+{
+    return detail::BLASHelper<PETScMatrix>::columnsGlobal(A);
+}
+
+MatrixVectorTraits<PETScMatrix>::Index columnsLocal(PETScMatrix const& A)
+{
+    return detail::BLASHelper<PETScMatrix>::columnsLocal(A);
+}
 }} // namespaces
 
 
@@ -469,6 +519,18 @@ template<>
 MatrixVectorTraits<EigenVector>::Index sizeGlobal(EigenVector const& x)
 {
     return x.getRawVector().size();
+}
+
+template<>
+MatrixVectorTraits<EigenMatrix>::Index rowsGlobal(EigenMatrix const& A)
+{
+    return A.getRawMatrix().rows();
+}
+
+template<>
+MatrixVectorTraits<EigenMatrix>::Index columnsGlobal(EigenMatrix const& A)
+{
+    return A.getRawMatrix().cols();
 }
 
 } // namespace BLAS

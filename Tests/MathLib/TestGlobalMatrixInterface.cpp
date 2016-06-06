@@ -66,17 +66,17 @@ void checkGlobalMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
     MPI_Comm_rank(PETSC_COMM_WORLD, &mrank);
 
     ASSERT_EQ(3u, msize);
-    ASSERT_EQ(m.getRangeEnd()-m.getRangeBegin(), m.getNLocalRows());
+    ASSERT_EQ(m.getRangeEnd()-m.getRangeBegin(), MathLib::BLAS::rowsLocal(m));
 
     int gathered_rows;
-    int local_rows = m.getNLocalRows();
+    int local_rows = MathLib::BLAS::rowsLocal(m);
     MPI_Allreduce(&local_rows, &gathered_rows, 1, MPI_INT, MPI_SUM, PETSC_COMM_WORLD);
-    ASSERT_EQ(m.getNRows(), gathered_rows);
+    ASSERT_EQ(MathLib::BLAS::rowsGlobal(m), gathered_rows);
 
     int gathered_cols;
-    int local_cols = m.getNLocalColumns();
+    int local_cols = MathLib::BLAS::columnsLocal(m);
     MPI_Allreduce(&local_cols, &gathered_cols, 1, MPI_INT, MPI_SUM, PETSC_COMM_WORLD);
-    ASSERT_EQ(m.getNCols(), gathered_cols);
+    ASSERT_EQ(MathLib::BLAS::columnsGlobal(m), gathered_cols);
 
     // Add entries
     MathLib::DenseMatrix<double> loc_m(2, 2);
@@ -126,17 +126,17 @@ void checkGlobalRectangularMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
     int mrank;
     MPI_Comm_rank(PETSC_COMM_WORLD, &mrank);
 
-    ASSERT_EQ(m.getRangeEnd()-m.getRangeBegin(), m.getNLocalRows());
+    ASSERT_EQ(m.getRangeEnd()-m.getRangeBegin(), MathLib::BLAS::rowsLocal(m));
 
     int gathered_rows;
-    int local_rows = m.getNLocalRows();
+    int local_rows = MathLib::BLAS::rowsLocal(m);
     MPI_Allreduce(&local_rows, &gathered_rows, 1, MPI_INT, MPI_SUM, PETSC_COMM_WORLD);
-    ASSERT_EQ(m.getNRows(), gathered_rows);
+    ASSERT_EQ(MathLib::BLAS::rowsGlobal(m), gathered_rows);
 
     int gathered_cols;
-    int local_cols = m.getNLocalColumns();
+    int local_cols = MathLib::BLAS::columnsLocal(m);
     MPI_Allreduce(&local_cols, &gathered_cols, 1, MPI_INT, MPI_SUM, PETSC_COMM_WORLD);
-    ASSERT_EQ(m.getNCols(), gathered_cols);
+    ASSERT_EQ(MathLib::BLAS::columnsGlobal(m), gathered_cols);
 
     // Add entries
     MathLib::DenseMatrix<double> loc_m(2, 3);
@@ -163,7 +163,7 @@ void checkGlobalRectangularMatrixInterfaceMPI(T_MATRIX &m, T_VECTOR &v)
     for (int i=0; i<MathLib::BLAS::sizeLocalWithoutGhosts(v); ++i)
         MathLib::setVector(v,  v.getRangeBegin()+i, 1.0);
     MathLib::BLAS::finalizeAssembly(v);
-    T_VECTOR y(m.getNRows());
+    T_VECTOR y(MathLib::BLAS::rowsGlobal(m));
     MathLib::BLAS::matMult(m, v, y);
 
     ASSERT_NEAR(6.*sqrt(6.), MathLib::BLAS::norm2(y), 1.e-10);

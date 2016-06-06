@@ -119,7 +119,7 @@ void setMatrix(PETScMatrix& m, Eigen::MatrixXd const& tmp)
     auto const rows = tmp.rows();
     auto const cols = tmp.cols();
 
-    assert(rows == m.getNRows() && cols == m.getNCols());
+    assert(rows == BLAS::rowsGlobal(m) && cols == BLAS::columnsGlobal(m));
 
     BLAS::setZero(m);
     std::vector<IndexType> row_idcs(rows);
@@ -139,8 +139,8 @@ void addToMatrix(PETScMatrix& m,
 {
     using IndexType = PETScMatrix::IndexType;
 
-    auto const rows = m.getNRows();
-    auto const cols = m.getNCols();
+    auto const rows = BLAS::rowsGlobal(m);
+    auto const cols = BLAS::columnsGlobal(m);
 
     assert((IndexType) values.size() == rows*cols);
 
@@ -191,15 +191,17 @@ void setVector(EigenVector& v, MatrixVectorTraits<EigenVector>::Index const inde
 void setMatrix(EigenMatrix& m,
                std::initializer_list<double> values)
 {
-    auto const rows = m.getNRows();
-    auto const cols = m.getNCols();
+    using IndexType = EigenMatrix::IndexType;
 
-    assert(values.size() == rows*cols);
+    auto const rows = BLAS::rowsGlobal(m);
+    auto const cols = BLAS::columnsGlobal(m);
+
+    assert(values.size() == static_cast<std::size_t>(rows*cols));
     Eigen::MatrixXd tmp(rows, cols);
 
     auto it = values.begin();
-    for (std::size_t r=0; r<rows; ++r) {
-        for (std::size_t c=0; c<cols; ++c) {
+    for (IndexType r=0; r<rows; ++r) {
+        for (IndexType c=0; c<cols; ++c) {
             tmp(r, c) = *(it++);
         }
     }
@@ -215,15 +217,17 @@ void setMatrix(EigenMatrix& m, Eigen::MatrixXd const& tmp)
 void addToMatrix(EigenMatrix& m,
                  std::initializer_list<double> values)
 {
-    auto const rows = m.getNRows();
-    auto const cols = m.getNCols();
+    using IndexType = EigenMatrix::IndexType;
 
-    assert(values.size() == rows*cols);
+    auto const rows = BLAS::rowsGlobal(m);
+    auto const cols = BLAS::columnsGlobal(m);
+
+    assert(values.size() == static_cast<std::size_t>(rows*cols));
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> tmp(rows, cols);
 
     auto it = values.begin();
-    for (std::size_t r=0; r<rows; ++r) {
-        for (std::size_t c=0; c<cols; ++c) {
+    for (IndexType r=0; r<rows; ++r) {
+        for (IndexType c=0; c<cols; ++c) {
             tmp(r, c) = *(it++);
         }
     }

@@ -130,6 +130,24 @@ double getComponent(Vector const& x,
     return x[i];
 }
 
+template <typename Matrix>
+typename MatrixVectorTraits<Matrix>::Index rowsGlobal(Matrix const& A);
+
+template <typename Matrix>
+typename MatrixVectorTraits<Matrix>::Index rowsLocal(Matrix const& A)
+{
+    return rowsGlobal(A);
+}
+
+template <typename Matrix>
+typename MatrixVectorTraits<Matrix>::Index columnsGlobal(Matrix const& A);
+
+template <typename Matrix>
+typename MatrixVectorTraits<Matrix>::Index columnsLocal(Matrix const& A)
+{
+    return columnsGlobal(A);
+}
+
 // Matrix and Vector
 
 /*! Computes \f$ y = A \cdot x \f$.
@@ -221,6 +239,10 @@ MatrixVectorTraits<PETScVector>::Index numberOfGhosts(PETScVector const& x);
 
 double getComponent(PETScVector const& x,
                     MatrixVectorTraits<PETScVector>::Index const i);
+
+MatrixVectorTraits<PETScMatrix>::Index rowsLocal(PETScMatrix const& A);
+
+MatrixVectorTraits<PETScMatrix>::Index columnsLocal(PETScMatrix const& A);
 }
 }  // namespaces
 

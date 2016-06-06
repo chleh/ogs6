@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "PETScMatrixOption.h"
-#include "PETScVector.h"
 
 #include "MathLib/LinAlg/RowColumnIndices.h"
 
@@ -28,6 +27,14 @@ typedef Mat PETSc_Mat;
 
 namespace MathLib
 {
+namespace BLAS
+{
+namespace detail
+{
+template <typename MatVec>
+class BLASHelper;
+}  // namespace detail
+}  // namespace BLAS
 
 /*!
    \brief Wrapper class for PETSc matrix routines for matrix.
@@ -74,31 +81,6 @@ class PETScMatrix
         {
             MatAssemblyBegin(*_A, asm_type);
             MatAssemblyEnd(*_A, asm_type);
-        }
-
-        /// Get the number of rows.
-        PetscInt getNRows() const
-        {
-            return _nrows;
-        }
-
-        /// Get the number of columns.
-        PetscInt getNCols() const
-        {
-            return _ncols;
-        }
-
-
-        /// Get the number of local rows.
-        PetscInt getNLocalRows() const
-        {
-            return _n_loc_rows;
-        }
-
-        /// Get the number of local columns.
-        PetscInt getNLocalColumns() const
-        {
-            return _n_loc_cols;
         }
 
         /// Get the start global index of the rows of the same rank.
@@ -207,6 +189,8 @@ class PETScMatrix
         */
         void viewer(const std::string &file_name,
                     const PetscViewerFormat vw_format = PETSC_VIEWER_ASCII_MATLAB );
+
+        friend class MathLib::BLAS::detail::BLASHelper<PETScMatrix>;
 
     private:
         void destroy() { if (_A) MatDestroy(_A.get()); _A.reset(nullptr); }

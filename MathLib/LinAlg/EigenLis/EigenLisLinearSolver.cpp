@@ -14,7 +14,7 @@
 #endif
 #include <logog/include/logog.hpp>
 
-#include "BaseLib/ConfigTree.h"
+#include "MathLib/LinAlg/BLAS.h"
 #include "MathLib/LinAlg/Eigen/EigenMatrix.h"
 #include "MathLib/LinAlg/Eigen/EigenVector.h"
 #include "MathLib/LinAlg/Lis/LisMatrix.h"
@@ -45,7 +45,7 @@ bool EigenLisLinearSolver::solve(EigenMatrix &A_, EigenVector& b_,
     int* ptr = A.outerIndexPtr();
     int* col = A.innerIndexPtr();
     double* data = A.valuePtr();
-    LisMatrix lisA(A_.getNRows(), nnz, ptr, col, data);
+    LisMatrix lisA(BLAS::rowsGlobal(A_), nnz, ptr, col, data);
     LisVector lisb(b.rows(), b.data());
     LisVector lisx(x.rows(), x.data());
 

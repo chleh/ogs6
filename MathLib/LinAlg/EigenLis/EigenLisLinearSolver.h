@@ -14,7 +14,6 @@
 
 #include <lis.h>
 
-#include "BaseLib/ConfigTree.h"
 #include "MathLib/LinAlg/LinearSolver.h"
 #include "MathLib/LinAlg/Lis/LisOption.h"
 

@@ -19,7 +19,6 @@
 
 #include "MathLib/LinAlg/RowColumnIndices.h"
 #include "MathLib/LinAlg/SetMatrixSparsity.h"
-#include "EigenVector.h"
 
 namespace MathLib
 {
@@ -48,17 +47,11 @@ public:
             _mat.reserve(Eigen::VectorXi::Constant(n, n_nonzero_columns));
     }
 
-    /// return the number of rows
-    std::size_t getNRows() const { return _mat.rows(); }
-
-    /// return the number of columns
-    std::size_t getNCols() const { return _mat.cols(); }
-
     /// return a start index of the active data range
     std::size_t getRangeBegin() const  { return 0; }
 
     /// return an end index of the active data range
-    std::size_t getRangeEnd() const  { return getNRows(); }
+    std::size_t getRangeEnd() const  { return _mat.rows(); }
 
     /// add a value to the given entry. If the entry doesn't exist, the value is
     /// inserted.
@@ -153,19 +146,20 @@ void EigenMatrix::add(std::vector<IndexType> const& row_pos,
 template <typename SPARSITY_PATTERN>
 struct SetMatrixSparsity<EigenMatrix, SPARSITY_PATTERN>
 {
+    /// \note This operator relies on row-major storage order of the underlying
+    /// eigen matrix i.e. of the RawMatrixType.
+    void operator()(EigenMatrix& matrix,
+                    SPARSITY_PATTERN const& sparsity_pattern)
+    {
+        static_assert(EigenMatrix::RawMatrixType::IsRowMajor,
+                      "Set matrix sparsity relies on the EigenMatrix to be in "
+                      "row-major storage order.");
 
-/// \note This operator relies on row-major storage order of the underlying
-/// eigen matrix i.e. of the RawMatrixType.
-void operator()(EigenMatrix &matrix, SPARSITY_PATTERN const& sparsity_pattern)
-{
-    static_assert(EigenMatrix::RawMatrixType::IsRowMajor,
-                  "Set matrix sparsity relies on the EigenMatrix to be in "
-                  "row-major storage order.");
+        assert(static_cast<std::size_t>(matrix.getRawMatrix().rows()) ==
+               sparsity_pattern.size());
 
-    assert(matrix.getNRows() == sparsity_pattern.size());
-
-    matrix.getRawMatrix().reserve(sparsity_pattern);
-}
+        matrix.getRawMatrix().reserve(sparsity_pattern);
+    }
 };
 
 } // end namespace MathLib
