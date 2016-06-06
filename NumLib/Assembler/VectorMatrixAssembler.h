@@ -50,31 +50,10 @@ void passLocalVector_(Callback& cb, std::size_t const id,
 
     for (auto i : indices)
     {
-        local_x.emplace_back(x.get(i));
-    }
-
-    cb(local_x, r_c_indices, std::forward<Args>(args)...);
-}
-
-template <typename GlobalVector, typename... Args>
-std::pair<AssemblerLib::LocalToGlobalIndexMap::RowColumnIndices, std::vector<double>>
-prepareLocalVector(std::size_t const id,
-                      AssemblerLib::LocalToGlobalIndexMap const& dof_table,
-                   GlobalVector const& x)
-{
-    std::vector<GlobalIndexType> indices;
-    auto const r_c_indices = getRowColumnIndices(id, dof_table, indices);
-
-    std::vector<double> local_x;
-    local_x.reserve(indices.size());
-
-    for (auto i : indices)
-    {
-        // TODO save some function calls
         local_x.emplace_back(MathLib::BLAS::getComponent(x, i));
     }
 
-    return { r_c_indices, local_x };
+    cb(local_x, r_c_indices, std::forward<Args>(args)...);
 }
 }
 
@@ -126,13 +105,8 @@ public:
             local_assembler.assemble(t, local_x);
             local_assembler.addToGlobal(r_c_indices, M, K, b);
         };
-        passLocalVector_(cb, id, _data_pos, x, t, M, K, b);
 
-        /*
-        auto const res = prepareLocalVector(id, _data_pos, x);
-        local_assembler.assemble(t, res.second);
-        local_assembler.addToGlobal(res.first, M, K, b);
-        */
+        passLocalVector_(cb, id, _data_pos, x, t, M, K, b);
     }
 
     /// Executes assembleJacobian() of the local assembler for the
