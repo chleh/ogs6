@@ -130,24 +130,6 @@ class PETScVector
         }
 
         /*!
-           Get several entries
-           \param e_idxs  Indicies of entries to be gotten.
-                          Note: std::size_t cannot be the type of e_idxs template argument
-           \param sub_vec Values of entries
-        */
-        template<class T_SUBVEC> void get(const std::vector<PetscInt> &e_idxs,
-                                          T_SUBVEC &sub_vec)
-        {
-            VecGetValues(*_v, e_idxs.size(), &e_idxs[0], &sub_vec[0]);
-        }
-
-        /*!
-           Get global vector
-           \param u Array to store the global vector. Memory allocation is needed in advance
-        */
-        void getGlobalVector(PetscScalar u[]);
-
-        /*!
            Copy local entries including ghost ones to an array
            \param u Preallocated vector for the values of local entries.
         */
@@ -222,14 +204,6 @@ class PETScVector
 
         /// Flag to indicate whether the vector is created with ghost entry indices
         bool _has_ghost_id = false;
-
-        /*!
-              \brief  Collect local vectors
-              \param  local_array Local array
-              \param  global_array Global array
-        */
-        void gatherLocalVectors(PetscScalar local_array[],
-                                PetscScalar global_array[]);
 
         /*!
            Get local vector, i.e. entries in the same rank

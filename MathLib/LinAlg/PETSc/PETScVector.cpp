@@ -107,59 +107,6 @@ void PETScVector::finalizeAssembly()
     VecAssemblyEnd(*_v);
 }
 
-void PETScVector::gatherLocalVectors( PetscScalar local_array[],
-                                      PetscScalar global_array[])
-{
-    // Collect vectors from processors.
-    int size_rank;
-    MPI_Comm_size(PETSC_COMM_WORLD, &size_rank);
-
-    // number of elements to be sent for each rank
-    std::vector<PetscInt>  i_cnt(size_rank);
-
-    MPI_Allgather(&_size_loc, 1, MPI_INT, &i_cnt[0], 1, MPI_INT, PETSC_COMM_WORLD);
-
-    // collect local array
-    PetscInt offset = 0;
-    // offset in the receive vector of the data from each rank
-    std::vector<PetscInt>  i_disp(size_rank);
-    for(PetscInt i=0; i<size_rank; i++)
-    {
-        i_disp[i] = offset;
-        offset += i_cnt[i];
-    }
-
-    MPI_Allgatherv(local_array, _size_loc, MPI_DOUBLE,
-                   global_array, &i_cnt[0], &i_disp[0], MPI_DOUBLE, PETSC_COMM_WORLD);
-
-}
-
-void PETScVector::getGlobalVector(PetscScalar u[])
-{
-
-#ifdef TEST_MEM_PETSC
-    PetscLogDouble mem1, mem2;
-    PetscMemoryGetCurrentUsage(&mem1);
-#endif
-
-    PetscScalar *xp = nullptr;
-    VecGetArray(*_v, &xp);
-
-    gatherLocalVectors(xp, u);
-
-    //This following line may be needed late on
-    //  for a communication load balance:
-    //MPI_Barrier(PETSC_COMM_WORLD);
-
-    VecRestoreArray(*_v, &xp);
-
-    //TEST
-#ifdef TEST_MEM_PETSC
-    PetscMemoryGetCurrentUsage(&mem2);
-    PetscPrintf(PETSC_COMM_WORLD, "### Memory usage by Updating. Before :%f After:%f Increase:%d\n", mem1, mem2, (int)(mem2 - mem1));
-#endif
-}
-
 void PETScVector::copyValues(std::vector<double>& u) const
 {
     assert(u.size() == static_cast<std::size_t>(_size_loc + _size_ghosts));

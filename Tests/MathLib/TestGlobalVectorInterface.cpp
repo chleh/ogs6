@@ -133,31 +133,6 @@ void checkGlobalVectorInterfacePETSc()
 
     ASSERT_NEAR(0.0, normy - MathLib::BLAS::norm2(y), 1.e-10);
 
-    double x0[16];
-    double z[] =
-    {
-        2.0000000000000000e+01,
-        2.0000000000000000e+01,
-        1.0000000000000000e+01,
-        1.0000000000000000e+01,
-        1.0000000000000000e+01,
-        1.0000000000000000e+01,
-        2.0000000000000000e+01,
-        2.0000000000000000e+01,
-        1.0000000000000000e+01,
-        1.0000000000000000e+01,
-        1.0000000000000000e+01,
-        2.0000000000000000e+01,
-        2.0000000000000000e+01,
-        1.0000000000000000e+01,
-        1.0000000000000000e+01,
-        1.0000000000000000e+01
-    };
-
-    y.getGlobalVector(x0);
-
-    ASSERT_ARRAY_NEAR(z, x0, 16, 1e-10);
-
     // -----------------------------------------------------------------
     // User determined partitioning
     const bool is_global_size = false;
@@ -175,22 +150,12 @@ void checkGlobalVectorInterfacePETSc()
     vec_pos[1] = vec_pos[0] + 1;
     local_vec[0] = 1.;
     local_vec[1] = 2.;
-    for(unsigned i=0; i<3; i++)
-    {
-        const unsigned j = 2 * i;
-        z[j] = 1.0;
-        z[j+1] = 2.0;
-    }
     x_fixed_p.set(vec_pos, local_vec);
-    x_fixed_p.getGlobalVector(x0);
-
-    ASSERT_ARRAY_NEAR(z, x0, 6, 1e-10);
 
     // check local array
     std::vector<double> loc_v(MathLib::BLAS::sizeLocalWithGhosts(x_fixed_p));
     x_fixed_p.copyValues(loc_v);
-    z[0] = 1.0;
-    z[1] = 2.0;
+    double z[] = { 1.0, 2.0 };
 
     ASSERT_ARRAY_NEAR(z, loc_v, 2, 1e-10);
 
