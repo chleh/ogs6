@@ -191,7 +191,7 @@ public:
 private:
     /// Process specific initialization called by initialize().
     virtual void initializeConcreteProcess(
-        AssemblerLib::LocalToGlobalIndexMap const& dof_table,
+        NumLib::LocalToGlobalIndexMap const& dof_table,
         MeshLib::Mesh const& mesh,
         unsigned const integration_order) = 0;
 

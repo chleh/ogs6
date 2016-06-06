@@ -10,12 +10,13 @@
 #include <memory>
 #include <gtest/gtest.h>
 
+#include "MathLib/LinAlg/BLAS.h"
 #include "NumLib/DOF/MeshComponentMap.h"
 
 #include "MeshLib/MeshGenerators/MeshGenerator.h"
 #include "MeshLib/MeshSubsets.h"
 
-#include "AssemblerLib/VectorMatrixBuilder.h"
+#include "NumLib/Assembler/VectorMatrixBuilder.h"
 
 template <typename Builder>
 class NumLibVectorMatrixBuilder : public ::testing::Test
@@ -71,7 +72,7 @@ TYPED_TEST_P(NumLibVectorMatrixBuilder, DISABLED_createVector)
     V* v = Builder::createVector(this->cmap->dofSizeWithGhosts());
 
     ASSERT_TRUE(v != nullptr);
-    ASSERT_EQ(this->cmap->dofSizeWithGhosts(), v->size());
+    ASSERT_EQ(this->cmap->dofSizeWithGhosts(), MathLib::BLAS::sizeLocalWithGhosts(*v));
 
     delete v;
 }
