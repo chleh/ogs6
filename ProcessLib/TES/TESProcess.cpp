@@ -106,12 +106,9 @@ TESProcess<GlobalSetup>::TESProcess(
 
         for (auto const& p : params)
         {
-            if (auto const par = config.getConfigParameterOptional<double>(p.first))
-            {
-                DBUG("setting parameter `%s' to value `%g'", p.first.c_str(),
-                     *par);
-                *p.second = *par;
-            }
+            auto const par = config.getConfigParameter<double>(p.first);
+            DBUG("setting parameter `%s' to value `%g'", p.first.c_str(), par);
+            *p.second = par;
         }
     }
 
