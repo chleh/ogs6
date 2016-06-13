@@ -115,6 +115,12 @@ public:
 
         // read which variables are defined in the config
         for (auto const& tag_name : tag_names) {
+            if (!_all_secondary_variables.insert(tag_name).second)
+            {
+                ERR("Tag name <%s> has been specified twice as a secondary variable.");
+                std::abort();
+            }
+
             //! \ogs_file_special
             if (auto var_name = config->getConfigParameterOptional<std::string>(tag_name))
             {
@@ -166,7 +172,7 @@ public:
         {
             auto const& var_name = it->first;
 
-            if (!_secondary_variables
+            if (!_configured_secondary_variables
                      .emplace(std::make_pair(
                          var_name,
                          SecondaryVariable<GlobalVector>{
@@ -179,9 +185,10 @@ public:
                 std::abort();
             }
         }
-        else
+        else if (_all_secondary_variables.find(tag_name) ==
+                 _all_secondary_variables.end())
         {
-            ERR("The tag `%s' has not been registered to mark a secondary "
+            ERR("The tag <%s> has not been registered to mark a secondary "
                 "variable.",
                 tag_name.c_str());
             std::abort();
@@ -193,7 +200,7 @@ public:
                       SecondaryVariable<GlobalVector>>::const_iterator
     begin() const
     {
-        return _secondary_variables.begin();
+        return _configured_secondary_variables.begin();
     }
 
     //! Returns an iterator past the last secondary variable.
@@ -201,17 +208,19 @@ public:
                       SecondaryVariable<GlobalVector>>::const_iterator
     end() const
     {
-        return _secondary_variables.end();
+        return _configured_secondary_variables.end();
     }
 
 private:
-
     //! Maps project file tag names to secondary variable names.
     std::map<std::string, std::string> _map_tagname_to_varname;
 
     //! Collection of all configured secondary variables.
     //! Maps the variable name to the corresponding SecondaryVariable.
-    std::map<std::string, SecondaryVariable<GlobalVector>> _secondary_variables;
+    std::map<std::string, SecondaryVariable<GlobalVector>> _configured_secondary_variables;
+
+    //! Set of all tags available as a secondary variable.
+    std::set<std::string> _all_secondary_variables;
 };
 
 
