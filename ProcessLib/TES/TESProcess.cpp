@@ -113,22 +113,22 @@ TESProcess<GlobalSetup>::TESProcess(
     }
 
     _assembly_params.dielectric_heating_term_enabled =
-        config.getConfParam<bool>("dielectric_heating_term_enabled");
+        config.getConfigParameter<bool>("dielectric_heating_term_enabled");
 
     if (_assembly_params.dielectric_heating_term_enabled)
     {
-        auto const hps = config.getConfSubtree("heating_power_scaling");
+        auto const hps = config.getConfigSubtree("heating_power_scaling");
         _assembly_params.heating_power_scaling =
             MathLib::PiecewiseLinearInterpolation(
-                hps.getConfParam<std::vector<double>>("times"),
-                hps.getConfParam<std::vector<double>>("scalings"), false);
+                hps.getConfigParameter<std::vector<double>>("times"),
+                hps.getConfigParameter<std::vector<double>>("scalings"), false);
     }
     else
     {
-        config.ignoreConfParam("heating_power_scaling");
+        config.ignoreConfigParameter("heating_power_scaling");
     }
 
-    if (auto prop = config.getConfParamOptional<std::string>(
+    if (auto prop = config.getConfigParameterOptional<std::string>(
             "initial_solid_density_mesh_property"))
     {
         assert(!prop->empty());
