@@ -17,6 +17,7 @@
 #include "MaterialsLib/PhysicalConstant.h"
 #include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 #include "ProcessLib/VariableTransformation.h"
+#include "ProcessLib/Parameter.h"
 
 namespace ProcessLib
 {
@@ -32,6 +33,12 @@ const double M_H2O = 0.018016;
 
 struct AssemblyParams
 {
+    AssemblyParams(Parameter<double, MeshLib::Element const&> const&
+                       initial_solid_density_)
+        : initial_solid_density(initial_solid_density_)
+    {
+    }
+
     Trafo trafo_p{1.0};
     Trafo trafo_T{1.0};
     Trafo trafo_x{1.0};
@@ -66,10 +73,6 @@ struct AssemblyParams
     const double M_inert = MaterialsLib::PhysicalConstant::MolarMass::N2;
     const double M_react = MaterialsLib::PhysicalConstant::MolarMass::Water;
 
-    // TODO unify variable names
-    double initial_solid_density = std::numeric_limits<double>::quiet_NaN();
-    std::string initial_solid_density_mesh_property;
-
     bool dielectric_heating_term_enabled = false;
     MathLib::PiecewiseLinearInterpolation heating_power_scaling =
         MathLib::PiecewiseLinearInterpolation(std::vector<double>{},
@@ -86,6 +89,9 @@ struct AssemblyParams
     //! Output global matrix/rhs after first iteration.
     std::size_t timestep = 0;
     std::size_t total_iteration = 0;
+
+    // TODO unify variable names
+    Parameter<double, MeshLib::Element const&> const& initial_solid_density;
 };
 
 }  // namespace TES

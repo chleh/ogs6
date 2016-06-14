@@ -115,7 +115,7 @@ TESLocalAssembler<
     : _shape_matrices(initShapeMatrices<ShapeFunction, ShapeMatricesType,
                                         IntegrationMethod_, GlobalDim>(
           e, integration_order)),
-      _d(asm_params,
+      _d(e, asm_params,
          // TODO narrowing conversion
          static_cast<const unsigned>(
              _shape_matrices.front()

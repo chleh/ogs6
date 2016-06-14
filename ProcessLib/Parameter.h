@@ -76,6 +76,7 @@ struct MeshPropertyParameter final
     MeshPropertyParameter(MeshLib::PropertyVector<ReturnType> const& property)
         : _property(property)
     {
+        assert(_property.getMeshItemType() == MeshLib::MeshItemType::Cell);
     }
 
     ReturnType operator()(MeshLib::Element const& e) const override

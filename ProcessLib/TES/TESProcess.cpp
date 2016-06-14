@@ -74,6 +74,7 @@ TESProcess<GlobalSetup>::TESProcess(
     std::unique_ptr<typename Process<GlobalSetup>::TimeDiscretization>&&
         time_discretization,
     std::vector<std::reference_wrapper<ProcessVariable>>&& process_variables,
+    AssemblyParams&& assembly_params,
     SecondaryVariableCollection<GlobalVector>&& secondary_variables,
     ProcessOutput<GlobalVector>&& process_output,
     const BaseLib::ConfigTree& config)
@@ -81,6 +82,7 @@ TESProcess<GlobalSetup>::TESProcess(
           mesh, nonlinear_solver, std::move(time_discretization),
           std::move(process_variables), std::move(secondary_variables),
           std::move(process_output))
+    , _assembly_params(std::move(assembly_params))
 {
     DBUG("Create TESProcess.");
 
@@ -99,7 +101,6 @@ TESProcess<GlobalSetup>::TESProcess(
              &_assembly_params.diffusion_coefficient_component},
             {"porosity", &_assembly_params.poro},
             {"solid_density_dry", &_assembly_params.rho_SR_dry},
-            {"solid_density_initial", &_assembly_params.initial_solid_density},
             {"volumetric_heat_loss_coeff",
              &_assembly_params.volumetric_heat_loss_coeff},
             {"ambient_temperature", &_assembly_params.ambient_temperature}};
@@ -113,26 +114,19 @@ TESProcess<GlobalSetup>::TESProcess(
     }
 
     _assembly_params.dielectric_heating_term_enabled =
-        config.getConfParam<bool>("dielectric_heating_term_enabled");
+        config.getConfigParameter<bool>("dielectric_heating_term_enabled");
 
     if (_assembly_params.dielectric_heating_term_enabled)
     {
-        auto const hps = config.getConfSubtree("heating_power_scaling");
+        auto const hps = config.getConfigSubtree("heating_power_scaling");
         _assembly_params.heating_power_scaling =
             MathLib::PiecewiseLinearInterpolation(
-                hps.getConfParam<std::vector<double>>("times"),
-                hps.getConfParam<std::vector<double>>("scalings"), false);
+                hps.getConfigParameter<std::vector<double>>("times"),
+                hps.getConfigParameter<std::vector<double>>("scalings"), false);
     }
     else
     {
-        config.ignoreConfParam("heating_power_scaling");
-    }
-
-    if (auto prop = config.getConfParamOptional<std::string>(
-            "initial_solid_density_mesh_property"))
-    {
-        assert(!prop->empty());
-        _assembly_params.initial_solid_density_mesh_property = *prop;
+        config.ignoreConfigParameter("heating_power_scaling");
     }
 
     // characteristic values of primary variables
@@ -266,57 +260,6 @@ void TESProcess<GlobalSetup>::initializeConcreteProcess(
            {std::bind(&Self::computeEquilibriumLoading, this, PH::_1, PH::_2,
                       PH::_3),
             nullptr});
-
-    // set initial solid density from mesh property
-    if (!_assembly_params.initial_solid_density_mesh_property.empty())
-    {
-        auto prop = mesh.getProperties().template getPropertyVector<double>(
-            _assembly_params.initial_solid_density_mesh_property);
-        assert(prop->getNumberOfComponents() == 1);
-
-        switch (prop->getMeshItemType())
-        {
-            case MeshLib::MeshItemType::Cell:
-            {
-                auto init_solid_density = [&prop](std::size_t id,
-                                                  LocalAssembler& loc_asm) {
-                    // TODO loc_asm_id is assumed to be the mesh element id.
-                    loc_asm.initializeSolidDensity(MeshLib::MeshItemType::Cell,
-                                                   {{(*prop)[id]}});
-                };
-
-                GlobalSetup::executeDereferenced(init_solid_density,
-                                                 _local_assemblers);
-                break;
-            }
-            case MeshLib::MeshItemType::Node:
-            {
-                std::vector<GlobalIndexType> indices;
-                std::vector<double> values;
-
-                auto init_solid_density = [&](std::size_t id,
-                                              LocalAssembler& loc_asm) {
-                    getRowColumnIndices_(
-                        id, *_local_to_global_index_map_single_component,
-                        indices);
-                    values.clear();
-                    for (auto i : indices)
-                        values.push_back((*prop)[i]);
-
-                    loc_asm.initializeSolidDensity(MeshLib::MeshItemType::Node,
-                                                   values);
-                };
-
-                GlobalSetup::executeDereferenced(init_solid_density,
-                                                 _local_assemblers);
-                break;
-            }
-            default:
-                ERR("Unhandled mesh item type for initialization of secondary "
-                    "variable.");
-                std::abort();
-        }
-    }
 }
 
 template <typename GlobalSetup>
@@ -532,8 +475,64 @@ TESProcess<GlobalSetup>::computeEquilibriumLoading(
     return *result_cache;
 }
 
+
+template <typename GlobalSetup>
+std::unique_ptr<TESProcess<GlobalSetup>> createTESProcess(
+    MeshLib::Mesh& mesh,
+    typename Process<GlobalSetup>::NonlinearSolver& nonlinear_solver,
+    std::unique_ptr<typename Process<GlobalSetup>::TimeDiscretization>&&
+        time_discretization,
+    std::vector<ProcessVariable> const& variables,
+    std::vector<std::unique_ptr<ParameterBase>> const& parameters,
+    BaseLib::ConfigTree const& config)
+{
+    config.checkConfigParameter("type", "TES");
+
+    DBUG("Create TESProcess.");
+
+    auto process_variables = findProcessVariables(
+        variables, config,
+        {"fluid_pressure", "temperature", "vapour_mass_fraction"});
+
+    // Hydraulic conductivity parameter.
+    auto const& initial_solid_density =
+        findParameter<double, MeshLib::Element const&>(
+            config,
+            "initial_solid_density",
+            parameters);
+
+    AssemblyParams assembly_params(initial_solid_density);
+
+    SecondaryVariableCollection<typename GlobalSetup::VectorType>
+        secondary_variables{
+            config.getConfigSubtreeOptional("secondary_variables"),
+            { "solid_density", "reaction_rate",
+              "velocity_x", "velocity_y", "velocity_z",
+              "loading", "reaction_damping_factor",
+              "vapour_partial_pressure", "relative_humidity",
+              "equilibrium_loading", "vol_joule_heating_power"
+            }};
+
+    ProcessOutput<typename GlobalSetup::VectorType> process_output{
+        config.getConfigSubtree("output"), process_variables,
+        secondary_variables};
+
+    return std::unique_ptr<TESProcess<GlobalSetup>>{new TESProcess<GlobalSetup>{
+        mesh, nonlinear_solver, std::move(time_discretization),
+        std::move(process_variables), std::move(assembly_params),
+        std::move(secondary_variables), std::move(process_output), config}};
+}
+
 // Explicitly instantiate TESProcess for GlobalSetupType.
 template class TESProcess<GlobalSetupType>;
+template std::unique_ptr<TESProcess<GlobalSetupType>> createTESProcess(
+    MeshLib::Mesh& mesh,
+    typename Process<GlobalSetupType>::NonlinearSolver& nonlinear_solver,
+    std::unique_ptr<typename Process<GlobalSetupType>::TimeDiscretization>&&
+        time_discretization,
+    std::vector<ProcessVariable> const& variables,
+    std::vector<std::unique_ptr<ParameterBase>> const& parameters,
+    BaseLib::ConfigTree const& config);
 
 }  // namespace TES
 

@@ -31,9 +31,9 @@ namespace TES
 {
 template <typename Traits>
 TESLocalAssemblerInner<Traits>::TESLocalAssemblerInner(
-    const AssemblyParams& ap, const unsigned num_int_pts,
-    const unsigned dimension)
-    : _d{ap, num_int_pts, dimension}
+    MeshLib::Element const& e, const AssemblyParams& ap,
+    const unsigned num_int_pts, const unsigned dimension)
+    : _d{e, ap, num_int_pts, dimension}
 {
 }
 

@@ -10,6 +10,8 @@
 #ifndef PROCESSLIB_TES_TESLOCALASSEMBLERDATA_H
 #define PROCESSLIB_TES_TESLOCALASSEMBLERDATA_H
 
+#include "MeshLib/Elements/Element.h"
+
 #include "TESAssemblyParams.h"
 
 namespace ProcessLib
@@ -20,8 +22,8 @@ class TESFEMReactionAdaptor;
 
 struct TESLocalAssemblerData
 {
-    TESLocalAssemblerData(AssemblyParams const& ap_, const unsigned num_int_pts,
-                          const unsigned dimension);
+    TESLocalAssemblerData(MeshLib::Element const& e, AssemblyParams const& ap_,
+                          const unsigned num_int_pts, const unsigned dimension);
 
     ~TESLocalAssemblerData();
 

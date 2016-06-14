@@ -39,7 +39,8 @@ template <typename Traits>
 class TESLocalAssemblerInner
 {
 public:
-    explicit TESLocalAssemblerInner(AssemblyParams const& ap,
+    explicit TESLocalAssemblerInner(MeshLib::Element const& e,
+                                    AssemblyParams const& ap,
                                     const unsigned num_int_pts,
                                     const unsigned dimension);
 

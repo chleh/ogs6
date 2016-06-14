@@ -45,6 +45,7 @@ public:
             time_discretization,
         std::vector<std::reference_wrapper<ProcessVariable>>&&
             process_variables,
+        AssemblyParams&& assembly_params,
         SecondaryVariableCollection<GlobalVector>&& secondary_variables,
         ProcessOutput<GlobalVector>&& process_output,
         BaseLib::ConfigTree const& config);
@@ -113,36 +114,8 @@ std::unique_ptr<TESProcess<GlobalSetup>> createTESProcess(
     std::unique_ptr<typename Process<GlobalSetup>::TimeDiscretization>&&
         time_discretization,
     std::vector<ProcessVariable> const& variables,
-    std::vector<std::unique_ptr<ParameterBase>> const& /*parameters*/,
-    BaseLib::ConfigTree const& config)
-{
-    config.checkConfigParameter("type", "TES");
-
-    DBUG("Create TESProcess.");
-
-    auto process_variables = findProcessVariables(
-        variables, config,
-        {"fluid_pressure", "temperature", "vapour_mass_fraction"});
-
-    SecondaryVariableCollection<typename GlobalSetup::VectorType>
-        secondary_variables{
-            config.getConfigSubtreeOptional("secondary_variables"),
-            { "solid_density", "reaction_rate",
-              "velocity_x", "velocity_y", "velocity_z",
-              "loading", "reaction_damping_factor",
-              "vapour_partial_pressure", "relative_humidity",
-              "equilibrium_loading", "vol_joule_heating_power"
-            }};
-
-    ProcessOutput<typename GlobalSetup::VectorType> process_output{
-        config.getConfigSubtree("output"), process_variables,
-        secondary_variables};
-
-    return std::unique_ptr<TESProcess<GlobalSetup>>{new TESProcess<GlobalSetup>{
-        mesh, nonlinear_solver, std::move(time_discretization),
-        std::move(process_variables), std::move(secondary_variables),
-        std::move(process_output), config}};
-}
+    std::vector<std::unique_ptr<ParameterBase>> const& parameters,
+    BaseLib::ConfigTree const& config);
 
 }  // namespace TES
 
