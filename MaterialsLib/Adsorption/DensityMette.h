@@ -18,8 +18,8 @@ namespace Adsorption
 class DensityMette : public AdsorptionReaction
 {
 public:
-    DensityMette(const double k_rate)
-        : AdsorptionReaction(k_rate)
+    DensityMette(const double k_rate, const double p_Ads_half)
+        : AdsorptionReaction(k_rate, p_Ads_half)
     {}
 
     double getAdsorbateDensity(const double T_Ads) const;

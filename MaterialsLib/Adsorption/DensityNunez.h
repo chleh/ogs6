@@ -18,8 +18,8 @@ namespace Adsorption
 class DensityNunez : public AdsorptionReaction
 {
 public:
-    DensityNunez(const double k_rate)
-        : AdsorptionReaction(k_rate)
+    DensityNunez(const double k_rate, const double p_Ads_half)
+        : AdsorptionReaction(k_rate, p_Ads_half)
     {}
 
     double getAdsorbateDensity(const double T_Ads) const;

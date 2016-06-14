@@ -8,8 +8,8 @@ namespace Adsorption
 class DensityHauerNaYStach : public AdsorptionReaction
 {
 public:
-    DensityHauerNaYStach(const double k_rate)
-        : AdsorptionReaction(k_rate)
+    DensityHauerNaYStach(const double k_rate, const double p_Ads_half)
+        : AdsorptionReaction(k_rate, p_Ads_half)
     {}
 
     double getAdsorbateDensity(const double T_Ads) const;

@@ -21,8 +21,9 @@ namespace Adsorption
 class AdsorptionReaction : public Reaction
 {
 public:
-    AdsorptionReaction(const double k_rate)
+    AdsorptionReaction(const double k_rate, const double p_Ads_half)
         : _k_rate(k_rate)
+        , _p_Ads_half(p_Ads_half)
     {
     }
 
@@ -68,6 +69,9 @@ private:
     double getEntropy(const double T_Ads, const double A) const;
 
     const double _k_rate;
+    //! Value of the adsorptive partial pressure at which the resulting reaction
+    //! rate is limited to half of its raw value.
+    const double _p_Ads_half;
 };
 
 
