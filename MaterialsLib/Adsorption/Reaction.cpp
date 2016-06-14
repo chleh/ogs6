@@ -37,22 +37,27 @@ newInstance(BaseLib::ConfigTree const& conf)
     //! \ogs_file_param{materials__adsorption__reaction__type}
     auto const type = conf.getConfigParameter<std::string>("type");
 
-    if (type == "Z13XBF")
-        return std::unique_ptr<Reaction>(new DensityLegacy);
-    else if (type == "Z13XBF_100MPa")
-        return std::unique_ptr<Reaction>(new Density100MPa);
-    else if (type == "Z13XBF_Const")
-        return std::unique_ptr<Reaction>(new DensityConst);
-    else if (type == "Z13XBF_Cook")
-        return std::unique_ptr<Reaction>(new DensityCook);
-    else if (type == "Z13XBF_Dubinin")
-        return std::unique_ptr<Reaction>(new DensityDubinin);
-    else if (type == "Z13XBF_Hauer")
-        return std::unique_ptr<Reaction>(new DensityHauer);
-    else if (type == "Z13XBF_Mette")
-        return std::unique_ptr<Reaction>(new DensityMette);
-    else if (type == "Z13XBF_Nunez")
-        return std::unique_ptr<Reaction>(new DensityNunez);
+    if (type.find("Z13XBF") == 0)
+    {
+        auto const k_rate = conf.getConfigParameter<double>("k_rate");
+
+        if (type == "Z13XBF")
+            return std::unique_ptr<Reaction>(new DensityLegacy(k_rate));
+        else if (type == "Z13XBF_100MPa")
+            return std::unique_ptr<Reaction>(new Density100MPa(k_rate));
+        else if (type == "Z13XBF_Const")
+            return std::unique_ptr<Reaction>(new DensityConst(k_rate));
+        else if (type == "Z13XBF_Cook")
+            return std::unique_ptr<Reaction>(new DensityCook(k_rate));
+        else if (type == "Z13XBF_Dubinin")
+            return std::unique_ptr<Reaction>(new DensityDubinin(k_rate));
+        else if (type == "Z13XBF_Hauer")
+            return std::unique_ptr<Reaction>(new DensityHauer(k_rate));
+        else if (type == "Z13XBF_Mette")
+            return std::unique_ptr<Reaction>(new DensityMette(k_rate));
+        else if (type == "Z13XBF_Nunez")
+            return std::unique_ptr<Reaction>(new DensityNunez(k_rate));
+    }
     else if (type == "Inert")
         return std::unique_ptr<Reaction>(new ReactionInert);
     else if (type == "Sinusoidal")
@@ -60,7 +65,8 @@ newInstance(BaseLib::ConfigTree const& conf)
     else if (type == "CaOH2")
         return std::unique_ptr<Reaction>(new ReactionCaOH2(conf));
     else if (type == "NaYStach")
-        return std::unique_ptr<Reaction>(new DensityHauerNaYStach);
+        return std::unique_ptr<Reaction>(new DensityHauerNaYStach(
+            conf.getConfigParameter<double>("k_rate")));
 
     ERR("Unknown reactive system: %s.", type.c_str());
     std::abort();

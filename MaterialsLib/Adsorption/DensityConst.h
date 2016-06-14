@@ -18,6 +18,10 @@ namespace Adsorption
 class DensityConst : public AdsorptionReaction
 {
 public:
+    DensityConst(const double k_rate)
+        : AdsorptionReaction(k_rate)
+    {}
+
     double getAdsorbateDensity(const double T_Ads) const;
     double getAlphaT(const double T_Ads) const;
     double characteristicCurve(const double A) const;

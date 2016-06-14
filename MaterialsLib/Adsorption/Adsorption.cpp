@@ -12,8 +12,6 @@
 #include "MaterialsLib/PhysicalConstant.h"
 
 namespace {
-    const double k_rate = 6.0e-3; // TODO to be specified
-
     template <typename T>
     T square(const T& v)
     {
@@ -102,8 +100,7 @@ double AdsorptionReaction::getReactionRate(const double p_Ads, const double T_Ad
     double C_eq = getAdsorbateDensity(T_Ads) * characteristicCurve(A);
     if (C_eq < 0.0) C_eq = 0.0;
 
-    return k_rate * (C_eq - loading); // scaled with mass fraction
-                                      // this the rate in terms of loading!
+    return _k_rate * (C_eq - loading); // linear driving force kinetics
 }
 
 void AdsorptionReaction::getDReactionRate(const double p_Ads, const double T_Ads,
@@ -124,7 +121,7 @@ void AdsorptionReaction::getDReactionRate(const double p_Ads, const double T_Ads
     dqdr = std::array<double, 3>{{
         rho_Ads*dWdA*dAdp,
         drhodT*W + rho_Ads*dWdA*dAdT,
-        -k_rate
+        -_k_rate
     }};
 }
 

@@ -21,6 +21,11 @@ namespace Adsorption
 class AdsorptionReaction : public Reaction
 {
 public:
+    AdsorptionReaction(const double k_rate)
+        : _k_rate(k_rate)
+    {
+    }
+
     // TODO [CL] move those three methods to water properties class
     static double getEvaporationEnthalpy(const double T_Ads);
     static double getEquilibriumVapourPressure(const double T_Ads);
@@ -32,12 +37,14 @@ public:
 
     static double getLoading(const double rho_curr, const double rho_dry);
 
-    double getEquilibriumLoading(const double p_Ads, const double T_Ads, const double M_Ads)
-    const override;
+    double getEquilibriumLoading(const double p_Ads, const double T_Ads,
+                                 const double M_Ads) const override final;
 
-    virtual double getEnthalpy(const double p_Ads, const double T_Ads, const double M_Ads) const override;
-    virtual double getReactionRate(const double p_Ads, const double T_Ads,
-                                   const double M_Ads, const double loading) const override;
+    double getEnthalpy(const double p_Ads, const double T_Ads,
+                       const double M_Ads) const override;
+    double getReactionRate(const double p_Ads, const double T_Ads,
+                           const double M_Ads,
+                           const double loading) const override final;
     /**
      * @brief get_d_reaction_rate
      * @param p_Ads
@@ -46,9 +53,9 @@ public:
      * @param loading
      * @param dqdr array containing the differentials wrt: p, T, C
      */
-    virtual void getDReactionRate(const double p_Ads, const double T_Ads,
-                                     const double M_Ads, const double loading,
-                                     std::array<double, 3>& dqdr) const;
+    void getDReactionRate(const double p_Ads, const double T_Ads,
+                          const double M_Ads, const double loading,
+                          std::array<double, 3>& dqdr) const;
 
 protected:
     virtual double getAdsorbateDensity(const double T_Ads) const = 0;
@@ -59,6 +66,8 @@ protected:
 private:
     double getPotential(const double p_Ads, const double T_Ads, const double M_Ads) const;
     double getEntropy(const double T_Ads, const double A) const;
+
+    const double _k_rate;
 };
 
 
