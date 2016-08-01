@@ -15,6 +15,7 @@
 
 #include "MeshLib/MeshSubset.h"
 #include "NumLib/NumericsConfig.h"
+#include "BoundaryCondition.h"
 #include "NeumannBcConfig.h"
 #include "NeumannBcAssembler.h"
 
@@ -34,7 +35,7 @@ namespace ProcessLib
 /// right-hand-sides happen in the initialize() function.
 /// The integration() function provides calls then the actual integration of the
 /// Neumann boundary condition.
-class NeumannBc
+class NeumannBc : public BoundaryCondition
 {
 public:
     /// Create a Neumann boundary condition process from given config,
@@ -47,11 +48,14 @@ public:
         int const variable_id,
         int const component_id);
 
-    ~NeumannBc();
+    ~NeumannBc() override;
 
     /// Calls local assemblers which calculate their contributions to the global
     /// matrix and the right-hand-side.
-    void integrate(const double t, GlobalVector& b);
+    void apply(const double t,
+               GlobalVector const& /*x*/,
+               GlobalMatrix& /*K*/,
+               GlobalVector& b) override;
 
     void initialize(unsigned global_dim);
 

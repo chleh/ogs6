@@ -107,7 +107,7 @@ void Process::assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
 
     // Call global assembler for each Neumann boundary local assembler.
     for (auto const& bc : _neumann_bcs)
-        bc->integrate(t, b);
+        bc->apply(t, x, K, b);
 }
 
 void Process::assembleJacobian(const double t, GlobalVector const& x,

@@ -63,7 +63,10 @@ NeumannBc::~NeumannBc()
         delete e;
 }
 
-void NeumannBc::integrate(const double t, GlobalVector& b)
+void NeumannBc::apply(const double t,
+                      const GlobalVector& /*x*/,
+                      GlobalMatrix& /*K*/,
+                      GlobalVector& b)
 {
     GlobalExecutor::executeMemberOnDereferenced(
         &LocalNeumannBcAsmDataInterface::assemble, _local_assemblers,
