@@ -155,4 +155,44 @@ MeshLib::PropertyVector<double>& ProcessVariable::getOrCreateMeshProperty()
     }
 }
 
+std::vector<std::unique_ptr<BoundaryCondition>>
+ProcessVariable::getBoundaryConditions(
+    const NumLib::LocalToGlobalIndexMap& dof_table,
+    const int variable_id,
+    unsigned const integration_order)
+{
+    std::vector<std::unique_ptr<BoundaryCondition>> bcs;
+
+    if (_dirichlet_bc_configs.empty() && _neumann_bc_configs.empty())
+        return bcs;
+
+    MeshGeoToolsLib::MeshNodeSearcher& mesh_node_searcher =
+        MeshGeoToolsLib::MeshNodeSearcher::getMeshNodeSearcher(_mesh);
+
+    for (auto& bc_config : _dirichlet_bc_configs)
+    {
+        auto const component_id = bc_config.second;
+        bcs.emplace_back(bc_config.first->getDirichletBoundaryCondition(
+            mesh_node_searcher, dof_table, variable_id, component_id));
+    }
+
+    if (_neumann_bc_configs.empty())
+        return bcs;
+
+    MeshGeoToolsLib::BoundaryElementsSearcher boundary_element_searcher(
+        _mesh, mesh_node_searcher);
+
+    for (auto& bc_config : _neumann_bc_configs)
+    {
+        auto const component_id = bc_config.second;
+
+        bc_config.first->initialize(boundary_element_searcher);
+        bcs.emplace_back(new NeumannBc(*bc_config.first, integration_order,
+                                       dof_table, variable_id, component_id,
+                                       _mesh.getDimension()));
+    }
+
+    return bcs;
+}
+
 }  // namespace ProcessLib
