@@ -125,12 +125,6 @@ private:
                               int const component_id,
                               GlobalVector& x);
 
-    void createDirichletBcs(ProcessVariable& variable, int const variable_id,
-                            int const component_id);
-
-    void createNeumannBcs(ProcessVariable& variable, int const variable_id,
-                          int const component_id);
-
     /// Computes and stores global matrix' sparsity pattern from given
     /// DOF-table.
     void computeSparsityPattern();
@@ -149,7 +143,7 @@ private:
     GlobalSparsityPattern _sparsity_pattern;
 
     std::vector<DirichletBc<GlobalIndexType>> _dirichlet_bcs;
-    std::vector<std::unique_ptr<NeumannBc>> _neumann_bcs;
+    std::vector<std::unique_ptr<BoundaryCondition>> _boundary_conditions;
 
     NonlinearSolver& _nonlinear_solver;
     std::unique_ptr<TimeDiscretization> _time_discretization;
