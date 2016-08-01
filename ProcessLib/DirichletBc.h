@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "NumLib/IndexValueVector.h"
+#include "BoundaryCondition.h"
 
 namespace ProcessLib
 {
@@ -21,6 +22,26 @@ namespace ProcessLib
 /// with corresponding values.
 template <typename IndexType>
 using DirichletBc = NumLib::IndexValueVector<IndexType>;
+
+class DirichletBoundaryCondition : public BoundaryCondition
+{
+public:
+    DirichletBoundaryCondition(NumLib::IndexValueVector<GlobalIndexType>&& bc)
+        : _bc(std::move(bc))
+    {
+    }
+
+    void apply(const double /*t*/,
+               GlobalVector const& /*x*/,
+               GlobalMatrix& /*K*/,
+               GlobalVector& /*b*/) override
+    {
+        // Do nothing. Dirichlet BCs are handled specially.
+    }
+
+private:
+    NumLib::IndexValueVector<GlobalIndexType> _bc;
+};
 
 }  // namespace ProcessLib
 
