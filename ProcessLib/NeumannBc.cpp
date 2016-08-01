@@ -18,15 +18,14 @@
 
 namespace ProcessLib
 {
-
 NeumannBc::NeumannBc(
     NeumannBcConfig const& bc,
     unsigned const integration_order,
     NumLib::LocalToGlobalIndexMap const& local_to_global_index_map,
     int const variable_id,
-    int const component_id)
-    : _function(*bc.getFunction()),
-      _integration_order(integration_order)
+    int const component_id,
+    unsigned const global_dim)
+    : _function(*bc.getFunction()), _integration_order(integration_order)
 {
     assert(component_id < static_cast<int>(local_to_global_index_map.getNumberOfComponents()));
 
@@ -53,6 +52,18 @@ NeumannBc::NeumannBc(
         local_to_global_index_map.deriveBoundaryConstrainedMap(
             variable_id, component_id, std::move(all_mesh_subsets),
             _elements));
+
+    auto elementValueLookup = [this](MeshLib::Element const&)
+    {
+        return _function();
+    };
+
+    createLocalAssemblers<LocalNeumannBcAsmData>(
+        global_dim, _elements,
+        *_local_to_global_index_map, _integration_order,
+        _local_assemblers,
+        elementValueLookup
+        );
 }
 
 NeumannBc::~NeumannBc()
@@ -71,21 +82,6 @@ void NeumannBc::apply(const double t,
     GlobalExecutor::executeMemberOnDereferenced(
         &LocalNeumannBcAsmDataInterface::assemble, _local_assemblers,
         *_local_to_global_index_map, t, b);
-}
-
-void NeumannBc::initialize(unsigned global_dim)
-{
-    auto elementValueLookup = [this](MeshLib::Element const&)
-    {
-        return _function();
-    };
-
-    createLocalAssemblers<LocalNeumannBcAsmData>(
-        global_dim, _elements,
-        *_local_to_global_index_map, _integration_order,
-        _local_assemblers,
-        elementValueLookup
-        );
 }
 
 }   // namespace ProcessLib

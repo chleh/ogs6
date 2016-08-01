@@ -41,12 +41,12 @@ public:
     /// Create a Neumann boundary condition process from given config,
     /// DOF-table, and a mesh subset for a given variable and its component.
     /// A local DOF-table, a subset of the given one, is constructed.
-    NeumannBc(
-        NeumannBcConfig const& bc,
-        unsigned const integration_order,
-        NumLib::LocalToGlobalIndexMap const& local_to_global_index_map,
-        int const variable_id,
-        int const component_id);
+    NeumannBc(NeumannBcConfig const& bc,
+              unsigned const integration_order,
+              NumLib::LocalToGlobalIndexMap const& local_to_global_index_map,
+              int const variable_id,
+              int const component_id,
+              unsigned const global_dim);
 
     ~NeumannBc() override;
 
@@ -56,8 +56,6 @@ public:
                GlobalVector const& /*x*/,
                GlobalMatrix& /*K*/,
                GlobalVector& b) override;
-
-    void initialize(unsigned global_dim);
 
 private:
     /// The right-hand-side function of the Neumann boundary condition given as
