@@ -37,21 +37,18 @@ UniformDirichletBoundaryCondition::UniformDirichletBoundaryCondition(
          _value);
 }
 
-/// Initialize Dirichlet type boundary conditions.
-/// Fills in global_ids of the particular geometry of the boundary condition
-/// and the corresponding values.
-/// The ids and the constant values are then used to construct DirichletBc
-/// object.
-void UniformDirichletBoundaryCondition::initialize(
+std::unique_ptr<DirichletBoundaryCondition>
+UniformDirichletBoundaryCondition::getDirichletBoundaryCondition(
     MeshGeoToolsLib::MeshNodeSearcher& searcher,
     NumLib::LocalToGlobalIndexMap const& dof_table,
-    int const component_id,
     int const variable_id,
-    DirichletBc<GlobalIndexType>& bc)
+    int const component_id)
 {
     // Find nodes' ids on the given mesh on which this boundary condition
     // is defined.
     std::vector<std::size_t> ids = searcher.getMeshNodeIDs(_geometry);
+
+    NumLib::IndexValueVector<GlobalIndexType> bc;
 
     // convert mesh node ids to global index for the given component
     bc.ids.reserve(bc.ids.size() + ids.size());
@@ -75,6 +72,9 @@ void UniformDirichletBoundaryCondition::initialize(
             bc.values.emplace_back(_value);
         }
     }
+
+    return std::unique_ptr<DirichletBoundaryCondition>(
+        new DirichletBoundaryCondition(std::move(bc)));
 }
 
 }   // namespace ProcessLib

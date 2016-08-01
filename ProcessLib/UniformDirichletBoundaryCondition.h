@@ -37,16 +37,11 @@ public:
     UniformDirichletBoundaryCondition(GeoLib::GeoObject const& geometry,
                                       double value);
 
-    /// Initialize Dirichlet type boundary conditions.
-    /// Fills in global_ids of the particular geometry of the boundary condition
-    /// and the corresponding values.
-    /// The ids and the constant values are then used to construct DirichletBc
-    /// object.
-    void initialize(MeshGeoToolsLib::MeshNodeSearcher& searcher,
-                    NumLib::LocalToGlobalIndexMap const& dof_table,
-                    int const variable_id,
-                    int const component_id,
-                    DirichletBc<GlobalIndexType>& bc);
+    std::unique_ptr<DirichletBoundaryCondition> getDirichletBoundaryCondition(
+        MeshGeoToolsLib::MeshNodeSearcher& searcher,
+        NumLib::LocalToGlobalIndexMap const& dof_table,
+        int const variable_id,
+        int const component_id);
 
 private:
     double _value;
