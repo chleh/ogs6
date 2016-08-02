@@ -17,18 +17,17 @@
 
 namespace ProcessLib
 {
-
-/// A dirichlet boundary condition is represented by a list of global indices
-/// with corresponding values.
-template <typename IndexType>
-using DirichletBc = NumLib::IndexValueVector<IndexType>;
-
 class DirichletBoundaryCondition : public BoundaryCondition
 {
 public:
     DirichletBoundaryCondition(NumLib::IndexValueVector<GlobalIndexType>&& bc)
         : _bc(std::move(bc))
     {
+    }
+
+    NumLib::IndexValueVector<GlobalIndexType> getBCValues()
+    {
+        return std::move(_bc);
     }
 
     void apply(const double /*t*/,
