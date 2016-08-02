@@ -14,6 +14,7 @@
 #include "NumLib/ODESolver/ODESystem.h"
 #include "NumLib/ODESolver/TimeDiscretization.h"
 
+#include "BoundaryConditionCollection.h"
 #include "ExtrapolatorData.h"
 #include "Parameter.h"
 #include "ProcessOutput.h"
@@ -32,7 +33,6 @@ class Process
           NumLib::NonlinearSolverTag::Newton>
 {
 public:
-    using Index = GlobalMatrix::IndexType;
     using NonlinearSolver = NumLib::NonlinearSolverBase;
     using TimeDiscretization = NumLib::TimeDiscretization;
 
@@ -73,11 +73,12 @@ public:
                           GlobalMatrix const& M, const double dx_dx,
                           GlobalMatrix const& K,
                           GlobalMatrix& Jac) override final;
+    std::vector<NumLib::IndexValueVector<GlobalIndexType>> const*
+    getKnownSolutions(
 
-    std::vector<DirichletBc<Index>> const* getKnownSolutions(
-        double const /*t*/) const override final
+        double const t) const override final
     {
-        return &_dirichlet_bcs;
+        return _boundary_conditions.getKnownSolutions(t);
     }
 
     NonlinearSolver& getNonlinearSolver() const { return _nonlinear_solver; }
@@ -142,14 +143,13 @@ private:
     unsigned const _integration_order = 2;
     GlobalSparsityPattern _sparsity_pattern;
 
-    std::vector<DirichletBc<GlobalIndexType>> _dirichlet_bcs;
-    std::vector<std::unique_ptr<BoundaryCondition>> _boundary_conditions;
-
     NonlinearSolver& _nonlinear_solver;
     std::unique_ptr<TimeDiscretization> _time_discretization;
 
     /// Variables used by this process.
     std::vector<std::reference_wrapper<ProcessVariable>> _process_variables;
+
+    BoundaryConditionCollection _boundary_conditions;
 
     ExtrapolatorData _extrapolator_data;
 };
@@ -207,8 +207,7 @@ Parameter<ParameterArgs...>& findParameter(
                          return p->name == name;
                      });
 
-    if (parameter_it == parameters.end())
-    {
+    if (parameter_it == parameters.end()) {
         OGS_FATAL(
             "Could not find parameter '%s' in the provided parameters list for "
             "config tag <%s>.",
@@ -219,8 +218,7 @@ Parameter<ParameterArgs...>& findParameter(
     // Check the type correctness of the found parameter.
     auto* const parameter =
         dynamic_cast<Parameter<ParameterArgs...>*>(parameter_it->get());
-    if (!parameter)
-    {
+    if (!parameter) {
         OGS_FATAL("The read parameter is of incompatible type.");
     }
     return *parameter;

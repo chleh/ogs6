@@ -60,17 +60,8 @@ void Process::initialize()
                               _integration_order);
 
     DBUG("Initialize boundary conditions.");
-    for (int variable_id = 0;
-         variable_id < static_cast<int>(_process_variables.size());
-         ++variable_id)
-    {
-        ProcessVariable& pv = _process_variables[variable_id];
-        auto bcs = pv.getBoundaryConditions(*_local_to_global_index_map,
-                                            variable_id, _integration_order);
-
-        std::move(bcs.begin(), bcs.end(),
-                  std::back_inserter(_boundary_conditions));
-    }
+    _boundary_conditions.addBCsForProcessVariables(
+        _process_variables, *_local_to_global_index_map, _integration_order);
 }
 
 void Process::setInitialConditions(GlobalVector& x)
@@ -100,10 +91,7 @@ void Process::assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
                        GlobalMatrix& K, GlobalVector& b)
 {
     assembleConcreteProcess(t, x, M, K, b);
-
-    // Call global assembler for each Neumann boundary local assembler.
-    for (auto const& bc : _boundary_conditions)
-        bc->apply(t, x, K, b);
+    _boundary_conditions.apply(t, x, K, b);
 }
 
 void Process::assembleJacobian(const double t, GlobalVector const& x,
