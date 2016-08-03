@@ -19,6 +19,7 @@
 #include "Parameter.h"
 #include "ProcessOutput.h"
 #include "SecondaryVariable.h"
+#include "AbstractJacobianAssembler.h"
 
 namespace MeshLib
 {
@@ -68,14 +69,14 @@ public:
     void assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
                   GlobalMatrix& K, GlobalVector& b) override final;
 
-    void assembleJacobian(const double t, GlobalVector const& x,
-                          GlobalVector const& xdot, const double dxdot_dx,
-                          GlobalMatrix const& M, const double dx_dx,
-                          GlobalMatrix const& K,
-                          GlobalMatrix& Jac) override final;
+    void assembleWithJacobian(const double t, GlobalVector const& x,
+                              GlobalVector const& xdot, const double dxdot_dx,
+                              const double dx_dx, GlobalMatrix& M,
+                              GlobalMatrix& K, GlobalVector& b,
+                              GlobalMatrix& Jac) override final;
+
     std::vector<NumLib::IndexValueVector<GlobalIndexType>> const*
     getKnownSolutions(
-
         double const t) const override final
     {
         return _boundary_conditions.getKnownSolutions(t);
@@ -109,11 +110,18 @@ private:
                                          GlobalMatrix& M, GlobalMatrix& K,
                                          GlobalVector& b) = 0;
 
+    void assembleWithJacobianAnalytical(const double t, GlobalVector const& x,
+                                        GlobalVector const& xdot,
+                                        const double dxdot_dx,
+                                        const double dx_dx, GlobalMatrix& M,
+                                        GlobalMatrix& K, GlobalVector& b,
+                                        GlobalMatrix& Jac);
+
     virtual void assembleJacobianConcreteProcess(
         const double /*t*/, GlobalVector const& /*x*/,
         GlobalVector const& /*xdot*/, const double /*dxdot_dx*/,
-        GlobalMatrix const& /*M*/, const double /*dx_dx*/,
-        GlobalMatrix const& /*K*/, GlobalMatrix& /*Jac*/);
+        const double /*dx_dx*/, GlobalMatrix& /*M*/, GlobalMatrix& /*K*/,
+        GlobalVector& /*b*/, GlobalMatrix& /*Jac*/);
 
     void constructDofTable();
 
@@ -152,6 +160,8 @@ private:
     BoundaryConditionCollection _boundary_conditions;
 
     ExtrapolatorData _extrapolator_data;
+
+    std::unique_ptr<AbstractJacobianAssembler> _jacobian_assembler;
 };
 
 /// Find process variables in \c variables whose names match the settings under

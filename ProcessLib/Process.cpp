@@ -9,6 +9,7 @@
 
 #include "Process.h"
 
+#include "BaseLib/Functional.h"
 #include "NumLib/DOF/ComputeSparsityPattern.h"
 #include "NumLib/Extrapolation/LocalLinearLeastSquaresExtrapolator.h"
 #include "ProcessVariable.h"
@@ -90,37 +91,36 @@ void Process::assemble(const double t, GlobalVector const& x, GlobalMatrix& M,
     _boundary_conditions.apply(t, x, K, b);
 }
 
-void Process::assembleJacobian(const double t, GlobalVector const& x,
-                               GlobalVector const& xdot, const double dxdot_dx,
-                               GlobalMatrix const& M, const double dx_dx,
-                               GlobalMatrix const& K, GlobalMatrix& Jac)
+void Process::assembleWithJacobian(const double t, GlobalVector const& x,
+                                   GlobalVector const& xdot,
+                                   const double dxdot_dx, const double dx_dx,
+                                   GlobalMatrix& M, GlobalMatrix& K,
+                                   GlobalVector& b, GlobalMatrix& Jac)
 {
-    assembleJacobianConcreteProcess(t, x, xdot, dxdot_dx, M, dx_dx, K, Jac);
+    _jacobian_assembler->assembleWithJacobian(
+        BaseLib::easyBind(&Process::assemble, this),
+        BaseLib::easyBind(&Process::assembleWithJacobianAnalytical, this), t, x,
+        xdot, dxdot_dx, dx_dx, M, K, b, Jac);
+}
 
-    // TODO In this method one could check if the user wants to use an
-    //      analytical or a numerical Jacobian. Then the right
-    //      assembleJacobianConcreteProcess() method will be chosen.
-    //      Additionally in the default implementation of said method one
-    //      could provide a fallback to a numerical Jacobian. However, that
-    //      would be in a sense implicit behaviour and it might be better to
-    //      just abort, as is currently the case.
-    //      In order to implement the Jacobian assembly entirely, in addition
-    //      to the operator() in VectorMatrixAssembler there has to be a method
-    //      that dispatches the Jacobian assembly.
-    //      Similarly, then the NeumannBC specialization of VectorMatrixAssembler
-    //      probably can be merged into the main class s.t. one has only one
-    //      type of VectorMatrixAssembler (for each equation type) with the
-    //      three methods assemble(), assembleJacobian() and assembleNeumannBC().
-    //      That list can be extended, e.g. by methods for the assembly of
-    //      source terms.
-    //      UPDATE: Probably it is better to keep a separate NeumannBC version of the
-    //      VectoMatrixAssembler since that will work for all kinds of processes.
+void Process::assembleWithJacobianAnalytical(
+    const double t, GlobalVector const& x, GlobalVector const& xdot,
+    const double dxdot_dx, const double dx_dx, GlobalMatrix& M, GlobalMatrix& K,
+    GlobalVector& b, GlobalMatrix& Jac)
+{
+    assembleJacobianConcreteProcess(t, x, xdot, dxdot_dx, dx_dx, M, K, b, Jac);
+
+    // Call global assembler for each Neumann boundary local assembler.
+    for (auto const& bc : _neumann_bcs)
+        bc->integrate(t, b);
+
+    // TODO apply BCs to Jacobian.
 }
 
 void Process::assembleJacobianConcreteProcess(
     const double /*t*/, GlobalVector const& /*x*/, GlobalVector const& /*xdot*/,
-    const double /*dxdot_dx*/, GlobalMatrix const& /*M*/,
-    const double /*dx_dx*/, GlobalMatrix const& /*K*/, GlobalMatrix& /*Jac*/)
+    const double /*dxdot_dx*/, const double /*dx_dx*/, GlobalMatrix& /*M*/,
+    GlobalMatrix& /*K*/, GlobalVector& /*b*/, GlobalMatrix& /*Jac*/)
 {
     OGS_FATAL(
         "The concrete implementation of this Process did not override the"
