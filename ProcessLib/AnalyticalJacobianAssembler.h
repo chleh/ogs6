@@ -19,9 +19,7 @@ class ConfigTree;
 
 namespace ProcessLib
 {
-template <typename LocalAssemblerInterface>
-class AnalyticalJacobianAssembler
-    : public AbstractJacobianAssembler<LocalAssemblerInterface>
+class AnalyticalJacobianAssembler : public AbstractJacobianAssembler
 {
 public:
     void assembleWithJacobian(std::size_t const mesh_item_id,
@@ -33,7 +31,8 @@ public:
                               GlobalMatrix& K, GlobalVector& b,
                               GlobalMatrix& Jac) const override
     {
-        // assemble_jacobian_callback(t, x, xdot, dxdot_dx, dx_dx, M, K, b, Jac);
+        // assemble_jacobian_callback(t, x, xdot, dxdot_dx, dx_dx, M, K, b,
+        // Jac);
     }
 };
 

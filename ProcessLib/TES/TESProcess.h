@@ -40,7 +40,7 @@ public:
             process_variables,
         SecondaryVariableCollection&& secondary_variables,
         ProcessOutput&& process_output,
-        std::unique_ptr<AbstractJacobianAssembler<TESLocalAssemblerInterface>>&&
+        std::unique_ptr<AbstractJacobianAssembler>&&
             jacobian_assembler,
         BaseLib::ConfigTree const& config);
 
@@ -82,7 +82,7 @@ private:
 
     std::vector<std::unique_ptr<TESLocalAssemblerInterface>> _local_assemblers;
 
-    std::unique_ptr<AbstractJacobianAssembler<TESLocalAssemblerInterface>>
+    std::unique_ptr<AbstractJacobianAssembler>
         _jacobian_assembler;
 
     AssemblyParams _assembly_params;

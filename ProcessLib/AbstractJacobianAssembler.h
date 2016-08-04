@@ -10,8 +10,7 @@
 #ifndef PROCESSLIB_ABSTRACTJACOBIANASSEMBLER_H
 #define PROCESSLIB_ABSTRACTJACOBIANASSEMBLER_H
 
-#include "NumLib/NumericsConfig.h"
-#include "NumLib/DOF/LocalToGlobalIndexMap.h"
+#include "LocalAssemblerInterface.h"
 
 namespace BaseLib
 {
@@ -20,7 +19,6 @@ class ConfigTree;
 
 namespace ProcessLib
 {
-template <typename LocalAssemblerInterface>
 class AbstractJacobianAssembler
 {
 public:

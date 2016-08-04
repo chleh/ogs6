@@ -42,13 +42,11 @@ std::unique_ptr<Process> createTESProcess(
     ProcessOutput process_output{config.getConfigSubtree("output"),
                                  process_variables, secondary_variables};
 
-    std::unique_ptr<ProcessLib::AbstractJacobianAssembler<TESLocalAssemblerInterface>>
-        jacobian_assembler;
+    std::unique_ptr<ProcessLib::AbstractJacobianAssembler> jacobian_assembler;
     if (auto jac_asm_config =
             config.getConfigSubtreeOptional("jacobian_assembler")) {
         jacobian_assembler =
-            ProcessLib::createJacobianAssembler<TESLocalAssemblerInterface>(
-                *jac_asm_config);
+            ProcessLib::createJacobianAssembler(*jac_asm_config);
     }
 
     return std::unique_ptr<Process>{new TESProcess{

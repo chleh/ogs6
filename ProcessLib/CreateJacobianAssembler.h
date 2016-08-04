@@ -16,17 +16,15 @@
 
 namespace ProcessLib
 {
-template <typename LocalAssemblerInterface>
-std::unique_ptr<AbstractJacobianAssembler<LocalAssemblerInterface>>
-createJacobianAssembler(BaseLib::ConfigTree const& config)
+inline std::unique_ptr<AbstractJacobianAssembler> createJacobianAssembler(
+    BaseLib::ConfigTree const& config)
 {
     auto const type = config.peekConfigParameter<std::string>("type");
 
     if (type == "Analytical") {
         config.ignoreConfigParameter("type");
-        return std::unique_ptr<
-            AbstractJacobianAssembler<LocalAssemblerInterface>>(
-            new AnalyticalJacobianAssembler<LocalAssemblerInterface>);
+        return std::unique_ptr<AbstractJacobianAssembler>(
+            new AnalyticalJacobianAssembler);
     }
 
     OGS_FATAL("Unknown Jacobian assembler type: `%s'.", type.c_str());

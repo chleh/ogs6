@@ -74,7 +74,7 @@ TESProcess::TESProcess(
     std::vector<std::reference_wrapper<ProcessVariable>>&& process_variables,
     SecondaryVariableCollection&& secondary_variables,
     ProcessOutput&& process_output,
-    std::unique_ptr<AbstractJacobianAssembler<TESLocalAssemblerInterface>>&&
+    std::unique_ptr<AbstractJacobianAssembler>&&
         jacobian_assembler,
     const BaseLib::ConfigTree& config)
     : Process(mesh, nonlinear_solver, std::move(time_discretization),
@@ -243,9 +243,7 @@ void TESProcess::assembleWithJacobianConcreteProcess(
     GlobalVector& b, GlobalMatrix& Jac)
 {
     GlobalExecutor::executeMemberDereferenced(
-        *_jacobian_assembler,
-        &AbstractJacobianAssembler<
-            TESLocalAssemblerInterface>::assembleWithJacobian,
+        *_jacobian_assembler, &AbstractJacobianAssembler::assembleWithJacobian,
         _local_assemblers, *_local_to_global_index_map, t, x, xdot, dxdot_dx,
         dx_dx, M, K, b, Jac);
 }
