@@ -23,6 +23,12 @@ public:
         const double dx_dx, std::vector<double>& local_M_data,
         std::vector<double>& local_K_data, std::vector<double>& local_b_data,
         std::vector<double>& local_Jac_data) override;
+
+private:
+    std::vector<double> _local_M_data;
+    std::vector<double> _local_K_data;
+    std::vector<double> _local_b_data;
+    std::vector<double> _local_res_data;
 };
 
 }  // ProcessLib
