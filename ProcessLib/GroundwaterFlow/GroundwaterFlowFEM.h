@@ -63,7 +63,7 @@ public:
     /// The hydraulic_conductivity factor is directly integrated into the local
     /// element matrix.
     LocalAssemblerData(MeshLib::Element const& element,
-                       std::size_t const local_matrix_size,
+                       std::size_t const /*local_matrix_size*/,
                        unsigned const integration_order,
                        GroundwaterFlowProcessData const& process_data)
         : _element(element)
@@ -71,21 +71,22 @@ public:
               initShapeMatrices<ShapeFunction, ShapeMatricesType, IntegrationMethod, GlobalDim>(
                   element, integration_order))
         , _process_data(process_data)
-        , _localA(local_matrix_size, local_matrix_size) // TODO narrowing conversion
-        , _localRhs(local_matrix_size)
         , _integration_order(integration_order)
     {
-        // This assertion is valid only if all nodal d.o.f. use the same shape matrices.
-        assert(local_matrix_size == ShapeFunction::NPOINTS * NUM_NODAL_DOF);
     }
 
     void assembleConcrete(
-        double const /*t*/, std::vector<double> const& local_x,
-        NumLib::LocalToGlobalIndexMap::RowColumnIndices const& indices,
-        GlobalMatrix& /*M*/, GlobalMatrix& K, GlobalVector& b) override
+            double const /*t*/, std::vector<double> const& local_x,
+            std::vector<double>& /*local_M_data*/, std::vector<double>& local_K_data,
+            std::vector<double>& /*local_b_data*/) override
     {
-        _localA.setZero();
-        _localRhs.setZero();
+        auto const local_matrix_size = local_x.size();
+        // This assertion is valid only if all nodal d.o.f. use the same shape matrices.
+        assert(local_matrix_size == ShapeFunction::NPOINTS * NUM_NODAL_DOF);
+
+        local_K_data.resize(local_matrix_size * local_matrix_size);
+        auto local_K = Eigen::Map<NodalMatrixType>(
+            local_K_data.data(), local_matrix_size, local_matrix_size);
 
         IntegrationMethod integration_method(_integration_order);
         unsigned const n_integration_points = integration_method.getNumberOfPoints();
@@ -96,8 +97,8 @@ public:
             auto const& wp = integration_method.getWeightedPoint(ip);
             auto const k = _process_data.hydraulic_conductivity(_element);
 
-            _localA.noalias() += sm.dNdx.transpose() * k * sm.dNdx *
-                                 sm.detJ * wp.getWeight();
+            local_K.noalias() +=
+                sm.dNdx.transpose() * k * sm.dNdx * sm.detJ * wp.getWeight();
 
             // Darcy velocity only computed for output.
             auto const darcy_velocity = -(k * sm.dNdx *
@@ -108,9 +109,6 @@ public:
                 _darcy_velocities[d][ip] = darcy_velocity[d];
             }
         }
-
-        K.add(indices, _localA);
-        b.add(indices.rows, _localRhs);
     }
 
     Eigen::Map<const Eigen::RowVectorXd>
@@ -147,9 +145,6 @@ private:
     MeshLib::Element const& _element;
     std::vector<ShapeMatrices> _shape_matrices;
     GroundwaterFlowProcessData const& _process_data;
-
-    NodalMatrixType _localA;
-    NodalVectorType _localRhs;
 
     unsigned const _integration_order;
 

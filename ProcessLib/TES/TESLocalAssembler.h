@@ -69,10 +69,10 @@ public:
                       unsigned const integration_order,
                       AssemblyParams const& asm_params);
 
-    void assembleConcrete(
-        double const t, std::vector<double> const& local_x,
-        NumLib::LocalToGlobalIndexMap::RowColumnIndices const& indices,
-        GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b) override;
+    void assembleConcrete(double const t, std::vector<double> const& local_x,
+                          std::vector<double>& local_M_data,
+                          std::vector<double>& local_K_data,
+                          std::vector<double>& local_b_data) override;
 
     Eigen::Map<const Eigen::RowVectorXd> getShapeMatrix(
         const unsigned integration_point) const override
@@ -123,11 +123,6 @@ private:
     static_assert(
         std::is_same<NodalVectorType, typename LAT::LocalVector>::value,
         "local vector and data traits vector do not coincide");
-
-    // TODO Change VectorMatrixAssembler s.t. these can be omitted.
-    NodalMatrixType _local_M;
-    NodalMatrixType _local_K;
-    NodalVectorType _local_b;
 
     // TODO Use the value from Process
     unsigned const _integration_order;
