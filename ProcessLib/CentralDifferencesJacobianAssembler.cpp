@@ -17,7 +17,7 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
     const double dxdot_dx, const double dx_dx,
     std::vector<double>& local_M_data, std::vector<double>& local_K_data,
     std::vector<double>& local_b_data,
-    std::vector<double>& local_Jac_data) const
+    std::vector<double>& local_Jac_data)
 {
     // TODO implement
 }

@@ -18,7 +18,7 @@ void AnalyticalJacobianAssembler::assembleWithJacobian(
     const double dxdot_dx, const double dx_dx,
     std::vector<double>& local_M_data, std::vector<double>& local_K_data,
     std::vector<double>& local_b_data,
-    std::vector<double>& local_Jac_data) const
+    std::vector<double>& local_Jac_data)
 {
     local_assembler.assembleWithJacobian(t, local_x, local_xdot, dxdot_dx,
                                          dx_dx, local_M_data, local_K_data,
