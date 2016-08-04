@@ -19,7 +19,7 @@ class ConfigTree;
 
 namespace ProcessLib
 {
-class AnalyticalJacobianAssembler : public AbstractJacobianAssembler
+class AnalyticalJacobianAssembler final : public AbstractJacobianAssembler
 {
 public:
     void assembleWithJacobian(
