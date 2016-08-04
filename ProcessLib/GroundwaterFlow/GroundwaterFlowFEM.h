@@ -75,10 +75,10 @@ public:
     {
     }
 
-    void assembleConcrete(
-            double const /*t*/, std::vector<double> const& local_x,
-            std::vector<double>& /*local_M_data*/, std::vector<double>& local_K_data,
-            std::vector<double>& /*local_b_data*/) override
+    void assemble(double const /*t*/, std::vector<double> const& local_x,
+                  std::vector<double>& /*local_M_data*/,
+                  std::vector<double>& local_K_data,
+                  std::vector<double>& /*local_b_data*/) override
     {
         auto const local_matrix_size = local_x.size();
         // This assertion is valid only if all nodal d.o.f. use the same shape matrices.

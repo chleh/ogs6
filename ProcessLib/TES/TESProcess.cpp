@@ -232,8 +232,8 @@ void TESProcess::assembleConcreteProcess(const double t,
     DBUG("Assemble TESProcess.");
 
     // Call global assembler for each local assembly item.
-    GlobalExecutor::executeMemberOnDereferenced(
-        &TESLocalAssemblerInterface::assemble, _local_assemblers,
+    GlobalExecutor::executeMemberDereferenced(
+        _global_assembler, &VectorMatrixAssembler::assemble, _local_assemblers,
         *_local_to_global_index_map, t, x, M, K, b);
 }
 
@@ -243,7 +243,7 @@ void TESProcess::assembleWithJacobianConcreteProcess(
     GlobalVector& b, GlobalMatrix& Jac)
 {
     GlobalExecutor::executeMemberDereferenced(
-        *_jacobian_assembler, &AbstractJacobianAssembler::assembleWithJacobian,
+        _global_assembler, &VectorMatrixAssembler::assembleWithJacobian,
         _local_assemblers, *_local_to_global_index_map, t, x, xdot, dxdot_dx,
         dx_dx, M, K, b, Jac);
 }

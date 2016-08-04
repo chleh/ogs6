@@ -20,6 +20,7 @@
 #include "ProcessOutput.h"
 #include "SecondaryVariable.h"
 #include "AbstractJacobianAssembler.h"
+#include "VectorMatrixAssembler.h"
 
 namespace MeshLib
 {
@@ -139,6 +140,8 @@ protected:
 
     SecondaryVariableCollection _secondary_variables;
     ProcessOutput _process_output;
+
+    VectorMatrixAssembler _global_assembler;
 
 private:
     unsigned const _integration_order = 2;
