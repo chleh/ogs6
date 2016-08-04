@@ -22,14 +22,13 @@ namespace ProcessLib
 class AnalyticalJacobianAssembler : public AbstractJacobianAssembler
 {
 public:
-    void assembleWithJacobian(std::size_t const mesh_item_id,
-                              LocalAssemblerInterface& local_assembler,
-                              NumLib::LocalToGlobalIndexMap const& dof_table,
-                              const double t, GlobalVector const& x,
-                              GlobalVector const& xdot, const double dxdot_dx,
-                              const double dx_dx, GlobalMatrix& M,
-                              GlobalMatrix& K, GlobalVector& b,
-                              GlobalMatrix& Jac) const override
+    void assembleWithJacobian(
+            LocalAssemblerInterface& local_assembler, double const t,
+            std::vector<double> const& local_x,
+            std::vector<double> const& local_xdot, const double dxdot_dx,
+            const double dx_dx, std::vector<double>& local_M_data,
+            std::vector<double>& local_K_data, std::vector<double>& local_b_data,
+            std::vector<double>& local_Jac_data) const override
     {
         // local_assembler.assemble(mesh_item_id, dof_table, t, x, M, K, b);
         // local_assembler.assembleJacobian(mesh_item_id, dof_table, t, x, Jac);
