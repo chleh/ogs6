@@ -31,8 +31,8 @@ public:
                               GlobalMatrix& K, GlobalVector& b,
                               GlobalMatrix& Jac) const override
     {
-        // assemble_jacobian_callback(t, x, xdot, dxdot_dx, dx_dx, M, K, b,
-        // Jac);
+        local_assembler.assemble(mesh_item_id, dof_table, t, x, M, K, b);
+        local_assembler.assembleJacobian(mesh_item_id, dof_table, t, x, Jac);
     }
 };
 
