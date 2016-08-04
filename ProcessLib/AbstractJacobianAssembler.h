@@ -11,6 +11,7 @@
 #define PROCESSLIB_ABSTRACTJACOBIANASSEMBLER_H
 
 #include "NumLib/NumericsConfig.h"
+#include "NumLib/DOF/LocalToGlobalIndexMap.h"
 
 namespace BaseLib
 {
@@ -19,27 +20,22 @@ class ConfigTree;
 
 namespace ProcessLib
 {
+template <typename LocalAssemblerInterface>
 class AbstractJacobianAssembler
 {
 public:
-    virtual void assembleWithJacobian(
-        std::function<void(const double t, GlobalVector const& x,
-                           GlobalMatrix& M, GlobalMatrix& K,
-                           GlobalVector& b)> const& assemble_callback,
-        std::function<void(const double t, GlobalVector const& x,
-                           GlobalVector const& xdot, const double dxdot_dx,
-                           const double dx_dx, GlobalMatrix& M, GlobalMatrix& K,
-                           GlobalVector& b, GlobalMatrix& Jac)> const&
-            assemble_jacobian_callback,
-        const double t, GlobalVector const& x, GlobalVector const& xdot,
-        const double dxdot_dx, const double dx_dx, GlobalMatrix& M,
-        GlobalMatrix& K, GlobalVector& b, GlobalMatrix& Jac) const = 0;
+    virtual void assembleWithJacobian(std::size_t const mesh_item_id,
+                                      LocalAssemblerInterface& local_assembler,
+                                      NumLib::LocalToGlobalIndexMap const& dof_table,
+                                      const double t, GlobalVector const& x,
+                                      GlobalVector const& xdot,
+                                      const double dxdot_dx, const double dx_dx,
+                                      GlobalMatrix& M, GlobalMatrix& K,
+                                      GlobalVector& b,
+                                      GlobalMatrix& Jac) const = 0;
 
     virtual ~AbstractJacobianAssembler() = default;
 };
-
-std::unique_ptr<AbstractJacobianAssembler> createJacobianAssembler(
-    BaseLib::ConfigTree const& config);
 
 }  // ProcessLib
 

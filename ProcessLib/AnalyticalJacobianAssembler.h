@@ -19,23 +19,21 @@ class ConfigTree;
 
 namespace ProcessLib
 {
-class AnalyticalJacobianAssembler : public AbstractJacobianAssembler
+template <typename LocalAssemblerInterface>
+class AnalyticalJacobianAssembler
+    : public AbstractJacobianAssembler<LocalAssemblerInterface>
 {
 public:
-    void assembleWithJacobian(
-        std::function<void(const double t, GlobalVector const& x,
-                           GlobalMatrix& M, GlobalMatrix& K,
-                           GlobalVector& b)> const& /*assemble_callback*/,
-        std::function<void(const double t, GlobalVector const& x,
-                           GlobalVector const& xdot, const double dxdot_dx,
-                           const double dx_dx, GlobalMatrix& M, GlobalMatrix& K,
-                           GlobalVector& b, GlobalMatrix& Jac)> const&
-            assemble_jacobian_callback,
-        const double t, GlobalVector const& x, GlobalVector const& xdot,
-        const double dxdot_dx, const double dx_dx, GlobalMatrix& M,
-        GlobalMatrix& K, GlobalVector& b, GlobalMatrix& Jac) const override
+    void assembleWithJacobian(std::size_t const mesh_item_id,
+                              LocalAssemblerInterface& local_assembler,
+                              NumLib::LocalToGlobalIndexMap const& dof_table,
+                              const double t, GlobalVector const& x,
+                              GlobalVector const& xdot, const double dxdot_dx,
+                              const double dx_dx, GlobalMatrix& M,
+                              GlobalMatrix& K, GlobalVector& b,
+                              GlobalMatrix& Jac) const override
     {
-        assemble_jacobian_callback(t, x, xdot, dxdot_dx, dx_dx, M, K, b, Jac);
+        // assemble_jacobian_callback(t, x, xdot, dxdot_dx, dx_dx, M, K, b, Jac);
     }
 };
 

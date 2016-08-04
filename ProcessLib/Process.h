@@ -140,8 +140,6 @@ protected:
     SecondaryVariableCollection _secondary_variables;
     ProcessOutput _process_output;
 
-    std::unique_ptr<AbstractJacobianAssembler> _jacobian_assembler;
-
 private:
     unsigned const _integration_order = 2;
     GlobalSparsityPattern _sparsity_pattern;

@@ -8,7 +8,7 @@
  */
 
 #include "CreateTESProcess.h"
-
+#include "CreateJacobianAssembler.h"
 #include "TESProcess.h"
 
 namespace ProcessLib
@@ -42,10 +42,19 @@ std::unique_ptr<Process> createTESProcess(
     ProcessOutput process_output{config.getConfigSubtree("output"),
                                  process_variables, secondary_variables};
 
+    std::unique_ptr<ProcessLib::AbstractJacobianAssembler<TESLocalAssemblerInterface>>
+        jacobian_assembler;
+    if (auto jac_asm_config =
+            config.getConfigSubtreeOptional("jacobian_assembler")) {
+        jacobian_assembler =
+            ProcessLib::createJacobianAssembler<TESLocalAssemblerInterface>(
+                *jac_asm_config);
+    }
+
     return std::unique_ptr<Process>{new TESProcess{
         mesh, nonlinear_solver, std::move(time_discretization),
         std::move(process_variables), std::move(secondary_variables),
-        std::move(process_output), config}};
+        std::move(process_output), std::move(jacobian_assembler), config}};
 }
 
 }  // namespace TES

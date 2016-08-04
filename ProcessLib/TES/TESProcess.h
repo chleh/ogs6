@@ -35,12 +35,13 @@ public:
     TESProcess(
         MeshLib::Mesh& mesh,
         Process::NonlinearSolver& nonlinear_solver,
-        std::unique_ptr<Process::TimeDiscretization>&&
-            time_discretization,
+        std::unique_ptr<Process::TimeDiscretization>&& time_discretization,
         std::vector<std::reference_wrapper<ProcessVariable>>&&
             process_variables,
         SecondaryVariableCollection&& secondary_variables,
         ProcessOutput&& process_output,
+        std::unique_ptr<AbstractJacobianAssembler<TESLocalAssemblerInterface>>&&
+            jacobian_assembler,
         BaseLib::ConfigTree const& config);
 
     void preTimestep(GlobalVector const& x, const double t,
@@ -60,10 +61,9 @@ private:
                                  GlobalVector& b) override;
 
     void assembleWithJacobianConcreteProcess(
-        const double t, GlobalVector const& x,
-        GlobalVector const& xdot, const double dxdot_dx,
-        const double dx_dx, GlobalMatrix& M, GlobalMatrix& K,
-        GlobalVector& b, GlobalMatrix& Jac) override;
+        const double t, GlobalVector const& x, GlobalVector const& xdot,
+        const double dxdot_dx, const double dx_dx, GlobalMatrix& M,
+        GlobalMatrix& K, GlobalVector& b, GlobalMatrix& Jac) override;
 
     GlobalVector const& computeVapourPartialPressure(
         GlobalVector const& x,
@@ -81,6 +81,9 @@ private:
         std::unique_ptr<GlobalVector>& result_cache);
 
     std::vector<std::unique_ptr<TESLocalAssemblerInterface>> _local_assemblers;
+
+    std::unique_ptr<AbstractJacobianAssembler<TESLocalAssemblerInterface>>
+        _jacobian_assembler;
 
     AssemblyParams _assembly_params;
 

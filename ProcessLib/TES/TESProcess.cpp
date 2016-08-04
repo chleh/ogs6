@@ -70,16 +70,17 @@ namespace TES
 TESProcess::TESProcess(
     MeshLib::Mesh& mesh,
     Process::NonlinearSolver& nonlinear_solver,
-    std::unique_ptr<Process::TimeDiscretization>&&
-        time_discretization,
+    std::unique_ptr<Process::TimeDiscretization>&& time_discretization,
     std::vector<std::reference_wrapper<ProcessVariable>>&& process_variables,
     SecondaryVariableCollection&& secondary_variables,
     ProcessOutput&& process_output,
+    std::unique_ptr<AbstractJacobianAssembler<TESLocalAssemblerInterface>>&&
+        jacobian_assembler,
     const BaseLib::ConfigTree& config)
-    : Process(
-          mesh, nonlinear_solver, std::move(time_discretization),
-          std::move(process_variables), std::move(secondary_variables),
-          std::move(process_output))
+    : Process(mesh, nonlinear_solver, std::move(time_discretization),
+              std::move(process_variables), std::move(secondary_variables),
+              std::move(process_output)),
+      _jacobian_assembler(std::move(jacobian_assembler))
 {
     DBUG("Create TESProcess.");
 
@@ -237,15 +238,16 @@ void TESProcess::assembleConcreteProcess(const double t,
 }
 
 void TESProcess::assembleWithJacobianConcreteProcess(
-    const double /*t*/, GlobalVector const& /*x*/, GlobalVector const& /*xdot*/,
-    const double /*dxdot_dx*/, const double /*dx_dx*/, GlobalMatrix& /*M*/,
-    GlobalMatrix& /*K*/, GlobalVector& /*b*/, GlobalMatrix& /*Jac*/)
+    const double t, GlobalVector const& x, GlobalVector const& xdot,
+    const double dxdot_dx, const double dx_dx, GlobalMatrix& M, GlobalMatrix& K,
+    GlobalVector& b, GlobalMatrix& Jac)
 {
-    OGS_FATAL(
-        "The concrete implementation of this Process did not override the"
-        " assembleJacobianConcreteProcess() method."
-        " Hence, no analytical Jacobian is provided for this process"
-        " and the Newton-Raphson method cannot be used to solve it.");
+    GlobalExecutor::executeMemberDereferenced(
+        *_jacobian_assembler,
+        &AbstractJacobianAssembler<
+            TESLocalAssemblerInterface>::assembleWithJacobian,
+        _local_assemblers, *_local_to_global_index_map, t, x, xdot, dxdot_dx,
+        dx_dx, M, K, b, Jac);
 }
 
 void TESProcess::preTimestep(GlobalVector const& x, const double t,
