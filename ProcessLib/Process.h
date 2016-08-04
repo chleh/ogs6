@@ -110,18 +110,11 @@ private:
                                          GlobalMatrix& M, GlobalMatrix& K,
                                          GlobalVector& b) = 0;
 
-    void assembleWithJacobianAnalytical(const double t, GlobalVector const& x,
-                                        GlobalVector const& xdot,
-                                        const double dxdot_dx,
-                                        const double dx_dx, GlobalMatrix& M,
-                                        GlobalMatrix& K, GlobalVector& b,
-                                        GlobalMatrix& Jac);
-
-    virtual void assembleJacobianConcreteProcess(
-        const double /*t*/, GlobalVector const& /*x*/,
-        GlobalVector const& /*xdot*/, const double /*dxdot_dx*/,
-        const double /*dx_dx*/, GlobalMatrix& /*M*/, GlobalMatrix& /*K*/,
-        GlobalVector& /*b*/, GlobalMatrix& /*Jac*/);
+    virtual void assembleWithJacobianConcreteProcess(
+        const double t, GlobalVector const& x,
+        GlobalVector const& xdot, const double dxdot_dx,
+        const double dx_dx, GlobalMatrix& M, GlobalMatrix& K,
+        GlobalVector& b, GlobalMatrix& Jac) = 0;
 
     void constructDofTable();
 
@@ -147,6 +140,8 @@ protected:
     SecondaryVariableCollection _secondary_variables;
     ProcessOutput _process_output;
 
+    std::unique_ptr<AbstractJacobianAssembler> _jacobian_assembler;
+
 private:
     unsigned const _integration_order = 2;
     GlobalSparsityPattern _sparsity_pattern;
@@ -160,8 +155,6 @@ private:
     BoundaryConditionCollection _boundary_conditions;
 
     ExtrapolatorData _extrapolator_data;
-
-    std::unique_ptr<AbstractJacobianAssembler> _jacobian_assembler;
 };
 
 /// Find process variables in \c variables whose names match the settings under

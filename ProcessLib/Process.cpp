@@ -97,6 +97,7 @@ void Process::assembleWithJacobian(const double t, GlobalVector const& x,
                                    GlobalMatrix& M, GlobalMatrix& K,
                                    GlobalVector& b, GlobalMatrix& Jac)
 {
+#if 0
     _jacobian_assembler->assembleWithJacobian(
         BaseLib::easyBind(&Process::assemble, this),
         BaseLib::easyBind(&Process::assembleWithJacobianAnalytical, this), t, x,
@@ -108,25 +109,14 @@ void Process::assembleWithJacobianAnalytical(
     const double dxdot_dx, const double dx_dx, GlobalMatrix& M, GlobalMatrix& K,
     GlobalVector& b, GlobalMatrix& Jac)
 {
-    assembleJacobianConcreteProcess(t, x, xdot, dxdot_dx, dx_dx, M, K, b, Jac);
+#endif
+    assembleWithJacobianConcreteProcess(t, x, xdot, dxdot_dx, dx_dx, M, K, b, Jac);
 
     // Call global assembler for each Neumann boundary local assembler.
     for (auto const& bc : _neumann_bcs)
         bc->integrate(t, b);
 
     // TODO apply BCs to Jacobian.
-}
-
-void Process::assembleJacobianConcreteProcess(
-    const double /*t*/, GlobalVector const& /*x*/, GlobalVector const& /*xdot*/,
-    const double /*dxdot_dx*/, const double /*dx_dx*/, GlobalMatrix& /*M*/,
-    GlobalMatrix& /*K*/, GlobalVector& /*b*/, GlobalMatrix& /*Jac*/)
-{
-    OGS_FATAL(
-        "The concrete implementation of this Process did not override the"
-        " assembleJacobianConcreteProcess() method."
-        " Hence, no analytical Jacobian is provided for this process"
-        " and the Newton-Raphson method cannot be used to solve it.");
 }
 
 void Process::constructDofTable()

@@ -89,5 +89,17 @@ void GroundwaterFlowProcess::assembleConcreteProcess(const double t,
         _local_assemblers, *_local_to_global_index_map, t, x, M, K, b);
 }
 
+void GroundwaterFlowProcess::assembleWithJacobianConcreteProcess(
+    const double /*t*/, GlobalVector const& /*x*/, GlobalVector const& /*xdot*/,
+    const double /*dxdot_dx*/, const double /*dx_dx*/, GlobalMatrix& /*M*/,
+    GlobalMatrix& /*K*/, GlobalVector& /*b*/, GlobalMatrix& /*Jac*/)
+{
+    OGS_FATAL(
+        "The concrete implementation of this Process did not override the"
+        " assembleJacobianConcreteProcess() method."
+        " Hence, no analytical Jacobian is provided for this process"
+        " and the Newton-Raphson method cannot be used to solve it.");
+}
+
 }   // namespace GroundwaterFlow
 }   // namespace ProcessLib

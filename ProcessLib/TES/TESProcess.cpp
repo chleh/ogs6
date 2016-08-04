@@ -223,10 +223,10 @@ void TESProcess::initializeConcreteProcess(
 }
 
 void TESProcess::assembleConcreteProcess(const double t,
-                                                      GlobalVector const& x,
-                                                      GlobalMatrix& M,
-                                                      GlobalMatrix& K,
-                                                      GlobalVector& b)
+                                         GlobalVector const& x,
+                                         GlobalMatrix& M,
+                                         GlobalMatrix& K,
+                                         GlobalVector& b)
 {
     DBUG("Assemble TESProcess.");
 
@@ -234,6 +234,18 @@ void TESProcess::assembleConcreteProcess(const double t,
     GlobalExecutor::executeMemberOnDereferenced(
         &TESLocalAssemblerInterface::assemble, _local_assemblers,
         *_local_to_global_index_map, t, x, M, K, b);
+}
+
+void TESProcess::assembleWithJacobianConcreteProcess(
+    const double /*t*/, GlobalVector const& /*x*/, GlobalVector const& /*xdot*/,
+    const double /*dxdot_dx*/, const double /*dx_dx*/, GlobalMatrix& /*M*/,
+    GlobalMatrix& /*K*/, GlobalVector& /*b*/, GlobalMatrix& /*Jac*/)
+{
+    OGS_FATAL(
+        "The concrete implementation of this Process did not override the"
+        " assembleJacobianConcreteProcess() method."
+        " Hence, no analytical Jacobian is provided for this process"
+        " and the Newton-Raphson method cannot be used to solve it.");
 }
 
 void TESProcess::preTimestep(GlobalVector const& x, const double t,
