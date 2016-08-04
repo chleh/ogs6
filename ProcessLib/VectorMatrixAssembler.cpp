@@ -16,6 +16,12 @@
 
 namespace ProcessLib
 {
+VectorMatrixAssembler::VectorMatrixAssembler(
+    std::unique_ptr<AbstractJacobianAssembler>&& jacobian_assembler)
+    : _jacobian_assembler(std::move(jacobian_assembler))
+{
+}
+
 void VectorMatrixAssembler::assemble(
     const std::size_t mesh_item_id, LocalAssemblerInterface& local_assembler,
     const NumLib::LocalToGlobalIndexMap& dof_table, const double t,

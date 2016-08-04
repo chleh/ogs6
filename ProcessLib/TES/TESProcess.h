@@ -36,12 +36,11 @@ public:
         MeshLib::Mesh& mesh,
         Process::NonlinearSolver& nonlinear_solver,
         std::unique_ptr<Process::TimeDiscretization>&& time_discretization,
+        std::unique_ptr<AbstractJacobianAssembler>&& jacobian_assembler,
         std::vector<std::reference_wrapper<ProcessVariable>>&&
             process_variables,
         SecondaryVariableCollection&& secondary_variables,
         ProcessOutput&& process_output,
-        std::unique_ptr<AbstractJacobianAssembler>&&
-            jacobian_assembler,
         BaseLib::ConfigTree const& config);
 
     void preTimestep(GlobalVector const& x, const double t,
@@ -81,9 +80,6 @@ private:
         std::unique_ptr<GlobalVector>& result_cache);
 
     std::vector<std::unique_ptr<TESLocalAssemblerInterface>> _local_assemblers;
-
-    std::unique_ptr<AbstractJacobianAssembler>
-        _jacobian_assembler;
 
     AssemblyParams _assembly_params;
 

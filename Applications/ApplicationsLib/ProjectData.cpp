@@ -24,6 +24,7 @@
 #include "MeshLib/Mesh.h"
 
 #include "NumLib/ODESolver/TimeDiscretizationBuilder.h"
+#include "ProcessLib/CreateJacobianAssembler.h"
 
 // FileIO
 #include "GeoLib/IO/XmlIO/Boost/BoostXmlGmlInterface.h"
@@ -169,6 +170,13 @@ void ProjectData::buildProcesses()
             //! \ogs_file_param{process__time_discretization}
             pc.getConfigSubtree("time_discretization"));
 
+        std::unique_ptr<ProcessLib::AbstractJacobianAssembler> jacobian_assembler;
+        if (auto jac_asm_config =
+                pc.getConfigSubtreeOptional("jacobian_assembler")) {
+            jacobian_assembler =
+                ProcessLib::createJacobianAssembler(*jac_asm_config);
+        }
+
         if (type == "GROUNDWATER_FLOW")
         {
             // The existence check of the in the configuration referenced
@@ -179,13 +187,15 @@ void ProjectData::buildProcesses()
             _processes.emplace_back(
                 ProcessLib::GroundwaterFlow::createGroundwaterFlowProcess(
                     *_mesh_vec[0], *nl_slv, std::move(time_disc),
-                    _process_variables, _parameters, pc));
+                    std::move(jacobian_assembler), _process_variables,
+                    _parameters, pc));
         }
         else if (type == "TES")
         {
             _processes.emplace_back(ProcessLib::TES::createTESProcess(
                 *_mesh_vec[0], *nl_slv, std::move(time_disc),
-                _process_variables, _parameters, pc));
+                std::move(jacobian_assembler), _process_variables, _parameters,
+                pc));
         }
         else
         {

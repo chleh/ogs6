@@ -71,16 +71,14 @@ TESProcess::TESProcess(
     MeshLib::Mesh& mesh,
     Process::NonlinearSolver& nonlinear_solver,
     std::unique_ptr<Process::TimeDiscretization>&& time_discretization,
+    std::unique_ptr<AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<std::reference_wrapper<ProcessVariable>>&& process_variables,
     SecondaryVariableCollection&& secondary_variables,
     ProcessOutput&& process_output,
-    std::unique_ptr<AbstractJacobianAssembler>&&
-        jacobian_assembler,
     const BaseLib::ConfigTree& config)
     : Process(mesh, nonlinear_solver, std::move(time_discretization),
-              std::move(process_variables), std::move(secondary_variables),
-              std::move(process_output)),
-      _jacobian_assembler(std::move(jacobian_assembler))
+              std::move(jacobian_assembler), std::move(process_variables),
+              std::move(secondary_variables), std::move(process_output))
 {
     DBUG("Create TESProcess.");
 

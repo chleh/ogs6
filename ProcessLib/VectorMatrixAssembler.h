@@ -11,7 +11,8 @@
 #define PROCESSLIB_VECTORMATRIXASSEMBLER_H_
 
 #include <vector>
-#include <NumLib/DOF/LocalToGlobalIndexMap.h>
+#include "NumLib/DOF/LocalToGlobalIndexMap.h"
+#include "AbstractJacobianAssembler.h"
 
 namespace ProcessLib
 {
@@ -20,6 +21,9 @@ class LocalAssemblerInterface;
 class VectorMatrixAssembler final
 {
 public:
+    VectorMatrixAssembler(
+        std::unique_ptr<AbstractJacobianAssembler>&& jacobian_assembler);
+
     void assemble(std::size_t const mesh_item_id,
                   LocalAssemblerInterface& local_assembler,
                   NumLib::LocalToGlobalIndexMap const& dof_table,
@@ -40,6 +44,8 @@ private:
     std::vector<double> _local_K_data;
     std::vector<double> _local_b_data;
     std::vector<double> _local_Jac_data;
+
+    std::unique_ptr<AbstractJacobianAssembler> _jacobian_assembler;
 };
 
 }   // namespace ProcessLib

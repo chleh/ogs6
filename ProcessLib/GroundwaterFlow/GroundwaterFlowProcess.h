@@ -29,6 +29,8 @@ public:
         MeshLib::Mesh& mesh,
         Base::NonlinearSolver& nonlinear_solver,
         std::unique_ptr<Base::TimeDiscretization>&& time_discretization,
+        std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&&
+            jacobian_assembler,
         std::vector<std::reference_wrapper<ProcessVariable>>&&
             process_variables,
         GroundwaterFlowProcessData&& process_data,

@@ -41,6 +41,8 @@ public:
     Process(MeshLib::Mesh& mesh,
             NonlinearSolver& nonlinear_solver,
             std::unique_ptr<TimeDiscretization>&& time_discretization,
+            std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&&
+                jacobian_assembler,
             std::vector<std::reference_wrapper<ProcessVariable>>&&
                 process_variables,
             SecondaryVariableCollection&& secondary_variables,

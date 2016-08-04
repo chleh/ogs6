@@ -21,13 +21,14 @@ GroundwaterFlowProcess::GroundwaterFlowProcess(
     MeshLib::Mesh& mesh,
     Base::NonlinearSolver& nonlinear_solver,
     std::unique_ptr<Base::TimeDiscretization>&& time_discretization,
+    std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<std::reference_wrapper<ProcessVariable>>&& process_variables,
     GroundwaterFlowProcessData&& process_data,
     SecondaryVariableCollection&& secondary_variables,
     ProcessOutput&& process_output)
     : Process(mesh, nonlinear_solver, std::move(time_discretization),
-              std::move(process_variables), std::move(secondary_variables),
-              std::move(process_output)),
+              std::move(jacobian_assembler), std::move(process_variables),
+              std::move(secondary_variables), std::move(process_output)),
       _process_data(std::move(process_data))
 {
     if (dynamic_cast<NumLib::ForwardEuler*>(
