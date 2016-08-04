@@ -47,14 +47,13 @@ public:
 
 protected:
     virtual void assembleConcrete(
-            double const t, std::vector<double> const& local_x,
-            NumLib::LocalToGlobalIndexMap::RowColumnIndices const& indices,
-            GlobalMatrix& M, GlobalMatrix& K, GlobalVector& b) = 0;
+        double const t, std::vector<double> const& local_x,
+        std::vector<double>& local_M_data, std::vector<double>& local_K_data,
+        std::vector<double>& local_b_data) = 0;
 
     virtual void assembleJacobianConcrete(
         double const t, std::vector<double> const& local_x,
-        NumLib::LocalToGlobalIndexMap::RowColumnIndices const& indices,
-        GlobalMatrix& Jac);
+        std::vector<double>& local_Jac_data);
 
     virtual void preTimestepConcrete(std::vector<double> const& /*local_x*/,
                                      double const /*t*/, double const /*dt*/)
@@ -62,6 +61,12 @@ protected:
     }
 
     virtual void postTimestepConcrete(std::vector<double> const& /*local_x*/) {}
+
+private:
+    std::vector<double> _local_M_data;
+    std::vector<double> _local_K_data;
+    std::vector<double> _local_b_data;
+    std::vector<double> _local_Jac_data;
 };
 
 } // namespace ProcessLib
