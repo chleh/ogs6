@@ -10,8 +10,12 @@
 #ifndef PROCESSLIB_LOCALASSEMBLERINTERFACE_H
 #define PROCESSLIB_LOCALASSEMBLERINTERFACE_H
 
-#include "NumLib/DOF/LocalToGlobalIndexMap.h"
 #include "NumLib/NumericsConfig.h"
+
+namespace NumLib
+{
+class LocalToGlobalIndexMap;
+}  // NumLib
 
 namespace ProcessLib
 {
