@@ -16,6 +16,7 @@ APPEND_SOURCE_FILES(TEST_SOURCES MathLib)
 APPEND_SOURCE_FILES(TEST_SOURCES MeshLib)
 APPEND_SOURCE_FILES(TEST_SOURCES MeshGeoToolsLib)
 APPEND_SOURCE_FILES(TEST_SOURCES NumLib)
+APPEND_SOURCE_FILES(TEST_SOURCES ProcessLib)
 
 if(QT4_FOUND)
     APPEND_SOURCE_FILES(TEST_SOURCES FileIO_Qt)
@@ -35,6 +36,7 @@ target_link_libraries(testrunner
     MeshGeoToolsLib
     MeshLib
     NumLib
+    ProcessLib
     Threads::Threads
 )
 ADD_VTK_DEPENDENCY(testrunner)
