@@ -49,7 +49,6 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
         local_x_perturbed_data[i] = local_x_data[i];
 
         if (!local_M_data.empty()) {
-            assert(!_local_M_data.empty());
             auto const local_M_p =
                 MathLib::toMatrix(local_M_data, num_r_c, num_r_c);
             auto const local_M_m =
@@ -61,7 +60,6 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
             _local_M_data.clear();
         }
         if (!local_K_data.empty()) {
-            assert(!_local_K_data.empty());
             auto const local_K_p =
                 MathLib::toMatrix(local_K_data, num_r_c, num_r_c);
             auto const local_K_m =
@@ -73,7 +71,6 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
             _local_K_data.clear();
         }
         if (!local_b_data.empty()) {
-            assert(!_local_b_data.empty());
             auto const local_b_p = MathLib::toVector(local_b_data, num_r_c);
             auto const local_b_m = MathLib::toVector(_local_b_data, num_r_c);
             local_Jac.block(0, i, num_r_c, 1).noalias() -=
