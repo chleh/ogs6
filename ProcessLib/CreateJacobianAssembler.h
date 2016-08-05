@@ -10,28 +10,11 @@
 #pragma once
 
 #include "BaseLib/ConfigTree.h"
-#include "BaseLib/Error.h"
-
-#include "AnalyticalJacobianAssembler.h"
-#include "CentralDifferencesJacobianAssembler.h"
 
 namespace ProcessLib
 {
-inline std::unique_ptr<AbstractJacobianAssembler> createJacobianAssembler(
-    BaseLib::ConfigTree const& config)
-{
-    auto const type = config.peekConfigParameter<std::string>("type");
+class AbstractJacobianAssembler;
 
-    if (type == "Analytical") {
-        config.ignoreConfigParameter("type");
-        return std::unique_ptr<AbstractJacobianAssembler>(
-            new AnalyticalJacobianAssembler);
-    } else if (type == "CentralDifferences") {
-        config.ignoreConfigParameter("type");
-        return std::unique_ptr<AbstractJacobianAssembler>(
-            new CentralDifferencesJacobianAssembler);
-    }
-
-    OGS_FATAL("Unknown Jacobian assembler type: `%s'.", type.c_str());
-}
+std::unique_ptr<AbstractJacobianAssembler> createJacobianAssembler(
+    boost::optional<BaseLib::ConfigTree> const& config);
 }  // ProcessLib

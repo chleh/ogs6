@@ -170,12 +170,8 @@ void ProjectData::buildProcesses()
             //! \ogs_file_param{process__time_discretization}
             pc.getConfigSubtree("time_discretization"));
 
-        std::unique_ptr<ProcessLib::AbstractJacobianAssembler> jacobian_assembler;
-        if (auto jac_asm_config =
-                pc.getConfigSubtreeOptional("jacobian_assembler")) {
-            jacobian_assembler =
-                ProcessLib::createJacobianAssembler(*jac_asm_config);
-        }
+        auto jacobian_assembler = ProcessLib::createJacobianAssembler(
+            pc.getConfigSubtreeOptional("jacobian_assembler"));
 
         if (type == "GROUNDWATER_FLOW")
         {
