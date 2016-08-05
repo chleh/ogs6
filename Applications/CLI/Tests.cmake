@@ -18,6 +18,18 @@ if(NOT OGS_USE_MPI)
         )
 
         AddTest(
+            NAME GroundWaterFlowProcess_cube_1x1x1_${mesh_size}_Newton
+            PATH Elliptic/cube_1x1x1_GroundWaterFlow
+            EXECUTABLE ogs
+            EXECUTABLE_ARGS cube_${mesh_size}_newton.prj
+            WRAPPER time
+            TESTER vtkdiff
+            ABSTOL 1e-15 RELTOL 1e-15
+            DIFF_DATA
+            cube_1x1x1_hex_${mesh_size}.vtu cube_${mesh_size}_newton_pcs_0_ts_1_t_1.000000.vtu Linear_1_to_minus1 pressure
+        )
+
+        AddTest(
             NAME GroundWaterFlowProcess_cube_1x1x1_Neumann_${mesh_size}
             PATH Elliptic/cube_1x1x1_GroundWaterFlow
             EXECUTABLE ogs
