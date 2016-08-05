@@ -15,48 +15,22 @@ namespace MathLib
 {
 Eigen::Map<
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-toZeroedMatrix(std::vector<double>& data, Eigen::Index rows, Eigen::Index cols)
-{
-    assert(data.empty());  // in order that resize fills the vector with zeros.
-    data.resize(rows * cols);
-    return {data.data(), rows, cols};
-}
+toZeroedMatrix(std::vector<double>& data, Eigen::Index rows, Eigen::Index cols);
 
 Eigen::Map<const Eigen::
                Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-toMatrix(std::vector<double> const& data, Eigen::Index rows, Eigen::Index cols)
-{
-    assert(static_cast<Eigen::Index>(data.size()) == rows * cols);
-    return {data.data(), rows, cols};
-}
+toMatrix(std::vector<double> const& data, Eigen::Index rows, Eigen::Index cols);
 
 Eigen::Map<
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-toMatrix(std::vector<double>& data, Eigen::Index rows, Eigen::Index cols)
-{
-    assert(static_cast<Eigen::Index>(data.size()) == rows * cols);
-    return {data.data(), rows, cols};
-}
+toMatrix(std::vector<double>& data, Eigen::Index rows, Eigen::Index cols);
 
 Eigen::Map<Eigen::VectorXd> toZeroedVector(std::vector<double>& data,
-                                           Eigen::Index rows)
-{
-    assert(data.empty());  // in order that resize fills the vector with zeros.
-    data.resize(rows);
-    return {data.data(), rows};
-}
+                                           Eigen::Index rows);
 
 Eigen::Map<const Eigen::VectorXd> toVector(std::vector<double> const& data,
-                                           Eigen::Index rows)
-{
-    assert(static_cast<Eigen::Index>(data.size()) == rows);
-    return {data.data(), rows};
-}
+                                           Eigen::Index rows);
 
 Eigen::Map<Eigen::VectorXd> toVector(std::vector<double>& data,
-                                     Eigen::Index rows)
-{
-    assert(static_cast<Eigen::Index>(data.size()) == rows);
-    return {data.data(), rows};
-}
+                                     Eigen::Index rows);
 }  // MathLib
