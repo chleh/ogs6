@@ -28,6 +28,7 @@ private:
     std::vector<double> _local_M_data;
     std::vector<double> _local_K_data;
     std::vector<double> _local_b_data;
+    std::vector<double> _local_x_perturbed_data;
 };
 
 }  // ProcessLib

@@ -29,7 +29,7 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
     auto const local_xdot = MathLib::toVector(local_xdot_data, num_r_c);
 
     auto local_Jac = MathLib::toZeroedMatrix(local_Jac_data, num_r_c, num_r_c);
-    std::vector<double> local_x_perturbed_data(local_x_data);
+    _local_x_perturbed_data = local_x_data;
 
     // Residual  res := M xdot + K x - b
     // Computing Jac := dres/dx
@@ -38,15 +38,15 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
     // afterwards.
     for (Eigen::Index i = 0; i < num_r_c; ++i)
     {
-        local_x_perturbed_data[i] += eps;
-        local_assembler.assemble(t, local_x_perturbed_data, local_M_data,
+        _local_x_perturbed_data[i] += eps;
+        local_assembler.assemble(t, _local_x_perturbed_data, local_M_data,
                                  local_K_data, local_b_data);
 
-        local_x_perturbed_data[i] = local_x_data[i] - eps;
-        local_assembler.assemble(t, local_x_perturbed_data, _local_M_data,
+        _local_x_perturbed_data[i] = local_x_data[i] - eps;
+        local_assembler.assemble(t, _local_x_perturbed_data, _local_M_data,
                                  _local_K_data, _local_b_data);
 
-        local_x_perturbed_data[i] = local_x_data[i];
+        _local_x_perturbed_data[i] = local_x_data[i];
 
         if (!local_M_data.empty()) {
             auto const local_M_p =
