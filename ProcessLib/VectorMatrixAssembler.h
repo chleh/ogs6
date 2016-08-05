@@ -11,8 +11,13 @@
 #define PROCESSLIB_VECTORMATRIXASSEMBLER_H_
 
 #include <vector>
-#include "NumLib/DOF/LocalToGlobalIndexMap.h"
+#include "NumLib/NumericsConfig.h"
 #include "AbstractJacobianAssembler.h"
+
+namespace NumLib
+{
+class LocalToGlobalIndexMap;
+}  // NumLib
 
 namespace ProcessLib
 {

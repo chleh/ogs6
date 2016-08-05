@@ -11,8 +11,9 @@
 
 #include <cassert>
 
-#include "LocalAssemblerInterface.h"
 #include "NumLib/DOF/DOFTableUtil.h"
+#include "MathLib/LinAlg/Eigen/EigenMapTools.h"
+#include "LocalAssemblerInterface.h"
 
 namespace ProcessLib
 {
@@ -41,26 +42,16 @@ void VectorMatrixAssembler::assemble(
         NumLib::LocalToGlobalIndexMap::RowColumnIndices(indices, indices);
 
     if (!_local_M_data.empty()) {
-        assert(_local_M_data.size() == num_r_c * num_r_c);
-        auto const local_M =
-            Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
-                                     Eigen::RowMajor>>(_local_M_data.data(),
-                                                       num_r_c, num_r_c);
+        auto const local_M = MathLib::toMatrix(_local_M_data, num_r_c, num_r_c);
         M.add(r_c_indices, local_M);
     }
     if (!_local_K_data.empty()) {
-        assert(_local_K_data.size() == num_r_c * num_r_c);
-        auto const local_K =
-            Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
-                                     Eigen::RowMajor>>(_local_K_data.data(),
-                                                       num_r_c, num_r_c);
+        auto const local_K = MathLib::toMatrix(_local_K_data, num_r_c, num_r_c);
         K.add(r_c_indices, local_K);
     }
     if (!_local_b_data.empty()) {
         assert(_local_b_data.size() == num_r_c);
-        auto const local_b =
-            Eigen::Map<Eigen::VectorXd>(_local_b_data.data(), num_r_c);
-        b.add(indices, local_b);
+        b.add(indices, _local_b_data);
     }
 }
 
@@ -89,32 +80,23 @@ void VectorMatrixAssembler::assembleWithJacobian(
         NumLib::LocalToGlobalIndexMap::RowColumnIndices(indices, indices);
 
     if (!_local_M_data.empty()) {
-        assert(_local_M_data.size() == num_r_c * num_r_c);
-        auto const local_M =
-            Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
-                                     Eigen::RowMajor>>(_local_M_data.data(),
-                                                       num_r_c, num_r_c);
+        auto const local_M = MathLib::toMatrix(_local_M_data, num_r_c, num_r_c);
         M.add(r_c_indices, local_M);
     }
     if (!_local_K_data.empty()) {
-        assert(_local_K_data.size() == num_r_c * num_r_c);
-        auto const local_K =
-            Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
-                                     Eigen::RowMajor>>(_local_K_data.data(),
-                                                       num_r_c, num_r_c);
+        auto const local_K = MathLib::toMatrix(_local_K_data, num_r_c, num_r_c);
         K.add(r_c_indices, local_K);
     }
     if (!_local_b_data.empty()) {
         assert(_local_b_data.size() == num_r_c);
-        auto const local_b =
-            Eigen::Map<Eigen::VectorXd>(_local_b_data.data(), num_r_c);
-        b.add(indices, local_b);
+        b.add(indices, _local_b_data);
     }
     if (!_local_Jac_data.empty()) {
-        assert(_local_Jac_data.size() == num_r_c * num_r_c);
-        auto const local_Jac = Eigen::Map<Eigen::MatrixXd>(
-            _local_Jac_data.data(), num_r_c, num_r_c);
+        auto const local_Jac =
+            MathLib::toMatrix(_local_Jac_data, num_r_c, num_r_c);
         Jac.add(r_c_indices, local_Jac);
+    } else {
+        OGS_FATAL("No Jacobian has been assembled!");
     }
 }
 
