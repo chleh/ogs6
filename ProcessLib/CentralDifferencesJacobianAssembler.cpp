@@ -34,6 +34,8 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
     // Residual  res := M xdot + K x - b
     // Computing Jac := dres/dx
     //                = M dxdot/dx + dM/dx xdot + K dx/dx + dK/dx x - db/dx
+    //                  (Note: dM/dx and dK/dx actually have the second and
+    //                  third index transposed.)
     // The loop computes the dM/dx, dK/dx and db/dx terms, the rest is computed
     // afterwards.
     for (Eigen::Index i = 0; i < num_r_c; ++i)
