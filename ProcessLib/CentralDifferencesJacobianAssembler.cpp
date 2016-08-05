@@ -55,7 +55,7 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
                 MathLib::toMatrix(local_M_data, num_r_c, num_r_c);
             auto const local_M_m =
                 MathLib::toMatrix(_local_M_data, num_r_c, num_r_c);
-            local_Jac.block(0, i, num_r_c, 1).noalias() +=
+            local_Jac.col(i).noalias() +=
                 // dM/dxi * x_dot
                 (local_M_p - local_M_m) * local_xdot / (2.0 * eps);
             local_M_data.clear();
@@ -66,7 +66,7 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
                 MathLib::toMatrix(local_K_data, num_r_c, num_r_c);
             auto const local_K_m =
                 MathLib::toMatrix(_local_K_data, num_r_c, num_r_c);
-            local_Jac.block(0, i, num_r_c, 1).noalias() +=
+            local_Jac.col(i).noalias() +=
                 // dK/dxi * x
                 (local_K_p - local_K_m) * local_x / (2.0 * eps);
             local_K_data.clear();
@@ -75,7 +75,7 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
         if (!local_b_data.empty()) {
             auto const local_b_p = MathLib::toVector(local_b_data, num_r_c);
             auto const local_b_m = MathLib::toVector(_local_b_data, num_r_c);
-            local_Jac.block(0, i, num_r_c, 1).noalias() -=
+            local_Jac.col(i).noalias() -=
                 // db/dxi
                 (local_b_p - local_b_m) / (2.0 * eps);
             local_b_data.clear();
