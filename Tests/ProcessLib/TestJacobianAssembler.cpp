@@ -9,7 +9,6 @@
 
 #include <limits>
 #include <gtest/gtest.h>
-#include <logog/include/logog.hpp>
 
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "ProcessLib/LocalAssemblerInterface.h"
@@ -71,7 +70,7 @@ struct VecX
         vec_data = x_data;
     }
 
-    // v = Identity
+    // dv/dx = Identity
     static void getDVecDx(std::vector<double> const& x_data,
                           std::vector<double>& mat_data)
     {
@@ -83,11 +82,152 @@ struct VecX
     }
 };
 
+struct MatXY
+{
+    /*     /  xx  xy  xz ... \
+     * M = |  yx  yy  yz ... |
+     *     |  zx  zy  zz ... |
+     *     \ ... ... ... ... /
+     */
+    static void getMat(std::vector<double> const& x_data,
+                       std::vector<double>& mat_data)
+    {
+        auto mat =
+            MathLib::toZeroedMatrix(mat_data, x_data.size(), x_data.size());
+        for (std::size_t r=0; r<x_data.size(); ++r) {
+            for (std::size_t c=0; c<x_data.size(); ++c) {
+                mat(r, c) = x_data[r] * x_data[c];
+            }
+        }
+    }
+
+    /*             /  xX  xY  xZ ... \
+     * dM/dx * y = |  yX  yY  yZ ... | + (x . y) . Identity
+     *             |  zX  zY  zZ ... |
+     *             \ ... ... ... ... /
+     * where x = (x, y, z, ...); y = (X, Y, Z, ...)
+     */
+    static void getDMatDxTimesY(std::vector<double> const& x_data,
+                                std::vector<double> const& y_data,
+                                std::vector<double>& dMdxTy_data)
+    {
+        auto const N = x_data.size();
+        auto const x_dot_y =
+            MathLib::toVector(x_data, N).dot(MathLib::toVector(y_data, N));
+        auto dMdxTy =
+            MathLib::toZeroedMatrix(dMdxTy_data, N, N);
+        for (std::size_t r=0; r<N; ++r) {
+            for (std::size_t c=0; c<N; ++c) {
+                dMdxTy(r, c) = x_data[r] * y_data[c];
+            }
+            dMdxTy(r, r) += x_dot_y;
+        }
+    }
+};
+
+struct VecXRevX
+{
+    // v = (wz, xy, yx, zw)
+    static void getVec(std::vector<double> const& x_data,
+                       std::vector<double>& vec_data)
+    {
+        vec_data = x_data;
+        auto const N = x_data.size();
+        for (std::size_t i=0; i<N; ++i) {
+            vec_data[i] *= x_data[N-i-1];
+        }
+    }
+
+    /*         / z        w \
+     * dv/dx = |    y  x    |
+     *         |    y  x    |
+     *         \ z        w /
+     */
+    static void getDVecDx(std::vector<double> const& x_data,
+                          std::vector<double>& mat_data)
+    {
+        auto mat =
+            MathLib::toZeroedMatrix(mat_data, x_data.size(), x_data.size());
+        auto const N = x_data.size();
+        for (std::size_t i=0; i<N; ++i) {
+            mat(i, i) += x_data[N-i-1];
+            mat(N-i-1, i) += x_data[N-i-1];
+        }
+    }
+};
+
+struct MatDiagXSquared
+{
+    // M = diag(x^2, y^2, z^2, ...)
+    static void getMat(std::vector<double> const& x_data,
+                       std::vector<double>& mat_data)
+    {
+        auto mat =
+            MathLib::toZeroedMatrix(mat_data, x_data.size(), x_data.size());
+
+        for (std::size_t i=0; i<x_data.size(); ++i)
+            mat(i, i) = x_data[i] * x_data[i];
+    }
+
+    // dM/dx * y = diag(2*x*X, 2*y*Y, 2*z*Z, ...)
+    static void getDMatDxTimesY(std::vector<double> const& x_data,
+                                std::vector<double> const& y_data,
+                                std::vector<double>& dMdxTy_data)
+    {
+        auto dMdxTy =
+            MathLib::toZeroedMatrix(dMdxTy_data, x_data.size(), x_data.size());
+
+        for (std::size_t i=0; i<x_data.size(); ++i)
+            dMdxTy(i, i) = 2.0 * x_data[i] * y_data[i];
+    }
+};
+
+struct VecXSquared
+{
+    // v = (x^2, y^2, z^2, ...)
+    static void getVec(std::vector<double> const& x_data,
+                       std::vector<double>& vec_data)
+    {
+        vec_data = x_data;
+        for (auto& v : vec_data)
+            v *= v;
+    }
+
+    // dv/dx = diag(2x, 2y, 2z, ...)
+    static void getDVecDx(std::vector<double> const& x_data,
+                          std::vector<double>& mat_data)
+    {
+        auto mat =
+            MathLib::toZeroedMatrix(mat_data, x_data.size(), x_data.size());
+        for (std::size_t i=0; i< x_data.size(); ++i) {
+            mat(i, i) = 2.0 * x_data[i];
+        }
+    }
+};
+
 struct MatVecDiagX
 {
     using Mat = MatDiagX;
     using Vec = VecX;
+    static const double tolerance;
 };
+const double MatVecDiagX::tolerance = 3e-8;
+
+struct MatVecDiagXSquared
+{
+    using Mat = MatDiagXSquared;
+    using Vec = VecXSquared;
+    static const double tolerance;
+};
+const double MatVecDiagXSquared::tolerance = 2e-7;
+
+struct MatVecXY
+{
+    using Mat = MatXY;
+    using Vec = VecXRevX;
+    static const double tolerance;
+};
+const double MatVecXY::tolerance = 5e-7;
 
 template <typename MatVec>
 class LocalAssemblerM final : public ProcessLib::LocalAssemblerInterface
@@ -121,6 +261,8 @@ public:
             MathLib::toMatrix(local_M_data, local_x.size(), local_x.size());
         local_Jac.noalias() += dxdot_dx * local_M;
     }
+
+    static double getTol() { return MatVec::tolerance; }
 
     static const bool asmM = true;
     static const bool asmK = false;
@@ -160,6 +302,8 @@ public:
         local_Jac.noalias() += dx_dx * local_K;
     }
 
+    static double getTol() { return MatVec::tolerance; }
+
     static const bool asmM = false;
     static const bool asmK = true;
     static const bool asmb = false;
@@ -196,6 +340,8 @@ public:
         // J = -db/dx !!
         local_Jac = -local_Jac;
     }
+
+    static double getTol() { return MatVec::tolerance; }
 
     static const bool asmM = false;
     static const bool asmK = false;
@@ -254,6 +400,12 @@ public:
         local_Jac.noalias() += dxdot_dx * local_M + dx_dx * local_K;
     }
 
+    static double getTol()
+    {
+        return std::max(
+            {MatVecM::tolerance, MatVecK::tolerance, MatVecB::tolerance});
+    }
+
     static const bool asmM = true;
     static const bool asmK = true;
     static const bool asmb = true;
@@ -300,7 +452,6 @@ private:
         LocAsm loc_asm;
 
         double const eps = std::numeric_limits<double>::epsilon();
-        double const eps_cd = 4e-8;
 
         std::vector<double> M_data_cd, K_data_cd, b_data_cd, Jac_data_cd,
             M_data_ana, K_data_ana, b_data_ana, Jac_data_ana;
@@ -308,7 +459,6 @@ private:
 
         jac_asm_cd.assembleWithJacobian(loc_asm, t, x, xdot, dxdot_dx, dx_dx, M_data_cd,
                                      K_data_cd, b_data_cd, Jac_data_cd);
-
 
         jac_asm_ana.assembleWithJacobian(loc_asm, t, x, xdot, dxdot_dx, dx_dx,
                                          M_data_ana, K_data_ana, b_data_ana,
@@ -337,15 +487,26 @@ private:
 
         ASSERT_EQ(x.size()*x.size(), Jac_data_cd.size());
         ASSERT_EQ(x.size()*x.size(), Jac_data_ana.size());
-        for (std::size_t i=0; i<x.size()*x.size(); ++i)
-            EXPECT_NEAR(Jac_data_ana[i], Jac_data_cd[i], eps_cd);
+        for (std::size_t i=0; i<x.size()*x.size(); ++i) {
+            // DBUG("%lu, %g, %g", i, Jac_data_ana[i], Jac_data_cd[i]);
+            EXPECT_NEAR(Jac_data_ana[i], Jac_data_cd[i], LocAsm::getTol());
+        }
     }
 };
 
 typedef ::testing::Types<
+    // DiagX
     LocalAssemblerM<MatVecDiagX>, LocalAssemblerK<MatVecDiagX>,
     LocalAssemblerB<MatVecDiagX>,
-    LocalAssemblerMKb<MatVecDiagX, MatVecDiagX, MatVecDiagX>>
+    LocalAssemblerMKb<MatVecDiagX, MatVecDiagX, MatVecDiagX>,
+    // DiagXSquared
+    LocalAssemblerM<MatVecDiagXSquared>, LocalAssemblerK<MatVecDiagXSquared>,
+    LocalAssemblerB<MatVecDiagXSquared>,
+    LocalAssemblerMKb<MatVecDiagXSquared, MatVecDiagXSquared,
+                      MatVecDiagXSquared>,
+    // XY
+    LocalAssemblerM<MatVecXY>, LocalAssemblerK<MatVecXY>,
+    LocalAssemblerB<MatVecXY>, LocalAssemblerMKb<MatVecXY, MatVecXY, MatVecXY>>
     TestCases;
 
 TYPED_TEST_CASE(ProcessLibCentralDifferencesJacobianAssembler, TestCases);
