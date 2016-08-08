@@ -88,6 +88,7 @@ public:
     {
         assemble(t, local_x, local_M_data, local_K_data, local_b_data);
 
+        // dM/dx * xdot
         MatVec::Mat::getDMatDxTimesY(local_x, local_xdot, local_Jac_data);
 
         auto local_Jac =
@@ -116,7 +117,7 @@ public:
 
     void assembleWithJacobian(double const t,
                               std::vector<double> const& local_x,
-                              std::vector<double> const& local_xdot,
+                              std::vector<double> const& /*local_xdot*/,
                               const double /*dxdot_dx*/, const double dx_dx,
                               std::vector<double>& local_M_data,
                               std::vector<double>& local_K_data,
@@ -125,7 +126,8 @@ public:
     {
         assemble(t, local_x, local_M_data, local_K_data, local_b_data);
 
-        MatVec::Mat::getDMatDxTimesY(local_x, local_xdot, local_Jac_data);
+        // dK/dx * x
+        MatVec::Mat::getDMatDxTimesY(local_x, local_x, local_Jac_data);
 
         auto local_Jac =
             MathLib::toMatrix(local_Jac_data, local_x.size(), local_x.size());
@@ -162,7 +164,13 @@ public:
     {
         assemble(t, local_x, local_M_data, local_K_data, local_b_data);
 
+        // db/dx
         MatVec::Vec::getDVecDx(local_x, local_Jac_data);
+
+        auto local_Jac =
+            MathLib::toMatrix(local_Jac_data, local_x.size(), local_x.size());
+        // J = -db/dx !!
+        local_Jac = -local_Jac;
     }
 
     static const bool asmM = false;
@@ -170,14 +178,14 @@ public:
     static const bool asmb = true;
 };
 
-template <template <typename> class LocAsm, typename MatVec>
-struct TestCase
+template<class LocAsm>
+struct ProcessLibCentralDifferencesJacobianAssembler : public ::testing::Test
 {
     static void test()
     {
         ProcessLib::AnalyticalJacobianAssembler jac_asm_ana;
         ProcessLib::CentralDifferencesJacobianAssembler jac_asm_cd;
-        LocAsm<MatVec> loc_asm;
+        LocAsm loc_asm;
 
         double const eps = std::numeric_limits<double>::epsilon();
         double const eps_cd = 1e-8;
@@ -192,24 +200,47 @@ struct TestCase
         jac_asm_cd.assembleWithJacobian(loc_asm, t, x, xdot, dxdot_dx, dx_dx, M_data_cd,
                                      K_data_cd, b_data_cd, Jac_data_cd);
 
-        ASSERT_EQ(x.size()*x.size(), M_data_cd.size());
-        ASSERT_EQ(x.size()*x.size(), Jac_data_cd.size());
 
         jac_asm_ana.assembleWithJacobian(loc_asm, t, x, xdot, dxdot_dx, dx_dx,
                                          M_data_ana, K_data_ana, b_data_ana,
                                          Jac_data_ana);
 
-        ASSERT_EQ(x.size()*x.size(), M_data_ana.size());
-        ASSERT_EQ(x.size()*x.size(), Jac_data_ana.size());
-
-        for (std::size_t i=0; i<x.size()*x.size(); ++i) {
-            EXPECT_NEAR(M_data_ana[i], M_data_cd[i], eps);
-            EXPECT_NEAR(Jac_data_ana[i], Jac_data_cd[i], eps_cd*xdot[i/x.size()]);
+        if (LocAsm::asmM) {
+            ASSERT_EQ(x.size()*x.size(), M_data_cd.size());
+            ASSERT_EQ(x.size()*x.size(), M_data_ana.size());
+            for (std::size_t i=0; i<x.size()*x.size(); ++i)
+                EXPECT_NEAR(M_data_ana[i], M_data_cd[i], eps);
         }
+
+        if (LocAsm::asmK) {
+            ASSERT_EQ(x.size()*x.size(), K_data_cd.size());
+            ASSERT_EQ(x.size()*x.size(), K_data_ana.size());
+            for (std::size_t i=0; i<x.size()*x.size(); ++i)
+                EXPECT_NEAR(K_data_ana[i], K_data_cd[i], eps);
+        }
+
+        if (LocAsm::asmb) {
+            ASSERT_EQ(x.size(), b_data_cd.size());
+            ASSERT_EQ(x.size(), b_data_ana.size());
+            for (std::size_t i=0; i<x.size(); ++i)
+                EXPECT_NEAR(b_data_ana[i], b_data_cd[i], eps);
+        }
+
+        ASSERT_EQ(x.size()*x.size(), Jac_data_cd.size());
+        ASSERT_EQ(x.size()*x.size(), Jac_data_ana.size());
+        for (std::size_t i=0; i<x.size()*x.size(); ++i)
+            EXPECT_NEAR(Jac_data_ana[i], Jac_data_cd[i], eps_cd*xdot[i/x.size()]);
     }
 };
 
-TEST(ProcessLib, CentralDifferencesJacobianAssembler)
+typedef ::testing::Types<LocalAssemblerM<MatVecDiagX>,
+                         LocalAssemblerK<MatVecDiagX>,
+                         LocalAssemblerB<MatVecDiagX>>
+    TestCases;
+
+TYPED_TEST_CASE(ProcessLibCentralDifferencesJacobianAssembler, TestCases);
+
+TYPED_TEST(ProcessLibCentralDifferencesJacobianAssembler, Test)
 {
-    TestCase<LocalAssemblerM, MatVecDiagX>::test();
+    TestFixture::test();
 }
