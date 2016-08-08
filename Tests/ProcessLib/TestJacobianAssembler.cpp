@@ -202,26 +202,75 @@ public:
     static const bool asmb = true;
 };
 
+template <typename MatVecM, typename MatVecK, typename MatVecB>
+class LocalAssemblerMKb final : public ProcessLib::LocalAssemblerInterface
+{
+public:
+    void assemble(double const /*t*/, std::vector<double> const& local_x,
+                  std::vector<double>& local_M_data,
+                  std::vector<double>& local_K_data,
+                  std::vector<double>& local_b_data) override
+    {
+        MatVecM::Mat::getMat(local_x, local_M_data);
+        MatVecK::Mat::getMat(local_x, local_K_data);
+        MatVecB::Vec::getVec(local_x, local_b_data);
+    }
+
+    void assembleWithJacobian(double const t,
+                              std::vector<double> const& local_x,
+                              std::vector<double> const& local_xdot,
+                              const double dxdot_dx, const double dx_dx,
+                              std::vector<double>& local_M_data,
+                              std::vector<double>& local_K_data,
+                              std::vector<double>& local_b_data,
+                              std::vector<double>& local_Jac_data) override
+    {
+        assemble(t, local_x, local_M_data, local_K_data, local_b_data);
+
+        std::vector<double> local_JacM_data;
+        // dM/dx * xdot
+        MatVecM::Mat::getDMatDxTimesY(local_x, local_xdot, local_JacM_data);
+
+        std::vector<double> local_JacK_data;
+        // dK/dx * x
+        MatVecK::Mat::getDMatDxTimesY(local_x, local_x, local_JacK_data);
+
+        std::vector<double> local_JacB_data;
+        // db/dx
+        MatVecB::Vec::getDVecDx(local_x, local_JacB_data);
+
+        local_Jac_data = local_JacM_data;
+        auto const N = local_Jac_data.size();
+        for (std::size_t i = 0; i < N; ++i) {
+            local_Jac_data[i] += local_JacK_data[i] - local_JacB_data[i];
+        }
+
+        auto local_Jac =
+            MathLib::toMatrix(local_Jac_data, local_x.size(), local_x.size());
+        auto local_M =
+            MathLib::toMatrix(local_M_data, local_x.size(), local_x.size());
+        auto local_K =
+            MathLib::toMatrix(local_K_data, local_x.size(), local_x.size());
+        local_Jac.noalias() += dxdot_dx * local_M + dx_dx * local_K;
+    }
+
+    static const bool asmM = true;
+    static const bool asmK = true;
+    static const bool asmb = true;
+};
+
 template<class LocAsm>
 struct ProcessLibCentralDifferencesJacobianAssembler : public ::testing::Test
 {
     static void test()
     {
-        ProcessLib::AnalyticalJacobianAssembler jac_asm_ana;
-        ProcessLib::CentralDifferencesJacobianAssembler jac_asm_cd;
-        LocAsm loc_asm;
+        // these four local variables will be filled randomly
+        std::vector<double> x, xdot;
+        double dxdot_dx, dx_dx;
 
-        double const eps = std::numeric_limits<double>::epsilon();
-        double const eps_cd = 1e-8;
-
-        std::vector<double> x, xdot, M_data_cd, K_data_cd, b_data_cd, Jac_data_cd,
-            M_data_ana, K_data_ana, b_data_ana, Jac_data_ana;
-        double const dxdot_dx = 0.25, dx_dx = 0.75, t = 0.0;
-
-
+        std::random_device rd;
+        std::mt19937 random_number_generator(rd());
         {
-            std::random_device rd;
-            std::mt19937 random_number_generator(rd());
             std::uniform_int_distribution<std::size_t> rnd(3, 64);
 
             auto const size = rnd(random_number_generator);
@@ -232,6 +281,30 @@ struct ProcessLibCentralDifferencesJacobianAssembler : public ::testing::Test
             fillRandomlyConstrainedAbsoluteValues(x, 0.5, 1.5);
             fillRandomlyConstrainedAbsoluteValues(xdot, 0.5, 1.5);
         }
+        {
+            std::uniform_real_distribution<double> rnd;
+            dxdot_dx = rnd(random_number_generator);
+            dx_dx = rnd(random_number_generator);
+        }
+
+        testInner(x, xdot, dxdot_dx, dx_dx);
+    }
+
+private:
+    static void testInner(std::vector<double> const& x,
+                          std::vector<double> const& xdot,
+                          const double dxdot_dx, const double dx_dx)
+    {
+        ProcessLib::AnalyticalJacobianAssembler jac_asm_ana;
+        ProcessLib::CentralDifferencesJacobianAssembler jac_asm_cd;
+        LocAsm loc_asm;
+
+        double const eps = std::numeric_limits<double>::epsilon();
+        double const eps_cd = 4e-8;
+
+        std::vector<double> M_data_cd, K_data_cd, b_data_cd, Jac_data_cd,
+            M_data_ana, K_data_ana, b_data_ana, Jac_data_ana;
+        double const t = 0.0;
 
         jac_asm_cd.assembleWithJacobian(loc_asm, t, x, xdot, dxdot_dx, dx_dx, M_data_cd,
                                      K_data_cd, b_data_cd, Jac_data_cd);
@@ -269,9 +342,10 @@ struct ProcessLibCentralDifferencesJacobianAssembler : public ::testing::Test
     }
 };
 
-typedef ::testing::Types<LocalAssemblerM<MatVecDiagX>,
-                         LocalAssemblerK<MatVecDiagX>,
-                         LocalAssemblerB<MatVecDiagX>>
+typedef ::testing::Types<
+    LocalAssemblerM<MatVecDiagX>, LocalAssemblerK<MatVecDiagX>,
+    LocalAssemblerB<MatVecDiagX>,
+    LocalAssemblerMKb<MatVecDiagX, MatVecDiagX, MatVecDiagX>>
     TestCases;
 
 TYPED_TEST_CASE(ProcessLibCentralDifferencesJacobianAssembler, TestCases);
