@@ -59,7 +59,13 @@ struct VecX
     }
 };
 
-template <typename Mat>
+struct MatVecDiagX
+{
+    using Mat = MatDiagX;
+    using Vec = VecX;
+};
+
+template <typename MatVec>
 class LocalAssemblerM final : public ProcessLib::LocalAssemblerInterface
 {
 public:
@@ -68,7 +74,7 @@ public:
                   std::vector<double>& /*local_K_data*/,
                   std::vector<double>& /*local_b_data*/) override
     {
-        Mat::getMat(local_x, local_M_data);
+        MatVec::Mat::getMat(local_x, local_M_data);
     }
 
     void assembleWithJacobian(double const t,
@@ -82,7 +88,7 @@ public:
     {
         assemble(t, local_x, local_M_data, local_K_data, local_b_data);
 
-        Mat::getDMatDxTimesY(local_x, local_xdot, local_Jac_data);
+        MatVec::Mat::getDMatDxTimesY(local_x, local_xdot, local_Jac_data);
 
         auto local_Jac =
             MathLib::toMatrix(local_Jac_data, local_x.size(), local_x.size());
@@ -90,9 +96,13 @@ public:
             MathLib::toMatrix(local_M_data, local_x.size(), local_x.size());
         local_Jac.noalias() += dxdot_dx * local_M;
     }
+
+    static const bool asmM = true;
+    static const bool asmK = false;
+    static const bool asmb = false;
 };
 
-template <typename Mat>
+template <typename MatVec>
 class LocalAssemblerK final : public ProcessLib::LocalAssemblerInterface
 {
 public:
@@ -101,7 +111,7 @@ public:
                   std::vector<double>& local_K_data,
                   std::vector<double>& /*local_b_data*/) override
     {
-        Mat::getMat(local_x, local_K_data);
+        MatVec::Mat::getMat(local_x, local_K_data);
     }
 
     void assembleWithJacobian(double const t,
@@ -115,7 +125,7 @@ public:
     {
         assemble(t, local_x, local_M_data, local_K_data, local_b_data);
 
-        Mat::getDMatDxTimesY(local_x, local_xdot, local_Jac_data);
+        MatVec::Mat::getDMatDxTimesY(local_x, local_xdot, local_Jac_data);
 
         auto local_Jac =
             MathLib::toMatrix(local_Jac_data, local_x.size(), local_x.size());
@@ -123,9 +133,13 @@ public:
             MathLib::toMatrix(local_K_data, local_x.size(), local_x.size());
         local_Jac.noalias() += dx_dx * local_K;
     }
+
+    static const bool asmM = false;
+    static const bool asmK = true;
+    static const bool asmb = false;
 };
 
-template <typename Vec>
+template <typename MatVec>
 class LocalAssemblerB final : public ProcessLib::LocalAssemblerInterface
 {
 public:
@@ -134,7 +148,7 @@ public:
                   std::vector<double>& /*local_K_data*/,
                   std::vector<double>& local_b_data) override
     {
-        Vec::getVec(local_x, local_b_data);
+        MatVec::Vec::getVec(local_x, local_b_data);
     }
 
     void assembleWithJacobian(double const t,
@@ -148,41 +162,54 @@ public:
     {
         assemble(t, local_x, local_M_data, local_K_data, local_b_data);
 
-        Vec::getDVecDx(local_x, local_Jac_data);
+        MatVec::Vec::getDVecDx(local_x, local_Jac_data);
+    }
+
+    static const bool asmM = false;
+    static const bool asmK = false;
+    static const bool asmb = true;
+};
+
+template <template <typename> class LocAsm, typename MatVec>
+struct TestCase
+{
+    static void test()
+    {
+        ProcessLib::AnalyticalJacobianAssembler jac_asm_ana;
+        ProcessLib::CentralDifferencesJacobianAssembler jac_asm_cd;
+        LocAsm<MatVec> loc_asm;
+
+        double const eps = std::numeric_limits<double>::epsilon();
+        double const eps_cd = 1e-8;
+
+        std::vector<double> x, xdot, M_data_cd, K_data_cd, b_data_cd, Jac_data_cd,
+            M_data_ana, K_data_ana, b_data_ana, Jac_data_ana;
+        double const dxdot_dx = 0.25, dx_dx = 0.75, t = 0.0;
+
+        x = { 1.0, 2.0, 4.0 };
+        xdot = { 8.0, 16.0, 32.0 };
+
+        jac_asm_cd.assembleWithJacobian(loc_asm, t, x, xdot, dxdot_dx, dx_dx, M_data_cd,
+                                     K_data_cd, b_data_cd, Jac_data_cd);
+
+        ASSERT_EQ(x.size()*x.size(), M_data_cd.size());
+        ASSERT_EQ(x.size()*x.size(), Jac_data_cd.size());
+
+        jac_asm_ana.assembleWithJacobian(loc_asm, t, x, xdot, dxdot_dx, dx_dx,
+                                         M_data_ana, K_data_ana, b_data_ana,
+                                         Jac_data_ana);
+
+        ASSERT_EQ(x.size()*x.size(), M_data_ana.size());
+        ASSERT_EQ(x.size()*x.size(), Jac_data_ana.size());
+
+        for (std::size_t i=0; i<x.size()*x.size(); ++i) {
+            EXPECT_NEAR(M_data_ana[i], M_data_cd[i], eps);
+            EXPECT_NEAR(Jac_data_ana[i], Jac_data_cd[i], eps_cd*xdot[i/x.size()]);
+        }
     }
 };
 
 TEST(ProcessLib, CentralDifferencesJacobianAssembler)
 {
-    ProcessLib::AnalyticalJacobianAssembler jac_asm_ana;
-    ProcessLib::CentralDifferencesJacobianAssembler jac_asm_cd;
-    LocalAssemblerM<MatDiagX> loc_asm;
-
-    double const eps = std::numeric_limits<double>::epsilon();
-    double const eps_cd = 1e-8;
-
-    std::vector<double> x, xdot, M_data_cd, K_data_cd, b_data_cd, Jac_data_cd,
-        M_data_ana, K_data_ana, b_data_ana, Jac_data_ana;
-    double const dxdot_dx = 0.25, dx_dx = 0.75, t = 0.0;
-
-    x = { 1.0, 2.0, 4.0 };
-    xdot = { 8.0, 16.0, 32.0 };
-
-    jac_asm_cd.assembleWithJacobian(loc_asm, t, x, xdot, dxdot_dx, dx_dx, M_data_cd,
-                                 K_data_cd, b_data_cd, Jac_data_cd);
-
-    ASSERT_EQ(x.size()*x.size(), M_data_cd.size());
-    ASSERT_EQ(x.size()*x.size(), Jac_data_cd.size());
-
-    jac_asm_ana.assembleWithJacobian(loc_asm, t, x, xdot, dxdot_dx, dx_dx,
-                                     M_data_ana, K_data_ana, b_data_ana,
-                                     Jac_data_ana);
-
-    ASSERT_EQ(x.size()*x.size(), M_data_ana.size());
-    ASSERT_EQ(x.size()*x.size(), Jac_data_ana.size());
-
-    for (std::size_t i=0; i<x.size()*x.size(); ++i) {
-        EXPECT_NEAR(M_data_ana[i], M_data_cd[i], eps);
-        EXPECT_NEAR(Jac_data_ana[i], Jac_data_cd[i], eps_cd*xdot[i/x.size()]);
-    }
+    TestCase<LocalAssemblerM, MatVecDiagX>::test();
 }
