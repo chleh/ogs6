@@ -16,6 +16,30 @@
 #include "ProcessLib/AnalyticalJacobianAssembler.h"
 #include "ProcessLib/CentralDifferencesJacobianAssembler.h"
 
+//! Fills a vector with values whose absolute value is between \c abs_min and
+//! \c abs_max.
+void fillRandomlyConstrainedAbsoluteValues(std::vector<double>& xs,
+                                           double const abs_min,
+                                           double const abs_max)
+{
+    std::random_device rd;
+    std::mt19937 random_number_generator(rd());
+    double const abs_range = abs_max - abs_min;
+    std::uniform_real_distribution<double> rnd(abs_min,
+                                               abs_min + 2.0 * abs_range);
+
+    for (auto& x : xs) {
+        // v in [ abs_min, abs_min + 2 abs_range ]
+        auto v = rnd(random_number_generator);
+        if (v > abs_max) {
+            // produce negative values
+            // (v - abs_range) in [ abs_min, abs_max ]
+            v = -(v - abs_range);
+        }
+        x = v;
+    }
+}
+
 struct MatDiagX
 {
     // M = diag(x1, x2, x3, ...)
@@ -194,8 +218,20 @@ struct ProcessLibCentralDifferencesJacobianAssembler : public ::testing::Test
             M_data_ana, K_data_ana, b_data_ana, Jac_data_ana;
         double const dxdot_dx = 0.25, dx_dx = 0.75, t = 0.0;
 
-        x = { 1.0, 2.0, 4.0 };
-        xdot = { 8.0, 16.0, 32.0 };
+
+        {
+            std::random_device rd;
+            std::mt19937 random_number_generator(rd());
+            std::uniform_int_distribution<std::size_t> rnd(3, 64);
+
+            auto const size = rnd(random_number_generator);
+            x.resize(size);
+            xdot.resize(size);
+
+            // all components will be of order of magnitude one
+            fillRandomlyConstrainedAbsoluteValues(x, 0.5, 1.5);
+            fillRandomlyConstrainedAbsoluteValues(xdot, 0.5, 1.5);
+        }
 
         jac_asm_cd.assembleWithJacobian(loc_asm, t, x, xdot, dxdot_dx, dx_dx, M_data_cd,
                                      K_data_cd, b_data_cd, Jac_data_cd);
@@ -229,7 +265,7 @@ struct ProcessLibCentralDifferencesJacobianAssembler : public ::testing::Test
         ASSERT_EQ(x.size()*x.size(), Jac_data_cd.size());
         ASSERT_EQ(x.size()*x.size(), Jac_data_ana.size());
         for (std::size_t i=0; i<x.size()*x.size(); ++i)
-            EXPECT_NEAR(Jac_data_ana[i], Jac_data_cd[i], eps_cd*xdot[i/x.size()]);
+            EXPECT_NEAR(Jac_data_ana[i], Jac_data_cd[i], eps_cd);
     }
 };
 
