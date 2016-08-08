@@ -205,6 +205,49 @@ struct VecXSquared
     }
 };
 
+struct MatXSquaredShifted
+{
+    /* Tests an asymmetric matrix.
+     *
+     *     / x^2  y^2  z^2 \
+     * M = | z^2  x^2  y^2 |
+     *     \ y^2  z^2  x^2 /
+     */
+    static void getMat(std::vector<double> const& x_data,
+                       std::vector<double>& mat_data)
+    {
+        auto const N = x_data.size();
+        auto mat =
+            MathLib::toZeroedMatrix(mat_data, N, N);
+        for (std::size_t r=0; r<N; ++r) {
+            for (std::size_t c=0; c<N; ++c) {
+                auto const i = (r + c) % N;
+                mat(r, i) = x_data[c] * x_data[c];
+            }
+        }
+    }
+
+    /*             /  2xX  2yY  2zZ \
+     * dM/dx * y = |  2xY  2yZ  2zX |
+     *             \  2xZ  2yX  2zY /
+     * where x = (x, y, z, ...); y = (X, Y, Z, ...)
+     */
+    static void getDMatDxTimesY(std::vector<double> const& x_data,
+                                std::vector<double> const& y_data,
+                                std::vector<double>& dMdxTy_data)
+    {
+        auto const N = x_data.size();
+        auto dMdxTy =
+            MathLib::toZeroedMatrix(dMdxTy_data, N, N);
+        for (std::size_t r=0; r<N; ++r) {
+            for (std::size_t c=0; c<N; ++c) {
+                auto const i = (r + c) % N;
+                dMdxTy(r, c) = 2.0 * x_data[c] * y_data[i];
+            }
+        }
+    }
+};
+
 struct MatVecDiagX
 {
     using Mat = MatDiagX;
@@ -227,7 +270,15 @@ struct MatVecXY
     using Vec = VecXRevX;
     static const double tolerance;
 };
-const double MatVecXY::tolerance = 5e-7;
+const double MatVecXY::tolerance = 9e-7;
+
+struct MatVecXSquaredShifted
+{
+    using Mat = MatXSquaredShifted;
+    using Vec = VecXRevX;
+    static const double tolerance;
+};
+const double MatVecXSquaredShifted::tolerance = 7e-7;
 
 template <typename MatVec>
 class LocalAssemblerM final : public ProcessLib::LocalAssemblerInterface
@@ -506,7 +557,13 @@ typedef ::testing::Types<
                       MatVecDiagXSquared>,
     // XY
     LocalAssemblerM<MatVecXY>, LocalAssemblerK<MatVecXY>,
-    LocalAssemblerB<MatVecXY>, LocalAssemblerMKb<MatVecXY, MatVecXY, MatVecXY>>
+    LocalAssemblerB<MatVecXY>, LocalAssemblerMKb<MatVecXY, MatVecXY, MatVecXY>,
+    // XSquaredShifted
+    LocalAssemblerM<MatVecXSquaredShifted>,
+    LocalAssemblerK<MatVecXSquaredShifted>,
+    LocalAssemblerB<MatVecXSquaredShifted>,
+    LocalAssemblerMKb<MatVecXSquaredShifted, MatVecXSquaredShifted,
+                      MatVecXSquaredShifted>>
     TestCases;
 
 TYPED_TEST_CASE(ProcessLibCentralDifferencesJacobianAssembler, TestCases);
