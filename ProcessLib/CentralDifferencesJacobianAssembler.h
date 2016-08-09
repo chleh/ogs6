@@ -9,13 +9,22 @@
 
 #pragma once
 
+#include <memory>
 #include "AbstractJacobianAssembler.h"
+
+namespace BaseLib
+{
+class ConfigTree;
+}  // BaseLib
 
 namespace ProcessLib
 {
 class CentralDifferencesJacobianAssembler : public AbstractJacobianAssembler
 {
 public:
+    explicit CentralDifferencesJacobianAssembler(
+        std::vector<double>&& absolute_epsilons);
+
     void assembleWithJacobian(
         LocalAssemblerInterface& local_assembler, double const t,
         std::vector<double> const& local_x,
@@ -25,10 +34,14 @@ public:
         std::vector<double>& local_Jac_data) override;
 
 private:
+    std::vector<double> const _absolute_epsilons;
     std::vector<double> _local_M_data;
     std::vector<double> _local_K_data;
     std::vector<double> _local_b_data;
     std::vector<double> _local_x_perturbed_data;
 };
+
+std::unique_ptr<CentralDifferencesJacobianAssembler>
+createCentralDifferencesJacobianAssembler(BaseLib::ConfigTree const& config);
 
 }  // ProcessLib

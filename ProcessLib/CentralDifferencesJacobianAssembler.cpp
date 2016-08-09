@@ -8,12 +8,18 @@
  */
 
 #include "CentralDifferencesJacobianAssembler.h"
-#include <cassert>
+#include "BaseLib/Error.h"
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "LocalAssemblerInterface.h"
 
 namespace ProcessLib
 {
+CentralDifferencesJacobianAssembler::CentralDifferencesJacobianAssembler(
+    std::vector<double>&& absolute_epsilons)
+    : _absolute_epsilons(std::move(absolute_epsilons))
+{
+}
+
 void CentralDifferencesJacobianAssembler::assembleWithJacobian(
     LocalAssemblerInterface& local_assembler, const double t,
     const std::vector<double>& local_x_data,
@@ -22,7 +28,13 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
     std::vector<double>& local_K_data, std::vector<double>& local_b_data,
     std::vector<double>& local_Jac_data)
 {
-    auto const eps = 1e-8;
+    // TODO do not check in every call.
+    if (local_x_data.size() % _absolute_epsilons.size() != 0) {
+        OGS_FATAL(
+            "The number of specified epsilons and the number of local d.o.f.s "
+            "do not match");
+    }
+
     auto const num_r_c = static_cast<Eigen::Index>(local_x_data.size());
 
     auto const local_x = MathLib::toVector(local_x_data, num_r_c);
@@ -30,6 +42,9 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
 
     auto local_Jac = MathLib::toZeroedMatrix(local_Jac_data, num_r_c, num_r_c);
     _local_x_perturbed_data = local_x_data;
+
+    auto const num_dofs_per_component =
+        local_x_data.size() / _absolute_epsilons.size();
 
     // Residual  res := M xdot + K x - b
     // Computing Jac := dres/dx
@@ -40,6 +55,9 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
     // afterwards.
     for (Eigen::Index i = 0; i < num_r_c; ++i)
     {
+        auto const component = i / num_dofs_per_component;
+        auto const eps = _absolute_epsilons[component];
+
         _local_x_perturbed_data[i] += eps;
         local_assembler.assemble(t, _local_x_perturbed_data, local_M_data,
                                  local_K_data, local_b_data);
@@ -96,6 +114,46 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
         auto local_K = MathLib::toMatrix(local_K_data, num_r_c, num_r_c);
         local_Jac.noalias() += local_K * dx_dx;
     }
+}
+
+std::unique_ptr<CentralDifferencesJacobianAssembler>
+createCentralDifferencesJacobianAssembler(BaseLib::ConfigTree const& config)
+{
+    config.checkConfigParameter("type", "CentralDifferences");
+
+    // TODO make non-optional.
+    auto rel_eps = config.getConfigParameterOptional<std::vector<double>>(
+        "relative_epsilons");
+    auto comp_mag = config.getConfigParameterOptional<std::vector<double>>(
+        "component_magnitudes");
+
+    if (!!rel_eps != !!comp_mag) {
+        OGS_FATAL(
+            "Either both or none of <relative_epsilons> and "
+            "<component_magnitudes> have to be specified.");
+    }
+
+    std::vector<double> abs_eps;
+
+    if (rel_eps) {
+        if (rel_eps->size() != comp_mag->size()) {
+            OGS_FATAL(
+                "The numbers of components of  <relative_epsilons> and "
+                "<component_magnitudes> do not match.");
+        }
+
+        abs_eps.resize(rel_eps->size());
+        for (std::size_t i=0; i<rel_eps->size(); ++i) {
+            abs_eps[i] = (*rel_eps)[i] * (*comp_mag)[i];
+        }
+    } else {
+        // By default 1e-8 is used as epsilon for all components.
+        // TODO: remove this default value.
+        abs_eps.emplace_back(1e-8);
+    }
+
+    return std::unique_ptr<CentralDifferencesJacobianAssembler>(
+        new CentralDifferencesJacobianAssembler(std::move(abs_eps)));
 }
 
 }  // ProcessLib

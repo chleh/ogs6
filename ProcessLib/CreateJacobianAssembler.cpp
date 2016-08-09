@@ -29,9 +29,7 @@ std::unique_ptr<AbstractJacobianAssembler> createJacobianAssembler(
         return std::unique_ptr<AbstractJacobianAssembler>(
             new AnalyticalJacobianAssembler);
     } else if (type == "CentralDifferences") {
-        config->ignoreConfigParameter("type");
-        return std::unique_ptr<AbstractJacobianAssembler>(
-            new CentralDifferencesJacobianAssembler);
+        return createCentralDifferencesJacobianAssembler(*config);
     }
 
     OGS_FATAL("Unknown Jacobian assembler type: `%s'.", type.c_str());
