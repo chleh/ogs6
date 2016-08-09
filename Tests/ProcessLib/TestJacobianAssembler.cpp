@@ -499,7 +499,7 @@ private:
                           const double dxdot_dx, const double dx_dx)
     {
         ProcessLib::AnalyticalJacobianAssembler jac_asm_ana;
-        ProcessLib::CentralDifferencesJacobianAssembler jac_asm_cd;
+        ProcessLib::CentralDifferencesJacobianAssembler jac_asm_cd({ 1e-8 });
         LocAsm loc_asm;
 
         double const eps = std::numeric_limits<double>::epsilon();
