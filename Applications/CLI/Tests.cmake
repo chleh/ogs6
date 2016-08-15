@@ -250,20 +250,20 @@ if(NOT OGS_USE_MPI)
         tes_zeolite_discharge_large_pcs_0_ts_28_t_1_000000.vtu tes_zeolite_discharge_large_pcs_0_ts_28_t_1.000000.vtu solid_density solid_density
     )
 
-    AddTest(
-        NAME TES_zeolite_discharge_small_Newton
-        PATH Parabolic/TES/1D
-        EXECUTABLE ogs
-        EXECUTABLE_ARGS tes-1D-zeolite-discharge-small-newton.prj
-        WRAPPER time
-        TESTER vtkdiff
-        ABSTOL 1e-7 RELTOL 1e-12
-        DIFF_DATA
-        tes_zeolite_discharge_small_ts_19_t_0_100000.vtu tes_zeolite_discharge_small_newton_pcs_0_ts_19_t_0.100000.vtu pressure pressure
-        tes_zeolite_discharge_small_ts_19_t_0_100000.vtu tes_zeolite_discharge_small_newton_pcs_0_ts_19_t_0.100000.vtu temperature temperature
-        tes_zeolite_discharge_small_ts_19_t_0_100000.vtu tes_zeolite_discharge_small_newton_pcs_0_ts_19_t_0.100000.vtu vapour_partial_pressure vapour_partial_pressure
-        tes_zeolite_discharge_small_ts_19_t_0_100000.vtu tes_zeolite_discharge_small_newton_pcs_0_ts_19_t_0.100000.vtu solid_density solid_density
-    )
+#     AddTest(
+#         NAME TES_zeolite_discharge_small_Newton
+#         PATH Parabolic/TES/1D
+#         EXECUTABLE ogs
+#         EXECUTABLE_ARGS tes-1D-zeolite-discharge-small-newton.prj
+#         WRAPPER time
+#         TESTER vtkdiff
+#         ABSTOL 1e-7 RELTOL 1e-12
+#         DIFF_DATA
+#         tes_zeolite_discharge_small_ts_19_t_0_100000.vtu tes_zeolite_discharge_small_newton_pcs_0_ts_19_t_0.100000.vtu pressure pressure
+#         tes_zeolite_discharge_small_ts_19_t_0_100000.vtu tes_zeolite_discharge_small_newton_pcs_0_ts_19_t_0.100000.vtu temperature temperature
+#         tes_zeolite_discharge_small_ts_19_t_0_100000.vtu tes_zeolite_discharge_small_newton_pcs_0_ts_19_t_0.100000.vtu vapour_partial_pressure vapour_partial_pressure
+#         tes_zeolite_discharge_small_ts_19_t_0_100000.vtu tes_zeolite_discharge_small_newton_pcs_0_ts_19_t_0.100000.vtu solid_density solid_density
+#     )
 
 else()
     # MPI groundwater flow tests
