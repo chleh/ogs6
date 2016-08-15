@@ -8,6 +8,7 @@
  */
 
 #include <limits>
+#include <random>
 #include <gtest/gtest.h>
 
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
