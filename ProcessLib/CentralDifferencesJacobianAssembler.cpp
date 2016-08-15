@@ -35,7 +35,8 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
             "do not match");
     }
 
-    auto const num_r_c = static_cast<Eigen::Index>(local_x_data.size());
+    auto const num_r_c =
+        static_cast<Eigen::MatrixXd::Index>(local_x_data.size());
 
     auto const local_x = MathLib::toVector(local_x_data, num_r_c);
     auto const local_xdot = MathLib::toVector(local_xdot_data, num_r_c);
@@ -53,7 +54,7 @@ void CentralDifferencesJacobianAssembler::assembleWithJacobian(
     //                  third index transposed.)
     // The loop computes the dM/dx, dK/dx and db/dx terms, the rest is computed
     // afterwards.
-    for (Eigen::Index i = 0; i < num_r_c; ++i)
+    for (Eigen::MatrixXd::Index i = 0; i < num_r_c; ++i)
     {
         auto const component = i / num_dofs_per_component;
         auto const eps = _absolute_epsilons[component];

@@ -15,22 +15,28 @@ namespace MathLib
 {
 Eigen::Map<
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-toZeroedMatrix(std::vector<double>& data, Eigen::Index rows, Eigen::Index cols);
+toZeroedMatrix(std::vector<double>& data,
+               Eigen::MatrixXd::Index rows,
+               Eigen::MatrixXd::Index cols);
 
 Eigen::Map<const Eigen::
                Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-toMatrix(std::vector<double> const& data, Eigen::Index rows, Eigen::Index cols);
+toMatrix(std::vector<double> const& data,
+         Eigen::MatrixXd::Index rows,
+         Eigen::MatrixXd::Index cols);
 
 Eigen::Map<
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-toMatrix(std::vector<double>& data, Eigen::Index rows, Eigen::Index cols);
+toMatrix(std::vector<double>& data,
+         Eigen::MatrixXd::Index rows,
+         Eigen::MatrixXd::Index cols);
 
 Eigen::Map<Eigen::VectorXd> toZeroedVector(std::vector<double>& data,
-                                           Eigen::Index rows);
+                                           Eigen::VectorXd::Index rows);
 
 Eigen::Map<const Eigen::VectorXd> toVector(std::vector<double> const& data,
-                                           Eigen::Index rows);
+                                           Eigen::VectorXd::Index rows);
 
 Eigen::Map<Eigen::VectorXd> toVector(std::vector<double>& data,
-                                     Eigen::Index rows);
+                                     Eigen::VectorXd::Index rows);
 }  // MathLib
