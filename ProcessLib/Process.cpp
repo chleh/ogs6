@@ -99,26 +99,10 @@ void Process::assembleWithJacobian(const double t, GlobalVector const& x,
                                    GlobalMatrix& M, GlobalMatrix& K,
                                    GlobalVector& b, GlobalMatrix& Jac)
 {
-#if 0
-    _jacobian_assembler->assembleWithJacobian(
-        BaseLib::easyBind(&Process::assemble, this),
-        BaseLib::easyBind(&Process::assembleWithJacobianAnalytical, this), t, x,
-        xdot, dxdot_dx, dx_dx, M, K, b, Jac);
-}
-
-void Process::assembleWithJacobianAnalytical(
-    const double t, GlobalVector const& x, GlobalVector const& xdot,
-    const double dxdot_dx, const double dx_dx, GlobalMatrix& M, GlobalMatrix& K,
-    GlobalVector& b, GlobalMatrix& Jac)
-{
-#endif
     assembleWithJacobianConcreteProcess(t, x, xdot, dxdot_dx, dx_dx, M, K, b, Jac);
 
-    // Call global assembler for each Neumann boundary local assembler.
-    for (auto const& bc : _neumann_bcs)
-        bc->integrate(t, b);
-
     // TODO apply BCs to Jacobian.
+    _boundary_conditions.apply(t, x, K, b);
 }
 
 void Process::constructDofTable()
