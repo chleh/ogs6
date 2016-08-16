@@ -92,15 +92,6 @@ void UncoupledProcessesTimeLoop::setInitialConditions(
         MathLib::LinAlg::finalizeAssembly(x0);
 
         time_disc.setInitialState(t0, x0);  // push IC
-
-        if (time_disc.needsPreload())
-        {
-            auto& nonlinear_solver = ppd.nonlinear_solver;
-
-            setEquationSystem(nonlinear_solver, ode_sys, nl_tag);
-            nonlinear_solver.assemble(x0);
-            time_disc.pushState(t0, x0);  // TODO: that might do duplicate work
-        }
     }
 }
 
