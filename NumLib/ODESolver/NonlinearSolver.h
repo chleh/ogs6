@@ -34,16 +34,6 @@ namespace NumLib
 class NonlinearSolverBase
 {
 public:
-    /*! Only assemble the equation system.
-     *
-     * \note This method is needed to preload CrankNicolson time discretization
-     * scheme. It is not used for the general solver steps; in those only the
-     * solve() method is needed.
-     *
-     * \param x   the state at which the equation system will be assembled.
-     */
-    virtual void assemble(GlobalVector const& x) const = 0;
-
     /*! Assemble and solve the equation system.
      *
      * \param x   in: the initial guess, out: the solution.
@@ -96,7 +86,6 @@ public:
 
     //! Set the nonlinear equation system that will be solved.
     void setEquationSystem(System& eq) { _equation_system = &eq; }
-    void assemble(GlobalVector const& x) const override;
 
     bool solve(GlobalVector& x,
                std::function<void(unsigned, GlobalVector const&)> const&
@@ -147,7 +136,6 @@ public:
 
     //! Set the nonlinear equation system that will be solved.
     void setEquationSystem(System& eq) { _equation_system = &eq; }
-    void assemble(GlobalVector const& x) const override;
 
     bool solve(GlobalVector& x,
                std::function<void(unsigned, GlobalVector const&)> const&

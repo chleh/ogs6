@@ -83,7 +83,6 @@ namespace NumLib
  * -------------- | --------------- | --------------- | --------------------- | --------------- | ----------------------
  * Forward Euler  | \f$ x_n \f$     | \f$ t_n \f$     | \f$ 1/\Delta t \f$    | \f$ x_{n+1} \f$ | \f$ x_n / \Delta t \f$
  * Backward Euler | \f$ x_{n+1} \f$ | \f$ t_{n+1} \f$ | \f$ 1/\Delta t \f$    | \f$ x_{n+1} \f$ | \f$ x_n / \Delta t \f$
- * Crank-Nicolson | \f$ x_{n+1} \f$ | \f$ t_{n+1} \f$ | \f$ 1/\Delta t \f$    | \f$ x_{n+1} \f$ | \f$ x_n / \Delta t \f$
  * BDF(2)         | \f$ x_{n+2} \f$ | \f$ t_{n+1} \f$ | \f$ 3/(2\Delta t) \f$ | \f$ x_{n+2} \f$ | \f$ (2\cdot x_{n+1} - x_n/2)/\Delta t \f$
  *
  * The other backward differentiation formulas of orders 1 to 6 are also implemented, but only
@@ -167,14 +166,6 @@ public:
     {
         return x_at_new_timestep;
     }
-
-    /*! Indicate that this scheme needs some additional assembly before the
-     * first
-     *  timestep will be solved.
-     *
-     * The CrankNicolson scheme needs such preload.
-     */
-    virtual bool needsPreload() const { return false; }
     //! @}
 };
 

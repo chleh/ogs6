@@ -89,12 +89,6 @@ bool TimeLoopSingleODE<NLTag>::loop(const double t0, GlobalVector const& x0,
 
     _nonlinear_solver->setEquationSystem(_ode_sys);
 
-    if (time_disc.needsPreload())
-    {
-        _nonlinear_solver->assemble(x);
-        time_disc.pushState(t0, x0);  // TODO: that might do duplicate work
-    }
-
     double t;
     unsigned timestep = 0;
     bool nl_slv_succeeded = true;

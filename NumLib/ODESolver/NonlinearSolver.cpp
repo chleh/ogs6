@@ -23,12 +23,6 @@
 
 namespace NumLib
 {
-void NonlinearSolver<NonlinearSolverTag::Picard>::assemble(
-    GlobalVector const& x) const
-{
-    _equation_system->assemble(x);
-}
-
 bool NonlinearSolver<NonlinearSolverTag::Picard>::solve(
     GlobalVector& x,
     std::function<void(unsigned, GlobalVector const&)> const& postIterationCallback)
@@ -155,15 +149,6 @@ bool NonlinearSolver<NonlinearSolverTag::Picard>::solve(
     NumLib::GlobalVectorProvider::provider.releaseVector(x_new);
 
     return error_norms_met;
-}
-
-void NonlinearSolver<NonlinearSolverTag::Newton>::assemble(
-    GlobalVector const& x) const
-{
-    _equation_system->assemble(x);
-    // TODO if the equation system would be reset to nullptr after each
-    //      assemble() or solve() call, the user would be forced to set the
-    //      equation every time and could not forget it.
 }
 
 bool NonlinearSolver<NonlinearSolverTag::Newton>::solve(
