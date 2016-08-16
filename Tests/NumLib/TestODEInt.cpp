@@ -103,18 +103,6 @@ run_test_case(const unsigned num_timesteps)
 }
 
 template <typename TimeDisc, typename ODE, NumLib::NonlinearSolverTag NLTag>
-typename std::enable_if<std::is_same<TimeDisc, NumLib::CrankNicolson>::value,
-                        Solution>::type
-run_test_case(const unsigned num_timesteps)
-{
-    ODE ode;
-    TimeDisc timeDisc(0.5);
-
-    TestOutput<NLTag> test;
-    return test.run_test(ode, timeDisc, num_timesteps);
-}
-
-template <typename TimeDisc, typename ODE, NumLib::NonlinearSolverTag NLTag>
 typename std::enable_if<
     std::is_same<TimeDisc, NumLib::BackwardDifferentiationFormula>::value,
     Solution>::type
@@ -153,17 +141,14 @@ struct TestCase;
 #define TESTCASESLIST \
     TCLITEM(ODE1, BackwardEuler                 , 1e-15  , 0.2) TCLSEP \
     TCLITEM(ODE1, ForwardEuler                  , 1e-13  , 0.22) TCLSEP \
-    TCLITEM(ODE1, CrankNicolson                 , 4e-15  , 2.1e-3) TCLSEP \
     TCLITEM(ODE1, BackwardDifferentiationFormula, 4e-15  , 3e-3) TCLSEP \
     \
     TCLITEM(ODE2, BackwardEuler                 , 1.5e-10, 2e-3) TCLSEP \
     TCLITEM(ODE2, ForwardEuler                  , 2e-3   , 2e-3) TCLSEP \
-    TCLITEM(ODE2, CrankNicolson                 , 1.5e-10, 8e-6) TCLSEP \
     TCLITEM(ODE2, BackwardDifferentiationFormula, 1.5e-10, 2e-4) TCLSEP \
     \
     TCLITEM(ODE3, BackwardEuler                 , 1e-9   , 0.028) TCLSEP \
     TCLITEM(ODE3, ForwardEuler                  , 1e-13  , 0.03) TCLSEP \
-    TCLITEM(ODE3, CrankNicolson                 , 2e-9   , 6e-4) TCLSEP \
     TCLITEM(ODE3, BackwardDifferentiationFormula, 2e-9   , 7e-4)
 
 #define TCLITEM(ODE, TIMEDISC, TOL_PICARD_NEWTON, TOL_ANALYT)                \
