@@ -31,13 +31,6 @@ std::unique_ptr<TimeDiscretization> createTimeDiscretization(
         using ConcreteTD = ForwardEuler;
         return T(new ConcreteTD);
     }
-    else if (type == "CrankNicolson")
-    {
-        //! \ogs_file_param{process__time_discretization__CrankNicolson__theta}
-        auto const theta = config.getConfigParameter<double>("theta");
-        using ConcreteTD = CrankNicolson;
-        return T(new ConcreteTD(theta));
-    }
     else if (type == "BackwardDifferentiationFormula")
     {
         //! \ogs_file_param{process__time_discretization__BackwardDifferentiationFormula__order}

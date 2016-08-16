@@ -21,28 +21,6 @@ namespace NumLib
 //! \addtogroup ODESolver
 //! @{
 
-//! Interface that allows managing an additional internal state as required by
-//! certain time discretization schemes.
-class InternalMatrixStorage
-{
-public:
-    /*! Triggers a refresh of the internal matrix/vector storage.
-     *
-     * \remark
-     * This method is needed in particular to fully implement the
-     * interaction of the CrankNicolson scheme with other classes.
-     *
-     * \attention
-     * This method must be called (if it is called) from within
-     * TimeDiscretization::pushState() \b after the internal state of
-     * the TimeDiscretization has been set to the new solution.
-     * Otherwise the pushMatrices() method of MatrixTranslator's will break!
-     */
-    virtual void pushMatrices() const = 0;
-
-    virtual ~InternalMatrixStorage() = default;
-};
-
 /*! Interface of time discretization schemes for first-order ODEs.
  *
  * The purpose of TimeDiscretization instances is to store the solution history of
@@ -126,11 +104,8 @@ public:
      *
      * \param t    The current timestep.
      * \param x    The solution at the current timestep.
-     * \param strg Trigger storing some internal state.
-     *             Currently only used by the CrankNicolson scheme.
      */
-    virtual void pushState(const double t, GlobalVector const& x,
-                           InternalMatrixStorage const& strg) = 0;
+    virtual void pushState(const double t, GlobalVector const& x) = 0;
 
     /*! Indicate that the computation of a new timestep is being started now.
      *
@@ -223,8 +198,7 @@ public:
         MathLib::LinAlg::copy(x0, _x_old);
     }
 
-    void pushState(const double /*t*/, GlobalVector const& x,
-                   InternalMatrixStorage const&) override
+    void pushState(const double /*t*/, GlobalVector const& x) override
     {
         MathLib::LinAlg::copy(x, _x_old);
     }
@@ -273,8 +247,7 @@ public:
         MathLib::LinAlg::copy(x0, _x_old);
     }
 
-    void pushState(const double /*t*/, GlobalVector const& x,
-                   InternalMatrixStorage const&) override
+    void pushState(const double /*t*/, GlobalVector const& x) override
     {
         MathLib::LinAlg::copy(x, _x_old);
     }
@@ -316,71 +289,6 @@ private:
     double _t_old;    //!< the time of the preceding timestep
     double _delta_t;  //!< the timestep size
     GlobalVector& _x_old;   //!< the solution from the preceding timestep
-};
-
-//! Generalized Crank-Nicolson scheme.
-class CrankNicolson final : public TimeDiscretization
-{
-public:
-    /*! Constructs a new instance.
-     *
-     * \param theta The implicitness parameter \f$ \theta \f$. Some special
-     * values are:
-     *              \arg 1.0 fully implicit (like BackwardEuler).
-     *              \arg 0.0 fully explicit (like ForwardEuler).
-     *              \arg 0.5 traditional Crank-Nicolson scheme.
-     */
-    explicit CrankNicolson(const double theta)
-        : _theta(theta),
-          _x_old(NumLib::GlobalVectorProvider::provider.getVector())
-    {
-    }
-
-    ~CrankNicolson()
-    {
-        NumLib::GlobalVectorProvider::provider.releaseVector(_x_old);
-    }
-
-    void setInitialState(const double t0, GlobalVector const& x0) override
-    {
-        _t = t0;
-        MathLib::LinAlg::copy(x0, _x_old);
-    }
-
-    void pushState(const double, GlobalVector const& x,
-                   InternalMatrixStorage const& strg) override
-    {
-        MathLib::LinAlg::copy(x, _x_old);
-        strg.pushMatrices();
-    }
-
-    void nextTimestep(const double t, const double delta_t) override
-    {
-        _t = t;
-        _delta_t = delta_t;
-    }
-
-    double getCurrentTime() const override { return _t; }
-    double getNewXWeight() const override { return 1.0 / _delta_t; }
-    void getWeightedOldX(GlobalVector& y) const override
-    {
-        namespace LinAlg = MathLib::LinAlg;
-
-        // y = x_old / delta_t
-        LinAlg::copy(_x_old, y);
-        LinAlg::scale(y, 1.0 / _delta_t);
-    }
-
-    bool needsPreload() const override { return true; }
-    //! Returns \f$ \theta \f$.
-    double getTheta() const { return _theta; }
-    //! Returns the solution from the preceding timestep.
-    GlobalVector const& getXOld() const { return _x_old; }
-private:
-    const double _theta;  //!< the implicitness parameter \f$ \theta \f$
-    double _t;            //!< \f$ t_C \f$
-    double _delta_t;      //!< the timestep size
-    GlobalVector& _x_old;       //!< the solution from the preceding timestep
 };
 
 namespace detail
@@ -436,8 +344,7 @@ public:
             &NumLib::GlobalVectorProvider::provider.getVector(x0));
     }
 
-    void pushState(const double, GlobalVector const& x,
-                   InternalMatrixStorage const&) override
+    void pushState(const double, GlobalVector const& x) override
     {
         namespace LinAlg = MathLib::LinAlg;
         // TODO use boost cirular buffer?

@@ -92,8 +92,7 @@ bool TimeLoopSingleODE<NLTag>::loop(const double t0, GlobalVector const& x0,
     if (time_disc.needsPreload())
     {
         _nonlinear_solver->assemble(x);
-        time_disc.pushState(t0, x0,
-                            _ode_sys);  // TODO: that might do duplicate work
+        time_disc.pushState(t0, x0);  // TODO: that might do duplicate work
     }
 
     double t;
@@ -111,7 +110,7 @@ bool TimeLoopSingleODE<NLTag>::loop(const double t0, GlobalVector const& x0,
         if (!nl_slv_succeeded)
             break;
 
-        time_disc.pushState(t, x, _ode_sys);
+        time_disc.pushState(t, x);
 
         auto const t_cb =
             t;  // make sure the callback cannot overwrite anything.
