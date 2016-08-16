@@ -59,17 +59,14 @@ private:
             : nonlinear_solver_tag(NLTag),
               nonlinear_solver(nonlinear_solver),
               tdisc_ode_sys(new NumLib::TimeDiscretizedODESystem<ODETag, NLTag>(
-                  ode_sys, time_disc)),
-              mat_strg(
-                  dynamic_cast<NumLib::InternalMatrixStorage&>(*tdisc_ode_sys))
+                  ode_sys, time_disc))
         {
         }
 
         SingleProcessData(SingleProcessData&& spd)
             : nonlinear_solver_tag(spd.nonlinear_solver_tag),
               nonlinear_solver(spd.nonlinear_solver),
-              tdisc_ode_sys(std::move(spd.tdisc_ode_sys)),
-              mat_strg(spd.mat_strg)
+              tdisc_ode_sys(std::move(spd.tdisc_ode_sys))
         {
         }
 
@@ -79,8 +76,6 @@ private:
         AbstractNLSolver& nonlinear_solver;
         //! type-erased time-discretized ODE system
         std::unique_ptr<EquationSystem> tdisc_ode_sys;
-        //! cast of \c tdisc_ode_sys to NumLib::InternalMatrixStorage
-        NumLib::InternalMatrixStorage& mat_strg;
     };
 
     /*! Creates a new instance of PerProcessData from the given data.

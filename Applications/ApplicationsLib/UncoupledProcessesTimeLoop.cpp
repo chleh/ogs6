@@ -96,12 +96,10 @@ void UncoupledProcessesTimeLoop::setInitialConditions(
         if (time_disc.needsPreload())
         {
             auto& nonlinear_solver = ppd.nonlinear_solver;
-            auto& mat_strg = ppd.mat_strg;
 
             setEquationSystem(nonlinear_solver, ode_sys, nl_tag);
             nonlinear_solver.assemble(x0);
-            time_disc.pushState(
-                t0, x0, mat_strg);  // TODO: that might do duplicate work
+            time_disc.pushState(t0, x0);  // TODO: that might do duplicate work
         }
     }
 }
@@ -141,8 +139,7 @@ solveOneTimeStepOneProcess(
     bool nonlinear_solver_succeeded =
         nonlinear_solver.solve(x, post_iteration_callback);
 
-    auto& mat_strg = process_data.mat_strg;
-    time_disc.pushState(t, x, mat_strg);
+    time_disc.pushState(t, x);
 
     process.postTimestep(x);
 
