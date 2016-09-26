@@ -190,9 +190,9 @@ private:
     IntegrationMethod const _integration_method;
     std::vector<ShapeMatrices> _shape_matrices;
 
-    std::vector<std::vector<double>> _darcy_velocities =
-        std::vector<std::vector<double>>(
-            GlobalDim, std::vector<double>(ShapeFunction::NPOINTS));
+    std::vector<std::vector<double>> _darcy_velocities
+        = std::vector<std::vector<double>>(
+            GlobalDim, std::vector<double>(_integration_method.getNumberOfPoints()));
 };
 
 
