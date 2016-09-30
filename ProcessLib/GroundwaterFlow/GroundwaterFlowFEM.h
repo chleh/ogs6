@@ -73,7 +73,9 @@ public:
           _integration_method(integration_order),
           _shape_matrices(initShapeMatrices<ShapeFunction, ShapeMatricesType,
                                             IntegrationMethod, GlobalDim>(
-              element, _integration_method))
+              element, _integration_method)),
+          _darcy_velocities(GlobalDim,
+			  std::vector<double>(_integration_method.getNumberOfPoints()))
     {
     }
 
@@ -190,9 +192,7 @@ private:
     IntegrationMethod const _integration_method;
     std::vector<ShapeMatrices> _shape_matrices;
 
-    std::vector<std::vector<double>> _darcy_velocities
-        = std::vector<std::vector<double>>(
-            GlobalDim, std::vector<double>(_integration_method.getNumberOfPoints()));
+    std::vector<std::vector<double>> _darcy_velocities;
 };
 
 
