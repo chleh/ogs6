@@ -69,7 +69,9 @@ public:
           _integration_method(integration_order),
           _shape_matrices(initShapeMatrices<ShapeFunction, ShapeMatricesType,
                                             IntegrationMethod, GlobalDim>(
-              element, _integration_method))
+              element, _integration_method)),
+          _heat_fluxes(GlobalDim,
+			  std::vector<double>(_integration_method.getNumberOfPoints()))
     {
         // This assertion is valid only if all nodal d.o.f. use the same shape
         // matrices.
@@ -158,9 +160,7 @@ private:
     IntegrationMethod const _integration_method;
     std::vector<ShapeMatrices> _shape_matrices;
 
-    std::vector<std::vector<double>> _heat_fluxes =
-        std::vector<std::vector<double>>(
-            GlobalDim, std::vector<double>(ShapeFunction::NPOINTS));
+	std::vector<std::vector<double>> _heat_fluxes;
 };
 
 }  // namespace HeatConduction
