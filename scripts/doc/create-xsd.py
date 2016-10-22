@@ -30,6 +30,10 @@ tag_path_expansion_table = {
     # "prj": "",
 }
 
+tag_path_expansion_table_inv = {}
+for k,v in tag_path_expansion_table.items():
+    tag_path_expansion_table_inv[v] = k
+
 def dict_of_list_append(dict_, key, value):
     if key in dict_:
         dict_[key].append(value)
@@ -130,22 +134,23 @@ except KeyError:
 # for k in sorted(map_path_node.keys()):
 #     print "k", k
 
-for k, v in tag_path_expansion_table.items():
-    old_node = map_path_node[k]
-    new_node = map_path_node[v]
-    new_node.children.extend(old_node.children)
-    new_node.attrs.extend(old_node.attrs)
-    old_node.children = []
-    old_node.attrs = []
-    i = k.rfind(".")
-    if i == -1:
-        k_parent_node = map_path_node[""]
-    else:
-        k_parent_node = map_path_node[k[:i]]
-    for i, c in enumerate(k_parent_node.children):
-        if c.name == k:
-            k_parent_node.children.pop(i)
-            break
+if True:
+    for k, v in tag_path_expansion_table.items():
+        old_node = map_path_node[k]
+        new_node = map_path_node[v]
+        new_node.children.extend(old_node.children)
+        new_node.attrs.extend(old_node.attrs)
+        old_node.children = []
+        old_node.attrs = []
+        i = k.rfind(".")
+        if i == -1:
+            k_parent_node = map_path_node[""]
+        else:
+            k_parent_node = map_path_node[k[:i]]
+        for i, c in enumerate(k_parent_node.children):
+            if c.name == k:
+                k_parent_node.children.pop(i)
+                break
 
 
 # print "tree:", tree
@@ -153,19 +158,34 @@ for k, v in tag_path_expansion_table.items():
 # for k, v in sorted(map_path_node.items()):
 #     print k, v
 
-def print_tree(node, level=0):
+def print_tree(node, level=0, path=""):
+    if path in tag_path_expansion_table_inv:
+        path = tag_path_expansion_table_inv[path]
+
     if node.children:
         print("{}<{}{}{}>".format("  "*level, node.name,
             " attrs..." if node.attrs else "",
             " is case" if node.is_case else ""))
-        for c in node.children: print_tree(c, level+1)
+        for c in node.children:
+            print_tree(c, level+1, (path + "." + node.name).lstrip("."))
         print("{}</{}>".format("  "*level, node.name))
     else:
-        print("{}<{}{}{} />".format("  "*level, node.name,
+        try:
+            p = (path + "." + node.name).lstrip(".")
+            dt = " data type=" + map_path_info[(p, True)][0][5]
+        except:
+            dt = " data type is unknown!"
+            #raise
+        print("{}<{}{}{}{} />".format("  "*level, node.name,
             " attrs..." if node.attrs else "",
-            " is case" if node.is_case else ""))
+            " is case" if node.is_case else "",
+            dt))
 
-print_tree(tree)
+print_tree(map_path_node["prj"])
+#print_tree(tree)
+
+
+# print(map_path_info[("boundary_condition.type", True)])
 
 sys.exit()
 
