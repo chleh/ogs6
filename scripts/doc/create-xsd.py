@@ -172,7 +172,12 @@ def print_tree(node, level=0, path=""):
     else:
         try:
             p = (path + "." + node.name).lstrip(".")
-            dt = " data type=" + map_path_info[(p, True)][0][5]
+            dt = ""
+            for l in map_path_info[(p, True)]:
+                t = l[5]
+                assert t == '' or dt == '' or t == dt
+                if t: dt = t
+            dt = " data type=" + dt
         except:
             dt = " data type is unknown!"
             #raise
