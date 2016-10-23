@@ -206,6 +206,7 @@ def print_tree_xsd(node, fh, level=0, path=""):
         if is_polymorphic:
             print p, "is polymorphic"
             fh.write('<xs:complexType name="{}" abstract="true" />\n\n'.format(p2))
+            # TODO put children
         elif node.is_case and path != "":
             global map_path_node
             parent_node = map_path_node[path_orig]
