@@ -212,7 +212,7 @@ def print_tree_xsd(node, fh, level=0, path=""):
             if node.children:
                 fh.write('      <xs:sequence>\n')
                 # print "nc", node.children, "\npc", parent_node.children
-                for c in node.children:
+                for c in sorted(node.children, key=lambda n: n.name):
                     if c.is_case: continue
 
                     if c.children or c.attrs:
@@ -243,9 +243,9 @@ def print_tree_xsd(node, fh, level=0, path=""):
             fh.write('<xs:complexType name="{}">\n'.format(p2))
             fh.write('  <xs:complexContent>\n    <xs:extension base="prj:{}">\n'.format(path.replace(".", "__")))
             if node.children:
-                fh.write('      <xs:all>\n')
+                fh.write('      <xs:sequence>\n')
                 # print "nc", node.children, "\npc", parent_node.children
-                for c in node.children:
+                for c in sorted(node.children, key=lambda n: n.name):
                     if c.is_case: continue
 
                     if c.children or c.attrs:
@@ -256,7 +256,7 @@ def print_tree_xsd(node, fh, level=0, path=""):
                         fh.write('        <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
                     else:
                         fh.write('        <xs:element name="{}" type="xs:string" />\n'.format(c.name))
-                fh.write('      </xs:all>\n')
+                fh.write('      </xs:sequence>\n')
                 for attr in node.attrs:
                     fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
             else:
