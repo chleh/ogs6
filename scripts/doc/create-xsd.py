@@ -7,8 +7,7 @@ signal(SIGPIPE,SIG_DFL)
 from print23 import print_
 import os
 import sys
-import xml.etree.cElementTree as ET
-import json
+import re
 
 if len(sys.argv) != 3:
     sys.stderr.write("Usage:\n")
@@ -187,40 +186,94 @@ def print_tree(node, level=0, path=""):
             dt))
 
 def print_tree_xsd(node, fh, level=0, path=""):
+    path_orig = path
     if path in tag_path_expansion_table_inv:
         path = tag_path_expansion_table_inv[path]
 
     if node.children or node.attrs:
+        is_polymorphic = False
         # post-order traversal
         for c in node.children:
             print_tree_xsd(c, fh, level+1, (path + "." + node.name).lstrip("."))
+            if c.is_case: is_polymorphic = True
+            # if re.match("[A-Z]", c.name): is_polymorphic = True
 
         p = (path + "." + node.name).lstrip(".")
         if p in tag_path_expansion_table_inv:
             p = tag_path_expansion_table_inv[p]
         p2 = p.replace(".", "__")
-        fh.write('<xs:complexType name="{}">\n'.format(p2))
-        if node.children:
-            fh.write('  <xs:all>\n')
-            for c in node.children:
-                if c.children or c.attrs:
-                    ctype = p + "." + c.name
-                    if ctype in tag_path_expansion_table_inv:
-                        ctype = tag_path_expansion_table_inv[ctype]
-                    ctype = ctype.replace(".", "__")
-                    fh.write('    <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
-                else:
-                    fh.write('    <xs:element name="{}" type="xs:string" />\n'.format(c.name))
-            fh.write('  </xs:all>\n')
-            for attr in node.attrs:
-                fh.write('  <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
-        else:
-            fh.write('  <xs:simpleContent>\n    <xs:extension base="xs:string">\n')
-            for attr in node.attrs:
-                fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
-            fh.write('    </xs:extension>\n  </xs:simpleContent>\n')
 
-        fh.write('</xs:complexType>\n\n')
+        if is_polymorphic:
+            print p, "is polymorphic"
+            fh.write('<xs:complexType name="{}" abstract="true" />\n\n'.format(p2))
+        elif node.is_case and path != "":
+            global map_path_node
+            parent_node = map_path_node[path_orig]
+            print p, "is case; parent is", path, parent_node.name
+
+            fh.write('<xs:complexType name="{}">\n'.format(p2))
+            fh.write('  <xs:complexContent>\n    <xs:extension base="prj:{}">\n'.format(path.replace(".", "__")))
+            if node.children or parent_node.children:
+                fh.write('      <xs:all>\n')
+                # print "nc", node.children, "\npc", parent_node.children
+                for c in node.children:
+                    if c.is_case: continue
+
+                    if c.children or c.attrs:
+                        ctype = p + "." + c.name
+                        if ctype in tag_path_expansion_table_inv:
+                            ctype = tag_path_expansion_table_inv[ctype]
+                        ctype = ctype.replace(".", "__")
+                        fh.write('        <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
+                    else:
+                        fh.write('        <xs:element name="{}" type="xs:string" />\n'.format(c.name))
+                for c in parent_node.children:
+                    if c.is_case: continue
+
+                    if c.children or c.attrs:
+                        ctype = path + "." + c.name
+                        if ctype in tag_path_expansion_table_inv:
+                            ctype = tag_path_expansion_table_inv[ctype]
+                        ctype = ctype.replace(".", "__")
+                        fh.write('        <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
+                    else:
+                        fh.write('        <xs:element name="{}" type="xs:string" />\n'.format(c.name))
+                fh.write('      </xs:all>\n')
+                for attr in node.attrs + parent_node.attrs:
+                    fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
+            else:
+                fh.write('      <xs:simpleContent>\n        <xs:extension base="xs:string">\n')
+                for attr in node.attrs + parent_node.attrs:
+                    fh.write('          <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
+                fh.write('        </xs:extension>\n  </xs:simpleContent>\n')
+
+            fh.write('    </xs:extension>\n  </xs:complexContent>\n')
+            fh.write('</xs:complexType>\n\n')
+        else:
+            fh.write('<xs:complexType name="{}">\n'.format(p2))
+            if node.children:
+                fh.write('  <xs:all>\n')
+                for c in node.children:
+                    # if c.is_case: continue
+
+                    if c.children or c.attrs:
+                        ctype = p + "." + c.name
+                        if ctype in tag_path_expansion_table_inv:
+                            ctype = tag_path_expansion_table_inv[ctype]
+                        ctype = ctype.replace(".", "__")
+                        fh.write('    <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
+                    else:
+                        fh.write('    <xs:element name="{}" type="xs:string" />\n'.format(c.name))
+                fh.write('  </xs:all>\n')
+                for attr in node.attrs:
+                    fh.write('  <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
+            else:
+                fh.write('  <xs:simpleContent>\n    <xs:extension base="xs:string">\n')
+                for attr in node.attrs:
+                    fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
+                fh.write('    </xs:extension>\n  </xs:simpleContent>\n')
+
+            fh.write('</xs:complexType>\n\n')
     else:
         pass
 
@@ -243,39 +296,3 @@ with open("ogs-prj-test.xsd", "w") as fh:
 
 
 # print(map_path_info[("boundary_condition.type", True)])
-
-sys.exit()
-
-for (dirpath, dirnames, filenames) in os.walk(datadir, topdown=False):
-    reldirpath = os.path.relpath(dirpath, datadir)
-    outdirpath = os.path.join(outdir, reldirpath)
-    print_(">", reldirpath)
-
-    subpages = []
-
-    for fn in filenames:
-        filepath = os.path.join(dirpath, fn)
-        relfilepath = os.path.relpath(filepath, datadir)
-        pagename = "ogs_ctest_prj__" + relfilepath.replace("/", "__").replace(".", "__")
-
-        if fn.endswith(".prj"):
-            outdoxfile = os.path.join(outdirpath, fn + ".dox")
-            dirs_with_prj_files.add(reldirpath)
-
-            subpages.append(pagename)
-
-            if not os.path.exists(outdirpath):
-                os.makedirs(outdirpath)
-
-            with open(outdoxfile, "w") as fh:
-                fh.write(r"""/*! \page %s %s
-
-<tt>
-""" % (pagename, fn))
-
-                xmlroot = ET.parse(filepath).getroot()
-                print_tags(xmlroot, 0, "prj", fh, None, 0, relfilepath)
-
-                fh.write(r"""</tt>
-*/
-""")
