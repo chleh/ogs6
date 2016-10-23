@@ -186,8 +186,60 @@ def print_tree(node, level=0, path=""):
             " is case" if node.is_case else "",
             dt))
 
-print_tree(map_path_node["prj"])
-#print_tree(tree)
+def print_tree_xsd(node, fh, level=0, path=""):
+    if path in tag_path_expansion_table_inv:
+        path = tag_path_expansion_table_inv[path]
+
+    if node.children or node.attrs:
+        # post-order traversal
+        for c in node.children:
+            print_tree_xsd(c, fh, level+1, (path + "." + node.name).lstrip("."))
+
+        p = (path + "." + node.name).lstrip(".")
+        if p in tag_path_expansion_table_inv:
+            p = tag_path_expansion_table_inv[p]
+        p2 = p.replace(".", "__")
+        fh.write('<xs:complexType name="{}">\n'.format(p2))
+        if node.children:
+            fh.write('  <xs:all>\n')
+            for c in node.children:
+                if c.children or c.attrs:
+                    ctype = p + "." + c.name
+                    if ctype in tag_path_expansion_table_inv:
+                        ctype = tag_path_expansion_table_inv[ctype]
+                    ctype = ctype.replace(".", "__")
+                    fh.write('    <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
+                else:
+                    fh.write('    <xs:element name="{}" type="xs:string" />\n'.format(c.name))
+            fh.write('  </xs:all>\n')
+            for attr in node.attrs:
+                fh.write('  <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
+        else:
+            fh.write('  <xs:simpleContent>\n    <xs:extension base="xs:string">\n')
+            for attr in node.attrs:
+                fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
+            fh.write('    </xs:extension>\n  </xs:simpleContent>\n')
+
+        fh.write('</xs:complexType>\n\n')
+    else:
+        pass
+
+    if level == 0:
+        fh.write('<xs:element name="OpenGeoSysProject" type="prj:{}" />\n\n'.format(node.name))
+
+with open("ogs-prj-test.xsd", "w") as fh:
+    fh.write("""
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:prj="http://www.opengeosys.org/prj.xsd"
+           targetNamespace="http://www.opengeosys.org/prj.xsd"
+           elementFormDefault="qualified">
+
+""".lstrip())
+
+    print_tree_xsd(map_path_node["prj"], fh)
+    #print_tree(tree)
+
+    fh.write("</xs:schema>\n")
 
 
 # print(map_path_info[("boundary_condition.type", True)])
