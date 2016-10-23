@@ -157,6 +157,10 @@ if True:
 # for k, v in sorted(map_path_node.items()):
 #     print k, v
 
+def get_min_max_type(tagpath):
+    info = map_path_info[tagpath]
+    print tagpath, info[5], info[6]
+
 def print_tree(node, level=0, path=""):
     if path in tag_path_expansion_table_inv:
         path = tag_path_expansion_table_inv[path]
@@ -184,6 +188,16 @@ def print_tree(node, level=0, path=""):
             " attrs..." if node.attrs else "",
             " is case" if node.is_case else "",
             dt))
+
+def get_element(c, p):
+    if c.children or c.attrs:
+        ctype = p + "." + c.name
+        if ctype in tag_path_expansion_table_inv:
+            ctype = tag_path_expansion_table_inv[ctype]
+        ctype = ctype.replace(".", "__")
+        return '<xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype)
+    else:
+        return '<xs:element name="{}" type="xs:string" />\n'.format(c.name)
 
 def print_tree_xsd(node, fh, level=0, path=""):
     path_orig = path
@@ -214,15 +228,8 @@ def print_tree_xsd(node, fh, level=0, path=""):
                 # print "nc", node.children, "\npc", parent_node.children
                 for c in sorted(node.children, key=lambda n: n.name):
                     if c.is_case: continue
+                    fh.write('      ' + get_element(c, p))
 
-                    if c.children or c.attrs:
-                        ctype = p + "." + c.name
-                        if ctype in tag_path_expansion_table_inv:
-                            ctype = tag_path_expansion_table_inv[ctype]
-                        ctype = ctype.replace(".", "__")
-                        fh.write('        <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
-                    else:
-                        fh.write('        <xs:element name="{}" type="xs:string" />\n'.format(c.name))
                 fh.write('      </xs:sequence>\n')
                 for attr in node.attrs:
                     fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
@@ -247,15 +254,8 @@ def print_tree_xsd(node, fh, level=0, path=""):
                 # print "nc", node.children, "\npc", parent_node.children
                 for c in sorted(node.children, key=lambda n: n.name):
                     if c.is_case: continue
+                    fh.write('      ' + get_element(c, p))
 
-                    if c.children or c.attrs:
-                        ctype = p + "." + c.name
-                        if ctype in tag_path_expansion_table_inv:
-                            ctype = tag_path_expansion_table_inv[ctype]
-                        ctype = ctype.replace(".", "__")
-                        fh.write('        <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
-                    else:
-                        fh.write('        <xs:element name="{}" type="xs:string" />\n'.format(c.name))
                 fh.write('      </xs:sequence>\n')
                 for attr in node.attrs:
                     fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
@@ -273,15 +273,8 @@ def print_tree_xsd(node, fh, level=0, path=""):
                 fh.write('  <xs:all>\n')
                 for c in node.children:
                     # if c.is_case: continue
+                    fh.write('    ' + get_element(c, p))
 
-                    if c.children or c.attrs:
-                        ctype = p + "." + c.name
-                        if ctype in tag_path_expansion_table_inv:
-                            ctype = tag_path_expansion_table_inv[ctype]
-                        ctype = ctype.replace(".", "__")
-                        fh.write('    <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
-                    else:
-                        fh.write('    <xs:element name="{}" type="xs:string" />\n'.format(c.name))
                 fh.write('  </xs:all>\n')
                 for attr in node.attrs:
                     fh.write('  <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
