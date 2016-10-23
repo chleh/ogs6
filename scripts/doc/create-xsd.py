@@ -205,8 +205,36 @@ def print_tree_xsd(node, fh, level=0, path=""):
 
         if is_polymorphic:
             print p, "is polymorphic"
-            fh.write('<xs:complexType name="{}" abstract="true" />\n\n'.format(p2))
-            # TODO put children
+            fh.write('<xs:complexType name="{}" abstract="true">\n'.format(p2))
+            # fh.write('  <xs:complexContent>\n')
+            # fh.write('    <xs:extension base="prj:{}">\n'.format(path.replace(".", "__")))
+            # fh.write('    <xs:extension base="xs:anyType">\n')
+            if node.children:
+                fh.write('      <xs:sequence>\n')
+                # print "nc", node.children, "\npc", parent_node.children
+                for c in node.children:
+                    if c.is_case: continue
+
+                    if c.children or c.attrs:
+                        ctype = p + "." + c.name
+                        if ctype in tag_path_expansion_table_inv:
+                            ctype = tag_path_expansion_table_inv[ctype]
+                        ctype = ctype.replace(".", "__")
+                        fh.write('        <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
+                    else:
+                        fh.write('        <xs:element name="{}" type="xs:string" />\n'.format(c.name))
+                fh.write('      </xs:sequence>\n')
+                for attr in node.attrs:
+                    fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
+            else:
+                fh.write('      <xs:simpleContent>\n        <xs:extension base="xs:string">\n')
+                for attr in node.attrs:
+                    fh.write('          <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
+                fh.write('        </xs:extension>\n  </xs:simpleContent>\n')
+            # fh.write('    </xs:extension>\n')
+            # fh.write('  </xs:complexContent>\n')
+            fh.write('</xs:complexType>\n\n')
+
         elif node.is_case and path != "":
             global map_path_node
             parent_node = map_path_node[path_orig]
@@ -214,7 +242,7 @@ def print_tree_xsd(node, fh, level=0, path=""):
 
             fh.write('<xs:complexType name="{}">\n'.format(p2))
             fh.write('  <xs:complexContent>\n    <xs:extension base="prj:{}">\n'.format(path.replace(".", "__")))
-            if node.children or parent_node.children:
+            if node.children:
                 fh.write('      <xs:all>\n')
                 # print "nc", node.children, "\npc", parent_node.children
                 for c in node.children:
@@ -228,23 +256,12 @@ def print_tree_xsd(node, fh, level=0, path=""):
                         fh.write('        <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
                     else:
                         fh.write('        <xs:element name="{}" type="xs:string" />\n'.format(c.name))
-                for c in parent_node.children:
-                    if c.is_case: continue
-
-                    if c.children or c.attrs:
-                        ctype = path + "." + c.name
-                        if ctype in tag_path_expansion_table_inv:
-                            ctype = tag_path_expansion_table_inv[ctype]
-                        ctype = ctype.replace(".", "__")
-                        fh.write('        <xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype))
-                    else:
-                        fh.write('        <xs:element name="{}" type="xs:string" />\n'.format(c.name))
                 fh.write('      </xs:all>\n')
-                for attr in node.attrs + parent_node.attrs:
+                for attr in node.attrs:
                     fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
             else:
                 fh.write('      <xs:simpleContent>\n        <xs:extension base="xs:string">\n')
-                for attr in node.attrs + parent_node.attrs:
+                for attr in node.attrs:
                     fh.write('          <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
                 fh.write('        </xs:extension>\n  </xs:simpleContent>\n')
 
