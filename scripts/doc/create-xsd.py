@@ -199,6 +199,25 @@ def get_element(c, p):
     else:
         return '<xs:element name="{}" type="xs:string" />\n'.format(c.name)
 
+def write_node(fh, node, p, indent, seq_or_all):
+    if node.children:
+        fh.write('  '*indent + '<xs:{}>\n'.format(seq_or_all))
+        # print "nc", node.children, "\npc", parent_node.children
+        for c in sorted(node.children, key=lambda n: n.name):
+            if c.is_case: continue
+            fh.write('  '*(indent+1) + get_element(c, p))
+
+        fh.write('  '*indent + '</xs:{}>\n'.format(seq_or_all))
+        for attr in node.attrs:
+            fh.write('  '*indent + '<xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
+    else:
+        fh.write('  '*indent + '<xs:simpleContent>\n' + \
+                '  '*indent + '  <xs:extension base="xs:string">\n')
+        for attr in node.attrs:
+            fh.write('  '*indent + '    <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
+        fh.write('  '*indent + '  </xs:extension>\n' + \
+                '  '*indent + '</xs:simpleContent>\n')
+
 def print_tree_xsd(node, fh, level=0, path=""):
     path_orig = path
     if path in tag_path_expansion_table_inv:
@@ -220,26 +239,7 @@ def print_tree_xsd(node, fh, level=0, path=""):
         if is_polymorphic:
             print p, "is polymorphic"
             fh.write('<xs:complexType name="{}" abstract="true">\n'.format(p2))
-            # fh.write('  <xs:complexContent>\n')
-            # fh.write('    <xs:extension base="prj:{}">\n'.format(path.replace(".", "__")))
-            # fh.write('    <xs:extension base="xs:anyType">\n')
-            if node.children:
-                fh.write('      <xs:sequence>\n')
-                # print "nc", node.children, "\npc", parent_node.children
-                for c in sorted(node.children, key=lambda n: n.name):
-                    if c.is_case: continue
-                    fh.write('      ' + get_element(c, p))
-
-                fh.write('      </xs:sequence>\n')
-                for attr in node.attrs:
-                    fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
-            else:
-                fh.write('      <xs:simpleContent>\n        <xs:extension base="xs:string">\n')
-                for attr in node.attrs:
-                    fh.write('          <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
-                fh.write('        </xs:extension>\n  </xs:simpleContent>\n')
-            # fh.write('    </xs:extension>\n')
-            # fh.write('  </xs:complexContent>\n')
+            write_node(fh, node, p, 1, "sequence")
             fh.write('</xs:complexType>\n\n')
 
         elif node.is_case and path != "":
@@ -249,41 +249,12 @@ def print_tree_xsd(node, fh, level=0, path=""):
 
             fh.write('<xs:complexType name="{}">\n'.format(p2))
             fh.write('  <xs:complexContent>\n    <xs:extension base="prj:{}">\n'.format(path.replace(".", "__")))
-            if node.children:
-                fh.write('      <xs:sequence>\n')
-                # print "nc", node.children, "\npc", parent_node.children
-                for c in sorted(node.children, key=lambda n: n.name):
-                    if c.is_case: continue
-                    fh.write('      ' + get_element(c, p))
-
-                fh.write('      </xs:sequence>\n')
-                for attr in node.attrs:
-                    fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
-            else:
-                fh.write('      <xs:simpleContent>\n        <xs:extension base="xs:string">\n')
-                for attr in node.attrs:
-                    fh.write('          <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
-                fh.write('        </xs:extension>\n  </xs:simpleContent>\n')
-
+            write_node(fh, node, p, 3, "sequence")
             fh.write('    </xs:extension>\n  </xs:complexContent>\n')
             fh.write('</xs:complexType>\n\n')
         else:
             fh.write('<xs:complexType name="{}">\n'.format(p2))
-            if node.children:
-                fh.write('  <xs:all>\n')
-                for c in node.children:
-                    # if c.is_case: continue
-                    fh.write('    ' + get_element(c, p))
-
-                fh.write('  </xs:all>\n')
-                for attr in node.attrs:
-                    fh.write('  <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
-            else:
-                fh.write('  <xs:simpleContent>\n    <xs:extension base="xs:string">\n')
-                for attr in node.attrs:
-                    fh.write('      <xs:attribute name="{}" type="xs:string" />\n'.format(attr.name))
-                fh.write('    </xs:extension>\n  </xs:simpleContent>\n')
-
+            write_node(fh, node, p, 1, "all")
             fh.write('</xs:complexType>\n\n')
     else:
         pass
