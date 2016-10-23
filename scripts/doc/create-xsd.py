@@ -157,9 +157,46 @@ if True:
 # for k, v in sorted(map_path_node.items()):
 #     print k, v
 
-def get_min_max_type(tagpath):
-    info = map_path_info[tagpath]
-    print tagpath, info[5], info[6]
+def get_min_max_type(tagpath, is_tag):
+    if tagpath in tag_path_expansion_table:
+        tagpath = tag_path_expansion_table[tagpath]
+    info = map_path_info[(tagpath, is_tag)]
+    min_occ = 1
+    max_occ = 1
+    data_type = None
+    for i in info:
+        dt = i[5]
+        method = i[6]
+        if dt:
+            assert data_type is None or data_type == dt
+            data_type = dt
+        if method.endswith("Optional"):
+            min_occ = 0
+            max_occ = 1
+        elif method.endswith("List"):
+            min_occ = 0
+            max_occ = "unbounded"
+
+    if data_type is None:
+        # print tagpath, "data type is unknown"
+        data_type = "xs:string"
+    elif data_type == "bool":
+        data_type = "xs:boolean"
+    elif data_type == "int":
+        data_type = "xs:integer"
+    elif data_type == "unsigned":
+        data_type = "xs:nonNegativeInteger"
+    elif data_type == "double":
+        data_type = "xs:double"
+    elif data_type == "float":
+        data_type = "xs:float"
+    elif data_type == "std::vector<double>":
+        data_type = "prj:Vector_of_Doubles"
+    else:
+        # all other data types
+        data_type = "xs:string"
+
+    return min_occ, max_occ, data_type
 
 def print_tree(node, level=0, path=""):
     if path in tag_path_expansion_table_inv:
@@ -190,14 +227,16 @@ def print_tree(node, level=0, path=""):
             dt))
 
 def get_element(c, p):
+    ctype = p + "." + c.name
+    if ctype in tag_path_expansion_table_inv:
+        ctype = tag_path_expansion_table_inv[ctype]
+    mi, ma, dt = get_min_max_type(ctype, True)
+    ctype = ctype.replace(".", "__")
+
     if c.children or c.attrs:
-        ctype = p + "." + c.name
-        if ctype in tag_path_expansion_table_inv:
-            ctype = tag_path_expansion_table_inv[ctype]
-        ctype = ctype.replace(".", "__")
-        return '<xs:element name="{}" type="prj:{}" />\n'.format(c.name, ctype)
+        return '<xs:element name="{}" type="prj:{}" minOccurs="{}" maxOccurs="{}" />\n'.format(c.name, ctype, mi, ma)
     else:
-        return '<xs:element name="{}" type="xs:string" />\n'.format(c.name)
+        return '<xs:element name="{}" type="{}" minOccurs="{}" maxOccurs="{}" />\n'.format(c.name, dt, mi, ma)
 
 def write_node(fh, node, p, indent, seq_or_all):
     if node.children:
@@ -254,7 +293,7 @@ def print_tree_xsd(node, fh, level=0, path=""):
             fh.write('</xs:complexType>\n\n')
         else:
             fh.write('<xs:complexType name="{}">\n'.format(p2))
-            write_node(fh, node, p, 1, "all")
+            write_node(fh, node, p, 1, "sequence" if len(node.children) == 1 else "all")
             fh.write('</xs:complexType>\n\n')
     else:
         pass
@@ -268,6 +307,10 @@ with open("ogs-prj-test.xsd", "w") as fh:
            xmlns:prj="http://www.opengeosys.org/prj.xsd"
            targetNamespace="http://www.opengeosys.org/prj.xsd"
            elementFormDefault="qualified">
+
+<xs:simpleType name="Vector_of_Doubles">
+  <xs:list itemType="xs:double" />
+</xs:simpleType>
 
 """.lstrip())
 
