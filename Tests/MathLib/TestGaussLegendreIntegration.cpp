@@ -584,11 +584,11 @@ TEST(MathLib, IntegrationGaussLegendreHexNonSeparablePolynomial)
     }
 }
 
-TEST(MathLib, IntegrationGaussLegendrePyramidNonSeparablePolynomial)
+TEST(MathLib, IntegrationGaussLegendrePrismNonSeparablePolynomial)
 {
     std::unique_ptr<MeshLib::Mesh> mesh_prism(
-        MeshLib::IO::VtuInterface::readVTUFile(
-            BaseLib::BuildInfo::data_path + "/MathLib/unit_cube_pyramid.vtu"));
+        MeshLib::IO::VtuInterface::readVTUFile(BaseLib::BuildInfo::data_path +
+                                               "/MathLib/unit_cube_prism.vtu"));
 
     for (unsigned integration_order : {1, 2, 3})
     {
@@ -610,11 +610,11 @@ TEST(MathLib, IntegrationGaussLegendrePyramidNonSeparablePolynomial)
     }
 }
 
-TEST(MathLib, IntegrationGaussLegendrePrismNonSeparablePolynomial)
+TEST(MathLib, IntegrationGaussLegendrePyramidNonSeparablePolynomial)
 {
     std::unique_ptr<MeshLib::Mesh> mesh_pyramid(
-        MeshLib::IO::VtuInterface::readVTUFile(BaseLib::BuildInfo::data_path +
-                                               "/MathLib/unit_cube_prism.vtu"));
+        MeshLib::IO::VtuInterface::readVTUFile(
+            BaseLib::BuildInfo::data_path + "/MathLib/unit_cube_pyramid.vtu"));
 
     for (unsigned integration_order : {1, 2, 3})
     {
