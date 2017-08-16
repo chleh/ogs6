@@ -583,3 +583,55 @@ TEST(MathLib, IntegrationGaussLegendreHexNonSeparablePolynomial)
         }
     }
 }
+
+TEST(MathLib, IntegrationGaussLegendrePyramidNonSeparablePolynomial)
+{
+    std::unique_ptr<MeshLib::Mesh> mesh_prism(
+        MeshLib::IO::VtuInterface::readVTUFile(
+            BaseLib::BuildInfo::data_path + "/MathLib/unit_cube_pyramid.vtu"));
+
+    for (unsigned integration_order : {1, 2, 3})
+    {
+        DBUG("\n==== integration order: %u.\n", integration_order);
+        TestProcess pcs_prism(*mesh_prism, integration_order);
+
+        for (unsigned polynomial_order = 0;
+             // Gauss-Legendre integration is exact up to this order!
+             polynomial_order < 2 * integration_order;
+             ++polynomial_order)
+        {
+            DBUG("  == polynomial order: %u.", polynomial_order);
+            F3DNonseparablePolynomial f(polynomial_order);
+
+            auto const integral_prism = pcs_prism.integrate(f.getClosure());
+            EXPECT_NEAR(f.getAnalyticalIntegralOverUnitCube(), integral_prism,
+                        eps);
+        }
+    }
+}
+
+TEST(MathLib, IntegrationGaussLegendrePrismNonSeparablePolynomial)
+{
+    std::unique_ptr<MeshLib::Mesh> mesh_pyramid(
+        MeshLib::IO::VtuInterface::readVTUFile(BaseLib::BuildInfo::data_path +
+                                               "/MathLib/unit_cube_prism.vtu"));
+
+    for (unsigned integration_order : {1, 2, 3})
+    {
+        DBUG("\n==== integration order: %u.\n", integration_order);
+        TestProcess pcs_pyramid(*mesh_pyramid, integration_order);
+
+        for (unsigned polynomial_order = 0;
+             // Gauss-Legendre integration is exact up to this order!
+             polynomial_order < 2 * integration_order;
+             ++polynomial_order)
+        {
+            DBUG("  == polynomial order: %u.", polynomial_order);
+            F3DNonseparablePolynomial f(polynomial_order);
+
+            auto const integral_pyramid = pcs_pyramid.integrate(f.getClosure());
+            EXPECT_NEAR(f.getAnalyticalIntegralOverUnitCube(), integral_pyramid,
+                        eps);
+        }
+    }
+}
