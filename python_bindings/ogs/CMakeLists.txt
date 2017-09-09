@@ -1,0 +1,6 @@
+add_subdirectory(solids)
+
+reflect_lib_add_python_module(ogs ogs.cpp)
+reflect_lib_target_link_libraries(ogs PRIVATE reflection)
+
+add_dependencies(REFLECT_LIB_INTERNAL__ogs REFLECT_LIB_INTERNAL__AUX)
