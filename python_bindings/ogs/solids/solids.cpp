@@ -12,6 +12,9 @@ REFLECT_LIB_PYTHON_MODULE(ogs__solids, module)
     m.bind<MechanicsBase<2>>();
     m.bind<MechanicsBase<3>>();
 
+    m.bind<MechanicsBase<2>::MaterialStateVariables>();
+    m.bind<MechanicsBase<3>::MaterialStateVariables>();
+
     m.bind<LinearElasticIsotropic<2>>();
     m.bind<LinearElasticIsotropic<3>>();
 
@@ -22,4 +25,7 @@ REFLECT_LIB_PYTHON_MODULE(ogs__solids, module)
     m.bind<LinearElasticIsotropic<3>::MaterialProperties>().def(
         py::init<ProcessLib::Parameter<double> const&,
                  ProcessLib::Parameter<double> const&>());
+
+    m.bind<LinearElasticIsotropic<2>::MaterialStateVariables>();
+    m.bind<LinearElasticIsotropic<3>::MaterialStateVariables>();
 }

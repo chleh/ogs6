@@ -1,0 +1,3 @@
+reflect_lib_add_python_module(ogs.ProcessLib ProcessLib.cpp)
+reflect_lib_target_link_libraries(ogs.ProcessLib PRIVATE reflection PUBLIC ProcessLib)
+add_dependencies(REFLECT_LIB_INTERNAL__ogs__ProcessLib REFLECT_LIB_INTERNAL__ogs)

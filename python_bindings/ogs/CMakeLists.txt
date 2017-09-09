@@ -1,3 +1,4 @@
+add_subdirectory(ProcessLib)
 add_subdirectory(solids)
 
 reflect_lib_add_python_module(ogs ogs.cpp)
