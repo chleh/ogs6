@@ -17,6 +17,8 @@
 
 #include "ProcessLib/Deformation/BMatrixPolicy.h"
 
+#include "reflect-lib/reflect-macros.h"
+
 namespace ProcessLib
 {
 class SpatialPosition;
@@ -51,6 +53,8 @@ struct MechanicsBase
             MaterialStateVariables const&) = default;
 
         virtual void pushBackState() = 0;
+
+        REFLECT((MaterialStateVariables), FIELDS(), METHODS(pushBackState))
     };
 
     /// Polymorphic creator for MaterialStateVariables objects specific for a
@@ -87,6 +91,21 @@ struct MechanicsBase
 
         return integrateStress(
             t, x, dt, eps_prev_, eps_, sigma_prev_, material_state_variables);
+    }
+    boost::optional<std::tuple<KelvinVector,
+                               std::unique_ptr<MaterialStateVariables>,
+                               KelvinMatrix>>
+    integrateStressPythonUniqueName(
+        double const t,
+        ProcessLib::SpatialPosition const& x,
+        double const dt,
+        Eigen::Matrix<double, Eigen::Dynamic, 1> const& eps_prev,
+        Eigen::Matrix<double, Eigen::Dynamic, 1> const& eps,
+        Eigen::Matrix<double, Eigen::Dynamic, 1> const& sigma_prev,
+        MaterialStateVariables const& material_state_variables)
+    {
+        return integrateStress(
+            t, x, dt, eps_prev, eps, sigma_prev, material_state_variables);
     }
 
     /// Computation of the constitutive relation for specific material model.
@@ -130,6 +149,12 @@ struct MechanicsBase
     }
 
     virtual ~MechanicsBase() = default;
+
+    REFLECT(
+        (MechanicsBase<DisplacementDim>),
+        FIELDS(),
+        METHODS(
+            createMaterialStateVariables /*, integrateStressPythonUniqueName*/))
 };
 
 }  // namespace Solids

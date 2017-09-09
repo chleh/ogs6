@@ -12,6 +12,8 @@
 #include "MechanicsBase.h"
 #include "ProcessLib/Parameter/Parameter.h"
 
+#include "reflect-lib/reflect-macros.h"
+
 namespace MaterialLib
 {
 namespace Solids
@@ -57,6 +59,11 @@ public:
     private:
         P const& _youngs_modulus;
         P const& _poissons_ratio;
+
+    public:
+        REFLECT((MaterialProperties),
+                FIELDS(/*_youngs_modulus, _poissons_ratio*/),
+                METHODS(lambda, mu, bulk_modulus))
     };
 
     struct MaterialStateVariables
@@ -72,6 +79,11 @@ public:
         {
             return operator=(static_cast<MaterialStateVariables const&>(state));
         }
+
+        REFLECT_DERIVED(
+            (MaterialStateVariables),
+            (typename MechanicsBase<DisplacementDim>::MaterialStateVariables),
+            FIELDS(), METHODS())
     };
 
     std::unique_ptr<
@@ -112,6 +124,11 @@ public:
 
 protected:
     MaterialProperties _mp;
+
+public:
+    REFLECT_DERIVED((LinearElasticIsotropic<DisplacementDim>),
+                    (MechanicsBase<DisplacementDim>), FIELDS(_mp),
+                    METHODS(getMaterialProperties));
 };
 
 extern template class LinearElasticIsotropic<2>;
