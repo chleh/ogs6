@@ -92,23 +92,35 @@ struct MechanicsBase
         return integrateStress(
             t, x, dt, eps_prev_, eps_, sigma_prev_, material_state_variables);
     }
-    boost::optional<std::tuple<KelvinVector,
-                               /*std::unique_ptr<MaterialStateVariables>,*/
-                               KelvinMatrix>>
-    integrateStressPythonUniqueName(
+    bool integrateStressPythonUniqueName(
         double const t,
         ProcessLib::SpatialPosition const& x,
         double const dt,
         Eigen::Matrix<double, Eigen::Dynamic, 1> const& eps_prev,
         Eigen::Matrix<double, Eigen::Dynamic, 1> const& eps,
         Eigen::Matrix<double, Eigen::Dynamic, 1> const& sigma_prev,
-        MaterialStateVariables const& material_state_variables)
+        MaterialStateVariables const& material_state_variables_in,
+        Eigen::Ref<KelvinVector>& stress_out,
+        MaterialStateVariables& material_state_variables_out,
+        Eigen::Ref<KelvinMatrix>& tangent_modulus_out)
     {
+#if 1
+        auto res = integrateStress(
+            t, x, dt, eps_prev, eps, sigma_prev, material_state_variables_in);
+        if (!res)
+            return false;
+
+        stress_out = std::get<0>(*res);
+        material_state_variables_out = *std::get<1>(*res);
+        tangent_modulus_out = std::get<2>(*res);
+        return true;
+#else
         auto res = integrateStress(
             t, x, dt, eps_prev, eps, sigma_prev, material_state_variables);
         if (!res)
             return boost::none;
         return {{std::get<0>(*res), std::get<2>(*res)}};
+#endif
     }
 
     /// Computation of the constitutive relation for specific material model.
