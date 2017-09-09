@@ -15,6 +15,8 @@
 #include <vector>
 #include "SpatialPosition.h"
 
+#include "reflect-lib/reflect-macros.h"
+
 namespace BaseLib
 {
 class ConfigTree;
@@ -51,6 +53,8 @@ struct ParameterBase
     }
 
     std::string const name;
+
+    REFLECT((ParameterBase), FIELDS(name), METHODS(isTimeDependent, initialize))
 };
 
 /*! A Parameter is a function \f$ (t, x) \mapsto f(t, x) \in T^n \f$.
@@ -72,6 +76,11 @@ struct Parameter : public ParameterBase
     //! Returns the parameter value at the given time and position.
     virtual std::vector<T> const& operator()(
         double const t, SpatialPosition const& pos) const = 0;
+
+    REFLECT_DERIVED((Parameter<T>),
+                    (ParameterBase),
+                    FIELDS(),
+                    METHODS(getNumberOfComponents))
 };
 
 //! Constructs a new ParameterBase from the given configuration.

@@ -13,6 +13,8 @@
 
 #include "Parameter.h"
 
+#include "reflect-lib/reflect-macros.h"
+
 namespace ProcessLib
 {
 /// Single, constant value parameter.
@@ -48,6 +50,9 @@ struct ConstantParameter final : public Parameter<T>
 
 private:
     std::vector<T> const _values;
+
+public:
+    REFLECT_DERIVED((ConstantParameter<T>), (Parameter<T>), FIELDS(), METHODS())
 };
 
 std::unique_ptr<ParameterBase> createConstantParameter(

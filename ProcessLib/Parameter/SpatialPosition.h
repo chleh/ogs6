@@ -12,6 +12,8 @@
 #include <boost/optional.hpp>
 #include "MathLib/TemplatePoint.h"
 
+#include "reflect-lib/reflect-macros.h"
+
 namespace ProcessLib
 {
 //! Represents a position in space which can be either one of
@@ -85,6 +87,9 @@ private:
     boost::optional<std::size_t> _element_id;
     boost::optional<unsigned> _integration_point;
     boost::optional<MathLib::TemplatePoint<double, 3>> _coordinates;
+
+public:
+    REFLECT((SpatialPosition), FIELDS(), METHODS())
 };
 
 }  // ProcessLib
