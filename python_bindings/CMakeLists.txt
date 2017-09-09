@@ -1,4 +1,5 @@
 unset(CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+add_compile_options(-ftemplate-backtrace-limit=0)
 
 include_directories("/home/lehmannc/prog/cereal-pybind/src")
 add_subdirectory(pybind11)
