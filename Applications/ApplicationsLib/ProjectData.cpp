@@ -39,6 +39,7 @@
 #include "ProcessLib/HT/CreateHTProcess.h"
 #include "ProcessLib/HeatConduction/CreateHeatConductionProcess.h"
 #include "ProcessLib/HydroMechanics/CreateHydroMechanicsProcess.h"
+#include "ProcessLib/IncompressibleStokesBrinkman/CreateIncompressibleStokesBrinkmanProcess.h"
 #include "ProcessLib/LIE/HydroMechanics/CreateHydroMechanicsProcess.h"
 #include "ProcessLib/LIE/SmallDeformation/CreateSmallDeformationProcess.h"
 #include "ProcessLib/LiquidFlow/CreateLiquidFlowProcess.h"
@@ -384,6 +385,31 @@ void ProjectData::parseProcesses(BaseLib::ConfigTree const& processes_config,
                     OGS_FATAL(
                         "HYDRO_MECHANICS_WITH_LIE process does not support "
                         "given dimension");
+            }
+        }
+        else if (type == "INCOMPRESSIBLE_STOKES_BRINKMAN")
+        {
+            //! \ogs_file_param{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__dimension}
+            switch (process_config.getConfigParameter<int>("dimension"))
+            {
+                case 2:
+                    process = ProcessLib::IncompressibleStokesBrinkman::
+                        createIncompressibleStokesBrinkmanProcess<2>(
+                            *_mesh_vec[0], std::move(jacobian_assembler),
+                            _process_variables, _parameters, integration_order,
+                            process_config);
+                    break;
+                case 3:
+                    process = ProcessLib::IncompressibleStokesBrinkman::
+                        createIncompressibleStokesBrinkmanProcess<3>(
+                            *_mesh_vec[0], std::move(jacobian_assembler),
+                            _process_variables, _parameters, integration_order,
+                            process_config);
+                    break;
+                default:
+                    OGS_FATAL(
+                        "HYDRO_MECHANICS process does not support given "
+                        "dimension");
             }
         }
         else if (type == "HT")
