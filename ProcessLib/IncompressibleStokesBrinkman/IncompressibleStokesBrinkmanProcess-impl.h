@@ -172,6 +172,7 @@ void IncompressibleStokesBrinkmanProcess<DisplacementDim>::
         _local_assemblers, mesh.isAxiallySymmetric(), integration_order,
         _process_data);
 
+#if 0
     Base::_secondary_variables.addSecondaryVariable(
         "sigma_xx",
         makeExtrapolator(1, getExtrapolator(), _local_assemblers,
@@ -230,6 +231,7 @@ void IncompressibleStokesBrinkmanProcess<DisplacementDim>::
         makeExtrapolator(mesh.getDimension(), getExtrapolator(),
                          _local_assemblers,
                          &LocalAssemblerInterface::getIntPtDarcyVelocity));
+#endif
 }
 
 template <int DisplacementDim>

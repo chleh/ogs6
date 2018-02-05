@@ -31,18 +31,18 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanProcess(
     BaseLib::ConfigTree const& config)
 {
     //! \ogs_file_param{prj__processes__process__type}
-    config.checkConfigParameter("type", "HYDRO_MECHANICS");
+    config.checkConfigParameter("type", "INCOMPRESSIBLE_STOKES_BRINKMAN");
     DBUG("Create IncompressibleStokesBrinkmanProcess.");
 
     auto const staggered_scheme =
-        //! \ogs_file_param{prj__processes__process__HYDRO_MECHANICS__coupling_scheme}
+        //! \ogs_file_param{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__coupling_scheme}
         config.getConfigParameterOptional<std::string>("coupling_scheme");
     const bool use_monolithic_scheme =
         !(staggered_scheme && (*staggered_scheme == "staggered"));
 
     // Process variable.
 
-    //! \ogs_file_param{prj__processes__process__HYDRO_MECHANICS__process_variables}
+    //! \ogs_file_param{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__process_variables}
     auto const pv_config = config.getConfigSubtree("process_variables");
 
     ProcessVariable* variable_p;
@@ -53,10 +53,10 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanProcess(
     {
         auto per_process_variables = findProcessVariables(
             variables, pv_config,
-            {//! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__process_variables__pressure}
+            {//! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__process_variables__pressure}
              "pressure",
-             //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__process_variables__displacement}
-             "displacement"});
+             //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__process_variables__velocity}
+             "velocity"});
         variable_p = &per_process_variables[0].get();
         variable_u = &per_process_variables[1].get();
         process_variables.push_back(std::move(per_process_variables));
@@ -64,7 +64,7 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanProcess(
     else  // staggered scheme.
     {
         using namespace std::string_literals;
-        for (auto const& variable_name : {"pressure"s, "displacement"s})
+        for (auto const& variable_name : {"pressure"s, "velocity"s})
         {
             auto per_process_variables =
                 findProcessVariables(variables, pv_config, {variable_name});
@@ -74,14 +74,14 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanProcess(
         variable_u = &process_variables[1][0].get();
     }
 
-    DBUG("Associate displacement with process variable \'%s\'.",
+    DBUG("Associate velocity with process variable \'%s\'.",
          variable_u->getName().c_str());
 
     if (variable_u->getNumberOfComponents() != DisplacementDim)
     {
         OGS_FATAL(
             "Number of components of the process variable '%s' is different "
-            "from the displacement dimension: got %d, expected %d",
+            "from the velocity dimension: got %d, expected %d",
             variable_u->getName().c_str(),
             variable_u->getNumberOfComponents(),
             DisplacementDim);
@@ -98,120 +98,40 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanProcess(
             variable_p->getNumberOfComponents());
     }
 
-    // Constitutive relation.
-    // read type;
-    auto const constitutive_relation_config =
-        //! \ogs_file_param{prj__processes__process__HYDRO_MECHANICS__constitutive_relation}
-        config.getConfigSubtree("constitutive_relation");
-
-    auto const type =
-        //! \ogs_file_param{prj__processes__process__HYDRO_MECHANICS__constitutive_relation__type}
-        constitutive_relation_config.peekConfigParameter<std::string>("type");
-
-    std::unique_ptr<MaterialLib::Solids::MechanicsBase<DisplacementDim>>
-        material = nullptr;
-    if (type == "LinearElasticIsotropic")
-    {
-        material =
-            MaterialLib::Solids::createLinearElasticIsotropic<DisplacementDim>(
-                parameters, constitutive_relation_config);
-    }
-    else
-    {
-        OGS_FATAL(
-            "Cannot construct constitutive relation of given type \'%s\'.",
-            type.c_str());
-    }
-
-    // Intrinsic permeability
-    auto& intrinsic_permeability = findParameter<double>(
-        config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__intrinsic_permeability}
-        "intrinsic_permeability", parameters, 1);
-
-    DBUG("Use \'%s\' as intrinsic conductivity parameter.",
-         intrinsic_permeability.name.c_str());
-
-    // Storage coefficient
-    auto& specific_storage = findParameter<double>(
-        config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__specific_storage}
-        "specific_storage", parameters, 1);
-
-    DBUG("Use \'%s\' as storage coefficient parameter.",
-         specific_storage.name.c_str());
-
-    // Fluid viscosity
-    auto& fluid_viscosity = findParameter<double>(
-        config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__fluid_viscosity}
-        "fluid_viscosity", parameters, 1);
-    DBUG("Use \'%s\' as fluid viscosity parameter.",
-         fluid_viscosity.name.c_str());
-
-    // Fluid density
-    auto& fluid_density = findParameter<double>(
-        config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__fluid_density}
-        "fluid_density", parameters, 1);
-    DBUG("Use \'%s\' as fluid density parameter.", fluid_density.name.c_str());
-
-    // Biot coefficient
-    auto& biot_coefficient = findParameter<double>(
-        config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__biot_coefficient}
-        "biot_coefficient", parameters, 1);
-    DBUG("Use \'%s\' as Biot coefficient parameter.",
-         biot_coefficient.name.c_str());
-
     // Porosity
     auto& porosity = findParameter<double>(
         config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__porosity}
+        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__porosity}
         "porosity", parameters, 1);
-    DBUG("Use \'%s\' as porosity parameter.", porosity.name.c_str());
 
-    // Solid density
-    auto& solid_density = findParameter<double>(
+    auto& mu_eff = findParameter<double>(
         config,
-        //! \ogs_file_param_special{prj__processes__process__HYDRO_MECHANICS__solid_density}
-        "solid_density", parameters, 1);
-    DBUG("Use \'%s\' as solid density parameter.", solid_density.name.c_str());
+        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__mu_eff}
+        "mu_eff", parameters, 1);
 
-    // Specific body force
-    Eigen::Matrix<double, DisplacementDim, 1> specific_body_force;
-    {
-        std::vector<double> const b =
-            //! \ogs_file_param{prj__processes__process__HYDRO_MECHANICS__specific_body_force}
-            config.getConfigParameter<std::vector<double>>(
-                "specific_body_force");
-        if (b.size() != DisplacementDim)
-        {
-            OGS_FATAL(
-                "The size of the specific body force vector does not match the "
-                "displacement dimension. Vector size is %d, displacement "
-                "dimension is %d",
-                b.size(), DisplacementDim);
-        }
+    auto& lambda_eff = findParameter<double>(
+        config,
+        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__lambda_eff}
+        "lambda_eff", parameters, 1);
 
-        std::copy_n(b.data(), b.size(), specific_body_force.data());
-    }
+    auto& f_1 = findParameter<double>(
+        config,
+        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__f_1}
+        "f_1", parameters, 1);
+
+    auto& f_2 = findParameter<double>(
+        config,
+        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__f_2}
+        "f_2", parameters, 1);
 
     IncompressibleStokesBrinkmanProcessData<DisplacementDim> process_data{
-        std::move(material),
-        intrinsic_permeability,
-        specific_storage,
-        fluid_viscosity,
-        fluid_density,
-        biot_coefficient,
-        porosity,
-        solid_density,
-        specific_body_force};
+        porosity, mu_eff, lambda_eff, f_1, f_2};
 
     SecondaryVariableCollection secondary_variables;
 
     NumLib::NamedFunctionCaller named_function_caller(
-        {"IncompressibleStokesBrinkman_displacement"});
+        {"IncompressibleStokesBrinkman_pressure",
+         "IncompressibleStokesBrinkman_velocity"});
 
     ProcessLib::createSecondaryVariables(config, secondary_variables,
                                          named_function_caller);
