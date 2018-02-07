@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <OpenGeoSysProject>
-    <!-- <mesh axially_symmetric="true">pipe_quadratic.vtu</mesh> -->
-    <mesh axially_symmetric="true">ic_bc_inlet.vtu</mesh>
+    <mesh axially_symmetric="true">pipe.vtu</mesh>
     <geometry>pipe.gml</geometry>
     <processes>
         <process>
@@ -109,19 +108,6 @@
             <type>Constant</type>
             <value>1</value>
         </parameter>
-
-        <parameter>
-            <name>velocity_0_mesh</name>
-            <type>MeshNode</type>
-            <field_name>v_y</field_name>
-        </parameter>
-
-        <parameter>
-            <name>pressure_0_mesh</name>
-            <type>MeshNode</type>
-            <field_name>initial_pressure</field_name>
-        </parameter>
-
     </parameters>
     <process_variables>
         <process_variable>
@@ -174,8 +160,8 @@
                     <geometry>top</geometry>
 
                     <type>NonuniformDirichlet</type>
-                    <mesh>bc_inlet.vtu</mesh>
-                    <field_name>v_y</field_name>
+                    <mesh>pipe_bc_inlet.vtu</mesh>
+                    <field_name>velocity_y_inlet</field_name>
 
                     <component>1</component>
                     <!-- <parameter>one</parameter> -->
