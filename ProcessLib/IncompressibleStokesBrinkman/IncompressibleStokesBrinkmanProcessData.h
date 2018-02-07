@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "MeshLib/PropertyVector.h"
 #include "ProcessLib/Parameter/Parameter.h"
 
 #include <memory>
@@ -80,6 +81,8 @@ struct IncompressibleStokesBrinkmanProcessData
     Parameter<double> const& f_2;
     double dt = 0.0;
     double t = 0.0;
+
+    MeshLib::PropertyVector<double>* mesh_prop_nodal_p = nullptr;
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };

@@ -14,6 +14,7 @@
 #include "IncompressibleStokesBrinkmanFEM.h"
 
 #include "MaterialLib/SolidModels/KelvinVector.h"
+#include "NumLib/Fem/CoordinatesMapping/NaturalNodeCoordinates.h"
 #include "NumLib/Function/Interpolation.h"
 #include "ProcessLib/CoupledSolutionsForStaggeredScheme.h"
 
@@ -84,12 +85,9 @@ void IncompressibleStokesBrinkmanLocalAssembler<
     VelocityDim>::assemble(double const t, std::vector<double> const& local_x,
                            std::vector<double>& /*local_M_data*/,
                            std::vector<double>& local_K_data,
-                           std::vector<double>& local_rhs_data)
+                           std::vector<double>& /*local_rhs_data*/)
 {
     assert(local_x.size() == pressure_size + velocity_size);
-
-    auto p = Eigen::Map<typename ShapeMatricesTypePressure::template VectorType<
-        pressure_size> const>(local_x.data() + pressure_index, pressure_size);
 
     auto v = Eigen::Map<typename ShapeMatricesTypeVelocity::template VectorType<
         velocity_size> const>(local_x.data() + velocity_index, velocity_size);
@@ -166,12 +164,12 @@ void IncompressibleStokesBrinkmanLocalAssembler<
         local_K
             .template block<velocity_size, velocity_size>(velocity_index,
                                                           velocity_index)
-            .noalias() +=
+            .noalias() -=
             B.transpose() *
                 (2 * mu_eff * B +
                  (lambda_eff - 2.0 * mu_eff / 3.0) * I * I.transpose() * B) *
                 w +
-            H.transpose() * (porosity * (-f_1 - f_2 * v.norm())) * H * w;
+            H.transpose() * (porosity * (f_1 + f_2 * v.norm())) * H * w;
     }
 }
 
@@ -179,11 +177,58 @@ template <typename ShapeFunctionVelocity, typename ShapeFunctionPressure,
           typename IntegrationMethod, int VelocityDim>
 void IncompressibleStokesBrinkmanLocalAssembler<
     ShapeFunctionVelocity, ShapeFunctionPressure, IntegrationMethod,
-    VelocityDim>::postNonLinearSolverConcrete(std::vector<double> const&
-                                                  local_x,
-                                              double const t,
-                                              bool const use_monolithic_scheme)
+    VelocityDim>::
+    postNonLinearSolverConcrete(std::vector<double> const&
+                                /*local_x*/,
+                                double const /*t*/,
+                                bool const /*use_monolithic_scheme*/)
 {
+}
+
+template <typename ShapeFunctionVelocity, typename ShapeFunctionPressure,
+          typename IntegrationMethod, int VelocityDim>
+void IncompressibleStokesBrinkmanLocalAssembler<
+    ShapeFunctionVelocity, ShapeFunctionPressure, IntegrationMethod,
+    VelocityDim>::postTimestepConcrete(std::vector<double> const& local_x)
+{
+    INFO("interpolating p");
+    auto const p =
+        Eigen::Map<typename ShapeMatricesTypeVelocity::template VectorType<
+            pressure_size> const>(local_x.data() + pressure_index,
+                                  pressure_size);
+
+    using FemType = NumLib::TemplateIsoparametric<ShapeFunctionPressure,
+                                                  ShapeMatricesTypePressure>;
+
+    FemType fe(*static_cast<const typename ShapeFunctionPressure::MeshElement*>(
+        &_element));
+    int const number_base_nodes = _element.getNumberOfBaseNodes();
+    int const number_all_nodes = _element.getNumberOfNodes();
+
+    for (int n = 0; n < number_base_nodes; ++n)
+    {
+        std::size_t const global_index = _element.getNodeIndex(n);
+        (*_process_data.mesh_prop_nodal_p)[global_index] = p[n];
+    }
+
+    for (int n = number_base_nodes; n < number_all_nodes; ++n)
+    {
+        // Evaluated at higher order nodes' coordinates.
+        typename ShapeMatricesTypePressure::ShapeMatrices shape_matrices_p{
+            ShapeFunctionPressure::DIM, VelocityDim,
+            ShapeFunctionPressure::NPOINTS};
+
+        fe.computeShapeFunctions(
+            NumLib::NaturalCoordinates<
+                typename ShapeFunctionVelocity::MeshElement>::coordinates[n]
+                .data(),
+            shape_matrices_p, VelocityDim, _is_axially_symmetric);
+
+        auto const& N_p = shape_matrices_p.N;
+
+        std::size_t const global_index = _element.getNodeIndex(n);
+        (*_process_data.mesh_prop_nodal_p)[global_index] = N_p * p;
+    }
 }
 
 }  // namespace IncompressibleStokesBrinkman
