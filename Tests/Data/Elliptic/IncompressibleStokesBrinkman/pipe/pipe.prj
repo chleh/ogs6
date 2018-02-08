@@ -9,11 +9,13 @@
             <integration_order>3</integration_order>
             <dimension>2</dimension>
 
-            <porosity>porosity</porosity>
-            <mu_eff>mu_eff</mu_eff>
-            <lambda_eff>lambda_eff</lambda_eff>
-            <f_1>f_1</f_1>
-            <f_2>f_2</f_2>
+            <bed_radius>            1 </bed_radius>
+
+            <!-- they don't matter here -->
+            <pellet_diameter>       1 </pellet_diameter>
+            <average_darcy_velocity>0.5 </average_darcy_velocity>
+            <fluid_density>         1  </fluid_density>
+            <fluid_viscosity>       1  </fluid_viscosity>
 
             <process_variables>
                 <velocity>darcy_velocity</velocity>

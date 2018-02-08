@@ -8,6 +8,8 @@ import cl_work.pre.via_paraview as pre
 import os
 import subprocess
 
+import numpy as np
+
 OGSPATH = "/home/lehmannc/prog/ogs6/github-chleh-PRs/build-release-eigenlis/bin"
 
 inlet_origin = (0.5, 1.0, 0.0)
@@ -22,18 +24,18 @@ subprocess.check_call([os.path.join(OGSPATH, "generateStructuredMesh"),
     "--ly", "1",
     "--nx", "20",
     "--ny", "20",
-    "-o", "pipe_linear.vtu"
+    "-o", "tmp_pipe_linear.vtu"
     ])
 
 subprocess.check_call([os.path.join(OGSPATH, "createQuadraticMesh"),
-    "-i", "pipe_linear.vtu",
-    "-o", "pipe.vtu"
+    "-i", "tmp_pipe_linear.vtu",
+    "-o", "tmp_pipe_quadratic_raw.vtu"
     ])
 
 
 ### create BCs
 
-reader = ps.XMLUnstructuredGridReader(FileName=["pipe.vtu"])
+reader = ps.XMLUnstructuredGridReader(FileName=["tmp_pipe_quadratic_raw.vtu"])
 
 enumerate_points = pre.EnumeratePoints(Input=reader)
 enumerate_points.CopyArrays = 0 # copy input to output arrays
@@ -54,6 +56,27 @@ ps.SaveData("pipe_bc_inlet.vtu", proxy=profile, DataMode='Binary',
     CompressorType='ZLib')
 
 
+# material ids
+def mat_ids(coords):
+    return np.zeros(coords.shape[0], "i")
+
+mat_ids_filter = pre.CellFunction("MaterialIDs", mat_ids, Input=reader)
+
+# save data
+ps.SaveData("pipe.vtu", proxy=mat_ids_filter, DataMode='Binary',
+    EncodeAppendedData=1,
+    CompressorType='ZLib')
+
+
+xs = np.linspace(0, 1, 1001)
+ys = f_profile_v_y(np.atleast_2d(xs).T)
+A = 2 * np.pi * np.trapz(x=xs, y=xs)
+Q = 2 * np.pi * np.trapz(x=xs, y=xs*ys)
+print("cross sectional area:", A)
+print("total flux:", Q, "m³/m²/s")
+print("average velocity:", Q/A, "m/s")
+
+
 ### create reference solution
 
 def f_profile_v(coords):
@@ -72,3 +95,7 @@ profile_p.CopyArrays = 1
 ps.SaveData("pipe_ref.vtu", proxy=profile_p, DataMode='Binary',
     EncodeAppendedData=1,
     CompressorType='ZLib')
+
+
+os.unlink("tmp_pipe_linear.vtu")
+os.unlink("tmp_pipe_quadratic_raw.vtu")
