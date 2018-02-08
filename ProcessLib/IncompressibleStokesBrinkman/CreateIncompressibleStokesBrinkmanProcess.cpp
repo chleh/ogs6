@@ -98,10 +98,15 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanProcess(
             variable_p->getNumberOfComponents());
     }
 
-    auto& materialIDs = findParameter<int>(
-        config,
-        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__MaterialIDs}
-        "MaterialIDs", parameters, 1);
+    auto const* material_ids =
+        mesh.getProperties().getPropertyVector<int>("MaterialIDs");
+
+    if (!(material_ids &&
+          material_ids->getMeshItemType() == MeshLib::MeshItemType::Cell) &&
+        material_ids->getNumberOfComponents() == 1)
+    {
+        OGS_FATAL("Field `MaterialIDs' is not set up properly.");
+    }
 
     auto const pellet_diameter =
         config.getConfigParameter<double>("pellet_diameter");
@@ -119,8 +124,8 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanProcess(
         config.getConfigParameter<double>("fluid_viscosity");
 
     IncompressibleStokesBrinkmanProcessData<DisplacementDim> process_data{
-        materialIDs,   pellet_diameter, bed_radius, average_darcy_velocity,
-        fluid_density, fluid_viscosity};
+        *material_ids,          pellet_diameter, bed_radius,
+        average_darcy_velocity, fluid_density,   fluid_viscosity};
 
     SecondaryVariableCollection secondary_variables;
 

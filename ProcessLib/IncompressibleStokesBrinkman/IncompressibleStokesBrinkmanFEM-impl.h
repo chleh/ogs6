@@ -136,7 +136,7 @@ void IncompressibleStokesBrinkmanLocalAssembler<
         auto const& I =
             MaterialLib::SolidModels::Invariants<KelvinVectorSize>::identity2;
 
-        auto const mat_id = _process_data.materialIDs(t, x_position)[0];
+        auto const mat_id = _process_data.material_ids[_element.getID()];
 
         double porosity;
         double mu_eff;

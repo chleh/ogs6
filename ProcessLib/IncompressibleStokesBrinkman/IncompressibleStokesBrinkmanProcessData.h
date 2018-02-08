@@ -39,13 +39,13 @@ struct IncompressibleStokesBrinkmanProcessData
     };
 
     IncompressibleStokesBrinkmanProcessData(
-        Parameter<int> const& materialIDs_,
+        MeshLib::PropertyVector<int> const& material_ids_,
         double const pellet_diameter_,
         double const bed_radius_,
         double const average_darcy_velocity_,
         double const fluid_density_,
         double const fluid_viscosity_)
-        : materialIDs(materialIDs_),
+        : material_ids(material_ids_),
           pellet_diameter(pellet_diameter_),
           bed_radius(bed_radius_),
           average_darcy_velocity(average_darcy_velocity_),
@@ -82,7 +82,7 @@ struct IncompressibleStokesBrinkmanProcessData
     void operator=(IncompressibleStokesBrinkmanProcessData&&) = delete;
 #endif
 
-    Parameter<int> const& materialIDs;
+    MeshLib::PropertyVector<int> const& material_ids;
 
     double const pellet_diameter;
     double const bed_radius;
@@ -94,8 +94,6 @@ struct IncompressibleStokesBrinkmanProcessData
     double t = 0.0;
 
     MeshLib::PropertyVector<double>* mesh_prop_nodal_p = nullptr;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
 }  // namespace IncompressibleStokesBrinkman
