@@ -13,6 +13,8 @@
 
 #include "IncompressibleStokesBrinkmanFEM.h"
 
+#include <boost/math/special_functions/pow.hpp>
+
 #include "MaterialLib/SolidModels/KelvinVector.h"
 #include "NumLib/Fem/CoordinatesMapping/NaturalNodeCoordinates.h"
 #include "NumLib/Function/Interpolation.h"
@@ -134,11 +136,42 @@ void IncompressibleStokesBrinkmanLocalAssembler<
         auto const& I =
             MaterialLib::SolidModels::Invariants<KelvinVectorSize>::identity2;
 
-        auto const porosity = _process_data.porosity(t, x_position)[0];
-        auto const mu_eff = _process_data.mu_eff(t, x_position)[0];
-        auto const lambda_eff = _process_data.lambda_eff(t, x_position)[0];
-        auto const f_1 = _process_data.f_1(t, x_position)[0];
-        auto const f_2 = _process_data.f_2(t, x_position)[0];
+        auto const mat_id = _process_data.materialIDs(t, x_position)[0];
+
+        double porosity;
+        double mu_eff;
+        double f_1;
+        double f_2;
+
+        if (mat_id ==
+            IncompressibleStokesBrinkmanProcessData<VelocityDim>::MATID_VOID)
+        {
+            porosity = 1.0;
+            mu_eff = _process_data.fluid_viscosity;
+            f_1 = 0.0;
+            f_2 = 0.0;
+        }
+        else if (mat_id == IncompressibleStokesBrinkmanProcessData<
+                               VelocityDim>::MATID_BED)
+        {
+            auto const r_bed = _process_data.bed_radius;
+            auto const d_pel = _process_data.pellet_diameter;
+            porosity =
+                0.4 + 0.4 * 1.36 * std::exp(-5.0 * (r_bed - x_coord) / d_pel);
+
+            auto const poro3 = boost::math::pow<3>(porosity);
+            auto const mu = _process_data.fluid_viscosity;
+            auto const rho_GR = _process_data.fluid_density;
+            f_1 = 150.0 * boost::math::pow<2>(1.0 - porosity) / poro3 * mu /
+                  d_pel / d_pel;
+            f_2 = 1.75 * (1.0 - porosity) / poro3 * rho_GR / d_pel;
+
+            auto const Re0 =
+                _process_data.average_darcy_velocity * d_pel * rho_GR / mu;
+            mu_eff = 2.0 * mu * std::exp(2e-3 * Re0);
+        }
+        else
+            OGS_FATAL("wrong material id: %d", mat_id);
 
 #if 0
         // K_pp
@@ -167,7 +200,7 @@ void IncompressibleStokesBrinkmanLocalAssembler<
             .noalias() -=
             B.transpose() *
                 (2 * mu_eff * B +
-                 (lambda_eff - 2.0 * mu_eff / 3.0) * I * I.transpose() * B) *
+                 (/*lambda_eff*/ -2.0 * mu_eff / 3.0) * I * I.transpose() * B) *
                 w +
             H.transpose() * (porosity * (f_1 + f_2 * v.norm())) * H * w;
     }

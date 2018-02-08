@@ -98,34 +98,29 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanProcess(
             variable_p->getNumberOfComponents());
     }
 
-    // Porosity
-    auto& porosity = findParameter<double>(
+    auto& materialIDs = findParameter<int>(
         config,
-        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__porosity}
-        "porosity", parameters, 1);
+        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__MaterialIDs}
+        "MaterialIDs", parameters, 1);
 
-    auto& mu_eff = findParameter<double>(
-        config,
-        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__mu_eff}
-        "mu_eff", parameters, 1);
+    auto const pellet_diameter =
+        config.getConfigParameter<double>("pellet_diameter");
+    auto const bed_radius = config.getConfigParameter<double>("bed_radius");
 
-    auto& lambda_eff = findParameter<double>(
-        config,
-        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__lambda_eff}
-        "lambda_eff", parameters, 1);
+    auto const average_darcy_velocity =
+        config.getConfigParameter<double>("average_darcy_velocity");
 
-    auto& f_1 = findParameter<double>(
-        config,
-        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__f_1}
-        "f_1", parameters, 1);
+    // incompressible ==> density is constant
+    auto const fluid_density =
+        config.getConfigParameter<double>("fluid_density");
 
-    auto& f_2 = findParameter<double>(
-        config,
-        //! \ogs_file_param_special{prj__processes__process__INCOMPRESSIBLE_STOKES_BRINKMAN__f_2}
-        "f_2", parameters, 1);
+    // isothermal ==> viscosity is constant
+    auto const fluid_viscosity =
+        config.getConfigParameter<double>("fluid_viscosity");
 
     IncompressibleStokesBrinkmanProcessData<DisplacementDim> process_data{
-        porosity, mu_eff, lambda_eff, f_1, f_2};
+        materialIDs,   pellet_diameter, bed_radius, average_darcy_velocity,
+        fluid_density, fluid_viscosity};
 
     SecondaryVariableCollection secondary_variables;
 

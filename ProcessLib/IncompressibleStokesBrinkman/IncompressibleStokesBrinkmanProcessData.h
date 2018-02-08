@@ -32,17 +32,25 @@ namespace IncompressibleStokesBrinkman
 template <int DisplacementDim>
 struct IncompressibleStokesBrinkmanProcessData
 {
+    enum
+    {
+        MATID_VOID = 0,
+        MATID_BED = 1
+    };
+
     IncompressibleStokesBrinkmanProcessData(
-        Parameter<double> const& porosity_,
-        Parameter<double> const& mu_eff_,
-        Parameter<double> const& lambda_eff_,
-        Parameter<double> const& f_1_,
-        Parameter<double> const& f_2_)
-        : porosity(porosity_),
-          mu_eff(mu_eff_),
-          lambda_eff(lambda_eff_),
-          f_1(f_1_),
-          f_2(f_2_)
+        Parameter<int> const& materialIDs_,
+        double const pellet_diameter_,
+        double const bed_radius_,
+        double const average_darcy_velocity_,
+        double const fluid_density_,
+        double const fluid_viscosity_)
+        : materialIDs(materialIDs_),
+          pellet_diameter(pellet_diameter_),
+          bed_radius(bed_radius_),
+          average_darcy_velocity(average_darcy_velocity_),
+          fluid_density(fluid_density_),
+          fluid_viscosity(fluid_viscosity_)
     {
     }
 
@@ -74,11 +82,14 @@ struct IncompressibleStokesBrinkmanProcessData
     void operator=(IncompressibleStokesBrinkmanProcessData&&) = delete;
 #endif
 
-    Parameter<double> const& porosity;
-    Parameter<double> const& mu_eff;
-    Parameter<double> const& lambda_eff;
-    Parameter<double> const& f_1;
-    Parameter<double> const& f_2;
+    Parameter<int> const& materialIDs;
+
+    double const pellet_diameter;
+    double const bed_radius;
+    double const average_darcy_velocity;
+    double const fluid_density;
+    double const fluid_viscosity;
+
     double dt = 0.0;
     double t = 0.0;
 
