@@ -191,7 +191,7 @@ void IncompressibleStokesBrinkmanLocalAssembler<
         local_K
             .template block<velocity_size, pressure_size>(velocity_index,
                                                           pressure_index)
-            .noalias() += B.transpose() * I * porosity * N_p * w;
+            .noalias() += B.transpose() * I /** porosity*/ * N_p * w;
 
         // K_vv
         local_K
@@ -202,7 +202,7 @@ void IncompressibleStokesBrinkmanLocalAssembler<
                 (2 * mu_eff * B +
                  (/*lambda_eff*/ -2.0 * mu_eff / 3.0) * I * I.transpose() * B) *
                 w +
-            H.transpose() * (porosity * (f_1 + f_2 * v.norm())) * H * w;
+            H.transpose() * (/*porosity **/ (f_1 + f_2 * v.norm())) * H * w;
     }
 }
 
@@ -224,7 +224,6 @@ void IncompressibleStokesBrinkmanLocalAssembler<
     ShapeFunctionVelocity, ShapeFunctionPressure, IntegrationMethod,
     VelocityDim>::postTimestepConcrete(std::vector<double> const& local_x)
 {
-    INFO("interpolating p");
     auto const p =
         Eigen::Map<typename ShapeMatricesTypeVelocity::template VectorType<
             pressure_size> const>(local_x.data() + pressure_index,

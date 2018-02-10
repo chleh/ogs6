@@ -52,6 +52,9 @@ struct IncompressibleStokesBrinkmanProcessData
           fluid_density(fluid_density_),
           fluid_viscosity(fluid_viscosity_)
     {
+        INFO("Reynolds number is %g.",
+             average_darcy_velocity * pellet_diameter * fluid_density /
+                 fluid_viscosity);
     }
 
 #if 0
