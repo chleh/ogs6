@@ -9,11 +9,12 @@
             <integration_order>3</integration_order>
             <dimension>2</dimension>
 
-            <porosity>porosity</porosity>
-            <mu_eff>mu_eff</mu_eff>
-            <lambda_eff>lambda_eff</lambda_eff>
-            <f_1>f_1</f_1>
-            <f_2>f_2</f_2>
+            <bed_radius>            1 </bed_radius>
+
+            <pellet_diameter>       0.2 </pellet_diameter>
+            <average_darcy_velocity>0.5 </average_darcy_velocity>
+            <fluid_density>         1  </fluid_density>
+            <fluid_viscosity>       0.1  </fluid_viscosity>
 
             <process_variables>
                 <velocity>darcy_velocity</velocity>
@@ -31,7 +32,7 @@
                 <convergence_criterion>
                     <type>DeltaX</type>
                     <norm_type>NORM2</norm_type>
-                    <abstol>1e-10</abstol>
+                    <reltol>1e-10</reltol>
                 </convergence_criterion>
                 <time_discretization>
                     <type>BackwardEuler</type>
@@ -60,41 +61,23 @@
     </time_loop>
     <parameters>
         <parameter>
-            <name>porosity</name>
-            <type>Constant</type>
-            <value>1</value>
-        </parameter>
-        <parameter>
-            <name>mu_eff</name>
-            <type>Constant</type>
-            <value>1</value>
-        </parameter>
-        <parameter>
-            <name>lambda_eff</name>
-            <type>Constant</type>
-            <value>0</value>
-        </parameter>
-        <parameter>
-            <name>f_1</name>
-            <type>Constant</type>
-            <value>0</value>
-        </parameter>
-        <parameter>
-            <name>f_2</name>
-            <type>Constant</type>
-            <value>0</value>
-        </parameter>
-
-        <parameter>
             <name>velocity_0</name>
+            <!--
             <type>Constant</type>
             <values>0 0</values>
+-->
+            <type>MeshNode</type>
+            <field_name>initial_velocity</field_name>
         </parameter>
 
         <parameter>
             <name>pressure_0</name>
+            <!--
             <type>Constant</type>
             <value>0</value>
+-->
+            <type>MeshNode</type>
+            <field_name>initial_pressure</field_name>
         </parameter>
 
         <parameter>

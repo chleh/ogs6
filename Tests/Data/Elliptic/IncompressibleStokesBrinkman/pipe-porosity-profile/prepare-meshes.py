@@ -8,13 +8,19 @@ import cl_work.pre.via_paraview as pre
 import os
 import subprocess
 from string import Template
+import numpy as np
 
 OGSPATH = "/home/lehmannc/prog/ogs6/github-chleh-PRs/build-release-eigenlis/bin"
 
 lx = 1.0
-ly = 3.0
-nx = 20
-ny = 60
+
+ly = 5.0
+bed_start = 4.0
+bed_end = 1.0
+
+nx = 80
+ny = int(nx/lx*ly/2)
+mx = 0.95
 
 inlet_origin = (lx/2.0, ly, 0.0)
 inlet_normal = (0.0, 1.0, 0.0)
@@ -66,6 +72,7 @@ subprocess.check_call([os.path.join(OGSPATH, "generateStructuredMesh"),
     "--ly", str(ly),
     "--nx", str(nx),
     "--ny", str(ny),
+    "--mx", str(mx),
     "-o", "tmp_pipe_linear.vtu"
     ])
 
@@ -100,21 +107,43 @@ ps.SaveData("pipe_bc_inlet.vtu", proxy=profile, DataMode='Binary',
 
 ### Material Ids
 
-def compute_mat_ids(coords):
-    print("ly: ", ly)
+def f_mat_ids(coords):
     import numpy as np
     # True=1 if void, False=0 if bed
-    void_cells = (coords[:,1] < ly/3.0) | (coords[:,1] > 2*ly/3.0)
-    void_val = 0
-    bed_val = 1
-    return np.choose(void_cells, (bed_val, void_val))
+    void_cells = (coords[:,1] < bed_end) | (coords[:,1] > bed_start)
+    void_val = int(0)
+    bed_val = int(1)
+    return np.choose(void_cells, (bed_val, void_val)).astype("i")
 
-mat_ids = pre.CellFunction("MaterialIDs", compute_mat_ids, Input=reader)
+mat_ids = pre.CellFunction("MaterialIDs", f_mat_ids, Input=reader)
+
+def f_profile_v(coords):
+    import numpy as np
+    profile = np.zeros((coords.shape[0], 2))
+    profile[:,1] = - (1.0 - coords[:,0]**2)
+    return profile
+
+def f_profile_p(coords):
+    return 4.0 * coords[:,1]
+
+profile_v = pre.NodalFunction("initial_velocity", f_profile_v, Input=mat_ids)
+profile_v.CopyArrays = 1
+profile_p = pre.NodalFunction("initial_pressure", f_profile_p, Input=profile_v)
+profile_p.CopyArrays = 1
 
 # save data
-ps.SaveData("pipe.vtu", proxy=mat_ids, DataMode='Binary',
+ps.SaveData("pipe.vtu", proxy=profile_p, DataMode='Binary',
     EncodeAppendedData=1,
     CompressorType='ZLib')
+
+
+xs = np.linspace(0, lx, 1001)
+ys = f_profile_v_y(np.atleast_2d(xs).T)
+A = 2 * np.pi * np.trapz(x=xs, y=xs)
+Q = 2 * np.pi * np.trapz(x=xs, y=xs*ys)
+print("cross sectional area:", A)
+print("total flux:", Q, "m³/m²/s")
+print("average velocity:", Q/A, "m/s")
 
 
 ### create reference solution
@@ -136,3 +165,7 @@ if False:
     ps.SaveData("pipe_ref.vtu", proxy=profile_p, DataMode='Binary',
         EncodeAppendedData=1,
         CompressorType='ZLib')
+
+
+os.unlink("tmp_pipe_linear.vtu")
+os.unlink("tmp_pipe_quadratic_raw.vtu")
