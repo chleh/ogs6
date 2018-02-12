@@ -10,12 +10,12 @@
             <dimension>2</dimension>
 
             <bed_radius>            1 </bed_radius>
+            <fluid_viscosity>       mu  </fluid_viscosity>
 
             <!-- they don't matter here -->
             <pellet_diameter>       1   </pellet_diameter>
             <average_darcy_velocity>0.5 </average_darcy_velocity>
-            <fluid_density>         1   </fluid_density>
-            <fluid_viscosity>       1   </fluid_viscosity>
+            <fluid_density>         rho </fluid_density>
 
             <process_variables>
                 <velocity>darcy_velocity</velocity>
@@ -62,29 +62,15 @@
     </time_loop>
     <parameters>
         <parameter>
-            <name>porosity</name>
+            <name>mu</name>
             <type>Constant</type>
             <value>1</value>
         </parameter>
+
         <parameter>
-            <name>mu_eff</name>
+            <name>rho</name>
             <type>Constant</type>
             <value>1</value>
-        </parameter>
-        <parameter>
-            <name>lambda_eff</name>
-            <type>Constant</type>
-            <value>0</value>
-        </parameter>
-        <parameter>
-            <name>f_1</name>
-            <type>Constant</type>
-            <value>0</value>
-        </parameter>
-        <parameter>
-            <name>f_2</name>
-            <type>Constant</type>
-            <value>0</value>
         </parameter>
 
         <parameter>
@@ -103,12 +89,6 @@
             <name>zero</name>
             <type>Constant</type>
             <value>0</value>
-        </parameter>
-
-        <parameter>
-            <name>one</name>
-            <type>Constant</type>
-            <value>1</value>
         </parameter>
     </parameters>
     <process_variables>
@@ -166,7 +146,6 @@
                     <field_name>velocity_y_inlet</field_name>
 
                     <component>1</component>
-                    <!-- <parameter>one</parameter> -->
                 </boundary_condition>
             </boundary_conditions>
         </process_variable>
