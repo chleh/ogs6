@@ -43,8 +43,8 @@ struct IncompressibleStokesBrinkmanProcessData
         double const pellet_diameter_,
         double const bed_radius_,
         double const average_darcy_velocity_,
-        double const fluid_density_,
-        double const fluid_viscosity_)
+        ProcessLib::Parameter<double> const& fluid_density_,
+        ProcessLib::Parameter<double> const& fluid_viscosity_)
         : material_ids(material_ids_),
           pellet_diameter(pellet_diameter_),
           bed_radius(bed_radius_),
@@ -52,9 +52,6 @@ struct IncompressibleStokesBrinkmanProcessData
           fluid_density(fluid_density_),
           fluid_viscosity(fluid_viscosity_)
     {
-        INFO("Reynolds number is %g.",
-             average_darcy_velocity * pellet_diameter * fluid_density /
-                 fluid_viscosity);
     }
 
 #if 0
@@ -90,8 +87,8 @@ struct IncompressibleStokesBrinkmanProcessData
     double const pellet_diameter;
     double const bed_radius;
     double const average_darcy_velocity;
-    double const fluid_density;
-    double const fluid_viscosity;
+    ProcessLib::Parameter<double> const& fluid_density;
+    ProcessLib::Parameter<double> const& fluid_viscosity;
 
     double dt = 0.0;
     double t = 0.0;

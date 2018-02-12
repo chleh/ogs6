@@ -115,13 +115,11 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanProcess(
     auto const average_darcy_velocity =
         config.getConfigParameter<double>("average_darcy_velocity");
 
-    // incompressible ==> density is constant
-    auto const fluid_density =
-        config.getConfigParameter<double>("fluid_density");
+    auto const& fluid_density =
+        findParameter<double>(config, "fluid_density", parameters, 1);
 
-    // isothermal ==> viscosity is constant
-    auto const fluid_viscosity =
-        config.getConfigParameter<double>("fluid_viscosity");
+    auto const& fluid_viscosity =
+        findParameter<double>(config, "fluid_viscosity", parameters, 1);
 
     IncompressibleStokesBrinkmanProcessData<DisplacementDim> process_data{
         *material_ids,          pellet_diameter, bed_radius,

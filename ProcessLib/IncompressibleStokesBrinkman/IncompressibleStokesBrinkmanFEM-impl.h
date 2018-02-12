@@ -147,7 +147,7 @@ void IncompressibleStokesBrinkmanLocalAssembler<
             IncompressibleStokesBrinkmanProcessData<VelocityDim>::MATID_VOID)
         {
             porosity = 1.0;
-            mu_eff = _process_data.fluid_viscosity;
+            mu_eff = _process_data.fluid_viscosity(t, x_position)[0];
             f_1 = 0.0;
             f_2 = 0.0;
         }
@@ -160,8 +160,8 @@ void IncompressibleStokesBrinkmanLocalAssembler<
                 0.4 + 0.4 * 1.36 * std::exp(-5.0 * (r_bed - x_coord) / d_pel);
 
             auto const poro3 = boost::math::pow<3>(porosity);
-            auto const mu = _process_data.fluid_viscosity;
-            auto const rho_GR = _process_data.fluid_density;
+            auto const mu = _process_data.fluid_viscosity(t, x_position)[0];
+            auto const rho_GR = _process_data.fluid_density(t, x_position)[0];
             f_1 = 150.0 * boost::math::pow<2>(1.0 - porosity) / poro3 * mu /
                   d_pel / d_pel;
             f_2 = 1.75 * (1.0 - porosity) / poro3 * rho_GR / d_pel;
