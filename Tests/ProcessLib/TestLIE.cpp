@@ -7,6 +7,8 @@
  *
  */
 
+#if 0
+
 #include <cmath>
 #include <memory>
 
@@ -161,3 +163,5 @@ TEST(LIE, rotationMatrixXY)
     ASSERT_NEAR(-1./std::sqrt(2), R(1,0), eps);
     ASSERT_NEAR(1./std::sqrt(2), R(1,1), eps);
 }
+
+#endif
