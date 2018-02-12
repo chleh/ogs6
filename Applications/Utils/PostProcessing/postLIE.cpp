@@ -6,6 +6,8 @@
  *              http://www.opengeosys.org/LICENSE.txt
  */
 
+#if 0
+
 #include <map>
 #include <memory>
 #include <vector>
@@ -102,8 +104,11 @@ void postPVD(std::string const& in_pvd_filename,
 
 }  // unnamed namespace
 
+#endif
+
 int main(int argc, char* argv[])
 {
+#if 0
     ApplicationsLib::LogogSetup logog_setup;
 
     TCLAP::CmdLine cmd("Post-process results of the LIE approach", ' ', "0.1");
@@ -128,4 +133,5 @@ int main(int argc, char* argv[])
                   in_file_ext.c_str());
 
     return EXIT_SUCCESS;
+#endif
 }
