@@ -138,16 +138,26 @@ void IncompressibleStokesBrinkmanLocalAssembler<
 
         auto const mat_id = _process_data.material_ids[_element.getID()];
 
+        auto const mu = _process_data.fluid_viscosity(t, x_position)[0];
         double porosity;
         double mu_eff;
         double f_1;
         double f_2;
 
+        if (_element.getID() == 0 && ip == 0)
+        {
+            auto const rho_GR = _process_data.fluid_density(t, x_position)[0];
+            auto const Re0 = _process_data.average_darcy_velocity *
+                             _process_data.pellet_diameter * rho_GR / mu;
+
+            INFO("Reynolds number is %g.", Re0);
+        }
+
         if (mat_id ==
             IncompressibleStokesBrinkmanProcessData<VelocityDim>::MATID_VOID)
         {
             porosity = 1.0;
-            mu_eff = _process_data.fluid_viscosity(t, x_position)[0];
+            mu_eff = mu;
             f_1 = 0.0;
             f_2 = 0.0;
         }
@@ -156,19 +166,18 @@ void IncompressibleStokesBrinkmanLocalAssembler<
         {
             auto const r_bed = _process_data.bed_radius;
             auto const d_pel = _process_data.pellet_diameter;
+            auto const poro_inf = _process_data.homogeneous_porosity;
             porosity =
-                0.4 + 0.4 * 1.36 * std::exp(-5.0 * (r_bed - x_coord) / d_pel);
+                poro_inf +
+                poro_inf * 1.36 * std::exp(-5.0 * (r_bed - x_coord) / d_pel);
 
             auto const poro3 = boost::math::pow<3>(porosity);
-            auto const mu = _process_data.fluid_viscosity(t, x_position)[0];
             auto const rho_GR = _process_data.fluid_density(t, x_position)[0];
             f_1 = 150.0 * boost::math::pow<2>(1.0 - porosity) / poro3 * mu /
                   d_pel / d_pel;
             f_2 = 1.75 * (1.0 - porosity) / poro3 * rho_GR / d_pel;
 
-            auto const Re0 =
-                _process_data.average_darcy_velocity * d_pel * rho_GR / mu;
-            mu_eff = 2.0 * mu * std::exp(2e-3 * Re0);
+            mu_eff = (*_process_data.effective_fluid_viscosity)(mu, rho_GR);
         }
         else
             OGS_FATAL("wrong material id: %d", mat_id);

@@ -115,15 +115,23 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanProcess(
     auto const average_darcy_velocity =
         config.getConfigParameter<double>("average_darcy_velocity");
 
+    auto const homogeneous_porosity =
+        config.getConfigParameter<double>("homogeneous_porosity");
+
     auto const& fluid_density =
         findParameter<double>(config, "fluid_density", parameters, 1);
 
     auto const& fluid_viscosity =
         findParameter<double>(config, "fluid_viscosity", parameters, 1);
 
+    auto effective_fluid_viscosity = createEffectiveFluidViscosity(
+        config.getConfigSubtree("effective_fluid_viscosity"));
+
     IncompressibleStokesBrinkmanProcessData<DisplacementDim> process_data{
-        *material_ids,          pellet_diameter, bed_radius,
-        average_darcy_velocity, fluid_density,   fluid_viscosity};
+        *material_ids,        pellet_diameter,
+        bed_radius,           average_darcy_velocity,
+        homogeneous_porosity, fluid_density,
+        fluid_viscosity,      std::move(effective_fluid_viscosity)};
 
     SecondaryVariableCollection secondary_variables;
 
