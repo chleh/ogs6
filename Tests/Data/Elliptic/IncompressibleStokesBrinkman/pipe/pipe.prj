@@ -16,6 +16,11 @@
             <pellet_diameter>       1   </pellet_diameter>
             <average_darcy_velocity>0.5 </average_darcy_velocity>
             <fluid_density>         rho </fluid_density>
+            <homogeneous_porosity> 0.37 </homogeneous_porosity>
+
+            <effective_fluid_viscosity>
+                <type>Identity</type>
+            </effective_fluid_viscosity>
 
             <process_variables>
                 <velocity>darcy_velocity</velocity>
