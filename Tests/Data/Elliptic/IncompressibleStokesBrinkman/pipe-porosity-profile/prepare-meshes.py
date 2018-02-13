@@ -10,17 +10,10 @@ import subprocess
 from string import Template
 import numpy as np
 
-OGSPATH = "/home/lehmannc/prog/ogs6/github-chleh-PRs/build-release-eigenlis/bin"
+from pipe_params import *
+import create_mesh
 
-lx = 1.0
-
-ly = 5.0
-bed_start = 4.0
-bed_end = 1.0
-
-nx = 80
-ny = int(nx/lx*ly/2)
-mx = 0.95
+OGSPATH = "/home/lehmannc/prog/ogs6/github-chleh-PRs/build-release-eigen/bin"
 
 inlet_origin = (lx/2.0, ly, 0.0)
 inlet_normal = (0.0, 1.0, 0.0)
@@ -66,15 +59,18 @@ with open("pipe.gml", "w") as fh:
 
 ### create mesh
 
-subprocess.check_call([os.path.join(OGSPATH, "generateStructuredMesh"),
-    "-e", "quad",
-    "--lx", str(lx),
-    "--ly", str(ly),
-    "--nx", str(nx),
-    "--ny", str(ny),
-    "--mx", str(mx),
-    "-o", "tmp_pipe_linear.vtu"
-    ])
+if False:
+    subprocess.check_call([os.path.join(OGSPATH, "generateStructuredMesh"),
+        "-e", "quad",
+        "--lx", str(lx),
+        "--ly", str(ly),
+        "--nx", str(nx),
+        "--ny", str(ny),
+        "--mx", str(mx),
+        "-o", "tmp_pipe_linear.vtu"
+        ])
+
+create_mesh.create_mesh("tmp_pipe_linear.vtu")
 
 subprocess.check_call([os.path.join(OGSPATH, "createQuadraticMesh"),
     "-i", "tmp_pipe_linear.vtu",
@@ -124,6 +120,7 @@ def f_profile_v(coords):
     return profile
 
 def f_profile_p(coords):
+    # 4 * mu * z
     return 4.0 * coords[:,1]
 
 profile_v = pre.NodalFunction("initial_velocity", f_profile_v, Input=mat_ids)
