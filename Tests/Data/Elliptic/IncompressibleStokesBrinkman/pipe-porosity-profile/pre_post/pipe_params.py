@@ -2,7 +2,7 @@ pellet_diameter = 0.5
 
 lx = 1
 ly = 7.0
-average_cell_size = 0.1
+average_cell_size = 0.2
 
 bed_start = 5.5
 bed_end = 1.5

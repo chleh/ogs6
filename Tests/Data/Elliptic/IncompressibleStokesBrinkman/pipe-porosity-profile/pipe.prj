@@ -1,3 +1,11 @@
+<!--
+README
+
+in this test the Reynolds number is 1
+compare velocity profile to
+
+Winterberg, M., Tsotsas, E., 2000. Impact of tube-to-particle-diameter ratio on pressure drop in packed beds. AIChE Journal 46, 1084–1088. doi:10.1002/aic.690460519
+-->
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <OpenGeoSysProject>
     <mesh axially_symmetric="true">pipe.vtu</mesh>
@@ -84,7 +92,7 @@
         <curve>
             <name>rho_of_t</name>
             <coords>0   1   2   3   4  </coords>
-            <values>1e1 1e1 1e2 1e3 1e4</values>
+            <values>1e1 1e1 1e1 1e1 1e1</values>
         </curve>
     </curves>
     <parameters>

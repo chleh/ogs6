@@ -21,7 +21,7 @@ rs_scaled = (r_bed - rs)/d_pel
 # ref data
 if False:
     A = pandas.read_csv("velocity-profile-VDI-M7-Re-1.csv")
-elif False:
+elif True:
     A = pandas.read_csv("WiTso2000-eta_f-Re1.csv")
 else:
     A = pandas.read_csv("WiTso2000-eta_f-Re1000.csv")
