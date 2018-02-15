@@ -22,7 +22,8 @@ else()
         COMMAND bash -c ${TESTER_COMMAND}
         WORKING_DIRECTORY ${case_path}
         RESULT_VARIABLE EXIT_CODE
-        OUTPUT_VARIABLE OUTPUT
+        # OUTPUT_VARIABLE OUTPUT
+        OUTPUT_FILE ${STDOUT_FILE_PATH}
     )
 endif()
 

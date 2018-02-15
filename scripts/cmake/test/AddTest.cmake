@@ -46,6 +46,7 @@ function (AddTest)
     file(MAKE_DIRECTORY ${AddTest_BINARY_PATH})
     file(TO_NATIVE_PATH "${AddTest_BINARY_PATH}" AddTest_BINARY_PATH_NATIVE)
     set(AddTest_STDOUT_FILE_PATH "${AddTest_BINARY_PATH}/${AddTest_NAME}_stdout.log")
+    set(AddTest_TEST_STDOUT_FILE_PATH "${AddTest_BINARY_PATH}/${AddTest_NAME}_test_stdout.log")
 
     # set defaults
     if(NOT AddTest_EXECUTABLE)
@@ -242,6 +243,7 @@ Use six arguments version of AddTest with absolute and relative tolerances")
         -DBINARY_PATH=${AddTest_BINARY_PATH}
         -DVTKJS_OUTPUT_PATH=${PROJECT_SOURCE_DIR}/web/static/vis/${AddTest_PATH}
         "-DVIS_FILES=${AddTest_VIS}"
+        -DSTDOUT_FILE_PATH=${AddTest_TEST_STDOUT_FILE_PATH}
         -P ${PROJECT_SOURCE_DIR}/scripts/cmake/test/AddTestTester.cmake
     )
     set_tests_properties(${TESTER_NAME} PROPERTIES DEPENDS ${TEST_NAME})
