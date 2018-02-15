@@ -2,6 +2,8 @@
 README
 
 in this test the Reynolds number is 1
+ratio pipe diameter to pellet diameter is 4
+
 compare velocity profile to
 
 Winterberg, M., Tsotsas, E., 2000. Impact of tube-to-particle-diameter ratio on pressure drop in packed beds. AIChE Journal 46, 1084–1088. doi:10.1002/aic.690460519
@@ -85,7 +87,7 @@ Winterberg, M., Tsotsas, E., 2000. Impact of tube-to-particle-diameter ratio on 
                     <each_steps>1</each_steps>
                 </pair>
             </timesteps>
-            <output_iteration_results>true</output_iteration_results>
+            <!-- <output_iteration_results>true</output_iteration_results> -->
         </output>
     </time_loop>
     <curves>
