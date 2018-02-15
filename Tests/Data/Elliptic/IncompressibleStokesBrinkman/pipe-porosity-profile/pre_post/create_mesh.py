@@ -1,6 +1,7 @@
 #!/usr/bin/env pvpython
 
 import vtk
+from vtk.util.numpy_support import vtk_to_numpy
 import numpy as np
 
 from pipe_params import *
@@ -70,14 +71,51 @@ def create_mesh(file_name):
     ys = patch_symm(ys, bed_end - refine_width_bed, bed_end + refine_width_bed,
             "lin", average_cell_size, average_cell_size/refine_factor_bed)
 
-    # print(ys)
+    print("x range", min(xs), max(xs))
+    print("y range", min(ys), max(ys))
     # print(np.diff(ys))
 
     assert all(np.diff(xs) > coord_tol)
     assert all(np.diff(ys) > coord_tol)
 
+    create_quad_mesh(xs, ys, file_name)
+    # create_tri_mesh(xs, ys, file_name)
 
 
+def create_tri_mesh(xs, ys, file_name):
+    nx = len(xs) - 1
+    ny = len(ys) - 1
+
+    points = vtk.vtkPoints()
+    points.SetDataTypeToDouble()
+    i = 0
+    for y in ys:
+        for x in xs:
+            points.InsertPoint(i, (x, y, 0))
+            i += 1
+
+    ugrid = vtk.vtkUnstructuredGrid()
+    ugrid.Allocate(2 * nx * ny)
+
+    for iy in xrange(ny):
+        for ix in xrange(nx):
+            v0 = iy*(nx + 1) + ix
+            v1 = v0 + 1
+            v2 = v0 + nx+1
+            v3 = v1 + nx+1
+
+            ugrid.InsertNextCell(vtk.VTK_TRIANGLE, 3, (v0, v1, v3))
+            ugrid.InsertNextCell(vtk.VTK_TRIANGLE, 3, (v0, v3, v2))
+
+    ugrid.SetPoints(points)
+
+    writer = vtk.vtkXMLUnstructuredGridWriter()
+    # writer.SetDataMode(vtk.vtkXMLWriter.Ascii)
+    writer.SetFileName(file_name)
+    writer.SetInputDataObject(ugrid)
+    writer.Write()
+
+def create_quad_mesh(xs, ys, file_name):
     # Create a rectilinear grid by defining three arrays specifying the
     # coordinates in the x-y-z directions.
     xCoords = vtk.vtkDoubleArray()
@@ -101,10 +139,20 @@ def create_mesh(file_name):
     rgrid.SetYCoordinates(yCoords)
     rgrid.SetZCoordinates(zCoords)
 
+    print("last point in rgrid", rgrid.GetPoint(len(xs)*len(ys)-1))
+
     if True:
         # convert to unstructured grid
         f_append = vtk.vtkAppendFilter()
+        f_append.SetOutputPointsPrecision(1) # double precision
         f_append.SetInputDataObject(rgrid)
+
+        f_append.Update()
+        print(f_append.GetOutput().GetPoints())
+        print("last point in appended grid:",
+                f_append.GetOutput().GetPoints().GetPoint(len(xs) * len(ys) - 1))
+        points = vtk_to_numpy(f_append.GetOutput().GetPoints().GetData())
+        print(np.min(points, axis=0), np.max(points, axis=0))
 
         writer = vtk.vtkXMLUnstructuredGridWriter()
         writer.SetFileName(file_name)

@@ -6,6 +6,11 @@ import paraview
 import numpy as np
 import math
 
+import sys
+
+pvd_file = sys.argv[1]
+velocity_field = sys.argv[2]
+
 #### import the simple module from the paraview
 from paraview.simple import *
 #### disable automatic camera reset on 'Show'
@@ -15,7 +20,7 @@ paraview.simple._DisableFirstRenderCameraReset()
 view = GetActiveViewOrCreate('RenderView')
 
 # create a new 'PVD Reader'
-reader = PVDReader(FileName="out/pipe_pcs_0.pvd")
+reader = PVDReader(FileName=pvd_file)
 
 slice_ = Slice(Input=reader)
 slice_.SliceType = 'Plane'
@@ -25,7 +30,7 @@ slice_.SliceType.Normal = (0.0, 1.0, 0.0)
 # create a new 'Calculator'
 v_times_r = Calculator(Input=slice_)
 v_times_r.ResultArrayName = 'v_times_r'
-v_times_r.Function = '-2.0*3.14159265358979323846*coordsX*darcy_velocity_Y'
+v_times_r.Function = '-2.0*3.14159265358979323846*coordsX * {}_Y'.format(velocity_field)
 
 # create a new 'Integrate Variables'
 integrateVariables1 = IntegrateVariables(Input=v_times_r)
@@ -39,6 +44,7 @@ print()
 print("ideal:", math.pi/2.0)
 
 for t in ts:
+    print()
     view.ViewTime = t
 
     for y in np.arange(0.25, 5.0, 0.5):

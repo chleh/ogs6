@@ -4,57 +4,60 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import pandas
+import sys
+import os
+DIR = os.path.join(os.path.dirname(__file__), "ref")
+
+field_name = sys.argv[1]
+ref = sys.argv[2]
+
+# from pipe_params import *
 
 A = pandas.read_csv("plot.csv")
 
 v0 = 0.5
-r_bed = 1
-d_pel = 0.5
 
 rs = A["Points:0"]
-vys = A["darcy_velocity:1"]
-
-vys_scaled = -vys / v0
-rs_scaled = (r_bed - rs)/d_pel
-
+vys = A[field_name + ":1"]
 
 # ref data
-if False:
-    A = pandas.read_csv("velocity-profile-VDI-M7-Re-1.csv")
-elif True:
-    A = pandas.read_csv("WiTso2000-eta_f-Re1.csv")
+if ref == "vdi-re1":
+    A = pandas.read_csv(os.path.join(DIR, "velocity-profile-VDI-M7-Re-1.csv"))
+    ddp = 10
+elif ref == "witso-ddp4-re1":
+    A = pandas.read_csv(os.path.join(DIR, "WiTso2000-eta_f-Re1.csv"))
+    ddp = 4
+elif ref == "witso-ddp20-re1":
+    A = pandas.read_csv(os.path.join(DIR, "WiTso2000-Re1-Ddp-20.csv"))
+    ddp = 20
+elif ref == "witso-ddp4-eff-re1":
+    A = pandas.read_csv(os.path.join(DIR, "WiTso2000-Re1-eta_eff.csv"))
+    ddp = 4
+elif ref == "witso-ddp4-re1000":
+    A = pandas.read_csv(os.path.join(DIR, "WiTso2000-eta_f-Re1000.csv"))
+    ddp = 4
 else:
-    A = pandas.read_csv("WiTso2000-eta_f-Re1000.csv")
+    assert False
+
+bed_radius = max(rs)
+pellet_diameter = 2*bed_radius / ddp
+
+vys_scaled = -vys / v0
+rs_scaled = (bed_radius - rs)/pellet_diameter
+
 rs_ref = A["x"]
 vys_ref = A["v"]
 
 fig, ax = plt.subplots()
 
-ax.plot(rs_scaled, vys_scaled)
-ax.plot(rs_ref, vys_ref)
+ax.plot(rs_scaled, vys_scaled, label="num")
+ax.plot(rs_ref, vys_ref, label="ref")
 
 ax.set_xlim(0,2)
-ax.set_ylim(0,4)
+# ax.set_ylim(0,4)
 ax.axhline(1)
+ax.legend()
 
 fig.savefig("plot.png")
 
 plt.close(fig)
-
-
-fig, ax = plt.subplots()
-
-drs = np.diff(rs_scaled)
-dvys = np.abs(np.diff(vys_scaled))
-
-ax.plot(rs_scaled[1:], dvys/drs)
-
-fig.savefig("plot-grad-vy.png")
-
-plt.close(fig)
-
-if rs_scaled[0] != r_bed/d_pel:
-    print(rs_scaled[0], r_bed/d_pel)
-    print(rs_scaled)
-
-print(np.trapz(x=rs_scaled, y=(r_bed - rs_scaled*d_pel)  * vys_scaled))

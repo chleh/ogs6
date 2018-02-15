@@ -13,6 +13,8 @@ import numpy as np
 from pipe_params import *
 import create_mesh
 
+import inspect
+
 OGSPATH = "/home/lehmannc/prog/ogs6/github-chleh-PRs/build-release-eigen/bin"
 
 inlet_origin = (lx/2.0, ly, 0.0)
@@ -70,6 +72,7 @@ if False:
         "-o", "tmp_pipe_linear.vtu"
         ])
 
+print("X")
 create_mesh.create_mesh("tmp_pipe_linear.vtu")
 
 subprocess.check_call([os.path.join(OGSPATH, "createQuadraticMesh"),
@@ -90,13 +93,24 @@ slice1 = pre.PlaneSlice(inlet_origin, inlet_normal, Input=enumerate_points)
 to_unstructured = pre.AsUnstructuredGrid(Input=slice1)
 
 def f_profile_v_y(coords):
-    return - (1.0 - coords[:,0]**2)
+    return - 2.0 * average_darcy_velocity * (1.0 - coords[:,0]**2 / bed_radius**2)
 
 profile = pre.NodalFunction("velocity_y_inlet", f_profile_v_y, Input=to_unstructured)
 profile.CopyArrays = 1 # copy input to output arrays
 
+check_mesh = ps.ProgrammableFilter(Input=profile)
+def do_check_mesh():
+    import numpy as np
+    from vtk.util.numpy_support import vtk_to_numpy
+    data = self.GetInputDataObject(0, 0)
+    coords = vtk_to_numpy(data.GetPoints().GetData())
+    print(np.max(coords, axis=0))
+check_mesh.Script = inspect.getsource(do_check_mesh) + "\n\ndo_check_mesh()"
+check_mesh.CopyArrays = 1
+
+
 # save data
-ps.SaveData("pipe_bc_inlet.vtu", proxy=profile, DataMode='Binary',
+ps.SaveData("pipe_bc_inlet.vtu", proxy=check_mesh, DataMode='Binary',
     EncodeAppendedData=1,
     CompressorType='ZLib')
 
@@ -116,7 +130,7 @@ mat_ids = pre.CellFunction("MaterialIDs", f_mat_ids, Input=reader)
 def f_profile_v(coords):
     import numpy as np
     profile = np.zeros((coords.shape[0], 2))
-    profile[:,1] = - (1.0 - coords[:,0]**2)
+    profile[:,1] = - 2.0 * average_darcy_velocity * (1.0 - coords[:,0]**2 / bed_radius**2)
     return profile
 
 def f_profile_p(coords):
@@ -138,7 +152,7 @@ xs = np.linspace(0, lx, 1001)
 ys = f_profile_v_y(np.atleast_2d(xs).T)
 A = 2 * np.pi * np.trapz(x=xs, y=xs)
 Q = 2 * np.pi * np.trapz(x=xs, y=xs*ys)
-print("cross sectional area:", A)
+print("cross sectional area:", A, "expected:", np.pi*bed_radius**2)
 print("total flux:", Q, "m³/m²/s")
 print("average velocity:", Q/A, "m/s")
 
@@ -164,5 +178,6 @@ if False:
         CompressorType='ZLib')
 
 
-os.unlink("tmp_pipe_linear.vtu")
-os.unlink("tmp_pipe_quadratic_raw.vtu")
+if False:
+    os.unlink("tmp_pipe_linear.vtu")
+    os.unlink("tmp_pipe_quadratic_raw.vtu")
