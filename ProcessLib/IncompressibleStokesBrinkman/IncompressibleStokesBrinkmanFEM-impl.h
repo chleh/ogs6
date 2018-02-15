@@ -91,8 +91,10 @@ void IncompressibleStokesBrinkmanLocalAssembler<
 {
     assert(local_x.size() == pressure_size + velocity_size);
 
-    auto v = Eigen::Map<typename ShapeMatricesTypeVelocity::template VectorType<
-        velocity_size> const>(local_x.data() + velocity_index, velocity_size);
+    auto nodal_v =
+        Eigen::Map<typename ShapeMatricesTypeVelocity::template VectorType<
+            velocity_size> const>(local_x.data() + velocity_index,
+                                  velocity_size);
 
     auto local_K = MathLib::createZeroedMatrix<
         typename ShapeMatricesTypeVelocity::template MatrixType<
@@ -202,6 +204,7 @@ void IncompressibleStokesBrinkmanLocalAssembler<
                                                           pressure_index)
             .noalias() += B.transpose() * I /** porosity*/ * N_p * w;
 
+        Eigen::Matrix<double, VelocityDim, 1> v = H * nodal_v;
         // K_vv
         local_K
             .template block<velocity_size, velocity_size>(velocity_index,
