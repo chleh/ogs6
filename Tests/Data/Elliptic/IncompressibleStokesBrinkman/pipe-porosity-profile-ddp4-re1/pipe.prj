@@ -94,7 +94,7 @@ Winterberg, M., Tsotsas, E., 2000. Impact of tube-to-particle-diameter ratio on 
         <curve>
             <name>rho_of_t</name>
             <coords>0   1   2   3   4  </coords>
-            <values>1e1 1e1 1e1 1e1 1e1</values>
+            <values>4e0 4e0 4e0 4e0 4e0</values>
         </curve>
     </curves>
     <parameters>
@@ -106,7 +106,7 @@ Winterberg, M., Tsotsas, E., 2000. Impact of tube-to-particle-diameter ratio on 
             <parameter>one</parameter>
 -->
             <type>Constant</type>
-            <value>2.5</value>
+            <value>1</value>
         </parameter>
 
         <parameter>
