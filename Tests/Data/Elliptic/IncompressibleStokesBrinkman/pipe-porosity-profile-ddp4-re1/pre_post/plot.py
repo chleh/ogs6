@@ -21,7 +21,7 @@ rs = A["Points:0"]
 vys = A[field_name + ":1"]
 
 # ref data
-if ref == "vdi-re1":
+if ref == "vdi-ddp10-re1":
     A = pandas.read_csv(os.path.join(DIR, "velocity-profile-VDI-M7-Re-1.csv"))
     ddp = 10
 elif ref == "witso-ddp4-re1":
@@ -40,6 +40,7 @@ else:
     assert False
 
 bed_radius = max(rs)
+print("bed radius is", bed_radius)
 pellet_diameter = 2*bed_radius / ddp
 
 vys_scaled = -vys / v0
