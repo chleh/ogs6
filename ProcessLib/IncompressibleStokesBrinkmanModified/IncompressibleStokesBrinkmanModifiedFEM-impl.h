@@ -161,6 +161,7 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
                              _process_data.pellet_diameter * rho_GR / mu;
 
             INFO("Reynolds number is %g.", Re0);
+            INFO("Weight is %g.", w);
         }
 
         if (mat_id == IncompressibleStokesBrinkmanModifiedProcessData<
@@ -203,7 +204,8 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
         local_K
             .template block<velocity_size, pressure_size>(velocity_index,
                                                           pressure_index)
-            .noalias() += B.transpose() * I * porosity * N_p * w;
+            .noalias() += B.transpose() * I * (porosity * w) * N_p +
+                          H.transpose() * (grad_porosity * w) * N_p;
 
         Eigen::Matrix<double, VelocityDim, 1> v = H * nodal_v;
         auto const& P_dev = MathLib::KelvinVector::Invariants<
@@ -217,6 +219,7 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
             B.transpose() * (2 * mu_eff * w) * P_dev * B +
             H.transpose() * (porosity * (f_1 + f_2 * v.norm()) * w) * H;
 
+#if 1
         // rhs_v
         auto const two_sym_v_grad_phi = [&]() {
             Eigen::Matrix3d m = Eigen::Matrix3d::Zero();
@@ -226,7 +229,8 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
             return MathLib::KelvinVector::tensorToKelvin<VelocityDim>(m);
         };
         local_rhs.template segment<velocity_size>(velocity_index).noalias() +=
-            mu_eff * B.transpose() * P_dev * two_sym_v_grad_phi();
+            mu_eff * B.transpose() * P_dev * two_sym_v_grad_phi() * w;
+#endif
     }
 }
 

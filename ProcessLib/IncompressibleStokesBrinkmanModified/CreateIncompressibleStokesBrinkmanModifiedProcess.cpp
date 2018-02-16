@@ -31,7 +31,8 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanModifiedProcess(
     BaseLib::ConfigTree const& config)
 {
     //! \ogs_file_param{prj__processes__process__type}
-    config.checkConfigParameter("type", "INCOMPRESSIBLE_STOKES_BRINKMAN");
+    config.checkConfigParameter("type",
+                                "INCOMPRESSIBLE_STOKES_BRINKMAN_MODIFIED");
     DBUG("Create IncompressibleStokesBrinkmanModifiedProcess.");
 
     auto const staggered_scheme =
