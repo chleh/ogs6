@@ -46,7 +46,7 @@ AddTest(
 
 
 # Incompressible Stokes Brinkman Reynolds number 1
-# Cf. Winterberg, M., Tsotsas, E., 2000. Impact of tube-to-particle-diameter ratio on pressure drop in packed beds. AIChE Journal 46, 1084–1088. doi:10.1002/aic.690460519
+# VDI Waermeatlas
 AddTest(
     NAME IncompressibleStokesBrinkman_pipe_poro_profile_eff_viscosity_Re1_ddp10
     PATH Elliptic/IncompressibleStokesBrinkman/pipe-porosity-profile-eff-viscosity-ddp10-re1
