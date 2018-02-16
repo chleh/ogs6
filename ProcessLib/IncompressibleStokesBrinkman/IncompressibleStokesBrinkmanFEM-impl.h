@@ -15,7 +15,7 @@
 
 #include <boost/math/special_functions/pow.hpp>
 
-#include "MaterialLib/SolidModels/KelvinVector.h"
+#include "MathLib/KelvinVector.h"
 #include "NumLib/Fem/CoordinatesMapping/NaturalNodeCoordinates.h"
 #include "NumLib/Function/Interpolation.h"
 #include "ProcessLib/CoupledSolutionsForStaggeredScheme.h"
@@ -136,7 +136,7 @@ void IncompressibleStokesBrinkmanLocalAssembler<
                                           typename BMatricesType::BMatrixType>(
                 dNdx_u, N_u, x_coord, _is_axially_symmetric);
         auto const& I =
-            MaterialLib::SolidModels::Invariants<KelvinVectorSize>::identity2;
+            MathLib::KelvinVector::Invariants<KelvinVectorSize>::identity2;
 
         auto const mat_id = _process_data.material_ids[_element.getID()];
 

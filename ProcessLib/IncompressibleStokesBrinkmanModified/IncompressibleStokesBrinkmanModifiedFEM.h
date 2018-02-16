@@ -12,8 +12,8 @@
 #include <memory>
 #include <vector>
 
-#include "MaterialLib/SolidModels/KelvinVector.h"
 #include "MaterialLib/SolidModels/LinearElasticIsotropic.h"
+#include "MathLib/KelvinVector.h"
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "NumLib/DOF/DOFTableUtil.h"
 #include "NumLib/Fem/ShapeMatrixPolicy.h"
@@ -70,8 +70,8 @@ public:
         ShapeMatrixPolicyType<ShapeFunctionPressure, VelocityDim>;
 
     static int const KelvinVectorSize =
-        ProcessLib::KelvinVectorDimensions<VelocityDim>::value;
-    using Invariants = MaterialLib::SolidModels::Invariants<KelvinVectorSize>;
+        MathLib::KelvinVector::KelvinVectorDimensions<VelocityDim>::value;
+    using Invariants = MathLib::KelvinVector::Invariants<KelvinVectorSize>;
 
     IncompressibleStokesBrinkmanModifiedLocalAssembler(
         IncompressibleStokesBrinkmanModifiedLocalAssembler const&) = delete;
@@ -156,7 +156,7 @@ private:
     static const int velocity_size =
         ShapeFunctionVelocity::NPOINTS * VelocityDim;
     static const int kelvin_vector_size =
-        KelvinVectorDimensions<VelocityDim>::value;
+        MathLib::KelvinVector::KelvinVectorDimensions<VelocityDim>::value;
 };
 
 }  // namespace IncompressibleStokesBrinkmanModified

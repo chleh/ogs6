@@ -15,7 +15,7 @@
 
 #include <boost/math/special_functions/pow.hpp>
 
-#include "MaterialLib/SolidModels/KelvinVector.h"
+#include "MathLib/KelvinVector.h"
 #include "NumLib/Fem/CoordinatesMapping/NaturalNodeCoordinates.h"
 #include "NumLib/Function/Interpolation.h"
 #include "ProcessLib/CoupledSolutionsForStaggeredScheme.h"
@@ -142,13 +142,14 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
                                           typename BMatricesType::BMatrixType>(
                 dNdx_u, N_u, x_coord, _is_axially_symmetric);
         auto const& I =
-            MaterialLib::SolidModels::Invariants<KelvinVectorSize>::identity2;
+            MathLib::KelvinVector::Invariants<KelvinVectorSize>::identity2;
 
         auto const mat_id = _process_data.material_ids[_element.getID()];
 
         auto const mu = _process_data.fluid_viscosity(t, x_position)[0];
         double porosity;
-        auto grad_porosity = Eigen::Matrix<double, VelocityDim, 1>::Zero();
+        Eigen::Matrix<double, VelocityDim, 1> grad_porosity =
+            Eigen::Matrix<double, VelocityDim, 1>::Zero();
         double mu_eff;
         double f_1;
         double f_2;
@@ -205,7 +206,7 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
             .noalias() += B.transpose() * I * porosity * N_p * w;
 
         Eigen::Matrix<double, VelocityDim, 1> v = H * nodal_v;
-        auto const& P_dev = MaterialLib::SolidModels::Invariants<
+        auto const& P_dev = MathLib::KelvinVector::Invariants<
             KelvinVectorSize>::deviatoric_projection;
 
         // K_vv
@@ -217,9 +218,15 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
             H.transpose() * (porosity * (f_1 + f_2 * v.norm()) * w) * H;
 
         // rhs_v
-        auto const v_grad_phi = 0;
+        auto const two_sym_v_grad_phi = [&]() {
+            Eigen::Matrix3d m = Eigen::Matrix3d::Zero();
+            m.topLeftCorner<VelocityDim, VelocityDim>().noalias() =
+                v * grad_porosity.transpose() / porosity;
+            m += m.transpose();
+            return MathLib::KelvinVector::tensorToKelvin<VelocityDim>(m);
+        };
         local_rhs.template segment<velocity_size>(velocity_index).noalias() +=
-            mu_eff * B.transpose() * P_dev * v_grad_phi;
+            mu_eff * B.transpose() * P_dev * two_sym_v_grad_phi();
     }
 }
 
