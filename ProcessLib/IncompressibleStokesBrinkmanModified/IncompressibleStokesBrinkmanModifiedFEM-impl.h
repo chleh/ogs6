@@ -204,8 +204,8 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
         local_K
             .template block<velocity_size, pressure_size>(velocity_index,
                                                           pressure_index)
-            .noalias() += B.transpose() * I * (porosity * w) * N_p +
-                          H.transpose() * (grad_porosity * w) * N_p;
+            .noalias() += B.transpose() * I * w * N_p +
+                          H.transpose() * (grad_porosity / porosity * w) * N_p;
 
         Eigen::Matrix<double, VelocityDim, 1> v = H * nodal_v;
         auto const& P_dev = MathLib::KelvinVector::Invariants<
