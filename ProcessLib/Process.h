@@ -16,12 +16,12 @@
 #include "NumLib/ODESolver/ODESystem.h"
 #include "NumLib/ODESolver/TimeDiscretization.h"
 #include "ProcessLib/BoundaryCondition/BoundaryConditionCollection.h"
-#include "ProcessLib/SourceTerms/SourceTermCollection.h"
 #include "ProcessLib/Output/CachedSecondaryVariable.h"
 #include "ProcessLib/Output/ExtrapolatorData.h"
 #include "ProcessLib/Output/SecondaryVariable.h"
 #include "ProcessLib/Parameter/Parameter.h"
 #include "ProcessLib/SourceTerms/NodalSourceTerm.h"
+#include "ProcessLib/SourceTerms/SourceTermCollection.h"
 
 #include "AbstractJacobianAssembler.h"
 #include "ProcessVariable.h"
@@ -54,6 +54,9 @@ public:
             SecondaryVariableCollection&& secondary_variables,
             NumLib::NamedFunctionCaller&& named_function_caller,
             const bool use_monolithic_scheme = true);
+
+    void preOutput(GlobalVector const& x, const double t,
+                   const int process_id) const;
 
     /// Preprocessing before starting assembly for new timestep.
     void preTimestep(GlobalVector const& x, const double t,
@@ -178,6 +181,12 @@ private:
         const double t, GlobalVector const& x, GlobalVector const& xdot,
         const double dxdot_dx, const double dx_dx, GlobalMatrix& M,
         GlobalMatrix& K, GlobalVector& b, GlobalMatrix& Jac) = 0;
+
+    virtual void preOutputConcreteProcess(GlobalVector const& /*x*/,
+                                          const double /*t*/,
+                                          const int /*process_id*/) const
+    {
+    }
 
     virtual void preTimestepConcreteProcess(GlobalVector const& /*x*/,
                                             const double /*t*/,

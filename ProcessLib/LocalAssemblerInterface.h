@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include "NumLib/NumericsConfig.h"
 #include "MathLib/Point3d.h"
+#include "NumLib/NumericsConfig.h"
 
 namespace NumLib
 {
@@ -69,6 +69,10 @@ public:
         GlobalVector const& x,
         CoupledSolutionsForStaggeredScheme const* coupled_xs);
 
+    virtual void preOutput(std::size_t const mesh_item_id,
+                           NumLib::LocalToGlobalIndexMap const& dof_table,
+                           GlobalVector const& x, double const t);
+
     virtual void preTimestep(std::size_t const mesh_item_id,
                              NumLib::LocalToGlobalIndexMap const& dof_table,
                              GlobalVector const& x, double const t,
@@ -93,6 +97,11 @@ public:
     }
 
 private:
+    virtual void preOutputConcrete(std::vector<double> const& /*local_x*/,
+                                   const double /*t*/)
+    {
+    }
+
     virtual void preTimestepConcrete(std::vector<double> const& /*local_x*/,
                                      double const /*t*/, double const /*dt*/)
     {

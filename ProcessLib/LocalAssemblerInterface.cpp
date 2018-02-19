@@ -60,8 +60,8 @@ void LocalAssemblerInterface::assembleWithJacobianForStaggeredScheme(
     LocalCoupledSolutions const& /*local_coupled_solutions*/)
 {
     OGS_FATAL(
-        "The assembleWithJacobianForStaggeredScheme() function is not implemented in"
-        " the local assembler.");
+        "The assembleWithJacobianForStaggeredScheme() function is not "
+        "implemented in the local assembler.");
 }
 
 void LocalAssemblerInterface::computeSecondaryVariable(
@@ -76,6 +76,18 @@ void LocalAssemblerInterface::computeSecondaryVariable(
 
     auto const local_x = x.get(indices);
     computeSecondaryVariableConcrete(t, local_x);
+}
+
+void LocalAssemblerInterface::preOutput(
+    std::size_t const mesh_item_id,
+    NumLib::LocalToGlobalIndexMap const& dof_table,
+    GlobalVector const& x,
+    const double t)
+{
+    auto const indices = NumLib::getIndices(mesh_item_id, dof_table);
+    auto const local_x = x.get(indices);
+
+    preOutputConcrete(local_x, t);
 }
 
 void LocalAssemblerInterface::preTimestep(
@@ -102,8 +114,8 @@ void LocalAssemblerInterface::postTimestep(
 
 void LocalAssemblerInterface::postNonLinearSolver(
     std::size_t const mesh_item_id,
-    NumLib::LocalToGlobalIndexMap const& dof_table,
-    GlobalVector const& x, double const t, bool const use_monolithic_scheme)
+    NumLib::LocalToGlobalIndexMap const& dof_table, GlobalVector const& x,
+    double const t, bool const use_monolithic_scheme)
 {
     auto const indices = NumLib::getIndices(mesh_item_id, dof_table);
     auto const local_x = x.get(indices);

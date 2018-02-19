@@ -15,8 +15,8 @@
 #include "NumLib/ODESolver/ConvergenceCriterionPerComponent.h"
 #include "ProcessLib/Output/GlobalVectorFromNamedFunction.h"
 
-#include "ProcessVariable.h"
 #include "CoupledSolutionsForStaggeredScheme.h"
+#include "ProcessVariable.h"
 
 namespace ProcessLib
 {
@@ -49,7 +49,7 @@ Process::Process(
           return pcs_BCs;
       }(_process_variables.size())),
       _source_term_collections([&](const std::size_t number_of_processes)
-                               -> std::vector<SourceTermCollection> {
+                                   -> std::vector<SourceTermCollection> {
           std::vector<SourceTermCollection> pcs_sts;
           pcs_sts.reserve(number_of_processes);
           for (std::size_t i = 0; i < number_of_processes; i++)
@@ -320,12 +320,13 @@ void Process::finishNamedFunctionsInitialization()
         auto const& name = named_function.getName();
         _secondary_variables.addSecondaryVariable(
             name,
-            {1, BaseLib::easyBind(
-                    &GlobalVectorFromNamedFunction::call,
-                    GlobalVectorFromNamedFunction(
-                        _named_function_caller.getSpecificFunctionCaller(name),
-                        _mesh, getSingleComponentDOFTable(),
-                        _secondary_variable_context)),
+            {1,
+             BaseLib::easyBind(
+                 &GlobalVectorFromNamedFunction::call,
+                 GlobalVectorFromNamedFunction(
+                     _named_function_caller.getSpecificFunctionCaller(name),
+                     _mesh, getSingleComponentDOFTable(),
+                     _secondary_variable_context)),
              nullptr});
     }
 }
@@ -334,6 +335,12 @@ void Process::computeSparsityPattern()
 {
     _sparsity_pattern =
         NumLib::computeSparsityPattern(*_local_to_global_index_map, _mesh);
+}
+
+void Process::preOutput(GlobalVector const& x, const double t,
+                        const int process_id) const
+{
+    preOutputConcreteProcess(x, t, process_id);
 }
 
 void Process::preTimestep(GlobalVector const& x, const double t,

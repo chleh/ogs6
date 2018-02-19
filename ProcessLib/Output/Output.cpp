@@ -145,6 +145,8 @@ void Output::doOutputAlways(Process const& process,
     BaseLib::RunTime time_output;
     time_output.start();
 
+    process.preOutput(x, t, process_id);
+
     // Need to add variables of process to vtu even no output takes place.
     processOutputData(t, x, process.getMesh(), process.getDOFTable(process_id),
                       process.getProcessVariables(process_id),
@@ -165,16 +167,17 @@ void Output::doOutputAlways(Process const& process,
 
     DBUG("output to %s", output_file_path.c_str());
 
+    makeOutput(output_file_path, process.getMesh(), _output_file_compression,
+               _output_file_data_mode);
+
     ProcessData* process_data = findProcessData(process, process_id);
     process_data->pvd_file.addVTUFile(output_file_name, t);
     if (_output_nonlinear_iteration_results)
         process_data->pvd_file_nonlinear_iterations->addVTUFile(
             output_file_name, t);
+
     INFO("[time] Output of timestep %d took %g s.", timestep,
          time_output.elapsed());
-
-    makeOutput(output_file_path, process.getMesh(), _output_file_compression,
-               _output_file_data_mode);
 }
 
 void Output::doOutput(Process const& process,
@@ -229,6 +232,8 @@ void Output::doOutputNonlinearIteration(Process const& process,
     BaseLib::RunTime time_output;
     time_output.start();
 
+    process.preOutput(x, t, process_id);
+
     processOutputData(t, x, process.getMesh(), process.getDOFTable(process_id),
                       process.getProcessVariables(process_id),
                       process.getSecondaryVariables(), process_output);
@@ -255,10 +260,10 @@ void Output::doOutputNonlinearIteration(Process const& process,
 
     DBUG("output iteration results to %s", output_file_path.c_str());
 
-    INFO("[time] Output took %g s.", time_output.elapsed());
-
     makeOutput(output_file_path, process.getMesh(), _output_file_compression,
                _output_file_data_mode);
+
+    INFO("[time] Output took %g s.", time_output.elapsed());
 }
 
 void Output::updateTPrev(double t)
