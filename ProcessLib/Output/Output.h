@@ -80,9 +80,18 @@ public:
 private:
     struct ProcessData
     {
-        ProcessData(std::string const& filename) : pvd_file(filename) {}
+        ProcessData(std::string const& filename,
+                    std::string const* filename_nonlinear_iterations)
+            : pvd_file(filename)
+        {
+            if (filename_nonlinear_iterations)
+                pvd_file_nonlinear_iterations =
+                    std::make_unique<MeshLib::IO::PVDFile>(
+                        *filename_nonlinear_iterations);
+        }
 
         MeshLib::IO::PVDFile pvd_file;
+        std::unique_ptr<MeshLib::IO::PVDFile> pvd_file_nonlinear_iterations;
     };
 
     std::string const _output_directory;
@@ -101,6 +110,11 @@ private:
     std::vector<PairRepeatEachSteps> _repeats_each_steps;
 
     std::multimap<Process const*, ProcessData> _process_to_process_data;
+
+    double _t_prev = std::numeric_limits<double>::quiet_NaN();
+    double _t_last_call = std::numeric_limits<double>::quiet_NaN();
+
+    void updateTPrev(double t);
 
     /**
      * Get the address of a ProcessData from corresponding to the given process.

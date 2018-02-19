@@ -66,6 +66,13 @@ int convertVtkDataMode(std::string const& data_mode)
         "Binary, or Appended.",
         data_mode.c_str());
 }
+
+double getTNonlinearIteration(double t, double t_prev, unsigned iteration)
+{
+    auto const dt = t - t_prev;
+    // four digits are reserved to represent the iteration number
+    return t_prev + iteration * std::pow(10, std::floor(std::log10(dt)) - 4);
+}
 }  // namespace
 
 namespace ProcessLib
@@ -89,9 +96,16 @@ void Output::addProcess(ProcessLib::Process const& process,
     auto const filename = BaseLib::joinPaths(
         _output_directory,
         _output_file_prefix + "_pcs_" + std::to_string(process_id) + ".pvd");
-    _process_to_process_data.emplace(std::piecewise_construct,
-                                     std::forward_as_tuple(&process),
-                                     std::forward_as_tuple(filename));
+    auto const filename_nonlinear_iterations =
+        BaseLib::joinPaths(_output_directory,
+                           _output_file_prefix + "_pcs_" +
+                               std::to_string(process_id) + "_nliter.pvd");
+    _process_to_process_data.emplace(
+        std::piecewise_construct,
+        std::forward_as_tuple(&process),
+        std::forward_as_tuple(filename, _output_nonlinear_iteration_results
+                                            ? &filename_nonlinear_iterations
+                                            : nullptr));
 }
 
 // TODO return a reference.
@@ -127,6 +141,7 @@ void Output::doOutputAlways(Process const& process,
                             const double t,
                             GlobalVector const& x)
 {
+    updateTPrev(t);
     BaseLib::RunTime time_output;
     time_output.start();
 
@@ -152,6 +167,9 @@ void Output::doOutputAlways(Process const& process,
 
     ProcessData* process_data = findProcessData(process, process_id);
     process_data->pvd_file.addVTUFile(output_file_name, t);
+    if (_output_nonlinear_iteration_results)
+        process_data->pvd_file_nonlinear_iterations->addVTUFile(
+            output_file_name, t);
     INFO("[time] Output of timestep %d took %g s.", timestep,
          time_output.elapsed());
 
@@ -166,6 +184,7 @@ void Output::doOutput(Process const& process,
                       const double t,
                       GlobalVector const& x)
 {
+    updateTPrev(t);
     if (shallDoOutput(timestep, _repeats_each_steps))
     {
         doOutputAlways(process, process_id, process_output, timestep, t, x);
@@ -184,6 +203,7 @@ void Output::doOutputLastTimestep(Process const& process,
                                   const double t,
                                   GlobalVector const& x)
 {
+    updateTPrev(t);
     if (!shallDoOutput(timestep, _repeats_each_steps))
     {
         doOutputAlways(process, process_id, process_output, timestep, t, x);
@@ -200,6 +220,7 @@ void Output::doOutputNonlinearIteration(Process const& process,
                                         GlobalVector const& x,
                                         const unsigned iteration)
 {
+    updateTPrev(t);
     if (!_output_nonlinear_iteration_results)
     {
         return;
@@ -208,8 +229,7 @@ void Output::doOutputNonlinearIteration(Process const& process,
     BaseLib::RunTime time_output;
     time_output.start();
 
-    processOutputData(t, x, process.getMesh(),
-                      process.getDOFTable(process_id),
+    processOutputData(t, x, process.getMesh(), process.getDOFTable(process_id),
                       process.getProcessVariables(process_id),
                       process.getSecondaryVariables(), process_output);
 
@@ -221,7 +241,7 @@ void Output::doOutputNonlinearIteration(Process const& process,
         return;
 
     // Only check whether a process data is available for output.
-    findProcessData(process, process_id);
+    auto* process_data = findProcessData(process, process_id);
 
     std::string const output_file_name =
         _output_file_prefix + "_pcs_" + std::to_string(process_id) + "_ts_" +
@@ -230,6 +250,9 @@ void Output::doOutputNonlinearIteration(Process const& process,
     std::string const output_file_path =
         BaseLib::joinPaths(_output_directory, output_file_name);
 
+    process_data->pvd_file_nonlinear_iterations->addVTUFile(
+        output_file_name, getTNonlinearIteration(t, _t_prev, iteration));
+
     DBUG("output iteration results to %s", output_file_path.c_str());
 
     INFO("[time] Output took %g s.", time_output.elapsed());
@@ -237,4 +260,15 @@ void Output::doOutputNonlinearIteration(Process const& process,
     makeOutput(output_file_path, process.getMesh(), _output_file_compression,
                _output_file_data_mode);
 }
+
+void Output::updateTPrev(double t)
+{
+    if (t != _t_last_call)
+    {
+        _t_prev = _t_last_call;
+    }
+
+    _t_last_call = t;
+}
+
 }  // namespace ProcessLib
