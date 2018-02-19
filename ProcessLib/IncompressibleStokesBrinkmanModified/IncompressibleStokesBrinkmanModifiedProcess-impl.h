@@ -355,13 +355,14 @@ void IncompressibleStokesBrinkmanModifiedProcess<
 
 template <int DisplacementDim>
 void IncompressibleStokesBrinkmanModifiedProcess<
-    DisplacementDim>::postTimestepConcreteProcess(GlobalVector const& x,
-                                                  const int process_id)
+    DisplacementDim>::preOutputConcreteProcess(GlobalVector const& x,
+                                               const double t,
+                                               const int process_id) const
 {
     DBUG("PostTimestep IncompressibleStokesBrinkmanModifiedProcess.");
     GlobalExecutor::executeMemberOnDereferenced(
-        &LocalAssemblerInterface::postTimestep, _local_assemblers,
-        getDOFTable(process_id), x);
+        &LocalAssemblerInterface::preOutput, _local_assemblers,
+        getDOFTable(process_id), x, t);
 }
 
 template <int DisplacementDim>

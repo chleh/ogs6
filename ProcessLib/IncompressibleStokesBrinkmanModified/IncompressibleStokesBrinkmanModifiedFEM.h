@@ -121,7 +121,8 @@ public:
     {
     }
 
-    void postTimestepConcrete(std::vector<double> const& local_x) override;
+    void preOutputConcrete(std::vector<double> const& local_x,
+                           const double /*t*/) override;
 
     void postNonLinearSolverConcrete(std::vector<double> const& local_x,
                                      double const t,

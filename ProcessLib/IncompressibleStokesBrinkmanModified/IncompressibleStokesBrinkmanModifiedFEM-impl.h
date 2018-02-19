@@ -250,7 +250,8 @@ template <typename ShapeFunctionVelocity, typename ShapeFunctionPressure,
           typename IntegrationMethod, int VelocityDim>
 void IncompressibleStokesBrinkmanModifiedLocalAssembler<
     ShapeFunctionVelocity, ShapeFunctionPressure, IntegrationMethod,
-    VelocityDim>::postTimestepConcrete(std::vector<double> const& local_x)
+    VelocityDim>::preOutputConcrete(std::vector<double> const& local_x,
+                                    const double /*t*/)
 {
     auto const p =
         Eigen::Map<typename ShapeMatricesTypeVelocity::template VectorType<

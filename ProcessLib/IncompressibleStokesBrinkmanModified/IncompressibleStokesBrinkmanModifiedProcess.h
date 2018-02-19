@@ -83,12 +83,12 @@ private:
         const double dxdot_dx, const double dx_dx, GlobalMatrix& M,
         GlobalMatrix& K, GlobalVector& b, GlobalMatrix& Jac) override;
 
+    void preOutputConcreteProcess(GlobalVector const& x, double const t,
+                                  const int process_id) const override;
+
     void preTimestepConcreteProcess(GlobalVector const& x, double const t,
                                     double const dt,
                                     const int process_id) override;
-
-    void postTimestepConcreteProcess(GlobalVector const& x,
-                                     int const process_id) override;
 
     void postNonLinearSolverConcreteProcess(GlobalVector const& x,
                                             const double t,
