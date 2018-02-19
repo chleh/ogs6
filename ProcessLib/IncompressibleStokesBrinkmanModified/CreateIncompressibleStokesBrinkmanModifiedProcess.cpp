@@ -125,15 +125,22 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanModifiedProcess(
     auto const& fluid_viscosity =
         findParameter<double>(config, "fluid_viscosity", parameters, 1);
 
+    auto const& porosity =
+        findParameter<double>(config, "porosity", parameters, 1);
+
     auto effective_fluid_viscosity = createEffectiveFluidViscosity(
         config.getConfigSubtree("effective_fluid_viscosity"));
 
     IncompressibleStokesBrinkmanModifiedProcessData<DisplacementDim>
-        process_data{
-            *material_ids,        pellet_diameter,
-            bed_radius,           average_darcy_velocity,
-            homogeneous_porosity, fluid_density,
-            fluid_viscosity,      std::move(effective_fluid_viscosity)};
+        process_data{*material_ids,
+                     pellet_diameter,
+                     bed_radius,
+                     average_darcy_velocity,
+                     homogeneous_porosity,
+                     fluid_density,
+                     fluid_viscosity,
+                     porosity,
+                     std::move(effective_fluid_viscosity)};
 
     SecondaryVariableCollection secondary_variables;
 

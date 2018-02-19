@@ -48,6 +48,7 @@ struct IncompressibleStokesBrinkmanModifiedProcessData
         double const homogeneous_porosity_,
         ProcessLib::Parameter<double> const& fluid_density_,
         ProcessLib::Parameter<double> const& fluid_viscosity_,
+        ProcessLib::Parameter<double> const& porosity_,
         std::unique_ptr<EffectiveFluidViscosity>&& effective_fluid_viscosity_)
         : material_ids(material_ids_),
           pellet_diameter(pellet_diameter_),
@@ -56,6 +57,7 @@ struct IncompressibleStokesBrinkmanModifiedProcessData
           homogeneous_porosity(homogeneous_porosity_),
           fluid_density(fluid_density_),
           fluid_viscosity(fluid_viscosity_),
+          porosity(porosity_),
           effective_fluid_viscosity(std::move(effective_fluid_viscosity_))
     {
     }
@@ -96,6 +98,7 @@ struct IncompressibleStokesBrinkmanModifiedProcessData
     double const homogeneous_porosity;
     ProcessLib::Parameter<double> const& fluid_density;
     ProcessLib::Parameter<double> const& fluid_viscosity;
+    ProcessLib::Parameter<double> const& porosity;
 
     std::unique_ptr<EffectiveFluidViscosity> effective_fluid_viscosity;
 
