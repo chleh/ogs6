@@ -20,6 +20,13 @@
 #include "NumLib/Function/Interpolation.h"
 #include "ProcessLib/CoupledSolutionsForStaggeredScheme.h"
 
+#define OGS_INCOMPRESSIBLE_STOKES_BRINKMAN_ASSEMBLY_TYPE_PG_VDARCY 1
+#define OGS_INCOMPRESSIBLE_STOKES_BRINKMAN_ASSEMBLY_TYPE_P_VDARCY 2
+#define OGS_INCOMPRESSIBLE_STOKES_BRINKMAN_ASSEMBLY_TYPE_P_VDARCY_NO_DIV 3
+
+#define OGS_INCOMPRESSIBLE_STOKES_BRINKMAN_ASSEMBLY_TYPE \
+    OGS_INCOMPRESSIBLE_STOKES_BRINKMAN_ASSEMBLY_TYPE_P_VDARCY_NO_DIV
+
 namespace ProcessLib
 {
 namespace IncompressibleStokesBrinkmanModified
@@ -131,7 +138,6 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
         auto const& dNdx_u = _ip_data[ip].dNdx_v;
 
         auto const& N_p = _ip_data[ip].N_p;
-        // auto const& dNdx_p = _ip_data[ip].dNdx_p;
 
         auto const x_coord =
             interpolateXCoordinate<ShapeFunctionVelocity,
@@ -181,7 +187,7 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
             auto const exp_term = std::exp(-5.0 * (r_bed - x_coord) / d_pel);
             porosity = poro_inf + poro_inf * 1.36 * exp_term;
 
-            // grad_porosity[0] = poro_inf * 1.36 * 5.0 / d_pel * exp_term;
+            grad_porosity[0] = poro_inf * 1.36 * 5.0 / d_pel * exp_term;
 
             auto const poro3 = boost::math::pow<3>(porosity);
             auto const rho_GR = _process_data.fluid_density(t, x_position)[0];
@@ -194,8 +200,10 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
         else
             OGS_FATAL("wrong material id: %d", mat_id);
 
-#if 0
-        // p_G, v_Darcy ////////////////////////////////////////////////////////
+#if OGS_INCOMPRESSIBLE_STOKES_BRINKMAN_ASSEMBLY_TYPE == \
+    OGS_INCOMPRESSIBLE_STOKES_BRINKMAN_ASSEMBLY_TYPE_PG_VDARCY
+        // p_G, v_Darcy
+        // //////////////////////////////////////////////////////////
 
         // K_pv (from mass balance)
         local_K
@@ -208,7 +216,7 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
             .template block<velocity_size, pressure_size>(velocity_index,
                                                           pressure_index)
             .noalias() += B.transpose() * I * w * N_p +
-                          H.transpose() * (grad_porosity / porosity * w) * N_p;
+                          H.transpose() * grad_porosity * N_p * (w / porosity);
 
         Eigen::Matrix<double, VelocityDim, 1> v = H * nodal_v;
         auto const& P_dev = MathLib::KelvinVector::Invariants<
@@ -223,6 +231,7 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
             H.transpose() * (porosity * (f_1 + f_2 * v.norm()) * w) * H;
 
         // rhs_v
+#if 1
         auto const two_sym_v_grad_phi = [&]() {
             Eigen::Matrix3d m = Eigen::Matrix3d::Zero();
             m.topLeftCorner<VelocityDim, VelocityDim>().noalias() =
@@ -230,9 +239,13 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
             m += m.transpose();
             return MathLib::KelvinVector::tensorToKelvin<VelocityDim>(m);
         };
-        local_rhs.template segment<velocity_size>(velocity_index).noalias() +=
+        local_rhs.template segment<velocity_size>(velocity_index).noalias() -=
             mu_eff * B.transpose() * P_dev * two_sym_v_grad_phi() * w;
 #else
+        (void)local_rhs;
+#endif
+#elif OGS_INCOMPRESSIBLE_STOKES_BRINKMAN_ASSEMBLY_TYPE == \
+    OGS_INCOMPRESSIBLE_STOKES_BRINKMAN_ASSEMBLY_TYPE_P_VDARCY
         // p, v_Darcy //////////////////////////////////////////////////////////
 
         // K_pv (from mass balance)
@@ -274,6 +287,51 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
 #else
         (void)local_rhs;
 #endif
+#elif OGS_INCOMPRESSIBLE_STOKES_BRINKMAN_ASSEMBLY_TYPE == \
+    OGS_INCOMPRESSIBLE_STOKES_BRINKMAN_ASSEMBLY_TYPE_P_VDARCY_NO_DIV
+        // p, v_Darcy no div ///////////////////////////////////////////////////
+
+        // K_pv (from mass balance)
+        local_K
+            .template block<pressure_size, velocity_size>(pressure_index,
+                                                          velocity_index)
+            .noalias() += N_p.transpose() * I.transpose() * B * w;
+
+        auto const& dNdx_p = _ip_data[ip].dNdx_p;
+        // K_vp
+        local_K
+            .template block<velocity_size, pressure_size>(velocity_index,
+                                                          pressure_index)
+            .noalias() -= H.transpose() * (porosity * w) * dNdx_p;
+
+        Eigen::Matrix<double, VelocityDim, 1> v = H * nodal_v;
+        auto const& P_dev = MathLib::KelvinVector::Invariants<
+            KelvinVectorSize>::deviatoric_projection;
+
+        // K_vv
+        local_K
+            .template block<velocity_size, velocity_size>(velocity_index,
+                                                          velocity_index)
+            .noalias() -=
+            B.transpose() * (2 * mu_eff * w) * P_dev * B +
+            H.transpose() * (porosity * (f_1 + f_2 * v.norm()) * w) * H;
+
+        // rhs_v
+#if 1
+        auto const two_sym_v_grad_phi = [&]() {
+            Eigen::Matrix3d m = Eigen::Matrix3d::Zero();
+            m.topLeftCorner<VelocityDim, VelocityDim>().noalias() =
+                v * grad_porosity.transpose() / porosity;
+            m += m.transpose();
+            return MathLib::KelvinVector::tensorToKelvin<VelocityDim>(m);
+        };
+        local_rhs.template segment<velocity_size>(velocity_index).noalias() -=
+            mu_eff * B.transpose() * P_dev * two_sym_v_grad_phi() * w;
+#else
+        (void)local_rhs;
+#endif
+#else
+        static_assert(false, "error");
 #endif
     }
 }
