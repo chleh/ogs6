@@ -37,7 +37,10 @@ VDI Waermeatlas
 
             <effective_fluid_viscosity>
                 <type>Giese</type>
-                <average_darcy_velocity>0.5 </average_darcy_velocity>
+                <average_darcy_velocity>
+                    <coords>0.0 1e8</coords>
+                    <values>0.5 0.5</values>
+                </average_darcy_velocity>
                 <pellet_diameter>       0.2 </pellet_diameter>
             </effective_fluid_viscosity>
 
