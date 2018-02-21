@@ -36,12 +36,9 @@ VDI Waermeatlas
             <homogeneous_porosity>  0.4 </homogeneous_porosity>
 
             <effective_fluid_viscosity>
-                <type>Identity</type>
-                <!--
                 <type>Giese</type>
                 <average_darcy_velocity>0.5 </average_darcy_velocity>
                 <pellet_diameter>       0.2 </pellet_diameter>
--->
             </effective_fluid_viscosity>
 
             <process_variables>
