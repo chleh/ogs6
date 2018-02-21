@@ -3,13 +3,15 @@
 #include <cmath>
 #include <memory>
 #include "BaseLib/ConfigTree.h"
+#include "MathLib/Curve/CreatePiecewiseLinearCurve.h"
+#include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 
 namespace ProcessLib
 {
 class EffectiveFluidViscosity
 {
 public:
-    virtual double operator()(const double fluid_viscosity,
+    virtual double operator()(double const t, const double fluid_viscosity,
                               double const fluid_density) = 0;
     virtual ~EffectiveFluidViscosity() = default;
 };
@@ -17,7 +19,8 @@ public:
 class EffectiveFluidViscosityIdentity : public EffectiveFluidViscosity
 {
 public:
-    double operator()(double const fluid_viscosity,
+    double operator()(double const /*t*/,
+                      double const fluid_viscosity,
                       double const /*fluid_density*/) override
     {
         return fluid_viscosity;
@@ -27,22 +30,26 @@ public:
 class EffectiveFluidViscosityGiese : public EffectiveFluidViscosity
 {
 public:
-    EffectiveFluidViscosityGiese(double const average_darcy_velocity,
-                                 double const pellet_diameter)
-        : _average_darcy_velocity(average_darcy_velocity),
+    EffectiveFluidViscosityGiese(
+        std::unique_ptr<MathLib::PiecewiseLinearInterpolation>&&
+            average_darcy_velocity,
+        double const pellet_diameter)
+        : _average_darcy_velocity(std::move(average_darcy_velocity)),
           _pellet_diameter(pellet_diameter)
     {
     }
-    double operator()(double const fluid_viscosity,
+    double operator()(double const t,
+                      double const fluid_viscosity,
                       double const fluid_density) override
     {
-        auto const Re0 = _average_darcy_velocity * _pellet_diameter *
-                         fluid_density / fluid_viscosity;
+        auto const Re0 = _average_darcy_velocity->getValue(t) *
+                         _pellet_diameter * fluid_density / fluid_viscosity;
         return 2.0 * fluid_viscosity * std::exp(2e-3 * Re0);
     }
 
 private:
-    const double _average_darcy_velocity;
+    std::unique_ptr<MathLib::PiecewiseLinearInterpolation> const
+        _average_darcy_velocity;
     const double _pellet_diameter;
 };
 
@@ -54,10 +61,11 @@ inline std::unique_ptr<EffectiveFluidViscosity> createEffectiveFluidViscosity(
         return std::make_unique<EffectiveFluidViscosityIdentity>();
     if (type == "Giese")
     {
-        auto const v =
-            config.getConfigParameter<double>("average_darcy_velocity");
+        auto v = MathLib::createPiecewiseLinearCurve<
+            MathLib::PiecewiseLinearInterpolation>(
+            config.getConfigSubtree("average_darcy_velocity"));
         auto const d = config.getConfigParameter<double>("pellet_diameter");
-        return std::make_unique<EffectiveFluidViscosityGiese>(v, d);
+        return std::make_unique<EffectiveFluidViscosityGiese>(std::move(v), d);
     }
 
     OGS_FATAL("Unknown viscosity model: %s.", type.c_str());

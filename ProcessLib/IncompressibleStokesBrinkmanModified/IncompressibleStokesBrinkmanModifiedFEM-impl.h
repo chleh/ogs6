@@ -195,7 +195,7 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
                   d_pel / d_pel;
             f_2 = 1.75 * (1.0 - porosity) / poro3 * rho_GR / d_pel;
 
-            mu_eff = (*_process_data.effective_fluid_viscosity)(mu, rho_GR);
+            mu_eff = (*_process_data.effective_fluid_viscosity)(t, mu, rho_GR);
         }
         else
             OGS_FATAL("wrong material id: %d", mat_id);
