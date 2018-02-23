@@ -46,7 +46,7 @@ IncompressibleStokesBrinkmanModifiedLocalAssembler<
 
     _ip_data.resize(n_integration_points);
 
-    auto const shape_matrices_u =
+    auto const shape_matrices_v =
         initShapeMatrices<ShapeFunctionVelocity, ShapeMatricesTypeVelocity,
                           IntegrationMethod, VelocityDim>(
             e, is_axially_symmetric, _integration_method);
@@ -60,10 +60,10 @@ IncompressibleStokesBrinkmanModifiedLocalAssembler<
     {
         // velocity (subscript u)
         auto& ip_data = _ip_data[ip];
-        auto const& sm_u = shape_matrices_u[ip];
+        auto const& sm_v = shape_matrices_v[ip];
         _ip_data[ip].integration_weight =
             _integration_method.getWeightedPoint(ip).getWeight() *
-            sm_u.integralMeasure * sm_u.detJ;
+            sm_v.integralMeasure * sm_v.detJ;
 
         ip_data.H = ShapeMatricesTypeVelocity::template MatrixType<
             VelocityDim, velocity_size>::Zero(VelocityDim, velocity_size);
@@ -71,10 +71,10 @@ IncompressibleStokesBrinkmanModifiedLocalAssembler<
             ip_data.H
                 .template block<1, velocity_size / VelocityDim>(
                     i, i * velocity_size / VelocityDim)
-                .noalias() = sm_u.N;
+                .noalias() = sm_v.N;
 
-        ip_data.N_v = sm_u.N;
-        ip_data.dNdx_v = sm_u.dNdx;
+        ip_data.N_v = sm_v.N;
+        ip_data.dNdx_v = sm_v.dNdx;
 
         ip_data.N_p = shape_matrices_p[ip].N;
         ip_data.dNdx_p = shape_matrices_p[ip].dNdx;
@@ -120,19 +120,19 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
 
         auto const& H = _ip_data[ip].H;
 
-        auto const& N_u = _ip_data[ip].N_v;
-        auto const& dNdx_u = _ip_data[ip].dNdx_v;
+        auto const& N_v = _ip_data[ip].N_v;
+        auto const& dNdx_v = _ip_data[ip].dNdx_v;
 
         auto const& N_p = _ip_data[ip].N_p;
 
         auto const x_coord =
             interpolateXCoordinate<ShapeFunctionVelocity,
-                                   ShapeMatricesTypeVelocity>(_element, N_u);
+                                   ShapeMatricesTypeVelocity>(_element, N_v);
         auto const B =
             LinearBMatrix::computeBMatrix<VelocityDim,
                                           ShapeFunctionVelocity::NPOINTS,
                                           typename BMatricesType::BMatrixType>(
-                dNdx_u, N_u, x_coord, _is_axially_symmetric);
+                dNdx_v, N_v, x_coord, _is_axially_symmetric);
         auto const& I =
             MathLib::KelvinVector::Invariants<KelvinVectorSize>::identity2;
 
