@@ -1,6 +1,8 @@
 # Source files
 get_source_files(SOURCES)
 append_source_files(SOURCES Adsorption)
+append_source_files(SOURCES ReactionKinetics)
+append_source_files(SOURCES ReactionKinetics/Enerchem)
 append_source_files(SOURCES SolidModels)
 append_source_files(SOURCES FractureModels)
 

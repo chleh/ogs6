@@ -7,6 +7,7 @@
  *
  */
 
+#if 0
 #include <logog/include/logog.hpp>
 
 #include "BaseLib/StringTools.h"
@@ -66,3 +67,4 @@ newInstance(BaseLib::ConfigTree const& conf)
 }
 
 } // namespace Adsorption
+#endif
