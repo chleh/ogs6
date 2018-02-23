@@ -43,12 +43,12 @@ TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
 
     _ip_data.resize(n_integration_points);
 
-    auto const shape_matrices_v =
+    auto const shape_matrices_quadratic =
         initShapeMatrices<ShapeFunctionVelocity, ShapeMatricesTypeVelocity,
                           IntegrationMethod, VelocityDim>(
             e, is_axially_symmetric, _integration_method);
 
-    auto const shape_matrices_p =
+    auto const shape_matrices_linear =
         initShapeMatrices<ShapeFunctionPressure, ShapeMatricesTypePressure,
                           IntegrationMethod, VelocityDim>(
             e, is_axially_symmetric, _integration_method);
@@ -57,10 +57,10 @@ TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
     {
         // velocity (subscript u)
         auto& ip_data = _ip_data[ip];
-        auto const& sm_v = shape_matrices_v[ip];
+        auto const& sm_2 = shape_matrices_quadratic[ip];
         _ip_data[ip].integration_weight =
             _integration_method.getWeightedPoint(ip).getWeight() *
-            sm_v.integralMeasure * sm_v.detJ;
+            sm_2.integralMeasure * sm_2.detJ;
 
         ip_data.H = ShapeMatricesTypeVelocity::template MatrixType<
             VelocityDim, Block::size(Block::V)>::Zero(VelocityDim,
@@ -69,13 +69,13 @@ TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
             ip_data.H
                 .template block<1, Block::size(Block::V) / VelocityDim>(
                     i, i * Block::size(Block::V) / VelocityDim)
-                .noalias() = sm_v.N;
+                .noalias() = sm_2.N;
 
-        ip_data.N_v = sm_v.N;
-        ip_data.dNdx_v = sm_v.dNdx;
+        ip_data.N_2 = sm_2.N;
+        ip_data.dNdx_2 = sm_2.dNdx;
 
-        ip_data.N_p = shape_matrices_p[ip].N;
-        ip_data.dNdx_p = shape_matrices_p[ip].dNdx;
+        ip_data.N_1 = shape_matrices_linear[ip].N;
+        ip_data.dNdx_1 = shape_matrices_linear[ip].dNdx;
     }
 }
 
@@ -126,20 +126,20 @@ void TCHSStokesLocalAssembler<
 
         auto const& H = _ip_data[ip].H;
 
-        auto const& N_v = _ip_data[ip].N_v;
-        auto const& dNdx_v = _ip_data[ip].dNdx_v;
+        auto const& N_2 = _ip_data[ip].N_2;
+        auto const& dNdx_2 = _ip_data[ip].dNdx_2;
 
-        auto const& N_p = _ip_data[ip].N_p;
-        auto const& dNdx_p = _ip_data[ip].dNdx_p;
+        auto const& N_1 = _ip_data[ip].N_1;
+        auto const& dNdx_p = _ip_data[ip].dNdx_1;
 
         auto const x_coord =
             interpolateXCoordinate<ShapeFunctionVelocity,
-                                   ShapeMatricesTypeVelocity>(_element, N_v);
+                                   ShapeMatricesTypeVelocity>(_element, N_2);
         auto const B =
             LinearBMatrix::computeBMatrix<VelocityDim,
                                           ShapeFunctionVelocity::NPOINTS,
                                           typename BMatricesType::BMatrixType>(
-                dNdx_v, N_v, x_coord, _is_axially_symmetric);
+                dNdx_2, N_2, x_coord, _is_axially_symmetric);
 
         // special vectors and tensors /////////////////////////////////////////
         auto const& I =
@@ -149,9 +149,9 @@ void TCHSStokesLocalAssembler<
 
         // interpolate nodal values ////////////////////////////////////////////
         Eigen::Matrix<double, VelocityDim, 1> const v = H * nodal_v;
-        double const p = N_p * nodal_p;
-        double const T = N_p * nodal_T;
-        double const xmV = N_p * nodal_xmV;
+        double const p = N_1 * nodal_p;
+        double const T = N_1 * nodal_T;
+        double const xmV = N_1 * nodal_xmV;
 
         // material parameters /////////////////////////////////////////////////
         auto const mat_id = _process_data.material_ids[_element.getID()];
@@ -209,11 +209,11 @@ void TCHSStokesLocalAssembler<
         // K_p? (total mass balance) ///////////////////////////////////////////
         // K_pp
         Block::block(local_K, Block::P, Block::P).noalias() +=
-            N_p.transpose() * v.transpose() * (rho_GR / p * w) * dNdx_p;
+            N_1.transpose() * v.transpose() * (rho_GR / p * w) * dNdx_p;
 
         // K_pv
         Block::block(local_K, Block::P, Block::V).noalias() +=
-            N_p.transpose() * I.transpose() * B * w;
+            N_1.transpose() * I.transpose() * B * w;
 
         // K_v? (gas momentum balance //////////////////////////////////////////
         // K_vp
@@ -288,10 +288,10 @@ void TCHSStokesLocalAssembler<
                 .data(),
             shape_matrices_p, VelocityDim, _is_axially_symmetric);
 
-        auto const& N_p = shape_matrices_p.N;
+        auto const& N_1 = shape_matrices_p.N;
 
         std::size_t const global_index = _element.getNodeIndex(n);
-        (*_process_data.mesh_prop_nodal_p)[global_index] = N_p * p;
+        (*_process_data.mesh_prop_nodal_p)[global_index] = N_1 * p;
     }
 }
 

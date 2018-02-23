@@ -38,11 +38,11 @@ struct IntegrationPointData final
                                                           NPoints * VelocityDim>
         H;
 
-    typename ShapeMatrixTypeVelocity::NodalRowVectorType N_v;
-    typename ShapeMatrixTypeVelocity::GlobalDimNodalMatrixType dNdx_v;
+    typename ShapeMatrixTypeVelocity::NodalRowVectorType N_2;
+    typename ShapeMatrixTypeVelocity::GlobalDimNodalMatrixType dNdx_2;
 
-    typename ShapeMatricesTypePressure::NodalRowVectorType N_p;
-    typename ShapeMatricesTypePressure::GlobalDimNodalMatrixType dNdx_p;
+    typename ShapeMatricesTypePressure::NodalRowVectorType N_1;
+    typename ShapeMatricesTypePressure::GlobalDimNodalMatrixType dNdx_1;
     double integration_weight;
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
@@ -126,7 +126,7 @@ public:
     Eigen::Map<const Eigen::RowVectorXd> getShapeMatrix(
         const unsigned integration_point) const override
     {
-        auto const& N_u = _ip_data[integration_point].N_v;
+        auto const& N_u = _ip_data[integration_point].N_2;
 
         // assumes N is stored contiguously in memory
         return Eigen::Map<const Eigen::RowVectorXd>(N_u.data(), N_u.size());
