@@ -13,8 +13,7 @@
 #include <cmath>
 #include <limits>
 #include <type_traits>
-#include <logog/include/logog.hpp>
-#include "BaseLib/Error.h"
+#include <utility>
 
 namespace MathLib
 {
@@ -56,23 +55,27 @@ public:
                 std::is_same<double, decltype(f(0.0))>::value,
                 "Using this class for functions that do not return double"
                 " involves a lot of casts. Hence it is disabled.");
-
-        if (detail::almost_zero(_fa)) {
-            _b = _a;
-        } else if (detail::almost_zero(_fb)) {
-            _a = _b;
-        } else if (detail::same_sign(_fa, _fb)) {
-            OGS_FATAL("Regula falsi cannot be done, because the function values"
-                " at the interval ends have the same sign.");
-        }
     }
 
     //! Do \c num_steps iteration of regula falsi.
-    void step(const unsigned num_steps)
+    bool step(const unsigned num_steps)
     {
+        if (detail::almost_zero(_fa)) {
+            _b = _a;
+            return true;
+        } else if (detail::almost_zero(_fb)) {
+            _a = _b;
+            return true;
+        } else if (detail::same_sign(_fa, _fb)) {
+            // Regula falsi cannot be done, because the function values at the
+            // interval ends have the same sign."
+            return false;
+        }
+
         for (unsigned i=0; i<num_steps; ++i)
         {
-            if (_a == _b) return;
+            if (_a == _b)
+                return true;
 
             const double s = (_fb - _fa)/(_b - _a);
             const double c = _a - _fa/s;
@@ -80,9 +83,9 @@ public:
 
             if (detail::almost_zero(fc)) {
                 _a = _b = c;
-                return;
+                return true;
             }
-            if (!detail::same_sign(fc, _fb))
+            else if (!detail::same_sign(fc, _fb))
             {
                 _a = _b; _fa = _fb;
                 _b =  c; _fb =  fc;
@@ -93,6 +96,8 @@ public:
                 _fb = fc;
             }
         }
+
+        return true;
     }
 
     //! Returns the current estimate of the root.
@@ -108,6 +113,14 @@ public:
 
     //! Returns the size of the current search interval.
     double getRange() const { return std::fabs(_a - _b); }
+
+    std::pair<double, double> getEndWithLowerValue() const
+    {
+        if (std::abs(_fa) <= std::abs(_fb))
+            return {_a, _fa};
+        else
+            return {_b, _fb};
+    }
 
 private:
     Function const& _f;
