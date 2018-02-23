@@ -146,17 +146,98 @@ private:
     MeshLib::Element const& _element;
     bool const _is_axially_symmetric;
 
-    static const int pressure_index = 0;
-    static const int pressure_size = ShapeFunctionPressure::NPOINTS;
-    static const int temperature_index = pressure_index + pressure_size;
-    static const int temperature_size = ShapeFunctionPressure::NPOINTS;
-    static const int mass_fraction_index = temperature_index + temperature_size;
-    static const int mass_fraction_size = ShapeFunctionPressure::NPOINTS;
-    static const int velocity_index = mass_fraction_index + mass_fraction_size;
-    static const int velocity_size =
-        ShapeFunctionVelocity::NPOINTS * VelocityDim;
     static const int kelvin_vector_size =
         MathLib::KelvinVector::KelvinVectorDimensions<VelocityDim>::value;
+
+    /*
+    static const int Indices[] = {0, ShapeFunctionPressure::NPOINTS,
+                                  2 * ShapeFunctionPressure::NPOINTS,
+                                  3 * ShapeFunctionPressure::NPOINTS};
+                             */
+
+    struct Block
+    {
+    private:
+        enum class BlockName : int
+        {
+            P_,
+            T_,
+            X_,
+            V_
+        };
+
+    public:
+        static const std::integral_constant<BlockName, BlockName::P_> P;
+        static const std::integral_constant<BlockName, BlockName::T_> T;
+        static const std::integral_constant<BlockName, BlockName::X_> X;
+        static const std::integral_constant<BlockName, BlockName::V_> V;
+
+        template <BlockName Row, BlockName Col, typename Matrix>
+        static decltype(auto) block(Matrix&& mat,
+                                    std::integral_constant<BlockName, Row>
+                                        row,
+                                    std::integral_constant<BlockName, Col>
+                                        col)
+        {
+            return mat.template block<size(row), size(col)>(index(row),
+                                                            index(col));
+        }
+
+        template <BlockName Row, typename Vector>
+        static decltype(auto) segment(
+            Vector&& vec, std::integral_constant<BlockName, Row> row)
+        {
+            return vec.template segment<size(row)>(index(row));
+        }
+
+        static constexpr int index(
+            std::integral_constant<BlockName, BlockName::P_>)
+        {
+            return 0;
+        }
+
+        static constexpr int index(
+            std::integral_constant<BlockName, BlockName::T_>)
+        {
+            return ShapeFunctionPressure::NPOINTS;
+        }
+
+        static constexpr int index(
+            std::integral_constant<BlockName, BlockName::X_>)
+        {
+            return 2 * ShapeFunctionPressure::NPOINTS;
+        }
+
+        static constexpr int index(
+            std::integral_constant<BlockName, BlockName::V_>)
+        {
+            return 3 * ShapeFunctionPressure::NPOINTS;
+        }
+
+        static constexpr int size(
+            std::integral_constant<BlockName, BlockName::P_>)
+        {
+            return ShapeFunctionPressure::NPOINTS;
+        }
+
+        static constexpr int size(
+            std::integral_constant<BlockName, BlockName::T_>)
+        {
+            return ShapeFunctionPressure::NPOINTS;
+        }
+
+        static constexpr int size(
+            std::integral_constant<BlockName, BlockName::X_>)
+        {
+            return ShapeFunctionPressure::NPOINTS;
+        }
+
+        static constexpr int size(
+            std::integral_constant<BlockName, BlockName::V_>)
+        {
+            return ShapeFunctionVelocity::NPOINTS * VelocityDim;
+        }
+    };
 };
 
 }  // namespace TCHSStokes

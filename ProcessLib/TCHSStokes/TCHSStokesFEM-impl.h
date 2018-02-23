@@ -63,11 +63,12 @@ TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
             sm_v.integralMeasure * sm_v.detJ;
 
         ip_data.H = ShapeMatricesTypeVelocity::template MatrixType<
-            VelocityDim, velocity_size>::Zero(VelocityDim, velocity_size);
+            VelocityDim, Block::size(Block::V)>::Zero(VelocityDim,
+                                                      Block::size(Block::V));
         for (int i = 0; i < VelocityDim; ++i)
             ip_data.H
-                .template block<1, velocity_size / VelocityDim>(
-                    i, i * velocity_size / VelocityDim)
+                .template block<1, Block::size(Block::V) / VelocityDim>(
+                    i, i * Block::size(Block::V) / VelocityDim)
                 .noalias() = sm_v.N;
 
         ip_data.N_v = sm_v.N;
@@ -87,23 +88,30 @@ void TCHSStokesLocalAssembler<
                            std::vector<double>& local_K_data,
                            std::vector<double>& local_rhs_data)
 {
-    assert(local_x.size() == velocity_index + velocity_size);
+    assert(local_x.size() == Block::index(Block::V) + Block::size(Block::V));
 
-    auto nodal_v =
-        Eigen::Map<typename ShapeMatricesTypeVelocity::template VectorType<
-            velocity_size> const>(local_x.data() + velocity_index,
-                                  velocity_size);
+    // make Eigen::Map<>s
+    auto map_vector_segment = [](std::vector<double> const& v, auto b) {
+        return Eigen::Map<typename ShapeMatricesTypeVelocity::
+                              template VectorType<Block::size(b)> const>(
+            v.data() + Block::index(b), Block::size(b));
+    };
+    auto const nodal_p = map_vector_segment(local_x, Block::P);
+    auto const nodal_T = map_vector_segment(local_x, Block::T);
+    auto const nodal_xmV = map_vector_segment(local_x, Block::X);
+    auto const nodal_v = map_vector_segment(local_x, Block::V);
 
     auto local_K = MathLib::createZeroedMatrix<
         typename ShapeMatricesTypeVelocity::template MatrixType<
-            velocity_size + pressure_size, velocity_size + pressure_size>>(
-        local_K_data, velocity_size + pressure_size,
-        velocity_size + pressure_size);
+            Block::index(Block::V) + Block::size(Block::V),
+            Block::index(Block::V) + Block::size(Block::V)>>(
+        local_K_data, Block::index(Block::V) + Block::size(Block::V),
+        Block::index(Block::V) + Block::size(Block::V));
 
     auto local_rhs = MathLib::createZeroedVector<
-        typename ShapeMatricesTypeVelocity::template VectorType<velocity_size +
-                                                                pressure_size>>(
-        local_rhs_data, velocity_size + pressure_size);
+        typename ShapeMatricesTypeVelocity::template VectorType<
+            Block::index(Block::V) + Block::size(Block::V)>>(
+        local_rhs_data, Block::index(Block::V) + Block::size(Block::V));
 
     SpatialPosition x_position;
     x_position.setElementID(_element.getID());
@@ -140,7 +148,10 @@ void TCHSStokesLocalAssembler<
             KelvinVectorSize>::deviatoric_projection;
 
         // interpolate nodal values ////////////////////////////////////////////
-        Eigen::Matrix<double, VelocityDim, 1> v = H * nodal_v;
+        Eigen::Matrix<double, VelocityDim, 1> const v = H * nodal_v;
+        double const p = N_p * nodal_p;
+        double const T = N_p * nodal_T;
+        double const xmV = N_p * nodal_xmV;
 
         // material parameters /////////////////////////////////////////////////
         auto const mat_id = _process_data.material_ids[_element.getID()];
@@ -191,30 +202,26 @@ void TCHSStokesLocalAssembler<
         else
             OGS_FATAL("wrong material id: %d", mat_id);
 
+        double const rho_GR = 0;  // TODO
+
         // assemble local matrices /////////////////////////////////////////////
 
         // K_p? (total mass balance) ///////////////////////////////////////////
         // K_pp
         Block::block(local_K, Block::P, Block::P).noalias() +=
-            N_p.transpose() * v.transpose() * (rho_GR / p * w) * N_p;
+            N_p.transpose() * v.transpose() * (rho_GR / p * w) * dNdx_p;
 
         // K_pv
-        local_K
-            .template block<pressure_size, velocity_size>(pressure_index,
-                                                          velocity_index)
-            .noalias() += N_p.transpose() * I.transpose() * B * w;
+        Block::block(local_K, Block::P, Block::V).noalias() +=
+            N_p.transpose() * I.transpose() * B * w;
 
+        // K_v? (gas momentum balance //////////////////////////////////////////
         // K_vp
-        local_K
-            .template block<velocity_size, pressure_size>(velocity_index,
-                                                          pressure_index)
-            .noalias() -= H.transpose() * (porosity * w) * dNdx_p;
+        Block::block(local_K, Block::V, Block::P).noalias() -=
+            H.transpose() * (porosity * w) * dNdx_p;
 
         // K_vv
-        local_K
-            .template block<velocity_size, velocity_size>(velocity_index,
-                                                          velocity_index)
-            .noalias() -=
+        Block::block(local_K, Block::V, Block::V).noalias() -=
             B.transpose() * (2 * mu_eff * w) * P_dev * B +
             H.transpose() * (porosity * (f_1 + f_2 * v.norm()) * w) * H;
 
@@ -226,7 +233,7 @@ void TCHSStokesLocalAssembler<
             m += m.transpose();
             return MathLib::KelvinVector::tensorToKelvin<VelocityDim>(m);
         };
-        local_rhs.template segment<velocity_size>(velocity_index).noalias() -=
+        Block::segment(local_rhs, Block::V).noalias() -=
             mu_eff * B.transpose() * P_dev * two_sym_v_grad_phi() * w;
     }
 }
@@ -251,8 +258,8 @@ void TCHSStokesLocalAssembler<
 {
     auto const p =
         Eigen::Map<typename ShapeMatricesTypeVelocity::template VectorType<
-            pressure_size> const>(local_x.data() + pressure_index,
-                                  pressure_size);
+            Block::size(Block::P)> const>(
+            local_x.data() + Block::index(Block::P), Block::size(Block::P));
 
     using FemType = NumLib::TemplateIsoparametric<ShapeFunctionPressure,
                                                   ShapeMatricesTypePressure>;
