@@ -23,7 +23,7 @@ namespace MaterialLib
 {
 namespace Solids
 {
-template <int DisplacementDim>
+template <int VelocityDim>
 struct MechanicsBase;
 }
 }
@@ -31,7 +31,7 @@ namespace ProcessLib
 {
 namespace TCHSStokes
 {
-template <int DisplacementDim>
+template <int VelocityDim>
 struct TCHSStokesProcessData
 {
     enum

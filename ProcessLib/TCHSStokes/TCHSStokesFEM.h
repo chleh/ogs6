@@ -48,14 +48,6 @@ struct IntegrationPointData final
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
-/// Used by for extrapolation of the integration point values. It is ordered
-/// (and stored) by integration points.
-template <typename ShapeMatrixType>
-struct SecondaryData
-{
-    std::vector<ShapeMatrixType, Eigen::aligned_allocator<ShapeMatrixType>> N_u;
-};
-
 template <typename ShapeFunctionVelocity, typename ShapeFunctionPressure,
           typename IntegrationMethod, int VelocityDim>
 class TCHSStokesLocalAssembler : public LocalAssemblerInterface
@@ -126,10 +118,10 @@ public:
     Eigen::Map<const Eigen::RowVectorXd> getShapeMatrix(
         const unsigned integration_point) const override
     {
-        auto const& N_u = _ip_data[integration_point].N_2;
+        auto const& N_2 = _ip_data[integration_point].N_2;
 
         // assumes N is stored contiguously in memory
-        return Eigen::Map<const Eigen::RowVectorXd>(N_u.data(), N_u.size());
+        return Eigen::Map<const Eigen::RowVectorXd>(N_2.data(), N_2.size());
     }
 
 private:

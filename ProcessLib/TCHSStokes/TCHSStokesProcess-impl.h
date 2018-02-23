@@ -24,15 +24,15 @@ namespace ProcessLib
 {
 namespace TCHSStokes
 {
-template <int DisplacementDim>
-TCHSStokesProcess<DisplacementDim>::TCHSStokesProcess(
+template <int VelocityDim>
+TCHSStokesProcess<VelocityDim>::TCHSStokesProcess(
     MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<std::unique_ptr<ParameterBase>> const& parameters,
     unsigned const integration_order,
     std::vector<std::vector<std::reference_wrapper<ProcessVariable>>>&&
         process_variables,
-    TCHSStokesProcessData<DisplacementDim>&& process_data,
+    TCHSStokesProcessData<VelocityDim>&& process_data,
     SecondaryVariableCollection&& secondary_variables,
     NumLib::NamedFunctionCaller&& named_function_caller,
     bool const use_monolithic_scheme)
@@ -44,15 +44,15 @@ TCHSStokesProcess<DisplacementDim>::TCHSStokesProcess(
 {
 }
 
-template <int DisplacementDim>
-bool TCHSStokesProcess<DisplacementDim>::isLinear() const
+template <int VelocityDim>
+bool TCHSStokesProcess<VelocityDim>::isLinear() const
 {
     return false;
 }
 
-template <int DisplacementDim>
+template <int VelocityDim>
 MathLib::MatrixSpecifications
-TCHSStokesProcess<DisplacementDim>::getMatrixSpecifications(
+TCHSStokesProcess<VelocityDim>::getMatrixSpecifications(
     const int process_id) const
 {
     // For the monolithic scheme or the M process (deformation) in the staggered
@@ -70,8 +70,8 @@ TCHSStokesProcess<DisplacementDim>::getMatrixSpecifications(
             &l.getGhostIndices(), &_sparsity_pattern_with_linear_element};
 }
 
-template <int DisplacementDim>
-void TCHSStokesProcess<DisplacementDim>::constructDofTable()
+template <int VelocityDim>
+void TCHSStokesProcess<VelocityDim>::constructDofTable()
 {
     // Create single component dof in every of the mesh's nodes.
     _mesh_subset_all_nodes =
@@ -98,7 +98,7 @@ void TCHSStokesProcess<DisplacementDim>::constructDofTable()
         std::vector<MeshLib::MeshSubsets> all_mesh_subsets;
         all_mesh_subsets.emplace_back(_mesh_subset_base_nodes.get());
 
-        // For displacement.
+        // For velocity.
         const int monolithic_process_id = 0;
         std::generate_n(
             std::back_inserter(all_mesh_subsets),
@@ -109,7 +109,7 @@ void TCHSStokesProcess<DisplacementDim>::constructDofTable()
                 return MeshLib::MeshSubsets{_mesh_subset_all_nodes.get()};
             });
 
-        std::vector<int> const vec_n_components{1, DisplacementDim};
+        std::vector<int> const vec_n_components{1, VelocityDim};
         _local_to_global_index_map =
             std::make_unique<NumLib::LocalToGlobalIndexMap>(
                 std::move(all_mesh_subsets), vec_n_components,
@@ -118,7 +118,8 @@ void TCHSStokesProcess<DisplacementDim>::constructDofTable()
     }
     else
     {
-        // For displacement equation.
+        // TODO bugs in here.
+        // For velocity equation.
         const int process_id = 1;
         std::vector<MeshLib::MeshSubsets> all_mesh_subsets;
         std::generate_n(
@@ -128,7 +129,7 @@ void TCHSStokesProcess<DisplacementDim>::constructDofTable()
                 return MeshLib::MeshSubsets{_mesh_subset_all_nodes.get()};
             });
 
-        std::vector<int> const vec_n_components{DisplacementDim};
+        std::vector<int> const vec_n_components{VelocityDim};
         _local_to_global_index_map =
             std::make_unique<NumLib::LocalToGlobalIndexMap>(
                 std::move(all_mesh_subsets), vec_n_components,
@@ -152,15 +153,15 @@ void TCHSStokesProcess<DisplacementDim>::constructDofTable()
     }
 }
 
-template <int DisplacementDim>
-void TCHSStokesProcess<DisplacementDim>::initializeConcreteProcess(
+template <int VelocityDim>
+void TCHSStokesProcess<VelocityDim>::initializeConcreteProcess(
     NumLib::LocalToGlobalIndexMap const& dof_table,
     MeshLib::Mesh const& mesh,
     unsigned const integration_order)
 {
     const int mechanical_process_id = _use_monolithic_scheme ? 0 : 1;
     const int deformation_variable_id = _use_monolithic_scheme ? 1 : 0;
-    ProcessLib::TCHSStokes::createLocalAssemblers<DisplacementDim,
+    ProcessLib::TCHSStokes::createLocalAssemblers<VelocityDim,
                                                   TCHSStokesLocalAssembler>(
         mesh.getDimension(), mesh.getElements(), dof_table,
         // use displacement process variable to set shape function order
@@ -191,7 +192,7 @@ void TCHSStokesProcess<DisplacementDim>::initializeConcreteProcess(
         makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                          &LocalAssemblerInterface::getIntPtSigmaXY));
 
-    if (DisplacementDim == 3)
+    if (VelocityDim == 3)
     {
         Base::_secondary_variables.addSecondaryVariable(
             "sigma_xz",
@@ -231,6 +232,7 @@ void TCHSStokesProcess<DisplacementDim>::initializeConcreteProcess(
                          &LocalAssemblerInterface::getIntPtDarcyVelocity));
 #endif
 
+    // TODO also interpolate T, x
     auto mesh_prop_nodal_p = MeshLib::getOrCreateMeshProperty<double>(
         const_cast<MeshLib::Mesh&>(mesh), "pressure_interpolated",
         MeshLib::MeshItemType::Node, 1);
@@ -238,8 +240,8 @@ void TCHSStokesProcess<DisplacementDim>::initializeConcreteProcess(
     _process_data.mesh_prop_nodal_p = mesh_prop_nodal_p;
 }
 
-template <int DisplacementDim>
-void TCHSStokesProcess<DisplacementDim>::initializeBoundaryConditions()
+template <int VelocityDim>
+void TCHSStokesProcess<VelocityDim>::initializeBoundaryConditions()
 {
     if (_use_monolithic_scheme)
     {
@@ -261,8 +263,8 @@ void TCHSStokesProcess<DisplacementDim>::initializeBoundaryConditions()
         *_local_to_global_index_map, mechanical_process_id);
 }
 
-template <int DisplacementDim>
-void TCHSStokesProcess<DisplacementDim>::assembleConcreteProcess(
+template <int VelocityDim>
+void TCHSStokesProcess<VelocityDim>::assembleConcreteProcess(
     const double t, GlobalVector const& x, GlobalMatrix& M, GlobalMatrix& K,
     GlobalVector& b)
 {
@@ -280,8 +282,8 @@ void TCHSStokesProcess<DisplacementDim>::assembleConcreteProcess(
         dof_table, t, x, M, K, b, _coupled_solutions);
 }
 
-template <int DisplacementDim>
-void TCHSStokesProcess<DisplacementDim>::assembleWithJacobianConcreteProcess(
+template <int VelocityDim>
+void TCHSStokesProcess<VelocityDim>::assembleWithJacobianConcreteProcess(
     const double t, GlobalVector const& x, GlobalVector const& xdot,
     const double dxdot_dx, const double dx_dx, GlobalMatrix& M, GlobalMatrix& K,
     GlobalVector& b, GlobalMatrix& Jac)
@@ -325,8 +327,8 @@ void TCHSStokesProcess<DisplacementDim>::assembleWithJacobianConcreteProcess(
         Jac, _coupled_solutions);
 }
 
-template <int DisplacementDim>
-void TCHSStokesProcess<DisplacementDim>::preTimestepConcreteProcess(
+template <int VelocityDim>
+void TCHSStokesProcess<VelocityDim>::preTimestepConcreteProcess(
     GlobalVector const& x,
     double const t,
     double const dt,
@@ -343,8 +345,8 @@ void TCHSStokesProcess<DisplacementDim>::preTimestepConcreteProcess(
             *_local_to_global_index_map, x, t, dt);
 }
 
-template <int DisplacementDim>
-void TCHSStokesProcess<DisplacementDim>::preOutputConcreteProcess(
+template <int VelocityDim>
+void TCHSStokesProcess<VelocityDim>::preOutputConcreteProcess(
     GlobalVector const& x, const double t, const int process_id) const
 {
     DBUG("PostTimestep TCHSStokesProcess.");
@@ -353,8 +355,8 @@ void TCHSStokesProcess<DisplacementDim>::preOutputConcreteProcess(
         getDOFTable(process_id), x, t);
 }
 
-template <int DisplacementDim>
-void TCHSStokesProcess<DisplacementDim>::postNonLinearSolverConcreteProcess(
+template <int VelocityDim>
+void TCHSStokesProcess<VelocityDim>::postNonLinearSolverConcreteProcess(
     GlobalVector const& x, const double t, const int process_id)
 {
     if (!hasMechanicalProcess(process_id))
@@ -369,18 +371,18 @@ void TCHSStokesProcess<DisplacementDim>::postNonLinearSolverConcreteProcess(
         getDOFTable(process_id), x, t, _use_monolithic_scheme);
 }
 
-template <int DisplacementDim>
+template <int VelocityDim>
 std::tuple<NumLib::LocalToGlobalIndexMap*, bool>
-TCHSStokesProcess<DisplacementDim>::getDOFTableForExtrapolatorData() const
+TCHSStokesProcess<VelocityDim>::getDOFTableForExtrapolatorData() const
 {
     const bool manage_storage = false;
     return std::make_tuple(_local_to_global_index_map_single_component.get(),
                            manage_storage);
 }
 
-template <int DisplacementDim>
+template <int VelocityDim>
 NumLib::LocalToGlobalIndexMap const&
-TCHSStokesProcess<DisplacementDim>::getDOFTable(const int process_id) const
+TCHSStokesProcess<VelocityDim>::getDOFTable(const int process_id) const
 {
     if (hasMechanicalProcess(process_id))
     {

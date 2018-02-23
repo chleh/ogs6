@@ -23,7 +23,7 @@ struct LocalAssemblerInterface;
 ///
 /// The mixture momentum balance and the mixture mass balance are solved under
 /// fully saturated conditions.
-template <int DisplacementDim>
+template <int VelocityDim>
 class TCHSStokesProcess final : public Process
 {
     using Base = Process;
@@ -37,7 +37,7 @@ public:
         unsigned const integration_order,
         std::vector<std::vector<std::reference_wrapper<ProcessVariable>>>&&
             process_variables,
-        TCHSStokesProcessData<DisplacementDim>&& process_data,
+        TCHSStokesProcessData<VelocityDim>&& process_data,
         SecondaryVariableCollection&& secondary_variables,
         NumLib::NamedFunctionCaller&& named_function_caller,
         bool const use_monolithic_scheme);
@@ -99,7 +99,7 @@ private:
 private:
     std::vector<MeshLib::Node*> _base_nodes;
     std::unique_ptr<MeshLib::MeshSubset const> _mesh_subset_base_nodes;
-    TCHSStokesProcessData<DisplacementDim> _process_data;
+    TCHSStokesProcessData<VelocityDim> _process_data;
 
     std::vector<std::unique_ptr<LocalAssemblerInterface>> _local_assemblers;
 

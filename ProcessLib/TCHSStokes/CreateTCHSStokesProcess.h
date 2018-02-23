@@ -32,7 +32,7 @@ namespace ProcessLib
 {
 namespace TCHSStokes
 {
-template <int DisplacementDim>
+template <int VelocityDim>
 std::unique_ptr<Process> createTCHSStokesProcess(
     MeshLib::Mesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
