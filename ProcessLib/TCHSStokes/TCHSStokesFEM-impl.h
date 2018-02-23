@@ -112,6 +112,7 @@ void TCHSStokesLocalAssembler<
         _integration_method.getNumberOfPoints();
     for (unsigned ip = 0; ip < n_integration_points; ip++)
     {
+        // shape functions and weights /////////////////////////////////////////
         x_position.setIntegrationPoint(ip);
         auto const& w = _ip_data[ip].integration_weight;
 
@@ -121,6 +122,7 @@ void TCHSStokesLocalAssembler<
         auto const& dNdx_v = _ip_data[ip].dNdx_v;
 
         auto const& N_p = _ip_data[ip].N_p;
+        auto const& dNdx_p = _ip_data[ip].dNdx_p;
 
         auto const x_coord =
             interpolateXCoordinate<ShapeFunctionVelocity,
@@ -130,9 +132,17 @@ void TCHSStokesLocalAssembler<
                                           ShapeFunctionVelocity::NPOINTS,
                                           typename BMatricesType::BMatrixType>(
                 dNdx_v, N_v, x_coord, _is_axially_symmetric);
+
+        // special vectors and tensors /////////////////////////////////////////
         auto const& I =
             MathLib::KelvinVector::Invariants<KelvinVectorSize>::identity2;
+        auto const& P_dev = MathLib::KelvinVector::Invariants<
+            KelvinVectorSize>::deviatoric_projection;
 
+        // interpolate nodal values ////////////////////////////////////////////
+        Eigen::Matrix<double, VelocityDim, 1> v = H * nodal_v;
+
+        // material parameters /////////////////////////////////////////////////
         auto const mat_id = _process_data.material_ids[_element.getID()];
 
         auto const mu = _process_data.fluid_viscosity(t, x_position)[0];
@@ -181,24 +191,24 @@ void TCHSStokesLocalAssembler<
         else
             OGS_FATAL("wrong material id: %d", mat_id);
 
-        // p, v_Darcy no div ///////////////////////////////////////////////////
+        // assemble local matrices /////////////////////////////////////////////
 
-        // K_pv (from mass balance)
+        // K_p? (total mass balance) ///////////////////////////////////////////
+        // K_pp
+        Block::block(local_K, Block::P, Block::P).noalias() +=
+            N_p.transpose() * v.transpose() * (rho_GR / p * w) * N_p;
+
+        // K_pv
         local_K
             .template block<pressure_size, velocity_size>(pressure_index,
                                                           velocity_index)
             .noalias() += N_p.transpose() * I.transpose() * B * w;
 
-        auto const& dNdx_p = _ip_data[ip].dNdx_p;
         // K_vp
         local_K
             .template block<velocity_size, pressure_size>(velocity_index,
                                                           pressure_index)
             .noalias() -= H.transpose() * (porosity * w) * dNdx_p;
-
-        Eigen::Matrix<double, VelocityDim, 1> v = H * nodal_v;
-        auto const& P_dev = MathLib::KelvinVector::Invariants<
-            KelvinVectorSize>::deviatoric_projection;
 
         // K_vv
         local_K
