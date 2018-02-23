@@ -98,14 +98,16 @@ struct TCHSStokesProcessData
     double const homogeneous_porosity;
     ProcessLib::Parameter<double> const& fluid_density;
     ProcessLib::Parameter<double> const& fluid_viscosity;
-    ProcessLib::Parameter<double> const& porosity;
+    ProcessLib::Parameter<double> const& porosity;  // TODO remove
 
     std::unique_ptr<EffectiveFluidViscosity> effective_fluid_viscosity;
 
-    double dt = 0.0;
-    double t = 0.0;
+    double dt = 0.0;  // TODO remove
+    double t = 0.0;   // TODO remove
 
     MeshLib::PropertyVector<double>* mesh_prop_nodal_p = nullptr;
+    MeshLib::PropertyVector<double>* mesh_prop_nodal_T = nullptr;
+    MeshLib::PropertyVector<double>* mesh_prop_nodal_xmV = nullptr;
 };
 
 }  // namespace TCHSStokes

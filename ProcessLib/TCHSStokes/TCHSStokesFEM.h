@@ -182,6 +182,16 @@ private:
             return vec.template segment<size(row)>(index(row));
         }
 
+        template <BlockName B>
+        static decltype(auto) mapVectorSegment(
+            std::vector<double> const& v,
+            std::integral_constant<BlockName, B>
+                b)
+        {
+            return Eigen::Map<Eigen::Matrix<double, size(b), 1> const>(
+                v.data() + index(b), size(b));
+        }
+
         static constexpr int index(
             std::integral_constant<BlockName, BlockName::P_>)
         {

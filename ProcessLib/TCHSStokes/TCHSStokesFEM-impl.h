@@ -20,6 +20,8 @@
 #include "NumLib/Function/Interpolation.h"
 #include "ProcessLib/CoupledSolutionsForStaggeredScheme.h"
 
+#include "ProcessLib/TES/TESOGS5MaterialModels.h"
+
 namespace ProcessLib
 {
 namespace TCHSStokes
@@ -91,15 +93,10 @@ void TCHSStokesLocalAssembler<
     assert(local_x.size() == Block::index(Block::V) + Block::size(Block::V));
 
     // make Eigen::Map<>s
-    auto map_vector_segment = [](std::vector<double> const& v, auto b) {
-        return Eigen::Map<typename ShapeMatricesTypeVelocity::
-                              template VectorType<Block::size(b)> const>(
-            v.data() + Block::index(b), Block::size(b));
-    };
-    auto const nodal_p = map_vector_segment(local_x, Block::P);
-    auto const nodal_T = map_vector_segment(local_x, Block::T);
-    auto const nodal_xmV = map_vector_segment(local_x, Block::X);
-    auto const nodal_v = map_vector_segment(local_x, Block::V);
+    auto const nodal_p = Block::mapVectorSegment(local_x, Block::P);
+    auto const nodal_T = Block::mapVectorSegment(local_x, Block::T);
+    auto const nodal_xmV = Block::mapVectorSegment(local_x, Block::X);
+    auto const nodal_v = Block::mapVectorSegment(local_x, Block::V);
 
     auto local_M = MathLib::createZeroedMatrix<
         typename ShapeMatricesTypeVelocity::template MatrixType<
@@ -371,10 +368,9 @@ void TCHSStokesLocalAssembler<
     VelocityDim>::preOutputConcrete(std::vector<double> const& local_x,
                                     const double /*t*/)
 {
-    auto const p =
-        Eigen::Map<typename ShapeMatricesTypeVelocity::template VectorType<
-            Block::size(Block::P)> const>(
-            local_x.data() + Block::index(Block::P), Block::size(Block::P));
+    auto const p = Block::mapVectorSegment(local_x, Block::P);
+    auto const T = Block::mapVectorSegment(local_x, Block::T);
+    auto const xmV = Block::mapVectorSegment(local_x, Block::X);
 
     using FemType = NumLib::TemplateIsoparametric<ShapeFunctionPressure,
                                                   ShapeMatricesTypePressure>;
@@ -388,6 +384,8 @@ void TCHSStokesLocalAssembler<
     {
         std::size_t const global_index = _element.getNodeIndex(n);
         (*_process_data.mesh_prop_nodal_p)[global_index] = p[n];
+        (*_process_data.mesh_prop_nodal_T)[global_index] = T[n];
+        (*_process_data.mesh_prop_nodal_xmV)[global_index] = xmV[n];
     }
 
     for (int n = number_base_nodes; n < number_all_nodes; ++n)
@@ -407,6 +405,8 @@ void TCHSStokesLocalAssembler<
 
         std::size_t const global_index = _element.getNodeIndex(n);
         (*_process_data.mesh_prop_nodal_p)[global_index] = N_1 * p;
+        (*_process_data.mesh_prop_nodal_T)[global_index] = N_1 * T;
+        (*_process_data.mesh_prop_nodal_xmV)[global_index] = N_1 * xmV;
     }
 }
 

@@ -232,12 +232,23 @@ void TCHSStokesProcess<VelocityDim>::initializeConcreteProcess(
                          &LocalAssemblerInterface::getIntPtDarcyVelocity));
 #endif
 
-    // TODO also interpolate T, x
     auto mesh_prop_nodal_p = MeshLib::getOrCreateMeshProperty<double>(
         const_cast<MeshLib::Mesh&>(mesh), "pressure_interpolated",
         MeshLib::MeshItemType::Node, 1);
     mesh_prop_nodal_p->resize(mesh.getNumberOfNodes());
     _process_data.mesh_prop_nodal_p = mesh_prop_nodal_p;
+
+    auto mesh_prop_nodal_T = MeshLib::getOrCreateMeshProperty<double>(
+        const_cast<MeshLib::Mesh&>(mesh), "temperature_interpolated",
+        MeshLib::MeshItemType::Node, 1);
+    mesh_prop_nodal_T->resize(mesh.getNumberOfNodes());
+    _process_data.mesh_prop_nodal_T = mesh_prop_nodal_T;
+
+    auto mesh_prop_nodal_xmV = MeshLib::getOrCreateMeshProperty<double>(
+        const_cast<MeshLib::Mesh&>(mesh), "vapour_mass_fraction_interpolated",
+        MeshLib::MeshItemType::Node, 1);
+    mesh_prop_nodal_xmV->resize(mesh.getNumberOfNodes());
+    _process_data.mesh_prop_nodal_xmV = mesh_prop_nodal_xmV;
 }
 
 template <int VelocityDim>
