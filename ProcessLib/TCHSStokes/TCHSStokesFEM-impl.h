@@ -210,6 +210,7 @@ void TCHSStokesLocalAssembler<
         double const D = 1.0;
         double const c_pG = 1.0;
         double const hat_rho_S = 1.0;
+        double const Delta_h_ads = 1.0;
 
         // assemble local matrices /////////////////////////////////////////////
 
@@ -268,6 +269,19 @@ void TCHSStokesLocalAssembler<
         Block::block(local_K, Block::V, Block::V).noalias() -=
             B.transpose() * (2 * mu_eff * w) * P_dev * B +
             H.transpose() * (porosity * (f_1 + f_2 * v.norm()) * w) * H;
+
+        // rhs /////////////////////////////////////////////////////////////////
+        // rhs_p
+        Block::segment(local_rhs, Block::P).noalias() -=
+            N_1.transpose() * (hat_rho_S * w);
+
+        // rhs_T
+        Block::segment(local_rhs, Block::T).noalias() +=
+            N_1.transpose() * (hat_rho_S * Delta_h_ads * w);
+
+        // rhs_x
+        Block::segment(local_rhs, Block::X).noalias() -=
+            N_1.transpose() * (hat_rho_S * w);
 
         // rhs_v
         auto const two_sym_v_grad_phi = [&]() {
