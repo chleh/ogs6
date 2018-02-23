@@ -144,6 +144,9 @@ public:
             makeLocalAssemblerBuilder<NumLib::ShapeQuad9>();
 #endif
 
+        // Save some compilation time: Only compile quads.
+#if 0
+
 #if (OGS_ENABLED_ELEMENTS & ENABLED_ELEMENT_TYPE_CUBOID) != 0 && \
     OGS_MAX_ELEMENT_DIM >= 3 && OGS_MAX_ELEMENT_ORDER >= 2
         _builder[std::type_index(typeid(MeshLib::Hex20))] =
@@ -178,6 +181,8 @@ public:
     OGS_MAX_ELEMENT_DIM >= 3 && OGS_MAX_ELEMENT_ORDER >= 2
         _builder[std::type_index(typeid(MeshLib::Pyramid13))] =
             makeLocalAssemblerBuilder<NumLib::ShapePyra13>();
+#endif
+
 #endif
     }
 
