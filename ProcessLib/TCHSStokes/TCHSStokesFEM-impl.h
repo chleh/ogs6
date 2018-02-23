@@ -130,7 +130,7 @@ void TCHSStokesLocalAssembler<
         auto const& dNdx_2 = _ip_data[ip].dNdx_2;
 
         auto const& N_1 = _ip_data[ip].N_1;
-        auto const& dNdx_p = _ip_data[ip].dNdx_1;
+        auto const& dNdx_1 = _ip_data[ip].dNdx_1;
 
         auto const x_coord =
             interpolateXCoordinate<ShapeFunctionVelocity,
@@ -202,23 +202,67 @@ void TCHSStokesLocalAssembler<
         else
             OGS_FATAL("wrong material id: %d", mat_id);
 
-        double const rho_GR = 0;  // TODO
+        // TODO implement material models
+        double const rho_GR = 1.0;
+        double const M_G = 1.0;
+        double const dMG_dxmV = 1.0;
+        double const lambda = 1.0;
+        double const D = 1.0;
+        double const c_pG = 1.0;
+        double const hat_rho_S = 1.0;
 
         // assemble local matrices /////////////////////////////////////////////
 
         // K_p? (total mass balance) ///////////////////////////////////////////
         // K_pp
         Block::block(local_K, Block::P, Block::P).noalias() +=
-            N_1.transpose() * v.transpose() * (rho_GR / p * w) * dNdx_p;
+            N_1.transpose() * v.transpose() * (rho_GR / p * w) * dNdx_1;
+
+        // K_pT
+        Block::block(local_K, Block::P, Block::T).noalias() -=
+            N_1.transpose() * v.transpose() * (rho_GR / T * w) * dNdx_1;
+
+        // K_px
+        Block::block(local_K, Block::P, Block::X).noalias() +=
+            N_1.transpose() * (rho_GR / M_G * dMG_dxmV * w) * N_1;
 
         // K_pv
         Block::block(local_K, Block::P, Block::V).noalias() +=
-            N_1.transpose() * I.transpose() * B * w;
+            N_1.transpose() * (rho_GR * w) * I.transpose() * B;
 
-        // K_v? (gas momentum balance //////////////////////////////////////////
+        // K_T? (total energy balance) /////////////////////////////////////////
+        // K_Tp = 0
+
+        // K_TT
+        Block::block(local_K, Block::T, Block::T).noalias() +=
+            N_1.transpose() * (rho_GR * c_pG * w) * v.transpose() * dNdx_1 +
+            dNdx_1.transpose() * lambda * w * dNdx_1;
+
+        // K_Tx = 0
+
+        // K_Tv = 0
+
+        // K_x? (vapour mass balance) //////////////////////////////////////////
+        // K_xp = 0
+
+        // K_xT = 0
+
+        // K_xx
+        Block::block(local_K, Block::X, Block::X).noalias() +=
+            N_1.transpose() * (rho_GR * w) * v.transpose() * dNdx_1 -
+            N_1.transpose() * (hat_rho_S * w) * N_1 +
+            dNdx_1.transpose() * (rho_GR * w) * D * dNdx_1;
+
+        // K_xv = 0
+
+        // K_v? (gas momentum balance) /////////////////////////////////////////
         // K_vp
         Block::block(local_K, Block::V, Block::P).noalias() -=
-            H.transpose() * (porosity * w) * dNdx_p;
+            H.transpose() * (porosity * w) * dNdx_1;
+
+        // K_vT = 0
+
+        // K_vx = 0
 
         // K_vv
         Block::block(local_K, Block::V, Block::V).noalias() -=
