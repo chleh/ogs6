@@ -9,15 +9,16 @@
 
 #pragma once
 
-#include "MeshLib/PropertyVector.h"
-#include "ProcessLib/Parameter/Parameter.h"
-
-#include "ProcessLib/IncompressibleStokesBrinkman/Material/FluidViscosity.h"
-
 #include <memory>
 #include <utility>
 
 #include <Eigen/Dense>
+
+#include "MeshLib/PropertyVector.h"
+#include "ProcessLib/Parameter/Parameter.h"
+
+#include "MaterialLib/ReactionKinetics/ReactionRate.h"
+#include "ProcessLib/IncompressibleStokesBrinkman/Material/FluidViscosity.h"
 
 namespace MaterialLib
 {
@@ -104,6 +105,8 @@ struct TCHSStokesProcessData
 
     double dt = 0.0;  // TODO remove
     double t = 0.0;   // TODO remove
+
+    std::unique_ptr<MaterialLib::ReactionRate> reaction_rate;
 
     MeshLib::PropertyVector<double>* mesh_prop_nodal_p = nullptr;
     MeshLib::PropertyVector<double>* mesh_prop_nodal_T = nullptr;

@@ -62,7 +62,7 @@ std::unique_ptr<Process> createTCHSStokesProcess(
              //! \ogs_file_param_special{prj__processes__process__TCHS_STOKES__process_variables__temperature}
              "temperature",
              //! \ogs_file_param_special{prj__processes__process__TCHS_STOKES__process_variables__mass_fraction}
-             "mass_fracion",
+             "mass_fraction",
              //! \ogs_file_param_special{prj__processes__process__TCHS_STOKES__process_variables__darcy_velocity}
              "darcy_velocity"});
 

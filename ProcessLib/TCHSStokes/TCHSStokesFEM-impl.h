@@ -215,7 +215,7 @@ void TCHSStokesLocalAssembler<
         double const diffusion_coefficient = 1.0;
         double const c_pG = 1.0;
         double const hat_rho_S = 1.0;
-        double const Delta_h_ads = 1.0;
+        double const reaction_enthalpy = 1.0;
         double const total_heat_capacity = 1.0;  // rho_G * c_pG + rho_S * c_pS
 
         // assemble local matrices /////////////////////////////////////////////
@@ -331,7 +331,7 @@ void TCHSStokesLocalAssembler<
 
         // rhs_T
         Block::segment(local_rhs, Block::T).noalias() +=
-            N_1.transpose() * (hat_rho_S * Delta_h_ads * w);
+            N_1.transpose() * (hat_rho_S * reaction_enthalpy * w);
 
         // rhs_x
         Block::segment(local_rhs, Block::X).noalias() -=
