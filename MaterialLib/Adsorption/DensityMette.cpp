@@ -1,6 +1,6 @@
 /**
  * \copyright
- * Copyright (c) 2012-2018, OpenGeoSys Community (http://www.opengeosys.org)
+ * Copyright (c) 2012-2017, OpenGeoSys Community (http://www.opengeosys.org)
  *            Distributed under a Modified BSD License.
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
@@ -8,7 +8,9 @@
  */
 
 #include "DensityMette.h"
+#include "Adsorption.h"
 #include "DensityCook.h"
+#include "MaterialLib/PhysicalConstant.h"
 
 namespace
 {
@@ -27,8 +29,10 @@ const double c[] = {
 
 namespace Adsorption
 {
+const double DensityMette::M_Ads =
+    MaterialLib::PhysicalConstant::MolarMass::Water;
 
-double DensityMette::getAdsorbateDensity(const double T_Ads) const
+double DensityMette::getAdsorbateDensity(const double T_Ads)
 {
     const double T0 = 293.15;
     const double rho0 = rhoWaterDean(T0);
@@ -38,7 +42,7 @@ double DensityMette::getAdsorbateDensity(const double T_Ads) const
 
 
 // Thermal expansivity model for water found in the works of Hauer
-double DensityMette::getAlphaT(const double T_Ads) const
+double DensityMette::getAlphaT(const double T_Ads)
 {
     const double T0 = 293.15;
     const double alpha20 = alphaTWaterDean(T0);
@@ -47,7 +51,7 @@ double DensityMette::getAlphaT(const double T_Ads) const
 
 
 // Characteristic curve. Return W (A)
-double DensityMette::characteristicCurve(const double A) const
+double DensityMette::characteristicCurve(const double A)
 {
     double W = curvePolyfrac(c, A); // cm^3/g
 
@@ -58,9 +62,9 @@ double DensityMette::characteristicCurve(const double A) const
     return W/1.e3; // m^3/kg
 }
 
-double DensityMette::dCharacteristicCurve(const double A) const
+double DensityMette::dCharacteristicCurve(const double A)
 {
-    return dCurvePolyfrac(c, A);
+    return dCurvePolyfrac(c, A) / 1000.0;
 }
 
 }

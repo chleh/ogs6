@@ -1,6 +1,6 @@
 /**
  * \copyright
- * Copyright (c) 2012-2018, OpenGeoSys Community (http://www.opengeosys.org)
+ * Copyright (c) 2012-2017, OpenGeoSys Community (http://www.opengeosys.org)
  *            Distributed under a Modified BSD License.
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
@@ -8,7 +8,7 @@
  */
 
 #include "CreateTESProcess.h"
-#include "ProcessLib/Output/CreateSecondaryVariables.h"
+#include "ProcessLib/Utils/ParseSecondaryVariables.h"
 #include "ProcessLib/Utils/ProcessUtils.h"
 #include "TESProcess.h"
 
@@ -32,26 +32,22 @@ std::unique_ptr<Process> createTESProcess(
     //! \ogs_file_param{prj__processes__process__TES__process_variables}
     auto const pv_config = config.getConfigSubtree("process_variables");
 
-    auto per_process_variables = findProcessVariables(
+    auto process_variables = findProcessVariables(
         variables, pv_config,
-        {
-        //! \ogs_file_param_special{prj__processes__process__TES__process_variables__fluid_pressure}
-        "fluid_pressure",
-        //! \ogs_file_param_special{prj__processes__process__TES__process_variables__temperature}
-        "temperature",
-        //! \ogs_file_param_special{prj__processes__process__TES__process_variables__vapour_mass_fraction}
-        "vapour_mass_fraction"});
-    std::vector<std::vector<std::reference_wrapper<ProcessVariable>>>
-        process_variables;
-    process_variables.push_back(std::move(per_process_variables));
+        {//! \ogs_file_param_special{prj__processes__process__TES__process_variables__fluid_pressure}
+         "fluid_pressure",
+         //! \ogs_file_param_special{prj__processes__process__TES__process_variables__temperature}
+         "temperature",
+         //! \ogs_file_param_special{prj__processes__process__TES__process_variables__vapour_mass_fraction}
+         "vapour_mass_fraction"});
 
     SecondaryVariableCollection secondary_variables;
 
     NumLib::NamedFunctionCaller named_function_caller(
         {"TES_pressure", "TES_temperature", "TES_vapour_mass_fraction"});
 
-    ProcessLib::createSecondaryVariables(config, secondary_variables,
-                                         named_function_caller);
+    ProcessLib::parseSecondaryVariables(config, secondary_variables,
+                                        named_function_caller);
 
     return std::make_unique<TESProcess>(
         mesh, std::move(jacobian_assembler), parameters, integration_order,

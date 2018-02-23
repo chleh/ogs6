@@ -1,6 +1,6 @@
 /**
  * \copyright
- * Copyright (c) 2012-2018, OpenGeoSys Community (http://www.opengeosys.org)
+ * Copyright (c) 2012-2017, OpenGeoSys Community (http://www.opengeosys.org)
  *            Distributed under a Modified BSD License.
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
@@ -31,8 +31,10 @@ const double c[] = {
 
 namespace Adsorption
 {
+const double DensityDubinin::M_Ads =
+    MaterialLib::PhysicalConstant::MolarMass::Water;
 
-double DensityDubinin::getAdsorbateDensity(const double T_Ads) const
+double DensityDubinin::getAdsorbateDensity(const double T_Ads)
 {
     const double Tb = 373.1;
 
@@ -53,7 +55,7 @@ double DensityDubinin::getAdsorbateDensity(const double T_Ads) const
 }
 
 //Thermal expansivity model for water found in the works of Hauer
-double DensityDubinin::getAlphaT(const double T_Ads) const
+double DensityDubinin::getAlphaT(const double T_Ads)
 {
     const double Tb = 373.1;
     if (T_Ads <= Tb) {
@@ -75,7 +77,7 @@ double DensityDubinin::getAlphaT(const double T_Ads) const
 }
 
 // Characteristic curve. Return W (A)
-double DensityDubinin::characteristicCurve(const double A) const
+double DensityDubinin::characteristicCurve(const double A)
 {
     double W = curvePolyfrac(c, A); // cm^3/g
 
@@ -86,9 +88,9 @@ double DensityDubinin::characteristicCurve(const double A) const
     return W/1.e3; // m^3/kg
 }
 
-double DensityDubinin::dCharacteristicCurve(const double A) const
+double DensityDubinin::dCharacteristicCurve(const double A)
 {
-    return dCurvePolyfrac(c, A);
+    return dCurvePolyfrac(c, A) / 1000.0;
 }
 
 }

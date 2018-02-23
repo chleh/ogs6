@@ -1,6 +1,6 @@
 /**
  * \copyright
- * Copyright (c) 2012-2018, OpenGeoSys Community (http://www.opengeosys.org)
+ * Copyright (c) 2012-2017, OpenGeoSys Community (http://www.opengeosys.org)
  *            Distributed under a Modified BSD License.
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
@@ -14,7 +14,6 @@
 
 #include "ProcessLib/LocalAssemblerInterface.h"
 #include "NumLib/Extrapolation/ExtrapolatableElement.h"
-#include "MeshLib/Elements/Element.h"
 #include "TESAssemblyParams.h"
 #include "TESLocalAssemblerInner-fwd.h"
 
@@ -29,26 +28,14 @@ class TESLocalAssemblerInterface
 public:
     ~TESLocalAssemblerInterface() override = default;
 
-    virtual bool checkBounds(std::vector<double> const& local_x,
-                             std::vector<double> const& local_x_prev_ts) = 0;
+    virtual void initializeSolidDensity(MeshLib::MeshItemType item_type,
+                                        std::vector<double> const& values) = 0;
 
     virtual std::vector<double> const& getIntPtSolidDensity(
         const double /*t*/,
         GlobalVector const& /*current_solution*/,
         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& /*cache*/) const = 0;
-
-    virtual std::vector<double> const& getIntPtLoading(
-        const double /*t*/,
-        GlobalVector const& /*current_solution*/,
-        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
-        std::vector<double>& cache) const = 0;
-
-    virtual std::vector<double> const& getIntPtReactionDampingFactor(
-        const double /*t*/,
-        GlobalVector const& /*current_solution*/,
-        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
-        std::vector<double>& cache) const = 0;
 
     virtual std::vector<double> const& getIntPtReactionRate(
         const double /*t*/,
@@ -61,6 +48,20 @@ public:
         GlobalVector const& /*current_solution*/,
         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& /*cache*/) const = 0;
+
+    virtual std::vector<double> const& getIntPtMassFlux(
+        const double /*t*/,
+        GlobalVector const& /*current_solution*/,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& /*cache*/) const = 0;
+
+    virtual std::vector<double> const& getIntPtConductiveHeatFlux(
+        const double /*t*/,
+        GlobalVector const& current_solution,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& cache) const = 0;
+
+    virtual TESLocalAssemblerData const& getLocalAssemblerData() const = 0;
 };
 
 template <typename ShapeFunction_, typename IntegrationMethod_,
@@ -93,26 +94,14 @@ public:
         return Eigen::Map<const Eigen::RowVectorXd>(N.data(), N.size());
     }
 
-    bool checkBounds(std::vector<double> const& local_x,
-                     std::vector<double> const& local_x_prev_ts) override;
+    void initializeSolidDensity(MeshLib::MeshItemType item_type,
+                                std::vector<double> const& values) override;
 
     std::vector<double> const& getIntPtSolidDensity(
         const double /*t*/,
         GlobalVector const& /*current_solution*/,
         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& /*cache*/) const override;
-
-    std::vector<double> const& getIntPtLoading(
-        const double /*t*/,
-        GlobalVector const& /*current_solution*/,
-        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
-        std::vector<double>& cache) const override;
-
-    std::vector<double> const& getIntPtReactionDampingFactor(
-        const double /*t*/,
-        GlobalVector const& /*current_solution*/,
-        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
-        std::vector<double>& cache) const override;
 
     std::vector<double> const& getIntPtReactionRate(
         const double /*t*/,
@@ -125,6 +114,25 @@ public:
         GlobalVector const& /*current_solution*/,
         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& /*cache*/) const override;
+
+    std::vector<double> const& getIntPtMassFlux(
+        const double /*t*/,
+        GlobalVector const& /*current_solution*/,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& /*cache*/) const override;
+
+    std::vector<double> const& getIntPtConductiveHeatFlux(
+        const double /*t*/,
+        GlobalVector const& current_solution,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& cache) const override;
+
+    void preTimestep(std::size_t const /*mesh_item_id*/,
+                     NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+                     GlobalVector const& /*x*/, double const /*t*/,
+                     double const /*delta_t*/) override;
+
+    TESLocalAssemblerData const& getLocalAssemblerData() const override;
 
 private:
     MeshLib::Element const& _element;

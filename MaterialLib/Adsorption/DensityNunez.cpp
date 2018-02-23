@@ -1,6 +1,6 @@
 /**
  * \copyright
- * Copyright (c) 2012-2018, OpenGeoSys Community (http://www.opengeosys.org)
+ * Copyright (c) 2012-2017, OpenGeoSys Community (http://www.opengeosys.org)
  *            Distributed under a Modified BSD License.
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
@@ -8,6 +8,8 @@
  */
 
 #include "DensityNunez.h"
+#include "Adsorption.h"
+#include "MaterialLib/PhysicalConstant.h"
 
 namespace
 {
@@ -28,8 +30,10 @@ const double c[] = {
 
 namespace Adsorption
 {
+const double DensityNunez::M_Ads =
+    MaterialLib::PhysicalConstant::MolarMass::Water;
 
-double DensityNunez::getAdsorbateDensity(const double T_Ads) const
+double DensityNunez::getAdsorbateDensity(const double T_Ads)
 {
     // TODO admissable T range: 273.16 K <= T_Ads <= 633.15 K
     const double a[] = { 1.0644e3,-8.01905,1.445348e-2,-4.19589e-6,-4.5294e-9 };
@@ -41,7 +45,7 @@ double DensityNunez::getAdsorbateDensity(const double T_Ads) const
 
 
 // Thermal expansivity model for water found in the works of Hauer
-double DensityNunez::getAlphaT(const double T_Ads) const
+double DensityNunez::getAlphaT(const double T_Ads)
 {
     // TODO admissable T range: 273.16 K <= T_Ads <= 633.15 K
     const double a[] = { 1.0644e3,-8.01905,1.445348e-2,-4.19589e-6,-4.5294e-9 };
@@ -55,7 +59,7 @@ double DensityNunez::getAlphaT(const double T_Ads) const
 
 
 // Characteristic curve. Return W (A)
-double DensityNunez::characteristicCurve(const double A) const
+double DensityNunez::characteristicCurve(const double A)
 {
     double W = curvePolyfrac(c, A); // cm^3/g
 
@@ -66,9 +70,9 @@ double DensityNunez::characteristicCurve(const double A) const
     return W/1.e3; // m^3/kg
 }
 
-double DensityNunez::dCharacteristicCurve(const double A) const
+double DensityNunez::dCharacteristicCurve(const double A)
 {
-    return dCurvePolyfrac(c, A);
+    return dCurvePolyfrac(c, A) / 1000.0;
 }
 
 }

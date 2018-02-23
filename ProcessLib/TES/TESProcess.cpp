@@ -1,6 +1,6 @@
 /**
  * \copyright
- * Copyright (c) 2012-2018, OpenGeoSys Community (http://www.opengeosys.org)
+ * Copyright (c) 2012-2017, OpenGeoSys Community (http://www.opengeosys.org)
  *            Distributed under a Modified BSD License.
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
@@ -8,9 +8,13 @@
  */
 
 #include "TESProcess.h"
+
 #include "BaseLib/Functional.h"
 #include "NumLib/DOF/DOFTableUtil.h"
 #include "ProcessLib/Utils/CreateLocalAssemblers.h"
+#include "ProcessLib/Utils/ProcessUtils.h"
+
+#include "TESOGS5MaterialModels.h"
 
 namespace ProcessLib
 {
@@ -21,8 +25,7 @@ TESProcess::TESProcess(
     std::unique_ptr<AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<std::unique_ptr<ParameterBase>> const& parameters,
     unsigned const integration_order,
-    std::vector<std::vector<std::reference_wrapper<ProcessVariable>>>&&
-        process_variables,
+    std::vector<std::reference_wrapper<ProcessVariable>>&& process_variables,
     SecondaryVariableCollection&& secondary_variables,
     NumLib::NamedFunctionCaller&& named_function_caller,
     const BaseLib::ConfigTree& config)
@@ -49,70 +52,75 @@ TESProcess::TESProcess(
             {"solid_specific_isobaric_heat_capacity", &_assembly_params.cpS},
             //! \ogs_file_param_special{prj__processes__process__TES__tortuosity}
             {"tortuosity", &_assembly_params.tortuosity},
-            //! \ogs_file_param_special{prj__processes__process__TES__diffusion_coefficient}
-            {"diffusion_coefficient",
-             &_assembly_params.diffusion_coefficient_component},
-            //! \ogs_file_param_special{prj__processes__process__TES__porosity}
-            {"porosity", &_assembly_params.poro},
             //! \ogs_file_param_special{prj__processes__process__TES__solid_density_dry}
             {"solid_density_dry", &_assembly_params.rho_SR_dry},
+            //! \ogs_file_param_special{prj__processes__process__TES__solid_density_lower_limit}
+            {"solid_density_lower_limit", &_assembly_params.rho_SR_lower},
+            //! \ogs_file_param_special{prj__processes__process__TES__solid_density_upper_limit}
+            {"solid_density_upper_limit", &_assembly_params.rho_SR_upper},
             //! \ogs_file_param_special{prj__processes__process__TES__solid_density_initial}
             {"solid_density_initial", &_assembly_params.initial_solid_density}};
 
         for (auto const& p : params)
         {
-            if (auto const par =
-                    //! \ogs_file_special
-                    config.getConfigParameterOptional<double>(p.first))
-            {
-                DBUG("setting parameter `%s' to value `%g'", p.first.c_str(),
-                     *par);
-                *p.second = *par;
-            }
+            auto const par =
+                //! \ogs_file_special
+                config.getConfigParameter<double>(p.first);
+            DBUG("setting parameter `%s' to value `%g'", p.first.c_str(), par);
+            *p.second = par;
         }
     }
 
-    // characteristic values of primary variables
-    {
-        std::vector<std::pair<std::string, Trafo*>> const params{
-            //! \ogs_file_param_special{prj__processes__process__TES__characteristic_pressure}
-            {"characteristic_pressure", &_assembly_params.trafo_p},
-            //! \ogs_file_param_special{prj__processes__process__TES__characteristic_temperature}
-            {"characteristic_temperature", &_assembly_params.trafo_T},
-            //! \ogs_file_param_special{prj__processes__process__TES__characteristic_vapour_mass_fraction}
-            {"characteristic_vapour_mass_fraction", &_assembly_params.trafo_x}};
+    //! \ogs_file_param_special{process__TES__porosity}
+    _assembly_params.poro =
+        &findParameter<double>(config, "porosity", parameters, 1);
 
-        for (auto const& p : params)
-        {
-            if (auto const par =
-                    //! \ogs_file_special
-                    config.getConfigParameterOptional<double>(p.first))
-            {
-                INFO("setting parameter `%s' to value `%g'", p.first.c_str(),
-                     *par);
-                *p.second = Trafo{*par};
-            }
-        }
+    //! \ogs_file_param{process__TES__permeability}
+    _assembly_params.permeability =
+        &findParameter<double>(config, "permeability", parameters, 1);
+
+    _assembly_params.dielectric_heating_term_enabled =
+        config.getConfigParameter<bool>("dielectric_heating_term_enabled");
+
+    if (auto const heat_loss =
+            config.getConfigSubtreeOptional("volumetric_heat_loss"))
+    {
+        _assembly_params.volumetric_heat_loss =
+            createVolumetricHeatLoss(*heat_loss);
     }
 
-    // permeability
-    if (auto par =
-            //! \ogs_file_param{prj__processes__process__TES__solid_hydraulic_permeability}
-            config.getConfigParameterOptional<double>("solid_hydraulic_permeability"))
+    _assembly_params.diffusion_coefficient_component =
+        createDiffusionCoefficient(
+            //! \ogs_file_param_special{process__TES__diffusion_coefficient}
+            config.getConfigSubtree("diffusion_coefficient"));
+
+    if (_assembly_params.dielectric_heating_term_enabled)
     {
-        DBUG(
-            "setting parameter `solid_hydraulic_permeability' to isotropic "
-            "value `%g'",
-            *par);
-        const auto dim = mesh.getDimension();
-        _assembly_params.solid_perm_tensor =
-            Eigen::MatrixXd::Identity(dim, dim) * (*par);
+        auto const hps = config.getConfigSubtree("heating_power_scaling");
+        _assembly_params.heating_power_scaling =
+            MathLib::PiecewiseLinearInterpolation(
+                hps.getConfigParameter<std::vector<double>>("times"),
+                hps.getConfigParameter<std::vector<double>>("scalings"), false);
+    }
+    else
+    {
+        config.ignoreConfigParameter("heating_power_scaling");
     }
 
-    // reactive system
-    _assembly_params.react_sys = Adsorption::AdsorptionReaction::newInstance(
-        //! \ogs_file_param{prj__processes__process__TES__reactive_system}
-        config.getConfigSubtree("reactive_system"));
+    if (auto prop = config.getConfigParameterOptional<std::string>(
+            "initial_solid_density_mesh_property"))
+    {
+        assert(!prop->empty());
+        _assembly_params.initial_solid_density_mesh_property = *prop;
+    }
+
+    _assembly_params.reaction_rate = MaterialLib::createReactionRate(
+        //! \ogs_file_param{process__TES__reaction_rate}
+        config.getConfigSubtree("reaction_rate"));
+
+    _assembly_params.reactive_solid = MaterialLib::createReactiveSolidModel(
+        //! \ogs_file_param{process__TES__reactive_solid}
+        config.getConfigSubtree("reactive_solid"), parameters);
 
     // debug output
     if (auto const param =
@@ -141,15 +149,75 @@ void TESProcess::initializeConcreteProcess(
     NumLib::LocalToGlobalIndexMap const& dof_table,
     MeshLib::Mesh const& mesh, unsigned const integration_order)
 {
-    const int monolithic_process_id = 0;
-    ProcessLib::ProcessVariable const& pv =
-        getProcessVariables(monolithic_process_id)[0];
+    _assembly_params.dof_table = _local_to_global_index_map.get();
+
+    ProcessLib::ProcessVariable const& pv = getProcessVariables()[0];
     ProcessLib::createLocalAssemblers<TESLocalAssembler>(
         mesh.getDimension(), mesh.getElements(), dof_table,
         pv.getShapeFunctionOrder(), _local_assemblers,
         mesh.isAxiallySymmetric(), integration_order, _assembly_params);
 
     initializeSecondaryVariables();
+
+    // set initial solid density from mesh property
+    if (!_assembly_params.initial_solid_density_mesh_property.empty())
+    {
+        auto prop = mesh.getProperties().template getPropertyVector<double>(
+            _assembly_params.initial_solid_density_mesh_property);
+        if (!prop)
+            OGS_FATAL(
+                "property `%s' not found.",
+                _assembly_params.initial_solid_density_mesh_property.c_str());
+        if (prop->getNumberOfComponents() != 1)
+            OGS_FATAL(
+                "property `%s' not found has %d components instead of the "
+                "expected value of one.",
+                _assembly_params.initial_solid_density_mesh_property.c_str(),
+                prop->getNumberOfComponents());
+
+        switch (prop->getMeshItemType())
+        {
+            case MeshLib::MeshItemType::Cell:
+            {
+                auto init_solid_density =
+                    [&prop](std::size_t id,
+                            TESLocalAssemblerInterface& loc_asm) {
+                        // TODO loc_asm_id is assumed to be the mesh element id.
+                        loc_asm.initializeSolidDensity(
+                            MeshLib::MeshItemType::Cell, {{(*prop)[id]}});
+                    };
+
+                NumLib::SerialExecutor::executeDereferenced(init_solid_density,
+                                                            _local_assemblers);
+                break;
+            }
+            case MeshLib::MeshItemType::Node:
+            {
+                std::vector<GlobalIndexType> indices;
+                std::vector<double> values;
+
+                auto init_solid_density =
+                    [&](std::size_t id, TESLocalAssemblerInterface& loc_asm) {
+                        NumLib::getRowColumnIndices(
+                            id, getSingleComponentDOFTable(), indices);
+                        values.clear();
+                        for (auto i : indices)
+                            values.push_back((*prop)[i]);
+
+                        loc_asm.initializeSolidDensity(
+                            MeshLib::MeshItemType::Node, values);
+                    };
+
+                NumLib::SerialExecutor::executeDereferenced(init_solid_density,
+                                                            _local_assemblers);
+                break;
+            }
+            default:
+                ERR("Unhandled mesh item type for initialization of secondary "
+                    "variable.");
+                std::abort();
+        }
+    }
 }
 
 void TESProcess::initializeSecondaryVariables()
@@ -160,24 +228,11 @@ void TESProcess::initializeSecondaryVariables()
         _secondary_variables.addSecondaryVariable(var_name, std::move(fcts));
     };
 
-    // creates an extrapolator
-    auto makeEx = [&](
-        unsigned const n_components,
-        std::vector<double> const& (TESLocalAssemblerInterface::*method)(
-            const double /*t*/,
-            GlobalVector const& /*current_solution*/,
-            NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
-            std::vector<double>& /*cache*/)
-            const) -> SecondaryVariableFunctions {
-        return ProcessLib::makeExtrapolator(n_components, getExtrapolator(),
-                                            _local_assemblers, method);
-    };
-
     // named functions: vapour partial pressure ////////////////////////////////
     auto p_V_fct = [=](const double p, const double x_mV) {
         const double x_nV = Adsorption::AdsorptionReaction::getMolarFraction(
             x_mV, _assembly_params.M_react, _assembly_params.M_inert);
-        return p*x_nV;
+        return p * x_nV;
     };
     _named_function_caller.addNamedFunction(
         {"vapour_partial_pressure",
@@ -204,6 +259,83 @@ void TESProcess::initializeSecondaryVariables()
     _cached_secondary_variables.emplace_back(std::move(solid_density));
     // /////////////////////////////////////////////////////////////////////////
 
+    // named functions: fluid density //////////////////////////////////////////
+    auto rho_GR_fct = [](const double p, const double T, const double x_mV) {
+        return fluid_density(p, T, x_mV);
+    };
+    _named_function_caller.addNamedFunction(
+        {"fluid_density",
+         {"pressure", "temperature", "vapour_mass_fraction"},
+         BaseLib::easyBind(std::move(rho_GR_fct))});
+    _named_function_caller.plug("fluid_density", "pressure", "TES_pressure");
+    _named_function_caller.plug("fluid_density", "temperature",
+                                "TES_temperature");
+    _named_function_caller.plug("fluid_density", "vapour_mass_fraction",
+                                "TES_vapour_mass_fraction");
+    // //////////////////////////////////////////////////////////////////////////
+
+    // named functions: diffusion coefficient
+    // //////////////////////////////////////////
+    auto D_fct = [this](const double p, const double T, const double p_V) {
+        return _assembly_params.diffusion_coefficient_component
+            ->getDiffusionCoefficient(p, T, p_V);
+    };
+    _named_function_caller.addNamedFunction(
+        {"diffusion_coefficient",
+         {"pressure", "temperature", "vapour_partial_pressure"},
+         BaseLib::easyBind(std::move(D_fct))});
+    _named_function_caller.plug("diffusion_coefficient", "pressure",
+                                "TES_pressure");
+    _named_function_caller.plug("diffusion_coefficient", "temperature",
+                                "TES_temperature");
+    _named_function_caller.plug("diffusion_coefficient",
+                                "vapour_partial_pressure",
+                                "vapour_partial_pressure");
+    // //////////////////////////////////////////////////////////////////////////
+
+    // named functions: volumetric heating power
+    // ////////////////////////////////
+    if (_assembly_params.dielectric_heating_term_enabled)
+    {
+        auto heat_power_fct = [this](const double T,
+                                     const double rho_SR) -> double {
+            auto const loading = Adsorption::AdsorptionReaction::getLoading(
+                rho_SR, _assembly_params.rho_SR_dry);
+            auto const t = _assembly_params.current_time;
+            // TODO check if heating_power_scaling is provided.
+            return _assembly_params.heating_power_scaling.getValue(t) *
+                   getVolumetricJouleHeatingPower(T, loading);
+        };
+        _named_function_caller.addNamedFunction(
+            {"volumetric_joule_heating_power",
+             {"temperature", "solid_density"},
+             BaseLib::easyBind(std::move(heat_power_fct))});
+        _named_function_caller.plug("volumetric_joule_heating_power",
+                                    "temperature", "TES_temperature");
+        _named_function_caller.plug("volumetric_joule_heating_power",
+                                    "solid_density", "TES_solid_density");
+    }
+    // /////////////////////////////////////////////////////////////////////////
+
+    // named functions: from kinetics
+    for (auto&& fct : _assembly_params.reactive_solid->getNamedFunctions())
+        _named_function_caller.addNamedFunction(std::move(fct));
+    for (auto&& fct : _assembly_params.reaction_rate->getNamedFunctions())
+        _named_function_caller.addNamedFunction(std::move(fct));
+
+    // creates an extrapolator
+    auto makeEx =
+        [&](unsigned const n_components,
+            std::vector<double> const& (TESLocalAssemblerInterface::*method)(
+                const double /*t*/,
+                GlobalVector const& /*current_solution*/,
+                NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+                std::vector<double>& /*cache*/)
+                const) -> SecondaryVariableFunctions {
+        return ProcessLib::makeExtrapolator(n_components, getExtrapolator(),
+                                            _local_assemblers, method);
+    };
+
     add2nd("reaction_rate",
            makeEx(1, &TESLocalAssemblerInterface::getIntPtReactionRate));
 
@@ -211,147 +343,153 @@ void TESProcess::initializeSecondaryVariables()
            makeEx(_mesh.getDimension(),
                   &TESLocalAssemblerInterface::getIntPtDarcyVelocity));
 
-    add2nd("loading", makeEx(1, &TESLocalAssemblerInterface::getIntPtLoading));
-    add2nd(
-        "reaction_damping_factor",
-        makeEx(1, &TESLocalAssemblerInterface::getIntPtReactionDampingFactor));
+    add2nd("mass_flux",
+           makeEx(_mesh.getDimension(),
+                  &TESLocalAssemblerInterface::getIntPtMassFlux));
+
+    add2nd("conductive_heat_flux",
+           makeEx(_mesh.getDimension(),
+                  &TESLocalAssemblerInterface::getIntPtConductiveHeatFlux));
 
     add2nd("relative_humidity",
            {1, BaseLib::easyBind(&TESProcess::computeRelativeHumidity, this),
             nullptr});
-    add2nd("equilibrium_loading",
-           {1, BaseLib::easyBind(&TESProcess::computeEquilibriumLoading, this),
+
+    add2nd("fluid_viscosity",
+           {1, BaseLib::easyBind(&TESProcess::computeFluidViscosity, this),
             nullptr});
+
+    // /// reactive solid state ////////////////////////////////////////
+    for (auto& internal_state :
+         _assembly_params.reactive_solid->getInternalStateVariables())
+    {
+        auto eval = std::move(internal_state.eval);
+        auto const dim = internal_state.dim;
+
+        auto f = [eval, dim](
+                     TESLocalAssemblerInterface const& loc_asm,
+                     const double /*t*/,
+                     GlobalVector const& /*current_solution*/,
+                     NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+                     std::vector<double>& cache) -> std::vector<double> const& {
+
+            auto const& solid_states =
+                loc_asm.getLocalAssemblerData().reactive_solid_state;
+            auto const n = solid_states.size();
+            cache.resize(dim * n);
+            std::vector<double> cache2(dim);
+
+            for (std::size_t i = 0; i < n; ++i)
+            {
+                auto& eval_result = eval(*solid_states[i], cache2);
+                for (std::size_t d = 0; d < dim; ++d)
+                {
+                    cache[i + n * d] = eval_result[d];
+                }
+            }
+
+            return cache;
+        };
+
+        auto ex = makeExtrapolator(internal_state.dim, getExtrapolator(),
+                                   _local_assemblers,
+                                   BaseLib::easyBind(std::move(f)));
+        add2nd(internal_state.name, std::move(ex));
+    }
+
+    // /// reaction rate ///////////////////////////////////////////////
+    for (auto& reaction_rate_variable :
+         _assembly_params.reactive_solid->getRateVariables())
+    {
+        auto eval = std::move(reaction_rate_variable.eval);
+        auto const dim = reaction_rate_variable.dim;
+
+        auto f = [eval, dim](
+                     TESLocalAssemblerInterface const& loc_asm,
+                     const double /*t*/,
+                     GlobalVector const& /*current_solution*/,
+                     NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+                     std::vector<double>& cache) -> std::vector<double> const& {
+
+            auto const& reaction_rates =
+                loc_asm.getLocalAssemblerData().reaction_rate;
+            auto const n = reaction_rates.size();
+            cache.resize(dim * n);
+            std::vector<double> cache2(dim);
+
+            for (std::size_t i = 0; i < n; ++i)
+            {
+                auto& eval_result = eval(*reaction_rates[i], cache2);
+                for (std::size_t d = 0; d < dim; ++d)
+                {
+                    cache[i + n * d] = eval_result[d];
+                }
+            }
+
+            return cache;
+        };
+
+        auto ex = makeExtrapolator(reaction_rate_variable.dim,
+                                   getExtrapolator(), _local_assemblers,
+                                   BaseLib::easyBind(std::move(f)));
+        add2nd(reaction_rate_variable.name, std::move(ex));
+    }
 }
 
-void TESProcess::assembleConcreteProcess(const double t,
-                                         GlobalVector const& x,
-                                         GlobalMatrix& M,
-                                         GlobalMatrix& K,
-                                         GlobalVector& b)
+void TESProcess::assembleConcreteProcess(
+    const double t,
+    GlobalVector const& x,
+    GlobalMatrix& M,
+    GlobalMatrix& K,
+    GlobalVector& b,
+    StaggeredCouplingTerm const& coupling_term)
 {
     DBUG("Assemble TESProcess.");
 
-    std::vector<std::reference_wrapper<NumLib::LocalToGlobalIndexMap>>
-       dof_table = {std::ref(*_local_to_global_index_map)};
     // Call global assembler for each local assembly item.
     GlobalExecutor::executeMemberDereferenced(
         _global_assembler, &VectorMatrixAssembler::assemble, _local_assemblers,
-        dof_table, t, x, M, K, b, _coupled_solutions);
+        *_local_to_global_index_map, t, x, M, K, b, coupling_term);
 }
 
 void TESProcess::assembleWithJacobianConcreteProcess(
     const double t, GlobalVector const& x, GlobalVector const& xdot,
     const double dxdot_dx, const double dx_dx, GlobalMatrix& M, GlobalMatrix& K,
-    GlobalVector& b, GlobalMatrix& Jac)
+    GlobalVector& b, GlobalMatrix& Jac,
+    StaggeredCouplingTerm const& coupling_term)
 {
-    std::vector<std::reference_wrapper<NumLib::LocalToGlobalIndexMap>>
-       dof_table = {std::ref(*_local_to_global_index_map)};
-    // Call global assembler for each local assembly item.
     GlobalExecutor::executeMemberDereferenced(
         _global_assembler, &VectorMatrixAssembler::assembleWithJacobian,
-        _local_assemblers, dof_table, t, x, xdot, dxdot_dx,
-        dx_dx, M, K, b, Jac, _coupled_solutions);
+        _local_assemblers, *_local_to_global_index_map, t, x, xdot, dxdot_dx,
+        dx_dx, M, K, b, Jac, coupling_term);
 }
 
 void TESProcess::preTimestepConcreteProcess(GlobalVector const& x,
                                             const double t,
-                                            const double delta_t,
-                                            const int /*process_id*/)
+                                            const double delta_t)
 {
     DBUG("new timestep");
 
     _assembly_params.delta_t = delta_t;
     _assembly_params.current_time = t;
-    ++_assembly_params.timestep;  // TODO remove that
 
-    _x_previous_timestep =
-        MathLib::MatrixVectorTraits<GlobalVector>::newInstance(x);
+    GlobalExecutor::executeMemberOnDereferenced(
+        &TESLocalAssemblerInterface::preTimestep, _local_assemblers,
+        *_local_to_global_index_map, x, t, delta_t);
 }
 
 void TESProcess::preIterationConcreteProcess(const unsigned iter,
                                              GlobalVector const& /*x*/)
 {
-    _assembly_params.iteration_in_current_timestep = iter;
-    ++_assembly_params.total_iteration;
-    ++_assembly_params.number_of_try_of_iteration;
+    _assembly_params.reactive_solid->preIteration(iter);
+    _assembly_params.reaction_rate->preIteration(iter);
 }
 
 NumLib::IterationResult TESProcess::postIterationConcreteProcess(
-    GlobalVector const& x)
+    GlobalVector const& /*x*/)
 {
-    bool check_passed = true;
-
-    if (!Trafo::constrained)
-    {
-        // bounds checking only has to happen if the vapour mass fraction is
-        // non-logarithmic.
-
-        std::vector<GlobalIndexType> indices_cache;
-        std::vector<double> local_x_cache;
-        std::vector<double> local_x_prev_ts_cache;
-
-        MathLib::LinAlg::setLocalAccessibleVector(*_x_previous_timestep);
-
-        auto check_variable_bounds = [&](std::size_t id,
-                                         TESLocalAssemblerInterface& loc_asm) {
-            auto const r_c_indices = NumLib::getRowColumnIndices(
-                id, *this->_local_to_global_index_map, indices_cache);
-            local_x_cache = x.get(r_c_indices.rows);
-            local_x_prev_ts_cache = _x_previous_timestep->get(r_c_indices.rows);
-
-            if (!loc_asm.checkBounds(local_x_cache, local_x_prev_ts_cache))
-                check_passed = false;
-        };
-
-        GlobalExecutor::executeDereferenced(check_variable_bounds,
-                                         _local_assemblers);
-    }
-
-    if (!check_passed)
-        return NumLib::IterationResult::REPEAT_ITERATION;
-
-    // TODO remove
-    DBUG("ts %lu iteration %lu (in current ts: %lu) try %u accepted",
-         _assembly_params.timestep, _assembly_params.total_iteration,
-         _assembly_params.iteration_in_current_timestep,
-         _assembly_params.number_of_try_of_iteration);
-
-    _assembly_params.number_of_try_of_iteration = 0;
-
+    _assembly_params.reactive_solid->postIteration();
     return NumLib::IterationResult::SUCCESS;
-}
-
-GlobalVector const& TESProcess::computeVapourPartialPressure(
-    const double /*t*/,
-    GlobalVector const& x,
-    NumLib::LocalToGlobalIndexMap const& dof_table,
-    std::unique_ptr<GlobalVector>& result_cache)
-{
-    assert(&dof_table == _local_to_global_index_map.get());
-
-    auto const& dof_table_single = getSingleComponentDOFTable();
-    result_cache = MathLib::MatrixVectorTraits<GlobalVector>::newInstance(
-        {dof_table_single.dofSizeWithoutGhosts(),
-         dof_table_single.dofSizeWithoutGhosts(),
-         &dof_table_single.getGhostIndices(), nullptr});
-
-    GlobalIndexType const nnodes = _mesh.getNumberOfNodes();
-
-    for (GlobalIndexType node_id = 0; node_id < nnodes; ++node_id)
-    {
-        auto const p = NumLib::getNodalValue(x, _mesh, dof_table, node_id,
-                                             COMPONENT_ID_PRESSURE);
-        auto const x_mV = NumLib::getNodalValue(x, _mesh, dof_table, node_id,
-                                                COMPONENT_ID_MASS_FRACTION);
-
-        auto const x_nV = Adsorption::AdsorptionReaction::getMolarFraction(
-            x_mV, _assembly_params.M_react, _assembly_params.M_inert);
-
-        result_cache->set(node_id, p * x_nV);
-    }
-
-    return *result_cache;
 }
 
 GlobalVector const& TESProcess::computeRelativeHumidity(
@@ -385,14 +523,15 @@ GlobalVector const& TESProcess::computeRelativeHumidity(
         auto const p_S =
             Adsorption::AdsorptionReaction::getEquilibriumVapourPressure(T);
 
+        // TODO Problems with PETSc? (local vs. global index)
         result_cache->set(node_id, p * x_nV / p_S);
     }
 
     return *result_cache;
 }
 
-GlobalVector const& TESProcess::computeEquilibriumLoading(
-    double const /*t*/,
+GlobalVector const& TESProcess::computeFluidViscosity(
+    const double /*t*/,
     GlobalVector const& x,
     NumLib::LocalToGlobalIndexMap const& dof_table,
     std::unique_ptr<GlobalVector>& result_cache)
@@ -413,19 +552,13 @@ GlobalVector const& TESProcess::computeEquilibriumLoading(
                                              COMPONENT_ID_PRESSURE);
         auto const T = NumLib::getNodalValue(x, _mesh, dof_table, node_id,
                                              COMPONENT_ID_TEMPERATURE);
-        auto const x_mV = NumLib::getNodalValue(
-            x, _mesh, dof_table, node_id, COMPONENT_ID_MASS_FRACTION);
+        auto const x_mV = NumLib::getNodalValue(x, _mesh, dof_table, node_id,
+                                                COMPONENT_ID_MASS_FRACTION);
 
-        auto const x_nV = Adsorption::AdsorptionReaction::getMolarFraction(
-            x_mV, _assembly_params.M_react, _assembly_params.M_inert);
+        auto const eta_GR = fluid_viscosity(p, T, x_mV);
 
-        auto const p_V = p * x_nV;
-        auto const C_eq =
-            (p_V <= 0.0) ? 0.0
-                         : _assembly_params.react_sys->getEquilibriumLoading(
-                               p_V, T, _assembly_params.M_react);
-
-        result_cache->set(node_id, C_eq);
+        // TODO Problems with PETSc? (local vs. global index)
+        result_cache->set(node_id, eta_GR);
     }
 
     return *result_cache;

@@ -1,6 +1,6 @@
 /**
  * \copyright
- * Copyright (c) 2012-2018, OpenGeoSys Community (http://www.opengeosys.org)
+ * Copyright (c) 2012-2017, OpenGeoSys Community (http://www.opengeosys.org)
  *            Distributed under a Modified BSD License.
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
@@ -8,7 +8,9 @@
  */
 
 #include "DensityConst.h"
+#include "Adsorption.h"
 #include "DensityHauer.h"
+#include "MaterialLib/PhysicalConstant.h"
 
 namespace
 {
@@ -29,19 +31,21 @@ const double c[] = {
 
 namespace Adsorption
 {
+const double DensityConst::M_Ads =
+    MaterialLib::PhysicalConstant::MolarMass::Water;
 
-double DensityConst::getAdsorbateDensity(const double /*T_Ads*/) const
+double DensityConst::getAdsorbateDensity(const double /*T_Ads*/)
 {
-    return rhoWaterHauer(150.0+273.15);
+    return DensityHauer::getAdsorbateDensity(150.0 + 273.15);
 }
 
-double DensityConst::getAlphaT(const double /*T_Ads*/) const
+double DensityConst::getAlphaT(const double /*T_Ads*/)
 {
     return 0.0;
 }
 
 // Characteristic curve. Return W (A)
-double DensityConst::characteristicCurve(const double A) const
+double DensityConst::characteristicCurve(const double A)
 {
     double W = curvePolyfrac(c, A); //cm^3/g
 
@@ -52,9 +56,9 @@ double DensityConst::characteristicCurve(const double A) const
     return W/1.e3; // m^3/kg
 }
 
-double DensityConst::dCharacteristicCurve(const double A) const
+double DensityConst::dCharacteristicCurve(const double A)
 {
-    return dCurvePolyfrac(c, A);
+    return dCurvePolyfrac(c, A) / 1000.0;
 }
 
 }

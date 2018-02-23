@@ -1,6 +1,6 @@
 /**
  * \copyright
- * Copyright (c) 2012-2018, OpenGeoSys Community (http://www.opengeosys.org)
+ * Copyright (c) 2012-2017, OpenGeoSys Community (http://www.opengeosys.org)
  *            Distributed under a Modified BSD License.
  *              See accompanying file LICENSE.txt or
  *              http://www.opengeosys.org/project/license
@@ -8,6 +8,8 @@
  */
 
 #include "DensityHauer.h"
+#include "Adsorption.h"
+#include "MaterialLib/PhysicalConstant.h"
 
 namespace
 {
@@ -28,14 +30,20 @@ const double c[] = {
 
 namespace Adsorption
 {
+const double DensityHauer::M_Ads =
+    MaterialLib::PhysicalConstant::MolarMass::Water;
 
-double DensityHauer::getAdsorbateDensity(const double T_Ads) const
+double DensityHauer::getAdsorbateDensity(const double T_Ads)
 {
-    return rhoWaterHauer(T_Ads);
+    // data like in python script
+    const double T0 = 283.15, rho0 = rhoWaterDean(T0),
+                 alpha0 = 3.781e-4;  // K; kg/m^3; 1/K
+
+    return rho0 * (1. - alpha0 * (T_Ads - T0));  // in kg/m^3
 }
 
 // Thermal expansivity model for water found in the works of Hauer
-double DensityHauer::getAlphaT(const double T_Ads) const
+double DensityHauer::getAlphaT(const double T_Ads)
 {
     // data like in python script
     const double T0 = 283.15, alpha0 = 3.781e-4; //K; 1/K
@@ -44,7 +52,7 @@ double DensityHauer::getAlphaT(const double T_Ads) const
 }
 
 // Characteristic curve. Return W (A)
-double DensityHauer::characteristicCurve(const double A) const
+double DensityHauer::characteristicCurve(const double A)
 {
     double W = curvePolyfrac(c, A); // cm^3/g
 
@@ -55,9 +63,9 @@ double DensityHauer::characteristicCurve(const double A) const
     return W/1.e3; // m^3/kg
 }
 
-double DensityHauer::dCharacteristicCurve(const double A) const
+double DensityHauer::dCharacteristicCurve(const double A)
 {
-    return dCurvePolyfrac(c, A);
+    return dCurvePolyfrac(c, A) / 1000.0;
 }
 
 }
