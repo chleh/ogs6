@@ -148,7 +148,11 @@ private:
 
     static const int pressure_index = 0;
     static const int pressure_size = ShapeFunctionPressure::NPOINTS;
-    static const int velocity_index = ShapeFunctionPressure::NPOINTS;
+    static const int temperature_index = pressure_index + pressure_size;
+    static const int temperature_size = ShapeFunctionPressure::NPOINTS;
+    static const int mass_fraction_index = temperature_index + temperature_size;
+    static const int mass_fraction_size = ShapeFunctionPressure::NPOINTS;
+    static const int velocity_index = mass_fraction_index + mass_fraction_size;
     static const int velocity_size =
         ShapeFunctionVelocity::NPOINTS * VelocityDim;
     static const int kelvin_vector_size =

@@ -87,7 +87,7 @@ void TCHSStokesLocalAssembler<
                            std::vector<double>& local_K_data,
                            std::vector<double>& local_rhs_data)
 {
-    assert(local_x.size() == pressure_size + velocity_size);
+    assert(local_x.size() == velocity_index + velocity_size);
 
     auto nodal_v =
         Eigen::Map<typename ShapeMatricesTypeVelocity::template VectorType<
