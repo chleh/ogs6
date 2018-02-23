@@ -213,8 +213,9 @@ void TCHSStokesLocalAssembler<
         double const rho_GR = 1.0;
         double const M_G = 1.0;
         double const dMG_dxmV = 1.0;
-        double const lambda = 1.0;
-        double const D = 1.0;
+        double const total_heat_conductivity =
+            1.0;  // e.g. phi_G * c_pG + phi_S * c_pS
+        double const diffusion_coefficient = 1.0;
         double const c_pG = 1.0;
         double const hat_rho_S = 1.0;
         double const Delta_h_ads = 1.0;
@@ -293,7 +294,7 @@ void TCHSStokesLocalAssembler<
         // K_TT
         Block::block(local_K, Block::T, Block::T).noalias() +=
             N_1.transpose() * (rho_GR * c_pG * w) * v.transpose() * dNdx_1 +
-            dNdx_1.transpose() * lambda * w * dNdx_1;
+            dNdx_1.transpose() * total_heat_conductivity * w * dNdx_1;
 
         // K_Tx = 0
 
@@ -308,7 +309,7 @@ void TCHSStokesLocalAssembler<
         Block::block(local_K, Block::X, Block::X).noalias() +=
             N_1.transpose() * (rho_GR * w) * v.transpose() * dNdx_1 -
             N_1.transpose() * (hat_rho_S * w) * N_1 +
-            dNdx_1.transpose() * (rho_GR * w) * D * dNdx_1;
+            dNdx_1.transpose() * (rho_GR * w) * diffusion_coefficient * dNdx_1;
 
         // K_xv = 0
 
