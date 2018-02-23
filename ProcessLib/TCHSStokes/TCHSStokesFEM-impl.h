@@ -84,7 +84,7 @@ template <typename ShapeFunctionVelocity, typename ShapeFunctionPressure,
 void TCHSStokesLocalAssembler<
     ShapeFunctionVelocity, ShapeFunctionPressure, IntegrationMethod,
     VelocityDim>::assemble(double const t, std::vector<double> const& local_x,
-                           std::vector<double>& /*local_M_data*/,
+                           std::vector<double>& local_M_data,
                            std::vector<double>& local_K_data,
                            std::vector<double>& local_rhs_data)
 {
@@ -100,6 +100,13 @@ void TCHSStokesLocalAssembler<
     auto const nodal_T = map_vector_segment(local_x, Block::T);
     auto const nodal_xmV = map_vector_segment(local_x, Block::X);
     auto const nodal_v = map_vector_segment(local_x, Block::V);
+
+    auto local_M = MathLib::createZeroedMatrix<
+        typename ShapeMatricesTypeVelocity::template MatrixType<
+            Block::index(Block::V) + Block::size(Block::V),
+            Block::index(Block::V) + Block::size(Block::V)>>(
+        local_M_data, Block::index(Block::V) + Block::size(Block::V),
+        Block::index(Block::V) + Block::size(Block::V));
 
     auto local_K = MathLib::createZeroedMatrix<
         typename ShapeMatricesTypeVelocity::template MatrixType<
@@ -211,8 +218,57 @@ void TCHSStokesLocalAssembler<
         double const c_pG = 1.0;
         double const hat_rho_S = 1.0;
         double const Delta_h_ads = 1.0;
+        double const total_heat_capacity = 1.0;  // rho_G * c_pG + rho_S * c_pS
 
         // assemble local matrices /////////////////////////////////////////////
+
+        // M_p? (total mass balance) ///////////////////////////////////////////
+        // M_pp
+        Block::block(local_M, Block::P, Block::P).noalias() +=
+            N_1.transpose() * (rho_GR * porosity / p * w) * N_1;
+
+        // M_pT
+        Block::block(local_M, Block::P, Block::T).noalias() -=
+            N_1.transpose() * (rho_GR * porosity / T * w) * N_1;
+
+        // M_px
+        Block::block(local_M, Block::P, Block::X).noalias() +=
+            N_1.transpose() * (rho_GR * porosity / M_G * dMG_dxmV * w) * N_1;
+
+        // M_pv = 0
+
+        // M_T? (total energy balance) /////////////////////////////////////////
+        // M_Tp
+        Block::block(local_M, Block::T, Block::P).noalias() -=
+            N_1.transpose() * (porosity * w) * N_1;
+
+        // M_TT
+        Block::block(local_M, Block::T, Block::T).noalias() +=
+            N_1.transpose() * (total_heat_capacity * w) * N_1;
+
+        // M_Tx = 0
+
+        // M_Tv = 0
+
+        // M_x? (vapour mass balance) //////////////////////////////////////////
+        // M_xp = 0
+
+        // M_xT = 0
+
+        // M_xx
+        Block::block(local_M, Block::X, Block::X).noalias() +=
+            N_1.transpose() * (rho_GR * porosity * w) * N_1;
+
+        // M_xv = 0
+
+        // M_v? (gas momentum balance) /////////////////////////////////////////
+        // M_vp = 0
+
+        // M_vT = 0
+
+        // M_vx = 0
+
+        // M_vv = 0
 
         // K_p? (total mass balance) ///////////////////////////////////////////
         // K_pp
