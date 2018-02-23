@@ -94,22 +94,25 @@ void TCHSStokesProcess<VelocityDim>::constructDofTable()
 
     if (_use_monolithic_scheme)
     {
-        // For pressure, which is the first
+        // three linearly interpolated unknowns: p, T, x_mV
         std::vector<MeshLib::MeshSubsets> all_mesh_subsets;
         all_mesh_subsets.emplace_back(_mesh_subset_base_nodes.get());
+        all_mesh_subsets.emplace_back(_mesh_subset_base_nodes.get());
+        all_mesh_subsets.emplace_back(_mesh_subset_base_nodes.get());
 
-        // For velocity.
+        // one quadratically interpolated unknown: v_D
         const int monolithic_process_id = 0;
         std::generate_n(
             std::back_inserter(all_mesh_subsets),
-            getProcessVariables(monolithic_process_id)[1]
+            getProcessVariables(monolithic_process_id)
+                .back()
                 .get()
                 .getNumberOfComponents(),
             [&]() {
                 return MeshLib::MeshSubsets{_mesh_subset_all_nodes.get()};
             });
 
-        std::vector<int> const vec_n_components{1, VelocityDim};
+        std::vector<int> const vec_n_components{1, 1, 1, VelocityDim};
         _local_to_global_index_map =
             std::make_unique<NumLib::LocalToGlobalIndexMap>(
                 std::move(all_mesh_subsets), vec_n_components,
@@ -165,7 +168,8 @@ void TCHSStokesProcess<VelocityDim>::initializeConcreteProcess(
                                                   TCHSStokesLocalAssembler>(
         mesh.getDimension(), mesh.getElements(), dof_table,
         // use displacement process variable to set shape function order
-        getProcessVariables(mechanical_process_id)[deformation_variable_id]
+        getProcessVariables(mechanical_process_id)
+            .back()  // [deformation_variable_id]
             .get()
             .getShapeFunctionOrder(),
         _local_assemblers, mesh.isAxiallySymmetric(), integration_order,
