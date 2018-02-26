@@ -63,34 +63,6 @@ struct TCHSStokesProcessData
     {
     }
 
-#if 0
-    TCHSStokesProcessData(
-        TCHSStokesProcessData&& other)
-        : material{std::move(other.material)},
-          intrinsic_permeability(other.intrinsic_permeability),
-          specific_storage(other.specific_storage),
-          fluid_viscosity(other.fluid_viscosity),
-          fluid_density(other.fluid_density),
-          biot_coefficient(other.biot_coefficient),
-          porosity(other.porosity),
-          solid_density(other.solid_density),
-          specific_body_force(other.specific_body_force),
-          dt(other.dt),
-          t(other.t)
-    {
-    }
-
-    //! Copies are forbidden.
-    TCHSStokesProcessData(
-        TCHSStokesProcessData const&) = delete;
-
-    //! Assignments are not needed.
-    void operator=(TCHSStokesProcessData const&) = delete;
-
-    //! Assignments are not needed.
-    void operator=(TCHSStokesProcessData&&) = delete;
-#endif
-
     MeshLib::PropertyVector<int> const& material_ids;
 
     double const pellet_diameter;

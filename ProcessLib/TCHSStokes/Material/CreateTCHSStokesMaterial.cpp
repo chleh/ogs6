@@ -36,10 +36,25 @@ TCHSStokesMaterial createTCHSStokesMaterial(BaseLib::ConfigTree const& config)
 
     return material;
 }
-std::vector<TCHSStokesMaterial> createTCHSStokesMaterials(
+
+std::unordered_map<int, TCHSStokesMaterial> createTCHSStokesMaterials(
     BaseLib::ConfigTree const& config)
 {
-    return {};
+    std::unordered_map<int, TCHSStokesMaterial> materials;
+    for (auto const c : config.getConfigSubtreeList("material"))
+    {
+        auto const id = c.getConfigAttribute<int>("id");
+        auto it_succ = materials.emplace(std::piecewise_construct,
+                                         std::forward_as_tuple(id),
+                                         std::forward_as_tuple());
+        if (!it_succ.second)
+        {
+            OGS_FATAL("Id %d already present.", id);
+        }
+
+        it_succ.first->second = createTCHSStokesMaterial(c);
+    }
+    return materials;
 }
 
 std::unique_ptr<FluidDensity> createFluidDensity(

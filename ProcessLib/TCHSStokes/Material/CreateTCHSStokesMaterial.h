@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "BaseLib/ConfigTree.h"
 
 #include "TCHSStokesMaterial.h"
@@ -11,7 +13,8 @@ namespace TCHSStokes
 namespace Material
 {
 TCHSStokesMaterial createTCHSStokesMaterial(BaseLib::ConfigTree const& config);
-std::vector<TCHSStokesMaterial> createTCHSStokesMaterials(
+
+std::unordered_map<int, TCHSStokesMaterial> createTCHSStokesMaterials(
     BaseLib::ConfigTree const& config);
 
 std::unique_ptr<FluidDensity> createFluidDensity(
