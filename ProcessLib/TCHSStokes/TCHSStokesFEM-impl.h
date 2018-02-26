@@ -155,7 +155,7 @@ void TCHSStokesLocalAssembler<
         Eigen::Matrix<double, VelocityDim, 1> const v = H * nodal_v;
         double const p = N_1 * nodal_p;
         double const T = N_1 * nodal_T;
-        double const xmV = N_1 * nodal_xmV;
+        double const x_mV = N_1 * nodal_xmV;
 
         double const p_V = 1.0;
 
@@ -164,7 +164,7 @@ void TCHSStokesLocalAssembler<
         auto const& mat = _process_data.materials[mat_id];
 
         // TODO implement material models
-        double const rho_GR = (*mat.fluid_density)();
+        double const rho_GR = mat.fluid_density->getDensity(p, T, x_mV);
 
         auto const porosity = mat.porosity->getPorosity(x_coord);
         Eigen::Matrix<double, VelocityDim, 1> grad_porosity =

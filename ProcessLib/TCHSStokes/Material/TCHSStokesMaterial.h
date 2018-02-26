@@ -6,6 +6,7 @@
 #include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
 #include "ProcessLib/IncompressibleStokesBrinkman/Material/FluidViscosity.h"
 #include "ProcessLib/TES/Material/DiffusionCoefficient.h"
+#include "ProcessLib/TES/TESOGS5MaterialModels.h"
 
 namespace ProcessLib
 {
@@ -16,16 +17,22 @@ namespace Material
 class FluidDensity
 {
 public:
-    double operator()()
-    {
-        // TODO remove
-        return 0.0;
-    }
+    virtual double getDensity(const double p,
+                              const double T,
+                              const double x_mV) = 0;
+
     virtual ~FluidDensity() = default;
 };
 
 class FluidDensityMixtureWaterNitrogen final : public FluidDensity
 {
+public:
+    double getDensity(const double p,
+                      const double T,
+                      const double x_mV) override
+    {
+        return ProcessLib::TES::fluid_density(p, T, x_mV);
+    }
 };
 
 class FluidViscosity
