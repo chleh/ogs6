@@ -1,3 +1,5 @@
+<!-- vim: ft=xml sw=2 sts=2
+-->
 <!--
 README
 
@@ -10,117 +12,292 @@ VDI Waermeatlas
 -->
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <OpenGeoSysProject>
-    <mesh axially_symmetric="true">pipe_ref.vtu</mesh>
-    <geometry>pipe.gml</geometry>
-    <processes>
-        <process>
-            <name>tchs_stokes</name>
-            <type>TCHS_STOKES</type>
-            <integration_order>3</integration_order>
-            <dimension>2</dimension>
+  <mesh axially_symmetric="true">pipe_ref.vtu</mesh>
+  <geometry>pipe.gml</geometry>
+  <processes>
+    <process>
+      <name>tchs_stokes</name>
+      <type>TCHS_STOKES</type>
+      <integration_order>3</integration_order>
+      <dimension>2</dimension>
 
-            <porosity>porosity</porosity>
+      <jacobian_assembler>
+        <type>CentralDifferences</type>
+        <component_magnitudes>1e5 1e5 1e5 1e5 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</component_magnitudes>
+        <relative_epsilons>1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8</relative_epsilons>
+      </jacobian_assembler>
 
-            <jacobian_assembler>
-                <type>CentralDifferences</type>
-                <component_magnitudes>1e5 1e5 1e5 1e5 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</component_magnitudes>
-                <relative_epsilons>1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8</relative_epsilons>
-            </jacobian_assembler>
+      <materials>
+        <material id="0"><!-- inlet/outlet empty pipe -->
+          <porosity>
+            <type>Constant</type>
+            <value>1</value>
+          </porosity>
 
-            <bed_radius>            1 </bed_radius>
+          <fluid_density>
+            <type>MixtureWaterNitrogen</type>
+          </fluid_density>
+          <fluid_heat_capacity>
+            <type>MixtureWaterNitrogen</type>
+          </fluid_heat_capacity>
 
+          <fluid_viscosity>
+            <type>MixtureWaterNitrogen</type>
+          </fluid_viscosity>
+          <effective_fluid_viscosity>
+            <type>Identity</type>
+          </effective_fluid_viscosity>
+
+          <heat_conductivity>
+            <type>MixtureWaterNitrogen</type>
+          </heat_conductivity>
+
+          <diffusion_coefficient>
+            <type>MixtureWaterAirFuller</type>
+          </diffusion_coefficient>
+
+          <fluid_momentum_production_coefficient>
+            <type>Zero</type>
+          </fluid_momentum_production_coefficient>
+
+          <solid_heat_capacity>
+            <type>Constant</type>
+            <value>0</value>
+          </solid_heat_capacity>
+
+          <reaction_rate>
+            <type>Inert</type>
+          </reaction_rate>
+
+          <reactive_solid>
+            <type>DensityBased</type>
+            <initial_conversion>zero</initial_conversion>
+            <solid_state_num_components>1</solid_state_num_components>
+          </reactive_solid>
+        </material>
+
+        <material id="1"><!-- packed bed -->
+          <porosity>
+            <type>RadialProfileGiese</type>
+            <bed_radius>            1   </bed_radius>
             <pellet_diameter>       0.2 </pellet_diameter>
-            <average_darcy_velocity>0.5 </average_darcy_velocity>
-            <fluid_density>         rho </fluid_density>
-            <fluid_viscosity>       mu  </fluid_viscosity>
             <homogeneous_porosity>  0.4 </homogeneous_porosity>
+          </porosity>
 
-            <effective_fluid_viscosity>
-                <type>Giese</type>
-                <average_darcy_velocity>
-                    <coords>0.0 1e8</coords>
-                    <values>0.5 0.5</values>
-                </average_darcy_velocity>
-                <pellet_diameter>       0.2 </pellet_diameter>
-            </effective_fluid_viscosity>
+          <fluid_density>
+            <type>MixtureWaterNitrogen</type>
+          </fluid_density>
+          <fluid_heat_capacity>
+            <type>MixtureWaterNitrogen</type>
+          </fluid_heat_capacity>
 
-            <process_variables>
-                <darcy_velocity>darcy_velocity</darcy_velocity>
-                <pressure>pressure</pressure>
-                <temperature>temperature</temperature>
-                <mass_fraction>mass_fraction</mass_fraction>
-            </process_variables>
+          <fluid_viscosity>
+            <type>MixtureWaterNitrogen</type>
+          </fluid_viscosity>
+          <effective_fluid_viscosity>
+            <type>Giese</type>
+            <average_darcy_velocity>
+              <coords>0.0 1e8</coords>
+              <values>0.5 0.5</values>
+            </average_darcy_velocity>
+            <pellet_diameter>0.2</pellet_diameter>
+          </feffective_luid_viscosity>
 
-            <secondary_variables>
-            </secondary_variables>
-        </process>
-    </processes>
-    <time_loop>
-        <processes>
-            <process ref="tchs_stokes">
-                <nonlinear_solver>basic_picard</nonlinear_solver>
+          <fluid_momentum_production_coefficient>
+            <type>Ergun</type>
+            <pellet_diameter>0.2</pellet_diameter>
+          </fluid_momentum_production_coefficient>
 
-                <convergence_criterion>
-                    <type>PerComponentDeltaX</type>
-                    <norm_type>NORM2</norm_type>
-                    <reltols>1e-8 1e-8 1e-8</reltols>
-                </convergence_criterion>
-                <time_discretization>
-                    <type>BackwardEuler</type>
-                </time_discretization>
-                <output>
-                    <variables>
-                        <variable>darcy_velocity</variable>
-                        <variable>pressure</variable>
-                        <variable>temperature</variable>
-                        <variable>mass_fraction</variable>
-                    </variables>
-                </output>
-                <time_stepping>
-                    <type>FixedTimeStepping</type>
-                    <t_initial> 0.0 </t_initial>
-                    <t_end> 4 </t_end>
-                    <timesteps>
-                        <pair>
-                            <repeat>1</repeat>
-                            <delta_t>4</delta_t>
-                        </pair>
-                    </timesteps>
-                </time_stepping>
-            </process>
-        </processes>
+          <diffusion_coefficient> <!-- Maybe D(r) model after VDI WWärmeatlas? -->
+            <type>MixtureWaterAirFuller</type>
+          </diffusion_coefficient>
+
+          <heat_conductivity>
+            <type>LambdaRModel</type>
+
+            <fluid_heat_conductivity>
+              <type>MixtureWaterNitrogen</type>
+            </fluid_heat_conductivity>
+
+            <solid_heat_conductivity>
+              <type>Constant</type>
+              <value>1.0</value>
+            </solid_heat_conductivity>
+          </heat_conductivity>
+
+          <solid_heat_capacity>
+            <type>DensityDependent</type>
+          </solid_heat_capacity>
+
+          <reaction_rate>
+            <type>UpdateMultiple</type>
+
+            <reaction_kinetics>
+              <type>LinearDrivingForceCoefficientKast</type>
+
+              <pellet_radius>0.001</pellet_radius>
+              <pellet_porosity>0.4</pellet_porosity>
+              <pellet_tortuosity>4.0</pellet_tortuosity>
+              <molar_mass_reactive_component>0.018016 </molar_mass_reactive_component>
+
+              <diffusion_coefficient>
+                <type>GasAndKnudsen</type>
+                <diffusion_coefficient_gas>
+                  <type>MixtureWaterAirFuller</type>
+                </diffusion_coefficient_gas>
+                <diffusion_coefficient_knudsen>
+                  <type>Knudsen</type>
+                  <pore_diameter>600e-9</pore_diameter>
+                  <molar_mass>0.018016</molar_mass>
+                </diffusion_coefficient_knudsen>
+              </diffusion_coefficient>
+
+              <equilibrium>
+                <type>DubininPolanyi</type>
+                <adsorbent_density_dry>1150 </adsorbent_density_dry>
+                <equilibrium_data>Z13XBF_Hauer</equilibrium_data>
+              </equilibrium>
+            </reaction_kinetics>
+
+            <equilibrium_reaction_vapour_pressure_limit>5 </equilibrium_reaction_vapour_pressure_limit>
+            <upper_vapour_pressure_limit>1e5 </upper_vapour_pressure_limit>
+            <maximum_reaction_rate_updates>15 </maximum_reaction_rate_updates>
+          </reaction_rate>
+
+          <reactive_solid>
+            <type>DensityBased</type>
+            <initial_conversion>zero</initial_conversion>
+            <solid_state_num_components>1</solid_state_num_components>
+          </reactive_solid>
+        </material>
+
+        <material id="2"><!-- inlet/outlet empty pipe -->
+          <porosity>
+            <type>Constant</type>
+            <value>0</value>
+          </porosity>
+
+          <fluid_density>
+            <type>MixtureWaterNitrogen</type>
+          </fluid_density>
+          <fluid_heat_capacity>
+            <type>MixtureWaterNitrogen</type>
+          </fluid_heat_capacity>
+
+          <fluid_viscosity>
+            <type>MixtureWaterNitrogen</type>
+          </fluid_viscosity>
+          <effective_fluid_viscosity>
+            <type>Identity</type>
+          </effective_fluid_viscosity>
+
+          <heat_conductivity>
+            <type>MixtureWaterNitrogen</type>
+          </heat_conductivity>
+
+          <diffusion_coefficient>
+            <type>MixtureWaterAirFuller</type>
+          </diffusion_coefficient>
+
+          <solid_heat_capacity>
+            <type>Constant</type>
+            <value>0</value>
+          </solid_heat_capacity>
+
+          <fluid_momentum_production_coefficient>
+            <type>Zero</type>
+          </fluid_momentum_production_coefficient>
+
+          <reaction_rate>
+            <type>Inert</type>
+          </reaction_rate>
+
+          <reactive_solid>
+            <type>DensityBased</type>
+            <initial_conversion>zero</initial_conversion>
+            <solid_state_num_components>1</solid_state_num_components>
+          </reactive_solid>
+        </material>
+
+      </materials>
+
+      <process_variables>
+        <darcy_velocity>darcy_velocity</darcy_velocity>
+        <pressure>pressure</pressure>
+        <temperature>temperature</temperature>
+        <mass_fraction>mass_fraction</mass_fraction>
+      </process_variables>
+
+      <secondary_variables>
+      </secondary_variables>
+    </process>
+  </processes>
+  <time_loop>
+    <processes>
+      <process ref="tchs_stokes">
+        <nonlinear_solver>basic_picard</nonlinear_solver>
+
+        <convergence_criterion>
+          <type>PerComponentDeltaX</type>
+          <norm_type>NORM2</norm_type>
+          <reltols>1e-8 1e-8 1e-8</reltols>
+        </convergence_criterion>
+        <time_discretization>
+          <type>BackwardEuler</type>
+        </time_discretization>
         <output>
-            <type>VTK</type>
-            <prefix>pipe</prefix>
-            <timesteps>
-                <pair>
-                    <repeat>1</repeat>
-                    <each_steps>1</each_steps>
-                </pair>
-            </timesteps>
-            <output_iteration_results>true</output_iteration_results>
+          <variables>
+            <variable>darcy_velocity</variable>
+            <variable>pressure</variable>
+            <variable>temperature</variable>
+            <variable>mass_fraction</variable>
+          </variables>
         </output>
-    </time_loop>
-    <curves>
-        <curve>
-            <name>rho_of_t</name>
-            <coords>0   1   2   3   4  </coords>
-            <values>1e1 1e1 1e1 1e1 1e1</values>
-        </curve>
-    </curves>
-    <parameters>
-        <parameter>
-            <name>mu</name>
-            <!--
+        <time_stepping>
+          <type>FixedTimeStepping</type>
+          <t_initial> 0.0 </t_initial>
+          <t_end> 4 </t_end>
+          <timesteps>
+            <pair>
+              <repeat>1</repeat>
+              <delta_t>4</delta_t>
+            </pair>
+          </timesteps>
+        </time_stepping>
+      </process>
+    </processes>
+    <output>
+      <type>VTK</type>
+      <prefix>pipe</prefix>
+      <timesteps>
+        <pair>
+          <repeat>1</repeat>
+          <each_steps>1</each_steps>
+        </pair>
+      </timesteps>
+      <output_iteration_results>true</output_iteration_results>
+    </output>
+  </time_loop>
+  <curves>
+    <curve>
+      <name>rho_of_t</name>
+      <coords>0   1   2   3   4  </coords>
+      <values>1e1 1e1 1e1 1e1 1e1</values>
+    </curve>
+  </curves>
+  <parameters>
+    <parameter>
+      <name>mu</name>
+      <!--
             <type>CurveScaled</type>
             <curve>mu_of_t</curve>
             <parameter>one</parameter>
 -->
             <type>Constant</type>
             <value>1e+0</value>
-        </parameter>
+          </parameter>
 
-        <parameter>
+          <parameter>
             <name>rho</name>
             <type>CurveScaled</type>
             <curve>rho_of_t</curve>
@@ -132,22 +309,22 @@ VDI Waermeatlas
         </parameter>
 
         <parameter>
-            <name>porosity</name>
-            <type>Constant</type>
-            <value>1</value>
+          <name>porosity</name>
+          <type>Constant</type>
+          <value>1</value>
         </parameter>
 
         <parameter>
-            <name>velocity_0</name>
-            <!--
+          <name>velocity_0</name>
+          <!--
             <type>Constant</type>
             <values>0 0</values>
 -->
             <type>MeshNode</type>
             <field_name>darcy_velocity</field_name>
-        </parameter>
+          </parameter>
 
-        <parameter>
+          <parameter>
             <name>pressure_0</name>
             <!--
             <type>Constant</type>
@@ -155,9 +332,9 @@ VDI Waermeatlas
 -->
             <type>MeshNode</type>
             <field_name>pressure</field_name>
-        </parameter>
+          </parameter>
 
-        <parameter>
+          <parameter>
             <name>temperature_0</name>
             <type>Constant</type>
             <value>0</value>
@@ -168,157 +345,157 @@ VDI Waermeatlas
         </parameter>
 
         <parameter>
-            <name>mass_fraction_0</name>
-            <type>Constant</type>
-            <value>0</value>
-            <!--
+          <name>mass_fraction_0</name>
+          <type>Constant</type>
+          <value>0</value>
+          <!--
             <type>MeshNode</type>
             <field_name>mass_fraction</field_name>
 -->
         </parameter>
 
         <parameter>
-            <name>zero</name>
-            <type>Constant</type>
-            <value>0</value>
+          <name>zero</name>
+          <type>Constant</type>
+          <value>0</value>
         </parameter>
 
         <parameter>
-            <name>one</name>
-            <type>Constant</type>
-            <value>1</value>
+          <name>one</name>
+          <type>Constant</type>
+          <value>1</value>
         </parameter>
-    </parameters>
-    <process_variables>
+      </parameters>
+      <process_variables>
         <process_variable>
-            <name>darcy_velocity</name>
-            <components>2</components>
-            <order>2</order>
-            <initial_condition>velocity_0</initial_condition>
+          <name>darcy_velocity</name>
+          <components>2</components>
+          <order>2</order>
+          <initial_condition>velocity_0</initial_condition>
 
-            <boundary_conditions>
-                <boundary_condition>
-                    <geometrical_set>pipe</geometrical_set>
-                    <geometry>inner</geometry>
-                    <type>Dirichlet</type>
-                    <component>0</component>
-                    <parameter>zero</parameter>
-                </boundary_condition>
+          <boundary_conditions>
+            <boundary_condition>
+              <geometrical_set>pipe</geometrical_set>
+              <geometry>inner</geometry>
+              <type>Dirichlet</type>
+              <component>0</component>
+              <parameter>zero</parameter>
+            </boundary_condition>
 
-                <boundary_condition>
-                    <geometrical_set>pipe</geometrical_set>
-                    <geometry>bottom</geometry>
-                    <type>Dirichlet</type>
-                    <component>0</component>
-                    <parameter>zero</parameter>
-                </boundary_condition>
+            <boundary_condition>
+              <geometrical_set>pipe</geometrical_set>
+              <geometry>bottom</geometry>
+              <type>Dirichlet</type>
+              <component>0</component>
+              <parameter>zero</parameter>
+            </boundary_condition>
 
-                <boundary_condition>
-                    <geometrical_set>pipe</geometrical_set>
-                    <geometry>outer</geometry>
-                    <type>Dirichlet</type>
-                    <component>0</component>
-                    <parameter>zero</parameter>
-                </boundary_condition>
-                <boundary_condition>
-                    <geometrical_set>pipe</geometrical_set>
-                    <geometry>outer</geometry>
-                    <type>Dirichlet</type>
-                    <component>1</component>
-                    <parameter>zero</parameter>
-                </boundary_condition>
+            <boundary_condition>
+              <geometrical_set>pipe</geometrical_set>
+              <geometry>outer</geometry>
+              <type>Dirichlet</type>
+              <component>0</component>
+              <parameter>zero</parameter>
+            </boundary_condition>
+            <boundary_condition>
+              <geometrical_set>pipe</geometrical_set>
+              <geometry>outer</geometry>
+              <type>Dirichlet</type>
+              <component>1</component>
+              <parameter>zero</parameter>
+            </boundary_condition>
 
-                <boundary_condition>
-                    <geometrical_set>pipe</geometrical_set>
-                    <geometry>top</geometry>
-                    <type>Dirichlet</type>
-                    <component>0</component>
-                    <parameter>zero</parameter>
-                </boundary_condition>
-                <boundary_condition>
-                    <geometrical_set>pipe</geometrical_set>
-                    <geometry>top</geometry>
+            <boundary_condition>
+              <geometrical_set>pipe</geometrical_set>
+              <geometry>top</geometry>
+              <type>Dirichlet</type>
+              <component>0</component>
+              <parameter>zero</parameter>
+            </boundary_condition>
+            <boundary_condition>
+              <geometrical_set>pipe</geometrical_set>
+              <geometry>top</geometry>
 
-                    <type>NonuniformDirichlet</type>
-                    <mesh>pipe_bc_inlet.vtu</mesh>
-                    <field_name>velocity_y_inlet</field_name>
+              <type>NonuniformDirichlet</type>
+              <mesh>pipe_bc_inlet.vtu</mesh>
+              <field_name>velocity_y_inlet</field_name>
 
-                    <component>1</component>
-                </boundary_condition>
-            </boundary_conditions>
+              <component>1</component>
+            </boundary_condition>
+          </boundary_conditions>
         </process_variable>
 
         <process_variable>
-            <name>pressure</name>
-            <components>1</components>
-            <order>1</order>
-            <initial_condition>pressure_0</initial_condition>
+          <name>pressure</name>
+          <components>1</components>
+          <order>1</order>
+          <initial_condition>pressure_0</initial_condition>
 
-            <boundary_conditions>
-                <boundary_condition>
-                    <geometrical_set>pipe</geometrical_set>
-                    <geometry>bottom</geometry>
-                    <type>Dirichlet</type>
-                    <component>0</component>
-                    <parameter>zero</parameter>
-                </boundary_condition>
-            </boundary_conditions>
+          <boundary_conditions>
+            <boundary_condition>
+              <geometrical_set>pipe</geometrical_set>
+              <geometry>bottom</geometry>
+              <type>Dirichlet</type>
+              <component>0</component>
+              <parameter>zero</parameter>
+            </boundary_condition>
+          </boundary_conditions>
         </process_variable>
 
         <process_variable>
-            <name>temperature</name>
-            <components>1</components>
-            <order>1</order>
-            <initial_condition>temperature_0</initial_condition>
+          <name>temperature</name>
+          <components>1</components>
+          <order>1</order>
+          <initial_condition>temperature_0</initial_condition>
 
-            <boundary_conditions>
-                <boundary_condition>
-                    <geometrical_set>pipe</geometrical_set>
-                    <geometry>bottom</geometry>
-                    <type>Dirichlet</type>
-                    <component>0</component>
-                    <parameter>zero</parameter>
-                </boundary_condition>
-            </boundary_conditions>
+          <boundary_conditions>
+            <boundary_condition>
+              <geometrical_set>pipe</geometrical_set>
+              <geometry>bottom</geometry>
+              <type>Dirichlet</type>
+              <component>0</component>
+              <parameter>zero</parameter>
+            </boundary_condition>
+          </boundary_conditions>
         </process_variable>
 
         <process_variable>
-            <name>mass_fraction</name>
-            <components>1</components>
-            <order>1</order>
-            <initial_condition>mass_fraction_0</initial_condition>
+          <name>mass_fraction</name>
+          <components>1</components>
+          <order>1</order>
+          <initial_condition>mass_fraction_0</initial_condition>
 
-            <boundary_conditions>
-                <boundary_condition>
-                    <geometrical_set>pipe</geometrical_set>
-                    <geometry>bottom</geometry>
-                    <type>Dirichlet</type>
-                    <component>0</component>
-                    <parameter>zero</parameter>
-                </boundary_condition>
-            </boundary_conditions>
+          <boundary_conditions>
+            <boundary_condition>
+              <geometrical_set>pipe</geometrical_set>
+              <geometry>bottom</geometry>
+              <type>Dirichlet</type>
+              <component>0</component>
+              <parameter>zero</parameter>
+            </boundary_condition>
+          </boundary_conditions>
         </process_variable>
 
-    </process_variables>
-    <nonlinear_solvers>
+      </process_variables>
+      <nonlinear_solvers>
         <nonlinear_solver>
-            <name>basic_picard</name>
-            <type>Newton</type>
-            <max_iter>50</max_iter>
-            <linear_solver>general_linear_solver</linear_solver>
+          <name>basic_picard</name>
+          <type>Newton</type>
+          <max_iter>50</max_iter>
+          <linear_solver>general_linear_solver</linear_solver>
         </nonlinear_solver>
-    </nonlinear_solvers>
-    <linear_solvers>
+      </nonlinear_solvers>
+      <linear_solvers>
         <linear_solver>
-            <name>general_linear_solver</name>
-            <!-- <lis>-i bicgstab -p ilu -tol 1e-10 -maxiter 10000</lis> -->
-            <lis>-i cg -p jacobi -tol 1e-10 -maxiter 10000</lis>
-            <eigen>
-                <solver_type>PardisoLU</solver_type>
-                <precon_type>DIAGONAL</precon_type>
-                <max_iteration_step>10000</max_iteration_step>
-                <error_tolerance>1e-10</error_tolerance>
-            </eigen>
+          <name>general_linear_solver</name>
+          <!-- <lis>-i bicgstab -p ilu -tol 1e-10 -maxiter 10000</lis> -->
+          <lis>-i cg -p jacobi -tol 1e-10 -maxiter 10000</lis>
+          <eigen>
+            <solver_type>PardisoLU</solver_type>
+            <precon_type>DIAGONAL</precon_type>
+            <max_iteration_step>10000</max_iteration_step>
+            <error_tolerance>1e-10</error_tolerance>
+          </eigen>
         </linear_solver>
-    </linear_solvers>
-</OpenGeoSysProject>
+      </linear_solvers>
+    </OpenGeoSysProject>
