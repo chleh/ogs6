@@ -113,7 +113,13 @@ createFluidMomentumProductionCoefficient(BaseLib::ConfigTree const& config)
 {
     auto const type = config.getConfigParameter<std::string>("type");
     if (type == "Ergun")
-        return std::make_unique<FluidMomentumProductionCoefficientErgun>();
+    {
+        auto const pellet_diameter =
+            config.getConfigParameter<double>("pellet_diameter");
+
+        return std::make_unique<FluidMomentumProductionCoefficientErgun>(
+            pellet_diameter);
+    }
     if (type == "Zero")
         return std::make_unique<FluidMomentumProductionCoefficientZero>();
 

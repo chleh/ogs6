@@ -80,22 +80,51 @@ class HeatConductivityMixtureWaterNitrogen final : public HeatConductivity
 class FluidMomentumProductionCoefficient
 {
 public:
-    double operator()()
-    {
-        // TODO remove
-        return 0.0;
-    }
+    virtual double getCoeffOfV(double porosity, double viscosity) = 0;
+    virtual double getCoeffOfVSquared(double porosity,
+                                      double fluid_density) = 0;
+
     virtual ~FluidMomentumProductionCoefficient() = default;
 };
 
 class FluidMomentumProductionCoefficientErgun final
     : public FluidMomentumProductionCoefficient
 {
+public:
+    FluidMomentumProductionCoefficientErgun(const double pellet_diameter)
+        : _pellet_diameter(pellet_diameter)
+    {
+    }
+
+    double getCoeffOfV(double porosity, double viscosity) override
+    {
+        auto const poro3 = boost::math::pow<3>(porosity);
+        return 150.0 * boost::math::pow<2>(1.0 - porosity) / poro3 * viscosity /
+               _pellet_diameter / _pellet_diameter;
+    }
+    double getCoeffOfVSquared(double porosity, double fluid_density) override
+    {
+        auto const poro3 = boost::math::pow<3>(porosity);
+        return 1.75 * (1.0 - porosity) / poro3 * fluid_density /
+               _pellet_diameter;
+    }
+
+private:
+    double const _pellet_diameter;
 };
 
 class FluidMomentumProductionCoefficientZero final
     : public FluidMomentumProductionCoefficient
 {
+    double getCoeffOfV(double /*porosity*/, double /*viscosity*/) override
+    {
+        return 0;
+    }
+    double getCoeffOfVSquared(double /*porosity*/,
+                              double /*fluid_density*/) override
+    {
+        return 0;
+    }
 };
 
 class SolidHeatCapacity

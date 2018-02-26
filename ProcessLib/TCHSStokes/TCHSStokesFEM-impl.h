@@ -187,23 +187,12 @@ void TCHSStokesLocalAssembler<
 
         double const mu = (*mat.fluid_viscosity)();
         double const mu_eff = (*mat.effective_fluid_viscosity)(t, mu, rho_GR);
-        double const f_1 = (*mat.fluid_momentum_production_coefficient)();
-        double const f_2 = (*mat.fluid_momentum_production_coefficient)();
-
-        /*
-        else if (mat_id == TCHSStokesProcessData<VelocityDim>::MATID_BED)
-        {
-            auto const poro3 = boost::math::pow<3>(porosity);
-            auto const rho_GR = _process_data.fluid_density(t, x_position)[0];
-            f_1 = 150.0 * boost::math::pow<2>(1.0 - porosity) / poro3 * mu /
-                  d_pel / d_pel;
-            f_2 = 1.75 * (1.0 - porosity) / poro3 * rho_GR / d_pel;
-
-            mu_eff = (*_process_data.effective_fluid_viscosity)(t, mu, rho_GR);
-        }
-        else
-            OGS_FATAL("wrong material id: %d", mat_id);
-        */
+        double const f_1 =
+            mat.fluid_momentum_production_coefficient->getCoeffOfV(porosity,
+                                                                   mu);
+        double const f_2 =
+            mat.fluid_momentum_production_coefficient->getCoeffOfVSquared(
+                porosity, rho_GR);
 
         // assemble local matrices /////////////////////////////////////////////
 
