@@ -45,6 +45,11 @@ struct IntegrationPointData final
     typename ShapeMatricesTypePressure::GlobalDimNodalMatrixType dNdx_1;
     double integration_weight;
 
+    std::unique_ptr<MaterialLib::ReactiveSolidState> reactive_solid_state;
+    std::unique_ptr<MaterialLib::ReactionRateData> reaction_rate_data;
+    std::unique_ptr<MaterialLib::ReactiveSolidRate>
+        reaction_rate;  // \hat{\rho}_{SR}
+
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 

@@ -6,7 +6,9 @@ namespace TCHSStokes
 {
 namespace Material
 {
-TCHSStokesMaterial createTCHSStokesMaterial(BaseLib::ConfigTree const& config)
+TCHSStokesMaterial createTCHSStokesMaterial(
+    BaseLib::ConfigTree const& config,
+    std::vector<std::unique_ptr<ParameterBase>> const& parameters)
 {
     TCHSStokesMaterial material;
 
@@ -37,13 +39,17 @@ TCHSStokesMaterial createTCHSStokesMaterial(BaseLib::ConfigTree const& config)
     material.reaction_rate = MaterialLib::createReactionRate(
         config.getConfigSubtree("reaction_rate"));
 
+    material.reactive_solid = MaterialLib::createReactiveSolidModel(
+        config.getConfigSubtree("reactive_solid"), parameters);
+
     material.porosity = createPorosity(config.getConfigSubtree("porosity"));
 
     return material;
 }
 
 std::unordered_map<int, TCHSStokesMaterial> createTCHSStokesMaterials(
-    BaseLib::ConfigTree const& config)
+    BaseLib::ConfigTree const& config,
+    const std::vector<std::unique_ptr<ParameterBase>>& parameters)
 {
     std::unordered_map<int, TCHSStokesMaterial> materials;
     for (auto const c : config.getConfigSubtreeList("material"))
@@ -57,7 +63,7 @@ std::unordered_map<int, TCHSStokesMaterial> createTCHSStokesMaterials(
             OGS_FATAL("Id %d already present.", id);
         }
 
-        it_succ.first->second = createTCHSStokesMaterial(c);
+        it_succ.first->second = createTCHSStokesMaterial(c, parameters);
     }
     return materials;
 }

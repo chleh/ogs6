@@ -12,10 +12,13 @@ namespace TCHSStokes
 {
 namespace Material
 {
-TCHSStokesMaterial createTCHSStokesMaterial(BaseLib::ConfigTree const& config);
+TCHSStokesMaterial createTCHSStokesMaterial(
+    BaseLib::ConfigTree const& config,
+    const std::vector<std::unique_ptr<ParameterBase>>& parameters);
 
 std::unordered_map<int, TCHSStokesMaterial> createTCHSStokesMaterials(
-    BaseLib::ConfigTree const& config);
+    BaseLib::ConfigTree const& config,
+    const std::vector<std::unique_ptr<ParameterBase>>& parameters);
 
 std::unique_ptr<FluidDensity> createFluidDensity(
     BaseLib::ConfigTree const& config);

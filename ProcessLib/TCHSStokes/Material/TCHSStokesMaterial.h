@@ -222,6 +222,7 @@ struct TCHSStokesMaterial
     std::unique_ptr<FluidMomentumProductionCoefficient>
         fluid_momentum_production_coefficient;
     std::unique_ptr<SolidHeatCapacity> solid_heat_capacity;
+    std::unique_ptr<MaterialLib::ReactiveSolidModel> reactive_solid;
     std::unique_ptr<MaterialLib::ReactionRate> reaction_rate;
     std::unique_ptr<Porosity> porosity;
 };

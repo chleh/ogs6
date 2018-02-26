@@ -146,7 +146,7 @@ std::unique_ptr<Process> createTCHSStokesProcess(
     }
 
     auto materials = Material::createTCHSStokesMaterials(
-        config.getConfigSubtree("materials"));
+        config.getConfigSubtree("materials"), parameters);
 
     TCHSStokesProcessData<VelocityDim> process_data{*material_ids,
                                                     std::move(materials)};
