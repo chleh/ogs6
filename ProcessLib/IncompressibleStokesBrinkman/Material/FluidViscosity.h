@@ -68,7 +68,7 @@ inline std::unique_ptr<EffectiveFluidViscosity> createEffectiveFluidViscosity(
         return std::make_unique<EffectiveFluidViscosityGiese>(std::move(v), d);
     }
 
-    OGS_FATAL("Unknown viscosity model: %s.", type.c_str());
+    OGS_FATAL("Unknown effective viscosity model: %s.", type.c_str());
 }
 
 }  // namespace ProcessLib

@@ -14,6 +14,9 @@ TCHSStokesMaterial createTCHSStokesMaterial(BaseLib::ConfigTree const& config)
         createFluidDensity(config.getConfigSubtree("fluid_density"));
     material.fluid_viscosity =
         createFluidViscosity(config.getConfigSubtree("fluid_viscosity"));
+    material.effective_fluid_viscosity =
+        ProcessLib::createEffectiveFluidViscosity(
+            config.getConfigSubtree("effective_fluid_viscosity"));
     material.fluid_heat_capacity =
         createFluidHeatCapacity(config.getConfigSubtree("fluid_heat_capacity"));
 
@@ -75,24 +78,6 @@ std::unique_ptr<FluidViscosity> createFluidViscosity(
     auto const type = config.getConfigParameter<std::string>("type");
     if (type == "MixtureWaterNitrogen")
         return std::make_unique<FluidViscosityMixtureWaterNitrogen>();
-    if (type == "EffectiveGiese")
-    {
-        auto model =
-            createFluidViscosity(config.getConfigSubtree("fluid_viscosity"));
-
-        auto const c = config.getConfigSubtree("average_darcy_velocity");
-        MathLib::PiecewiseLinearInterpolation average_darcy_velocity{
-            c.getConfigParameter<std::vector<double>>("times"),
-            c.getConfigParameter<std::vector<double>>("values")};
-
-        auto const pellet_diameter =
-            config.getConfigParameter<double>("pellet_diameter");
-
-        return std::make_unique<FluidViscosityEffectiveGiese>(
-            std::move(model),
-            std::move(average_darcy_velocity),
-            pellet_diameter);
-    }
 
     OGS_FATAL("Unknown fluid viscosity model `%s'.", type.c_str());
 }

@@ -4,6 +4,7 @@
 
 #include "MaterialLib/ReactionKinetics/ReactionRate.h"
 #include "MathLib/InterpolationAlgorithms/PiecewiseLinearInterpolation.h"
+#include "ProcessLib/IncompressibleStokesBrinkman/Material/FluidViscosity.h"
 #include "ProcessLib/TES/Material/DiffusionCoefficient.h"
 
 namespace ProcessLib
@@ -15,6 +16,11 @@ namespace Material
 class FluidDensity
 {
 public:
+    double operator()()
+    {
+        // TODO remove
+        return 0.0;
+    }
     virtual ~FluidDensity() = default;
 };
 
@@ -35,25 +41,6 @@ public:
 
 class FluidViscosityMixtureWaterNitrogen final : public FluidViscosity
 {
-};
-
-class FluidViscosityEffectiveGiese final : public FluidViscosity
-{
-public:
-    FluidViscosityEffectiveGiese(
-        std::unique_ptr<FluidViscosity>&& model,
-        MathLib::PiecewiseLinearInterpolation&& average_darcy_velocity,
-        double pellet_diameter)
-        : _model(std::move(model)),
-          _average_darcy_velocity(std::move(average_darcy_velocity)),
-          _pellet_diameter(pellet_diameter)
-    {
-    }
-
-private:
-    std::unique_ptr<FluidViscosity> _model;
-    MathLib::PiecewiseLinearInterpolation _average_darcy_velocity;
-    const double _pellet_diameter;
 };
 
 class FluidHeatCapacity
@@ -138,11 +125,8 @@ class SolidHeatCapacityDensityDependent final : public SolidHeatCapacity
 class Porosity
 {
 public:
-    double operator()()
-    {
-        // TODO remove
-        return 0.0;
-    }
+    virtual double getPorosity(double r) = 0;
+    virtual double getDPorosityDr(double r) = 0;
     ~Porosity() = default;
 };
 
@@ -150,6 +134,9 @@ class PorosityConstant : public Porosity
 {
 public:
     PorosityConstant(double value) : _value(value) {}
+
+    double getPorosity(double /*r*/) override { return _value; }
+    double getDPorosityDr(double /*r*/) override { return 0.0; }
 
 private:
     double const _value;
@@ -167,6 +154,20 @@ public:
     {
     }
 
+    double getPorosity(double r) override
+    {
+        auto const exp_term =
+            std::exp(-5.0 * (_bed_radius - r) / _pellet_diameter);
+        return _homogeneous_porosity + _homogeneous_porosity * 1.36 * exp_term;
+    }
+
+    double getDPorosityDr(double r) override
+    {
+        auto const exp_term =
+            std::exp(-5.0 * (_bed_radius - r) / _pellet_diameter);
+        return _homogeneous_porosity * 1.36 * 5.0 / _pellet_diameter * exp_term;
+    }
+
 private:
     const double _bed_radius;
     const double _pellet_diameter;
@@ -177,6 +178,7 @@ struct TCHSStokesMaterial
 {
     std::unique_ptr<FluidDensity> fluid_density;
     std::unique_ptr<FluidViscosity> fluid_viscosity;
+    std::unique_ptr<EffectiveFluidViscosity> effective_fluid_viscosity;
     std::unique_ptr<FluidHeatCapacity> fluid_heat_capacity;
     std::unique_ptr<HeatConductivity> heat_conductivity;
     std::unique_ptr<ProcessLib::TES::DiffusionCoefficient>

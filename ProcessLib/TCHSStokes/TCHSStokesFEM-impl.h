@@ -157,36 +157,42 @@ void TCHSStokesLocalAssembler<
         double const T = N_1 * nodal_T;
         double const xmV = N_1 * nodal_xmV;
 
+        double const p_V = 1.0;
+
         // material parameters /////////////////////////////////////////////////
         auto const mat_id = _process_data.material_ids[_element.getID()];
         auto const& mat = _process_data.materials[mat_id];
 
-        auto const mu = (*mat.fluid_viscosity)();
-        auto const porosity = (*mat.porosity)();
+        // TODO implement material models
+        double const rho_GR = (*mat.fluid_density)();
+
+        auto const porosity = mat.porosity->getPorosity(x_coord);
         Eigen::Matrix<double, VelocityDim, 1> grad_porosity =
             Eigen::Matrix<double, VelocityDim, 1>::Zero();
-        double mu_eff;
-        double f_1 = (*mat.fluid_momentum_production_coefficient)();
-        double f_2 = (*mat.fluid_momentum_production_coefficient)();
+        grad_porosity[0] = mat.porosity->getDPorosityDr(x_coord);
+
+        double const M_G = 1.0;
+        double const dMG_dxmV = 1.0;
+
+        double const total_heat_conductivity = (*mat.heat_conductivity)();
+        double const diffusion_coefficient =
+            mat.diffusion_coefficient->getDiffusionCoefficient(p, T, p_V);
+        double const c_pG = (*mat.fluid_heat_capacity)();
+        double const hat_rho_S = 1.0;
+        double const reaction_enthalpy = 1.0;
+        double const total_heat_capacity =
+            porosity * c_pG +
+            (1.0 - porosity) *
+                (*mat.solid_heat_capacity)();  // rho_G * c_pG + rho_S * c_pS
+
+        double const mu = (*mat.fluid_viscosity)();
+        double const mu_eff = (*mat.effective_fluid_viscosity)(t, mu, rho_GR);
+        double const f_1 = (*mat.fluid_momentum_production_coefficient)();
+        double const f_2 = (*mat.fluid_momentum_production_coefficient)();
 
         /*
-        if (mat_id == TCHSStokesProcessData<VelocityDim>::MATID_VOID)
-        {
-            porosity = 1.0;
-            mu_eff = mu;
-            f_1 = 0.0;
-            f_2 = 0.0;
-        }
         else if (mat_id == TCHSStokesProcessData<VelocityDim>::MATID_BED)
         {
-            auto const r_bed = _process_data.bed_radius;
-            auto const d_pel = _process_data.pellet_diameter;
-            auto const poro_inf = _process_data.homogeneous_porosity;
-            auto const exp_term = std::exp(-5.0 * (r_bed - x_coord) / d_pel);
-            porosity = poro_inf + poro_inf * 1.36 * exp_term;
-
-            grad_porosity[0] = poro_inf * 1.36 * 5.0 / d_pel * exp_term;
-
             auto const poro3 = boost::math::pow<3>(porosity);
             auto const rho_GR = _process_data.fluid_density(t, x_position)[0];
             f_1 = 150.0 * boost::math::pow<2>(1.0 - porosity) / poro3 * mu /
@@ -198,18 +204,6 @@ void TCHSStokesLocalAssembler<
         else
             OGS_FATAL("wrong material id: %d", mat_id);
         */
-
-        // TODO implement material models
-        double const rho_GR = 1.0;
-        double const M_G = 1.0;
-        double const dMG_dxmV = 1.0;
-        double const total_heat_conductivity =
-            1.0;  // e.g. phi_G * c_pG + phi_S * c_pS
-        double const diffusion_coefficient = 1.0;
-        double const c_pG = 1.0;
-        double const hat_rho_S = 1.0;
-        double const reaction_enthalpy = 1.0;
-        double const total_heat_capacity = 1.0;  // rho_G * c_pG + rho_S * c_pS
 
         // assemble local matrices /////////////////////////////////////////////
 
