@@ -11,6 +11,7 @@
 
 #include <cassert>
 
+#include "Material/CreateTCHSStokesMaterial.h"
 #include "MaterialLib/SolidModels/CreateLinearElasticIsotropic.h"
 #include "ProcessLib/Output/CreateSecondaryVariables.h"
 
@@ -143,6 +144,9 @@ std::unique_ptr<Process> createTCHSStokesProcess(
     {
         OGS_FATAL("Field `MaterialIDs' is not set up properly.");
     }
+
+    auto materials = Material::createTCHSStokesMaterials(
+        config.getConfigSubtree("materials"));
 
     auto const pellet_diameter =
         config.getConfigParameter<double>("pellet_diameter");
