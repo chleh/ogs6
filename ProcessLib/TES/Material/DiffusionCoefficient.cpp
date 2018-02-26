@@ -20,6 +20,8 @@ std::unique_ptr<DiffusionCoefficient> createDiffusionCoefficient(
     else if (type == "WaterNitrogenMarrero")
         return std::unique_ptr<DiffusionCoefficient>(
             new DiffusionCoefficientWaterNitrogenMarrero());
+    else if (type == "MixtureWaterAirFuller")
+        return std::make_unique<DiffusionCoefficientWaterAirFuller>();
     else if (type == "Knudsen")
     {
         auto const pore_diam =

@@ -159,25 +159,17 @@ void TCHSStokesLocalAssembler<
 
         // material parameters /////////////////////////////////////////////////
         auto const mat_id = _process_data.material_ids[_element.getID()];
+        auto const& mat = _process_data.materials[mat_id];
 
-        auto const mu = _process_data.fluid_viscosity(t, x_position)[0];
-        double porosity;
+        auto const mu = (*mat.fluid_viscosity)();
+        auto const porosity = (*mat.porosity)();
         Eigen::Matrix<double, VelocityDim, 1> grad_porosity =
             Eigen::Matrix<double, VelocityDim, 1>::Zero();
         double mu_eff;
-        double f_1;
-        double f_2;
+        double f_1 = (*mat.fluid_momentum_production_coefficient)();
+        double f_2 = (*mat.fluid_momentum_production_coefficient)();
 
-        if (_element.getID() == 0 && ip == 0)
-        {
-            auto const rho_GR = _process_data.fluid_density(t, x_position)[0];
-            auto const Re0 = _process_data.average_darcy_velocity *
-                             _process_data.pellet_diameter * rho_GR / mu;
-
-            INFO("Reynolds number is %g.", Re0);
-            INFO("Weight is %g.", w);
-        }
-
+        /*
         if (mat_id == TCHSStokesProcessData<VelocityDim>::MATID_VOID)
         {
             porosity = 1.0;
@@ -205,6 +197,7 @@ void TCHSStokesLocalAssembler<
         }
         else
             OGS_FATAL("wrong material id: %d", mat_id);
+        */
 
         // TODO implement material models
         double const rho_GR = 1.0;

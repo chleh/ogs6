@@ -58,6 +58,42 @@ public:
     }
 };
 
+class DiffusionCoefficientWaterAirFuller final : public DiffusionCoefficient
+{
+public:
+    virtual double getDiffusionCoefficient(const double p, const double T,
+                                           const double /*p_V*/) const override
+    {
+        // Poling, B.E., Prausnitz, J.M., O’Connell, J.P., 2001. The properties
+        // of gases and liquids, 5th ed. ed. McGraw-Hill, New York.
+        // Eq. (11-4.4)
+
+        // Original:
+        // Fuller, E.N., Ensley, K., Giddings, J.C., 1969. Diffusion of
+        // halogenated hydrocarbons in helium. The effect of structure on
+        // collision cross sections. The Journal of Physical Chemistry 73,
+        // 3679–3685. doi:10.1021/j100845a020
+
+        double const diff_vol_water = 13.1;
+        double const diff_vol_air = 19.7;
+        double const diff_vol_factor =
+            std::cbrt(diff_vol_water) + std::cbrt(diff_vol_air);
+
+        double const M_air =
+            MaterialLib::PhysicalConstant::MolarMass::Air * 1000.0;  // in g/mol
+        double const M_water = MaterialLib::PhysicalConstant::MolarMass::Water *
+                               1000.0;  // in g/mol
+        double const M_AB = 2.0 / (1.0 / M_air + 1.0 / M_water);
+
+        double const p_bar = p * 1e-5;  // pressure in bar
+
+        double const D_AB = 0.00143 * std::pow(T, 1.75) /
+                            (p_bar * std::sqrt(M_AB) * diff_vol_factor *
+                             diff_vol_factor);  // in cm^2/s
+        return D_AB / 1e4;                      // in m^2/s
+    }
+};
+
 class DiffusionCoefficientKnudsen final : public DiffusionCoefficient
 {
 public:

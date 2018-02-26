@@ -148,38 +148,8 @@ std::unique_ptr<Process> createTCHSStokesProcess(
     auto materials = Material::createTCHSStokesMaterials(
         config.getConfigSubtree("materials"));
 
-    auto const pellet_diameter =
-        config.getConfigParameter<double>("pellet_diameter");
-    auto const bed_radius = config.getConfigParameter<double>("bed_radius");
-
-    auto const average_darcy_velocity =
-        config.getConfigParameter<double>("average_darcy_velocity");
-
-    auto const homogeneous_porosity =
-        config.getConfigParameter<double>("homogeneous_porosity");
-
-    auto const& fluid_density =
-        findParameter<double>(config, "fluid_density", parameters, 1);
-
-    auto const& fluid_viscosity =
-        findParameter<double>(config, "fluid_viscosity", parameters, 1);
-
-    auto const& porosity =
-        findParameter<double>(config, "porosity", parameters, 1);
-
-    auto effective_fluid_viscosity = createEffectiveFluidViscosity(
-        config.getConfigSubtree("effective_fluid_viscosity"));
-
-    TCHSStokesProcessData<VelocityDim> process_data{
-        *material_ids,
-        pellet_diameter,
-        bed_radius,
-        average_darcy_velocity,
-        homogeneous_porosity,
-        fluid_density,
-        fluid_viscosity,
-        porosity,
-        std::move(effective_fluid_viscosity)};
+    TCHSStokesProcessData<VelocityDim> process_data{*material_ids,
+                                                    std::move(materials)};
 
     SecondaryVariableCollection secondary_variables;
 
