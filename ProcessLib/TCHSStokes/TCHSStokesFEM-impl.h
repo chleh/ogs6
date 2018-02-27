@@ -188,6 +188,11 @@ void TCHSStokesLocalAssembler<
         auto const mat_id = _process_data.material_ids[_element.getID()];
         auto const& mat = _process_data.materials[mat_id];
 
+        auto const porosity = mat.porosity->getPorosity(x_coord);
+        Eigen::Matrix<double, VelocityDim, 1> grad_porosity =
+            Eigen::Matrix<double, VelocityDim, 1>::Zero();
+        grad_porosity[0] = mat.porosity->getDPorosityDr(x_coord);
+
         auto const delta_t = 1.0;  // TODO fix
         if (mat.reaction_rate->computeReactionRate(
                 delta_t, p, T, p_V, *ip_data.reaction_rate,
@@ -199,18 +204,15 @@ void TCHSStokesLocalAssembler<
         }
 
         double const hat_rho_S =
+            (1.0 - porosity) *
             mat.reactive_solid->getOverallRate(*ip_data.reaction_rate);
         auto const reaction_enthalpy = mat.reaction_rate->getHeatOfReaction(
-            p_V, T, ip_data.reactive_solid_state.get());  // TODO eval()?
-        double const heating_rate = mat.reactive_solid->getHeatingRate(
-            reaction_enthalpy, *ip_data.reaction_rate);
+            p_V, T, ip_data.reactive_solid_state.get());
+        double const heating_rate =
+            (1.0 - porosity) * mat.reactive_solid->getHeatingRate(
+                                   reaction_enthalpy, *ip_data.reaction_rate);
 
         double const rho_GR = mat.fluid_density->getDensity(p, T, x_mV);
-
-        auto const porosity = mat.porosity->getPorosity(x_coord);
-        Eigen::Matrix<double, VelocityDim, 1> grad_porosity =
-            Eigen::Matrix<double, VelocityDim, 1>::Zero();
-        grad_porosity[0] = mat.porosity->getDPorosityDr(x_coord);
 
         double const M_G = 1.0;
         double const dMG_dxmV = 1.0;
