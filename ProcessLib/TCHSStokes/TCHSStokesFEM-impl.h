@@ -181,12 +181,13 @@ void TCHSStokesLocalAssembler<
         double const T = N_1 * nodal_T;
         double x_mV = N_1 * nodal_xmV;
 
-        double p_V = p * Adsorption::AdsorptionReaction::getMolarFraction(
-                             x_mV, 18 /*Water*/, 28 /*N2*/);
-
         // material parameters /////////////////////////////////////////////////
         auto const mat_id = _process_data.material_ids[_element.getID()];
         auto const& mat = _process_data.materials[mat_id];
+
+        double p_V =
+            p * Adsorption::AdsorptionReaction::getMolarFraction(
+                    x_mV, mat.molar_mass_reactive, mat.molar_mass_inert);
 
         // porosity
         auto const porosity = mat.porosity->getPorosity(x_coord);
@@ -202,7 +203,7 @@ void TCHSStokesLocalAssembler<
                 ip_data.reaction_rate_data.get()))
         {
             x_mV = Adsorption::AdsorptionReaction::getMassFraction(
-                p_V / p, 18 /*Water*/, 28 /*N2*/);
+                p_V / p, mat.molar_mass_reactive, mat.molar_mass_inert);
         }
 
         double const hat_rho_S =
@@ -234,11 +235,16 @@ void TCHSStokesLocalAssembler<
             mat.fluid_momentum_production_coefficient->getCoeffOfVSquared(
                 porosity, rho_GR);
 
+        // solid
+        double const rho_SR =
+            mat.reactive_solid->getSolidDensity(*ip_data.reactive_solid_state);
+
         // fluid and solid
         double const total_heat_capacity =
-            porosity * c_pG +
+            porosity * c_pG * rho_GR +
             (1.0 - porosity) *
-                (*mat.solid_heat_capacity)();  // rho_G * c_pG + rho_S * c_pS
+                mat.solid_heat_capacity->getHeatCapacity(rho_SR, T) * rho_SR;
+        // TODO
         double const total_heat_conductivity = (*mat.heat_conductivity)();
 
         // assemble local matrices /////////////////////////////////////////////

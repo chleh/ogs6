@@ -44,6 +44,11 @@ TCHSStokesMaterial createTCHSStokesMaterial(
 
     material.porosity = createPorosity(config.getConfigSubtree("porosity"));
 
+    material.molar_mass_reactive =
+        config.getConfigParameter<double>("molar_mass_reactive");
+    material.molar_mass_inert =
+        config.getConfigParameter<double>("molar_mass_inert");
+
     return material;
 }
 
@@ -141,9 +146,14 @@ std::unique_ptr<SolidHeatCapacity> createSolidHeatCapacity(
         auto const value = config.getConfigParameter<double>("value");
         return std::make_unique<SolidHeatCapacityConstant>(value);
     }
-    if (type == "DensityDependent")
+    if (type == "ZeoliteAWaterVucelic")
     {
-        return std::make_unique<SolidHeatCapacityDensityDependent>();
+        auto const rho_SR_dry =
+            config.getConfigParameter<double>("adsorbent_density_dry");
+        auto const cp_zeo_dry =
+            config.getConfigParameter<double>("adsorbent_heat_capacity_dry");
+        return std::make_unique<SolidHeatCapacityZeoliteAWaterVucelic>(
+            rho_SR_dry, cp_zeo_dry);
     }
 
     OGS_FATAL("Unknown solid heat capacity model `%s'.", type.c_str());

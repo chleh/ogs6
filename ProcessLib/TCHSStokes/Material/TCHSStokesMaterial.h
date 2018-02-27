@@ -143,12 +143,46 @@ class FluidMomentumProductionCoefficientZero final
 class SolidHeatCapacity
 {
 public:
-    double operator()()
-    {
-        // TODO remove
-        return 0.0;
-    }
+    virtual double getHeatCapacity(double rho_SR, double T) const = 0;
     virtual ~SolidHeatCapacity() = default;
+};
+
+class SolidHeatCapacityZeoliteAWaterVucelic final : public SolidHeatCapacity
+{
+public:
+    SolidHeatCapacityZeoliteAWaterVucelic(double cp_zeo_dry, double rho_SR_dry)
+        : _cp_zeo_dry(cp_zeo_dry), _rho_SR_dry(rho_SR_dry)
+    {
+    }
+
+    double getHeatCapacity(double rho_SR, double T) const override
+    {
+        double const cp_min_water = 836.0;  // J/kg/K
+        double const A = 3.762e-2;
+        double const B = 3.976e-4;
+        double const sqrtB = std::sqrt(B);
+        double const T_0 = 335;    // K
+        double const T_min = 220;  // K; TODO check, estimated from Vučelić, V.,
+                                   // Vučelić, D., 1983. The heat capacity of
+                                   // water near solid surfaces. Chemical
+                                   // Physics Letters 102, 371–374.
+                                   // doi:10.1016/0009-2614(83)87058-4
+        double const sqrtpi = std::sqrt(boost::math::constants::pi<double>());
+
+        double const loading = rho_SR / _rho_SR_dry - 1.0;
+
+        double const cp_water =
+            cp_min_water +
+            0.5 * sqrtpi * A / sqrtB *
+                (std::erf(sqrtB * (T - T_0)) - std::erf(sqrtB * (T_min - T_0)));
+
+        return 1.0 / (1.0 + loading) * _cp_zeo_dry +
+               loading / (1.0 + loading) * cp_water;
+    }
+
+private:
+    double const _cp_zeo_dry;
+    double const _rho_SR_dry;
 };
 
 class SolidHeatCapacityConstant final : public SolidHeatCapacity
@@ -156,12 +190,13 @@ class SolidHeatCapacityConstant final : public SolidHeatCapacity
 public:
     SolidHeatCapacityConstant(double value) : _value(value) {}
 
+    double getHeatCapacity(double /*rho_SR*/, double /*T*/) const override
+    {
+        return _value;
+    }
+
 private:
     double const _value;
-};
-
-class SolidHeatCapacityDensityDependent final : public SolidHeatCapacity
-{
 };
 
 class Porosity
@@ -231,6 +266,9 @@ struct TCHSStokesMaterial
     std::unique_ptr<MaterialLib::ReactiveSolidModel> reactive_solid;
     std::unique_ptr<MaterialLib::ReactionRate> reaction_rate;
     std::unique_ptr<Porosity> porosity;
+
+    double molar_mass_reactive = std::numeric_limits<double>::quiet_NaN();
+    double molar_mass_inert = std::numeric_limits<double>::quiet_NaN();
 };
 
 }  // namespace Material
