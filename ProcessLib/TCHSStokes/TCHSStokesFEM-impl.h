@@ -188,11 +188,13 @@ void TCHSStokesLocalAssembler<
         auto const mat_id = _process_data.material_ids[_element.getID()];
         auto const& mat = _process_data.materials[mat_id];
 
+        // porosity
         auto const porosity = mat.porosity->getPorosity(x_coord);
         Eigen::Matrix<double, VelocityDim, 1> grad_porosity =
             Eigen::Matrix<double, VelocityDim, 1>::Zero();
         grad_porosity[0] = mat.porosity->getDPorosityDr(x_coord);
 
+        // reaction
         auto const delta_t = 1.0;  // TODO fix
         if (mat.reaction_rate->computeReactionRate(
                 delta_t, p, T, p_V, *ip_data.reaction_rate,
@@ -212,21 +214,18 @@ void TCHSStokesLocalAssembler<
             (1.0 - porosity) * mat.reactive_solid->getHeatingRate(
                                    reaction_enthalpy, *ip_data.reaction_rate);
 
+        // fluid
         double const rho_GR = mat.fluid_density->getDensity(p, T, x_mV);
 
         double const M_G = 1.0;
         double const dMG_dxmV = 1.0;
 
-        double const total_heat_conductivity = (*mat.heat_conductivity)();
         double const diffusion_coefficient =
             mat.diffusion_coefficient->getDiffusionCoefficient(p, T, p_V);
         double const c_pG = (*mat.fluid_heat_capacity)();
-        double const total_heat_capacity =
-            porosity * c_pG +
-            (1.0 - porosity) *
-                (*mat.solid_heat_capacity)();  // rho_G * c_pG + rho_S * c_pS
 
-        double const mu = (*mat.fluid_viscosity)();
+        // fluid viscosity/friction
+        double const mu = mat.fluid_viscosity->getViscosity(p, T, x_mV);
         double const mu_eff = (*mat.effective_fluid_viscosity)(t, mu, rho_GR);
         double const f_1 =
             mat.fluid_momentum_production_coefficient->getCoeffOfV(porosity,
@@ -234,6 +233,13 @@ void TCHSStokesLocalAssembler<
         double const f_2 =
             mat.fluid_momentum_production_coefficient->getCoeffOfVSquared(
                 porosity, rho_GR);
+
+        // fluid and solid
+        double const total_heat_capacity =
+            porosity * c_pG +
+            (1.0 - porosity) *
+                (*mat.solid_heat_capacity)();  // rho_G * c_pG + rho_S * c_pS
+        double const total_heat_conductivity = (*mat.heat_conductivity)();
 
         // assemble local matrices /////////////////////////////////////////////
 
