@@ -15,7 +15,8 @@ namespace ProcessLib
 namespace TCHSStokes
 {
 template class TCHSStokesProcess<2>;
-template class TCHSStokesProcess<3>;
+// TODO saving compilation time
+// template class TCHSStokesProcess<3>;
 
 }  // namespace TCHSStokes
 }  // namespace ProcessLib

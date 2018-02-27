@@ -107,14 +107,30 @@ std::unique_ptr<HeatConductivity> createHeatConductivity(
     BaseLib::ConfigTree const& config)
 {
     auto const type = config.getConfigParameter<std::string>("type");
-    if (type == "LambdaRModel")
+    if (type == "LambdaRModelNoRadiation")
     {
-        config.ignoreConfigParameter("fluid_heat_conductivity");
-        config.ignoreConfigParameter("solid_heat_conductivity");
-        return std::make_unique<HeatConductivityLambdaR>();
+        auto lambda_f = createHeatConductivity(
+            config.getConfigSubtree("fluid_heat_conductivity"));
+        auto lambda_p = createHeatConductivity(
+            config.getConfigSubtree("solid_heat_conductivity"));
+
+        auto const pellet_diameter =
+            config.getConfigParameter<double>("pellet_diameter");
+        auto const bed_radius = config.getConfigParameter<double>("bed_radius");
+
+        return std::make_unique<HeatConductivityLambdaRNoRadiation>(
+            bed_radius,
+            pellet_diameter,
+            std::move(lambda_f),
+            std::move(lambda_p));
     }
     if (type == "MixtureWaterNitrogen")
         return std::make_unique<HeatConductivityMixtureWaterNitrogen>();
+    if (type == "Constant")
+    {
+        auto const value = config.getConfigParameter<double>("value");
+        return std::make_unique<HeatConductivityConstant>(value);
+    }
 
     OGS_FATAL("Unknown heat conductivity model `%s'.", type.c_str());
 }

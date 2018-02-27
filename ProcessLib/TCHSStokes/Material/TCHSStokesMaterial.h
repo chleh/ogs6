@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <memory>
 
 #include "MaterialLib/ReactionKinetics/ReactionRate.h"
@@ -102,20 +103,109 @@ public:
 class HeatConductivity
 {
 public:
-    double operator()()
-    {
-        // TODO remove
-        return 0.0;
-    }
+    virtual Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
+        double const p, double const T, double const x_mV, double const r,
+        double const porosity, double const Pe_0, double const Re_0,
+        double const v_Darcy, double const v_Darcy_center) const = 0;
+
     virtual ~HeatConductivity() = default;
 };
 
-class HeatConductivityLambdaR final : public HeatConductivity
+class HeatConductivityLambdaRNoRadiation final : public HeatConductivity
 {
+public:
+    HeatConductivityLambdaRNoRadiation(
+        double bed_radius,
+        double pellet_diameter,
+        std::unique_ptr<HeatConductivity>&& lambda_fluid,
+        std::unique_ptr<HeatConductivity>&& lambda_pellet)
+        : _bed_radius(bed_radius),
+          _pellet_diameter(pellet_diameter),
+          _lambda_fluid(std::move(lambda_fluid)),
+          _lambda_pellet(std::move(lambda_pellet))
+    {
+    }
+
+    Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
+        double const p, double const T, double const x_mV, double const r,
+        double const porosity, double const Pe_0, double const Re_0,
+        double const v_Darcy, double const v_Darcy_center) const override
+    {
+        auto const lambda_f_mat = _lambda_fluid->getHeatConductivity(
+            p, T, x_mV, r, porosity, Pe_0, Re_0, v_Darcy, v_Darcy_center);
+        assert(lambda_f_mat(0, 0) == lambda_f_mat(1, 1));
+        double const lambda_f = lambda_f_mat.diagonal()[0];
+
+        auto const lambda_p_mat = _lambda_pellet->getHeatConductivity(
+            p, T, x_mV, r, porosity, Pe_0, Re_0, v_Darcy, v_Darcy_center);
+        assert(lambda_p_mat(0, 0) == lambda_p_mat(1, 1));
+        double const lambda_p = lambda_p_mat.diagonal()[0];
+
+        double const B = 1.25 * std::pow(1.0 / porosity - 1.0, 10.0 / 9.0);
+        double const k_p = lambda_p / lambda_f;
+        double const N = 1.0 - B / k_p;
+        double const k_c = 2.0 / N *
+                           (B / N / N * (1.0 - 1.0 / k_p) * std::log(k_p / B) -
+                            0.5 * (B + 1.0) - (B - 1.0) / N);
+        double const k_bed =
+            1 - std::sqrt(1.0 - porosity) + std::sqrt(1.0 - porosity) * k_c;
+        double const lambda_bed = k_bed * lambda_f;
+
+        double const K_ax = 2.0;
+        double const lambda_ax = lambda_bed + Pe_0 / K_ax * lambda_f;
+
+        auto f = [this, Re_0](double x) {
+            double const K_2 = 0.44 + 4.0 * std::exp(-Re_0 / 70.0);
+            if (x < K_2 * _pellet_diameter)
+                return boost::math::pow<2 /* n */>(x / K_2 / _pellet_diameter);
+            return 1.0;
+        };
+        double const K_1 = 0.125;
+        double const lambda_r = lambda_bed + K_1 * Pe_0 * v_Darcy_center /
+                                                 v_Darcy * f(_bed_radius - r) *
+                                                 lambda_f;
+
+        return Eigen::DiagonalMatrix<double, 2>(lambda_r, lambda_ax);
+    }
+
+private:
+    double const _bed_radius;
+    double const _pellet_diameter;
+    std::unique_ptr<HeatConductivity> _lambda_fluid;
+    std::unique_ptr<HeatConductivity> _lambda_pellet;
 };
 
 class HeatConductivityMixtureWaterNitrogen final : public HeatConductivity
 {
+public:
+    Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
+        double const p, double const T, double const x_mV, double const /*r*/,
+        double const /*porosity*/, double const /*Pe_0*/, double const /*Re_0*/,
+        double const /*v_Darcy*/,
+        double const /*v_Darcy_center*/) const override
+    {
+        double const lambda =
+            ProcessLib::TES::fluid_heat_conductivity(p, T, x_mV);
+        return Eigen::DiagonalMatrix<double, 2>(lambda, lambda);
+    }
+};
+
+class HeatConductivityConstant final : public HeatConductivity
+{
+public:
+    HeatConductivityConstant(double value) : _value(value) {}
+
+    Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
+        double const /*p*/, double const /*T*/, double const /*x_mV*/,
+        double const /*r*/, double const /*porosity*/, double const /*Pe_0*/,
+        double const /*Re_0*/, double const /*v_Darcy*/,
+        double const /*v_Darcy_center*/) const override
+    {
+        return Eigen::DiagonalMatrix<double, 2>(_value, _value);
+    }
+
+private:
+    double const _value;
 };
 
 class FluidMomentumProductionCoefficient
