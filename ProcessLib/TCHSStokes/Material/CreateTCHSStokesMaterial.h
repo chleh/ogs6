@@ -40,6 +40,9 @@ std::unique_ptr<SolidHeatCapacity> createSolidHeatCapacity(
 
 std::unique_ptr<Porosity> createPorosity(BaseLib::ConfigTree const& config);
 
+std::unique_ptr<PecletNumberHeat> createPecletNumberHeat(
+    BaseLib::ConfigTree const& config);
+
 }  // namespace Material
 
 }  // namespace TCHSStokes

@@ -49,6 +49,9 @@ TCHSStokesMaterial createTCHSStokesMaterial(
     material.molar_mass_inert =
         config.getConfigParameter<double>("molar_mass_inert");
 
+    material.reynolds_number = ProcessLib::createReynoldsNumber(
+        config.getConfigSubtree("reynolds_number"));
+
     return material;
 }
 
@@ -118,11 +121,12 @@ std::unique_ptr<HeatConductivity> createHeatConductivity(
             config.getConfigParameter<double>("pellet_diameter");
         auto const bed_radius = config.getConfigParameter<double>("bed_radius");
 
+        auto Pe = createPecletNumberHeat(
+            config.getConfigSubtree("peclet_number_heat"));
+
         return std::make_unique<HeatConductivityLambdaRNoRadiation>(
-            bed_radius,
-            pellet_diameter,
-            std::move(lambda_f),
-            std::move(lambda_p));
+            bed_radius, pellet_diameter, std::move(lambda_f),
+            std::move(lambda_p), std::move(Pe));
     }
     if (type == "MixtureWaterNitrogen")
         return std::make_unique<HeatConductivityMixtureWaterNitrogen>();
@@ -195,6 +199,29 @@ std::unique_ptr<Porosity> createPorosity(BaseLib::ConfigTree const& config)
     }
 
     OGS_FATAL("Unknown porosity model `%s'.", type.c_str());
+}
+
+std::unique_ptr<PecletNumberHeat> createPecletNumberHeat(
+    BaseLib::ConfigTree const& config)
+{
+    auto const type = config.getConfigParameter<std::string>("type");
+    if (type == "Local")
+    {
+        auto const l =
+            config.getConfigParameter<double>("characteristic_length");
+        return std::make_unique<PecletNumberHeatLocal>(l);
+    }
+    if (type == "NonLocal")
+    {
+        auto const l =
+            config.getConfigParameter<double>("characteristic_length");
+        auto v = MathLib::createPiecewiseLinearCurve<
+            MathLib::PiecewiseLinearInterpolation>(
+            config.getConfigSubtree("average_velocity"));
+        return std::make_unique<PecletNumberHeatNonLocal>(l, std::move(v));
+    }
+
+    OGS_FATAL("Unknown effective viscosity model: %s.", type.c_str());
 }
 
 }  // namespace Material

@@ -138,6 +138,8 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
 
         auto const mat_id = _process_data.material_ids[_element.getID()];
 
+        Eigen::Matrix<double, VelocityDim, 1> v = H * nodal_v;
+
         auto const mu = _process_data.fluid_viscosity(t, x_position)[0];
         double porosity;
         Eigen::Matrix<double, VelocityDim, 1> grad_porosity =
@@ -181,7 +183,10 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
                   d_pel / d_pel;
             f_2 = 1.75 * (1.0 - porosity) / poro3 * rho_GR / d_pel;
 
-            mu_eff = (*_process_data.effective_fluid_viscosity)(t, mu, rho_GR);
+            auto const Re_0 =
+                _process_data.reynolds_number->getRe(t, rho_GR, v.norm(), mu);
+            mu_eff =
+                _process_data.effective_fluid_viscosity->getViscosity(mu, Re_0);
         }
         else
             OGS_FATAL("wrong material id: %d", mat_id);
@@ -201,7 +206,6 @@ void IncompressibleStokesBrinkmanModifiedLocalAssembler<
                                                           pressure_index)
             .noalias() -= H.transpose() * (porosity * w) * dNdx_p;
 
-        Eigen::Matrix<double, VelocityDim, 1> v = H * nodal_v;
         auto const& P_dev = MathLib::KelvinVector::Invariants<
             KelvinVectorSize>::deviatoric_projection;
 

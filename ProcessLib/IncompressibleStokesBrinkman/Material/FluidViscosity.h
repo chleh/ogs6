@@ -11,17 +11,16 @@ namespace ProcessLib
 class EffectiveFluidViscosity
 {
 public:
-    virtual double operator()(double const t, const double fluid_viscosity,
-                              double const fluid_density) = 0;
+    virtual double getViscosity(const double fluid_viscosity,
+                                double const Re_0) const = 0;
     virtual ~EffectiveFluidViscosity() = default;
 };
 
 class EffectiveFluidViscosityIdentity : public EffectiveFluidViscosity
 {
 public:
-    double operator()(double const /*t*/,
-                      double const fluid_viscosity,
-                      double const /*fluid_density*/) override
+    double getViscosity(double const fluid_viscosity,
+                        double const /*Re_0*/) const override
     {
         return fluid_viscosity;
     }
@@ -30,27 +29,68 @@ public:
 class EffectiveFluidViscosityGiese : public EffectiveFluidViscosity
 {
 public:
-    EffectiveFluidViscosityGiese(
-        std::unique_ptr<MathLib::PiecewiseLinearInterpolation>&&
-            average_darcy_velocity,
-        double const pellet_diameter)
-        : _average_darcy_velocity(std::move(average_darcy_velocity)),
-          _pellet_diameter(pellet_diameter)
+    double getViscosity(double const fluid_viscosity,
+                        double const Re_0) const override
+    {
+        return 2.0 * fluid_viscosity * std::exp(2e-3 * Re_0);
+    }
+};
+
+class ReynoldsNumber
+{
+public:
+    virtual double getRe(double t,
+                         double density,
+                         double velocity,
+                         double viscosity) const = 0;
+    virtual ~ReynoldsNumber() = default;
+};
+
+class ReynoldsNumberLocal final : public ReynoldsNumber
+{
+public:
+    ReynoldsNumberLocal(double characteristic_length)
+        : _characteristic_length(characteristic_length)
     {
     }
-    double operator()(double const t,
-                      double const fluid_viscosity,
-                      double const fluid_density) override
+
+    double getRe(double /*t*/,
+                 double density,
+                 double velocity,
+                 double viscosity) const override
     {
-        auto const Re0 = _average_darcy_velocity->getValue(t) *
-                         _pellet_diameter * fluid_density / fluid_viscosity;
-        return 2.0 * fluid_viscosity * std::exp(2e-3 * Re0);
+        return density * velocity * _characteristic_length / viscosity;
     }
 
 private:
+    double const _characteristic_length;
+};
+
+class ReynoldsNumberNonLocal final : public ReynoldsNumber
+{
+public:
+    ReynoldsNumberNonLocal(
+        double characteristic_length,
+        std::unique_ptr<MathLib::PiecewiseLinearInterpolation>&&
+            average_velocity)
+        : _characteristic_length(characteristic_length),
+          _average_velocity(std::move(average_velocity))
+    {
+    }
+
+    double getRe(double t,
+                 double density,
+                 double /*velocity*/,
+                 double viscosity) const override
+    {
+        return density * _average_velocity->getValue(t) *
+               _characteristic_length / viscosity;
+    }
+
+private:
+    double const _characteristic_length;
     std::unique_ptr<MathLib::PiecewiseLinearInterpolation> const
-        _average_darcy_velocity;
-    const double _pellet_diameter;
+        _average_velocity;
 };
 
 inline std::unique_ptr<EffectiveFluidViscosity> createEffectiveFluidViscosity(
@@ -61,11 +101,30 @@ inline std::unique_ptr<EffectiveFluidViscosity> createEffectiveFluidViscosity(
         return std::make_unique<EffectiveFluidViscosityIdentity>();
     if (type == "Giese")
     {
+        return std::make_unique<EffectiveFluidViscosityGiese>();
+    }
+
+    OGS_FATAL("Unknown effective viscosity model: %s.", type.c_str());
+}
+
+inline std::unique_ptr<ReynoldsNumber> createReynoldsNumber(
+    BaseLib::ConfigTree const& config)
+{
+    auto const type = config.getConfigParameter<std::string>("type");
+    if (type == "Local")
+    {
+        auto const l =
+            config.getConfigParameter<double>("characteristic_length");
+        return std::make_unique<ReynoldsNumberLocal>(l);
+    }
+    if (type == "NonLocal")
+    {
+        auto const l =
+            config.getConfigParameter<double>("characteristic_length");
         auto v = MathLib::createPiecewiseLinearCurve<
             MathLib::PiecewiseLinearInterpolation>(
-            config.getConfigSubtree("average_darcy_velocity"));
-        auto const d = config.getConfigParameter<double>("pellet_diameter");
-        return std::make_unique<EffectiveFluidViscosityGiese>(std::move(v), d);
+            config.getConfigSubtree("average_velocity"));
+        return std::make_unique<ReynoldsNumberNonLocal>(l, std::move(v));
     }
 
     OGS_FATAL("Unknown effective viscosity model: %s.", type.c_str());

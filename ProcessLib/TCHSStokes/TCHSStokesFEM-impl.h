@@ -228,7 +228,9 @@ void TCHSStokesLocalAssembler<
 
         // fluid viscosity/friction
         double const mu = mat.fluid_viscosity->getViscosity(p, T, x_mV);
-        double const mu_eff = (*mat.effective_fluid_viscosity)(t, mu, rho_GR);
+        double const Re_0 = mat.reynolds_number->getRe(t, rho_GR, v.norm(), mu);
+        double const mu_eff =
+            mat.effective_fluid_viscosity->getViscosity(mu, Re_0);
         double const f_1 =
             mat.fluid_momentum_production_coefficient->getCoeffOfV(porosity,
                                                                    mu);
@@ -248,7 +250,7 @@ void TCHSStokesLocalAssembler<
         // TODO
         auto const total_heat_conductivity =
             mat.heat_conductivity->getHeatConductivity(
-                p, T, x_mV, x_coord, porosity, 0 /*Pe_0*/, 0 /*Re_0*/, v.norm(),
+                t, p, T, x_mV, x_coord, porosity, rho_GR, c_pG, Re_0, v.norm(),
                 0 /*v_Darcy_center*/);
 
         // assemble local matrices /////////////////////////////////////////////

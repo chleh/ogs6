@@ -48,7 +48,8 @@ struct IncompressibleStokesBrinkmanProcessData
         double const homogeneous_porosity_,
         ProcessLib::Parameter<double> const& fluid_density_,
         ProcessLib::Parameter<double> const& fluid_viscosity_,
-        std::unique_ptr<EffectiveFluidViscosity>&& effective_fluid_viscosity_)
+        std::unique_ptr<EffectiveFluidViscosity>&& effective_fluid_viscosity_,
+        std::unique_ptr<ReynoldsNumber>&& reynolds_number_)
         : material_ids(material_ids_),
           pellet_diameter(pellet_diameter_),
           bed_radius(bed_radius_),
@@ -56,37 +57,10 @@ struct IncompressibleStokesBrinkmanProcessData
           homogeneous_porosity(homogeneous_porosity_),
           fluid_density(fluid_density_),
           fluid_viscosity(fluid_viscosity_),
-          effective_fluid_viscosity(std::move(effective_fluid_viscosity_))
+          effective_fluid_viscosity(std::move(effective_fluid_viscosity_)),
+          reynolds_number(std::move(reynolds_number_))
     {
     }
-
-#if 0
-    IncompressibleStokesBrinkmanProcessData(
-        IncompressibleStokesBrinkmanProcessData&& other)
-        : material{std::move(other.material)},
-          intrinsic_permeability(other.intrinsic_permeability),
-          specific_storage(other.specific_storage),
-          fluid_viscosity(other.fluid_viscosity),
-          fluid_density(other.fluid_density),
-          biot_coefficient(other.biot_coefficient),
-          porosity(other.porosity),
-          solid_density(other.solid_density),
-          specific_body_force(other.specific_body_force),
-          dt(other.dt),
-          t(other.t)
-    {
-    }
-
-    //! Copies are forbidden.
-    IncompressibleStokesBrinkmanProcessData(
-        IncompressibleStokesBrinkmanProcessData const&) = delete;
-
-    //! Assignments are not needed.
-    void operator=(IncompressibleStokesBrinkmanProcessData const&) = delete;
-
-    //! Assignments are not needed.
-    void operator=(IncompressibleStokesBrinkmanProcessData&&) = delete;
-#endif
 
     MeshLib::PropertyVector<int> const& material_ids;
 
@@ -98,6 +72,7 @@ struct IncompressibleStokesBrinkmanProcessData
     ProcessLib::Parameter<double> const& fluid_viscosity;
 
     std::unique_ptr<EffectiveFluidViscosity> effective_fluid_viscosity;
+    std::unique_ptr<ReynoldsNumber> reynolds_number;
 
     double dt = 0.0;
     double t = 0.0;

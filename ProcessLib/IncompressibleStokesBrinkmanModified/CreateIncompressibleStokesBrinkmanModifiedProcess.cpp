@@ -128,6 +128,8 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanModifiedProcess(
     auto const& porosity =
         findParameter<double>(config, "porosity", parameters, 1);
 
+    auto reynolds_number =
+        createReynoldsNumber(config.getConfigSubtree("reynolds_number"));
     auto effective_fluid_viscosity = createEffectiveFluidViscosity(
         config.getConfigSubtree("effective_fluid_viscosity"));
 
@@ -140,7 +142,8 @@ std::unique_ptr<Process> createIncompressibleStokesBrinkmanModifiedProcess(
                      fluid_density,
                      fluid_viscosity,
                      porosity,
-                     std::move(effective_fluid_viscosity)};
+                     std::move(effective_fluid_viscosity),
+                     std::move(reynolds_number)};
 
     SecondaryVariableCollection secondary_variables;
 

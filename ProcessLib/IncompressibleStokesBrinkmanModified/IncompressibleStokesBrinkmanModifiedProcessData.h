@@ -49,7 +49,8 @@ struct IncompressibleStokesBrinkmanModifiedProcessData
         ProcessLib::Parameter<double> const& fluid_density_,
         ProcessLib::Parameter<double> const& fluid_viscosity_,
         ProcessLib::Parameter<double> const& porosity_,
-        std::unique_ptr<EffectiveFluidViscosity>&& effective_fluid_viscosity_)
+        std::unique_ptr<EffectiveFluidViscosity>&& effective_fluid_viscosity_,
+        std::unique_ptr<ReynoldsNumber>&& reynolds_number_)
         : material_ids(material_ids_),
           pellet_diameter(pellet_diameter_),
           bed_radius(bed_radius_),
@@ -58,37 +59,10 @@ struct IncompressibleStokesBrinkmanModifiedProcessData
           fluid_density(fluid_density_),
           fluid_viscosity(fluid_viscosity_),
           porosity(porosity_),
-          effective_fluid_viscosity(std::move(effective_fluid_viscosity_))
+          effective_fluid_viscosity(std::move(effective_fluid_viscosity_)),
+          reynolds_number(std::move(reynolds_number_))
     {
     }
-
-#if 0
-    IncompressibleStokesBrinkmanModifiedProcessData(
-        IncompressibleStokesBrinkmanModifiedProcessData&& other)
-        : material{std::move(other.material)},
-          intrinsic_permeability(other.intrinsic_permeability),
-          specific_storage(other.specific_storage),
-          fluid_viscosity(other.fluid_viscosity),
-          fluid_density(other.fluid_density),
-          biot_coefficient(other.biot_coefficient),
-          porosity(other.porosity),
-          solid_density(other.solid_density),
-          specific_body_force(other.specific_body_force),
-          dt(other.dt),
-          t(other.t)
-    {
-    }
-
-    //! Copies are forbidden.
-    IncompressibleStokesBrinkmanModifiedProcessData(
-        IncompressibleStokesBrinkmanModifiedProcessData const&) = delete;
-
-    //! Assignments are not needed.
-    void operator=(IncompressibleStokesBrinkmanModifiedProcessData const&) = delete;
-
-    //! Assignments are not needed.
-    void operator=(IncompressibleStokesBrinkmanModifiedProcessData&&) = delete;
-#endif
 
     MeshLib::PropertyVector<int> const& material_ids;
 
@@ -101,6 +75,7 @@ struct IncompressibleStokesBrinkmanModifiedProcessData
     ProcessLib::Parameter<double> const& porosity;
 
     std::unique_ptr<EffectiveFluidViscosity> effective_fluid_viscosity;
+    std::unique_ptr<ReynoldsNumber> reynolds_number;
 
     double dt = 0.0;
     double t = 0.0;

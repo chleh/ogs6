@@ -100,13 +100,75 @@ public:
     }
 };
 
+class PecletNumberHeat
+{
+public:
+    virtual double getPe(double t,
+                         double density,
+                         double velocity,
+                         double heat_capacity,
+                         double heat_conductivity) const = 0;
+    virtual ~PecletNumberHeat() = default;
+};
+
+class PecletNumberHeatLocal final : public PecletNumberHeat
+{
+public:
+    PecletNumberHeatLocal(double characteristic_length)
+        : _characteristic_length(characteristic_length)
+    {
+    }
+
+    double getPe(double /*t*/,
+                 double density,
+                 double velocity,
+                 double heat_capacity,
+                 double heat_conductivity) const override
+    {
+        return density * velocity * heat_capacity * _characteristic_length /
+               heat_conductivity;
+    }
+
+private:
+    double const _characteristic_length;
+};
+
+class PecletNumberHeatNonLocal final : public PecletNumberHeat
+{
+public:
+    PecletNumberHeatNonLocal(
+        double characteristic_length,
+        std::unique_ptr<MathLib::PiecewiseLinearInterpolation>&&
+            average_velocity)
+        : _characteristic_length(characteristic_length),
+          _average_velocity(std::move(average_velocity))
+    {
+    }
+
+    double getPe(double t,
+                 double density,
+                 double /*velocity*/,
+                 double heat_capacity,
+                 double heat_conductivity) const override
+    {
+        return density * _average_velocity->getValue(t) * heat_capacity *
+               _characteristic_length / heat_conductivity;
+    }
+
+private:
+    double const _characteristic_length;
+    std::unique_ptr<MathLib::PiecewiseLinearInterpolation> const
+        _average_velocity;
+};
+
 class HeatConductivity
 {
 public:
     virtual Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
-        double const p, double const T, double const x_mV, double const r,
-        double const porosity, double const Pe_0, double const Re_0,
-        double const v_Darcy, double const v_Darcy_center) const = 0;
+        double const t, double const p, double const T, double const x_mV,
+        double const r, double const porosity, double const rho_GR,
+        double const c_pG, double const Re_0, double const v_Darcy,
+        double const v_Darcy_center) const = 0;
 
     virtual ~HeatConductivity() = default;
 };
@@ -118,28 +180,36 @@ public:
         double bed_radius,
         double pellet_diameter,
         std::unique_ptr<HeatConductivity>&& lambda_fluid,
-        std::unique_ptr<HeatConductivity>&& lambda_pellet)
+        std::unique_ptr<HeatConductivity>&& lambda_pellet,
+        std::unique_ptr<PecletNumberHeat>&& peclet_number_heat)
         : _bed_radius(bed_radius),
           _pellet_diameter(pellet_diameter),
           _lambda_fluid(std::move(lambda_fluid)),
-          _lambda_pellet(std::move(lambda_pellet))
+          _lambda_pellet(std::move(lambda_pellet)),
+          _peclet_number_heat(std::move(peclet_number_heat))
     {
     }
 
     Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
-        double const p, double const T, double const x_mV, double const r,
-        double const porosity, double const Pe_0, double const Re_0,
-        double const v_Darcy, double const v_Darcy_center) const override
+        double const t, double const p, double const T, double const x_mV,
+        double const r, double const porosity, double const rho_GR,
+        double const c_pG, double const Re_0, double const v_Darcy,
+        double const v_Darcy_center) const override
     {
         auto const lambda_f_mat = _lambda_fluid->getHeatConductivity(
-            p, T, x_mV, r, porosity, Pe_0, Re_0, v_Darcy, v_Darcy_center);
+            t, p, T, x_mV, r, porosity, rho_GR, c_pG, Re_0, v_Darcy,
+            v_Darcy_center);
         assert(lambda_f_mat(0, 0) == lambda_f_mat(1, 1));
         double const lambda_f = lambda_f_mat.diagonal()[0];
 
         auto const lambda_p_mat = _lambda_pellet->getHeatConductivity(
-            p, T, x_mV, r, porosity, Pe_0, Re_0, v_Darcy, v_Darcy_center);
+            t, p, T, x_mV, r, porosity, rho_GR, c_pG, Re_0, v_Darcy,
+            v_Darcy_center);
         assert(lambda_p_mat(0, 0) == lambda_p_mat(1, 1));
         double const lambda_p = lambda_p_mat.diagonal()[0];
+
+        double const Pe_0 =
+            _peclet_number_heat->getPe(t, rho_GR, v_Darcy, c_pG, lambda_f);
 
         double const B = 1.25 * std::pow(1.0 / porosity - 1.0, 10.0 / 9.0);
         double const k_p = lambda_p / lambda_f;
@@ -173,15 +243,16 @@ private:
     double const _pellet_diameter;
     std::unique_ptr<HeatConductivity> _lambda_fluid;
     std::unique_ptr<HeatConductivity> _lambda_pellet;
+    std::unique_ptr<PecletNumberHeat> _peclet_number_heat;
 };
 
 class HeatConductivityMixtureWaterNitrogen final : public HeatConductivity
 {
 public:
     Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
-        double const p, double const T, double const x_mV, double const /*r*/,
-        double const /*porosity*/, double const /*Pe_0*/, double const /*Re_0*/,
-        double const /*v_Darcy*/,
+        double const /*t*/, double const p, double const T, double const x_mV,
+        double const /*r*/, double const /*porosity*/, double const /*rho_GR*/,
+        double const /*c_pG*/, double const /*Re_0*/, double const /*v_Darcy*/,
         double const /*v_Darcy_center*/) const override
     {
         double const lambda =
@@ -196,9 +267,10 @@ public:
     HeatConductivityConstant(double value) : _value(value) {}
 
     Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
-        double const /*p*/, double const /*T*/, double const /*x_mV*/,
-        double const /*r*/, double const /*porosity*/, double const /*Pe_0*/,
-        double const /*Re_0*/, double const /*v_Darcy*/,
+        double const /*t*/, double const /*p*/, double const /*T*/,
+        double const /*x_mV*/, double const /*r*/, double const /*porosity*/,
+        double const /*rho_GR*/, double const /*c_pG*/, double const /*Re_0*/,
+        double const /*v_Darcy*/,
         double const /*v_Darcy_center*/) const override
     {
         return Eigen::DiagonalMatrix<double, 2>(_value, _value);
@@ -385,6 +457,9 @@ struct TCHSStokesMaterial
     std::unique_ptr<MaterialLib::ReactiveSolidModel> reactive_solid;
     std::unique_ptr<MaterialLib::ReactionRate> reaction_rate;
     std::unique_ptr<Porosity> porosity;
+
+    std::unique_ptr<ProcessLib::ReynoldsNumber> reynolds_number;
+    std::unique_ptr<PecletNumberHeat> peclet_number_heat;
 
     double molar_mass_reactive = std::numeric_limits<double>::quiet_NaN();
     double molar_mass_inert = std::numeric_limits<double>::quiet_NaN();
