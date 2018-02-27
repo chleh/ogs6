@@ -29,6 +29,11 @@ VDI Waermeatlas
 
       <materials>
         <material id="0"><!-- inlet/outlet empty pipe -->
+          <reynolds_number>
+            <type>Local</type>
+            <characteristic_length>0.002</characteristic_length>
+          </reynolds_number>
+
           <porosity>
             <type>Constant</type>
             <value>1</value>
@@ -74,6 +79,9 @@ VDI Waermeatlas
             <initial_conversion>zero</initial_conversion>
             <solid_state_num_components>1</solid_state_num_components>
           </reactive_solid>
+
+          <molar_mass_reactive>0.018016 <!-- kg/mol, water --></molar_mass_reactive>
+          <molar_mass_inert>0.028013 <!-- kg/mol, N2 --></molar_mass_inert>
         </material>
 
         <material id="1"><!-- packed bed -->
@@ -83,6 +91,11 @@ VDI Waermeatlas
             <pellet_diameter>       0.2 </pellet_diameter>
             <homogeneous_porosity>  0.4 </homogeneous_porosity>
           </porosity>
+
+          <reynolds_number>
+            <type>Local</type>
+            <characteristic_length>0.002</characteristic_length>
+          </reynolds_number>
 
           <fluid_density>
             <type>MixtureWaterNitrogen</type>
@@ -96,12 +109,7 @@ VDI Waermeatlas
           </fluid_viscosity>
           <effective_fluid_viscosity>
             <type>Giese</type>
-            <average_darcy_velocity>
-              <coords>0.0 1e8</coords>
-              <values>0.5 0.5</values>
-            </average_darcy_velocity>
-            <pellet_diameter>0.2</pellet_diameter>
-          </feffective_luid_viscosity>
+          </effective_fluid_viscosity>
 
           <fluid_momentum_production_coefficient>
             <type>Ergun</type>
@@ -113,7 +121,7 @@ VDI Waermeatlas
           </diffusion_coefficient>
 
           <heat_conductivity>
-            <type>LambdaRModel</type>
+            <type>LambdaRModelNoRadiation</type>
 
             <fluid_heat_conductivity>
               <type>MixtureWaterNitrogen</type>
@@ -123,10 +131,20 @@ VDI Waermeatlas
               <type>Constant</type>
               <value>1.0</value>
             </solid_heat_conductivity>
+
+            <pellet_diameter>0.002</pellet_diameter>
+            <bed_radius>1.0</bed_radius>
+
+            <peclet_number_heat>
+              <type>Local</type>
+              <characteristic_length>0.002</characteristic_length>
+            </peclet_number_heat>
           </heat_conductivity>
 
           <solid_heat_capacity>
-            <type>DensityDependent</type>
+            <type>ZeoliteAWaterVucelic</type>
+            <adsorbent_density_dry>1000</adsorbent_density_dry>
+            <adsorbent_heat_capacity_dry>1000</adsorbent_heat_capacity_dry>
           </solid_heat_capacity>
 
           <reaction_rate>
@@ -169,9 +187,17 @@ VDI Waermeatlas
             <initial_conversion>zero</initial_conversion>
             <solid_state_num_components>1</solid_state_num_components>
           </reactive_solid>
+
+          <molar_mass_reactive>0.018016 <!-- kg/mol, water --></molar_mass_reactive>
+          <molar_mass_inert>0.028013 <!-- kg/mol, N2 --></molar_mass_inert>
         </material>
 
         <material id="2"><!-- inlet/outlet empty pipe -->
+          <reynolds_number>
+            <type>Local</type>
+            <characteristic_length>0.002</characteristic_length>
+          </reynolds_number>
+
           <porosity>
             <type>Constant</type>
             <value>0</value>
@@ -217,6 +243,9 @@ VDI Waermeatlas
             <initial_conversion>zero</initial_conversion>
             <solid_state_num_components>1</solid_state_num_components>
           </reactive_solid>
+
+          <molar_mass_reactive>0.018016 <!-- kg/mol, water --></molar_mass_reactive>
+          <molar_mass_inert>0.028013 <!-- kg/mol, N2 --></molar_mass_inert>
         </material>
 
       </materials>
