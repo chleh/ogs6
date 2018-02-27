@@ -8,6 +8,21 @@
 #include "ProcessLib/TES/Material/DiffusionCoefficient.h"
 #include "ProcessLib/TES/TESOGS5MaterialModels.h"
 
+namespace detail
+{
+inline double polynomial(double x, double const* coeffs, int n_coeffs)
+{
+    double x_pow = 1.0;
+    double res = 0.0;
+    for (int i = 0; i < n_coeffs; ++i)
+    {
+        res += x_pow * coeffs[i];
+        x_pow *= x;
+    }
+    return res;
+}
+}  // namespace detail
+
 namespace ProcessLib
 {
 namespace TCHSStokes
@@ -58,16 +73,30 @@ public:
 class FluidHeatCapacity
 {
 public:
-    double operator()()
-    {
-        // TODO remove
-        return 0.0;
-    }
+    virtual double getHeatCapacity(double T, double x_mV) const = 0;
     virtual ~FluidHeatCapacity() = default;
 };
 
 class FluidHeatCapacityMixtureWaterNitrogen final : public FluidHeatCapacity
 {
+public:
+    double getHeatCapacity(double T, double x_mV) const override
+    {
+        // Poling, B.E., Prausnitz, J.M., O’Connell, J.P., 2001. The properties
+        // of gases and liquids, 5th ed. ed. McGraw-Hill, New York. Appendix
+        // Section C
+        const double a_N2[5] = {3.539, -0.261e-3, 0.007e-5, 0.157e-8,
+                                -0.099e-11};
+        const double a_H2O[5] = {4.395, -4.186e-3, 1.405e-5, -1.564e-8,
+                                 0.632e-11};
+
+        const double cp_N2 = MaterialLib::PhysicalConstant::IdealGasConstant *
+                             ::detail::polynomial(T, a_N2, 5);
+        const double cp_H2O = MaterialLib::PhysicalConstant::IdealGasConstant *
+                              ::detail::polynomial(T, a_H2O, 5);
+
+        return x_mV * cp_H2O + (1.0 - x_mV) * cp_N2;
+    }
 };
 
 class HeatConductivity

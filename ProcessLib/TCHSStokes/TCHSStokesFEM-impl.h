@@ -218,12 +218,13 @@ void TCHSStokesLocalAssembler<
         // fluid
         double const rho_GR = mat.fluid_density->getDensity(p, T, x_mV);
 
+        // TODO
         double const M_G = 1.0;
         double const dMG_dxmV = 1.0;
 
         double const diffusion_coefficient =
             mat.diffusion_coefficient->getDiffusionCoefficient(p, T, p_V);
-        double const c_pG = (*mat.fluid_heat_capacity)();
+        double const c_pG = mat.fluid_heat_capacity->getHeatCapacity(T, x_mV);
 
         // fluid viscosity/friction
         double const mu = mat.fluid_viscosity->getViscosity(p, T, x_mV);
