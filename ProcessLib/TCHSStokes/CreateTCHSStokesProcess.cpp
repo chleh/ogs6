@@ -139,8 +139,8 @@ std::unique_ptr<Process> createTCHSStokesProcess(
         mesh.getProperties().getPropertyVector<int>("MaterialIDs");
 
     if (!(material_ids &&
-          material_ids->getMeshItemType() == MeshLib::MeshItemType::Cell) &&
-        material_ids->getNumberOfComponents() == 1)
+          material_ids->getMeshItemType() == MeshLib::MeshItemType::Cell &&
+          material_ids->getNumberOfComponents() == 1))
     {
         OGS_FATAL("Field `MaterialIDs' is not set up properly.");
     }

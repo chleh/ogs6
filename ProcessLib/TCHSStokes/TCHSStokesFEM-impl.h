@@ -15,6 +15,7 @@
 
 #include <boost/math/special_functions/pow.hpp>
 
+#include "MaterialLib/Adsorption/Adsorption.h"
 #include "MathLib/KelvinVector.h"
 #include "NumLib/Fem/CoordinatesMapping/NaturalNodeCoordinates.h"
 #include "NumLib/Function/Interpolation.h"
@@ -55,12 +56,15 @@ TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
                           IntegrationMethod, VelocityDim>(
             e, is_axially_symmetric, _integration_method);
 
+    SpatialPosition pos;
+    pos.setElementID(_element.getID());
+
     for (unsigned ip = 0; ip < n_integration_points; ip++)
     {
         // velocity (subscript u)
         auto& ip_data = _ip_data[ip];
         auto const& sm_2 = shape_matrices_quadratic[ip];
-        _ip_data[ip].integration_weight =
+        ip_data.integration_weight =
             _integration_method.getWeightedPoint(ip).getWeight() *
             sm_2.integralMeasure * sm_2.detJ;
 
@@ -78,6 +82,24 @@ TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
 
         ip_data.N_1 = shape_matrices_linear[ip].N;
         ip_data.dNdx_1 = shape_matrices_linear[ip].dNdx;
+
+        pos.setIntegrationPoint(ip);
+
+        auto const mat_id = _process_data.material_ids[_element.getID()];
+        auto& mat = _process_data.materials[mat_id];
+
+        // TODO warning: 0.0 is the time!
+        ip_data.reactive_solid_state =
+            mat.reactive_solid->createReactiveSolidState(0.0 /* time */, pos);
+
+        if (!mat.reaction_rate->isStateCompatible(
+                *ip_data.reactive_solid_state))
+            OGS_FATAL(
+                "reaction rate and reactive solid state are incompatible.");
+
+        ip_data.reaction_rate = mat.reactive_solid->createReactiveSolidRate();
+        ip_data.reaction_rate_data =
+            mat.reaction_rate->createReactionRateData();
     }
 }
 
@@ -124,17 +146,19 @@ void TCHSStokesLocalAssembler<
         _integration_method.getNumberOfPoints();
     for (unsigned ip = 0; ip < n_integration_points; ip++)
     {
+        auto const& ip_data = _ip_data[ip];
+
         // shape functions and weights /////////////////////////////////////////
         x_position.setIntegrationPoint(ip);
-        auto const& w = _ip_data[ip].integration_weight;
+        auto const& w = ip_data.integration_weight;
 
-        auto const& H = _ip_data[ip].H;
+        auto const& H = ip_data.H;
 
-        auto const& N_2 = _ip_data[ip].N_2;
-        auto const& dNdx_2 = _ip_data[ip].dNdx_2;
+        auto const& N_2 = ip_data.N_2;
+        auto const& dNdx_2 = ip_data.dNdx_2;
 
-        auto const& N_1 = _ip_data[ip].N_1;
-        auto const& dNdx_1 = _ip_data[ip].dNdx_1;
+        auto const& N_1 = ip_data.N_1;
+        auto const& dNdx_1 = ip_data.dNdx_1;
 
         auto const x_coord =
             interpolateXCoordinate<ShapeFunctionVelocity,
@@ -155,15 +179,32 @@ void TCHSStokesLocalAssembler<
         Eigen::Matrix<double, VelocityDim, 1> const v = H * nodal_v;
         double const p = N_1 * nodal_p;
         double const T = N_1 * nodal_T;
-        double const x_mV = N_1 * nodal_xmV;
+        double x_mV = N_1 * nodal_xmV;
 
-        double const p_V = 1.0;
+        double p_V = p * Adsorption::AdsorptionReaction::getMolarFraction(
+                             x_mV, 18 /*Water*/, 28 /*N2*/);
 
         // material parameters /////////////////////////////////////////////////
         auto const mat_id = _process_data.material_ids[_element.getID()];
         auto const& mat = _process_data.materials[mat_id];
 
-        // TODO implement material models
+        auto const delta_t = 1.0;  // TODO fix
+        if (mat.reaction_rate->computeReactionRate(
+                delta_t, p, T, p_V, *ip_data.reaction_rate,
+                ip_data.reactive_solid_state.get(),
+                ip_data.reaction_rate_data.get()))
+        {
+            x_mV = Adsorption::AdsorptionReaction::getMassFraction(
+                p_V / p, 18 /*Water*/, 28 /*N2*/);
+        }
+
+        double const hat_rho_S =
+            mat.reactive_solid->getOverallRate(*ip_data.reaction_rate);
+        auto const reaction_enthalpy = mat.reaction_rate->getHeatOfReaction(
+            p_V, T, ip_data.reactive_solid_state.get());  // TODO eval()?
+        double const heating_rate = mat.reactive_solid->getHeatingRate(
+            reaction_enthalpy, *ip_data.reaction_rate);
+
         double const rho_GR = mat.fluid_density->getDensity(p, T, x_mV);
 
         auto const porosity = mat.porosity->getPorosity(x_coord);
@@ -178,8 +219,6 @@ void TCHSStokesLocalAssembler<
         double const diffusion_coefficient =
             mat.diffusion_coefficient->getDiffusionCoefficient(p, T, p_V);
         double const c_pG = (*mat.fluid_heat_capacity)();
-        double const hat_rho_S = 1.0;
-        double const reaction_enthalpy = 1.0;
         double const total_heat_capacity =
             porosity * c_pG +
             (1.0 - porosity) *
@@ -307,7 +346,7 @@ void TCHSStokesLocalAssembler<
 
         // rhs_T
         Block::segment(local_rhs, Block::T).noalias() +=
-            N_1.transpose() * (hat_rho_S * reaction_enthalpy * w);
+            N_1.transpose() * (heating_rate * w);
 
         // rhs_x
         Block::segment(local_rhs, Block::X).noalias() -=
