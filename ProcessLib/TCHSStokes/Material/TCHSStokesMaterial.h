@@ -19,7 +19,7 @@ class FluidDensity
 public:
     virtual double getDensity(const double p,
                               const double T,
-                              const double x_mV) = 0;
+                              const double x_mV) const = 0;
 
     virtual ~FluidDensity() = default;
 };
@@ -29,7 +29,7 @@ class FluidDensityMixtureWaterNitrogen final : public FluidDensity
 public:
     double getDensity(const double p,
                       const double T,
-                      const double x_mV) override
+                      const double x_mV) const override
     {
         return ProcessLib::TES::fluid_density(p, T, x_mV);
     }
@@ -38,16 +38,21 @@ public:
 class FluidViscosity
 {
 public:
-    double operator()()
-    {
-        // TODO remove
-        return 0.0;
-    }
+    virtual double getViscosity(const double p,
+                                const double T,
+                                const double x) const = 0;
     virtual ~FluidViscosity() = default;
 };
 
 class FluidViscosityMixtureWaterNitrogen final : public FluidViscosity
 {
+public:
+    double getViscosity(const double p,
+                        const double T,
+                        const double x) const override
+    {
+        return ProcessLib::TES::fluid_viscosity(p, T, x);
+    }
 };
 
 class FluidHeatCapacity
@@ -87,9 +92,9 @@ class HeatConductivityMixtureWaterNitrogen final : public HeatConductivity
 class FluidMomentumProductionCoefficient
 {
 public:
-    virtual double getCoeffOfV(double porosity, double viscosity) = 0;
+    virtual double getCoeffOfV(double porosity, double viscosity) const = 0;
     virtual double getCoeffOfVSquared(double porosity,
-                                      double fluid_density) = 0;
+                                      double fluid_density) const = 0;
 
     virtual ~FluidMomentumProductionCoefficient() = default;
 };
@@ -103,13 +108,14 @@ public:
     {
     }
 
-    double getCoeffOfV(double porosity, double viscosity) override
+    double getCoeffOfV(double porosity, double viscosity) const override
     {
         auto const poro3 = boost::math::pow<3>(porosity);
         return 150.0 * boost::math::pow<2>(1.0 - porosity) / poro3 * viscosity /
                _pellet_diameter / _pellet_diameter;
     }
-    double getCoeffOfVSquared(double porosity, double fluid_density) override
+    double getCoeffOfVSquared(double porosity,
+                              double fluid_density) const override
     {
         auto const poro3 = boost::math::pow<3>(porosity);
         return 1.75 * (1.0 - porosity) / poro3 * fluid_density /
@@ -123,12 +129,12 @@ private:
 class FluidMomentumProductionCoefficientZero final
     : public FluidMomentumProductionCoefficient
 {
-    double getCoeffOfV(double /*porosity*/, double /*viscosity*/) override
+    double getCoeffOfV(double /*porosity*/, double /*viscosity*/) const override
     {
         return 0;
     }
     double getCoeffOfVSquared(double /*porosity*/,
-                              double /*fluid_density*/) override
+                              double /*fluid_density*/) const override
     {
         return 0;
     }
@@ -161,8 +167,8 @@ class SolidHeatCapacityDensityDependent final : public SolidHeatCapacity
 class Porosity
 {
 public:
-    virtual double getPorosity(double r) = 0;
-    virtual double getDPorosityDr(double r) = 0;
+    virtual double getPorosity(double r) const = 0;
+    virtual double getDPorosityDr(double r) const = 0;
     ~Porosity() = default;
 };
 
@@ -171,8 +177,8 @@ class PorosityConstant : public Porosity
 public:
     PorosityConstant(double value) : _value(value) {}
 
-    double getPorosity(double /*r*/) override { return _value; }
-    double getDPorosityDr(double /*r*/) override { return 0.0; }
+    double getPorosity(double /*r*/) const override { return _value; }
+    double getDPorosityDr(double /*r*/) const override { return 0.0; }
 
 private:
     double const _value;
@@ -190,14 +196,14 @@ public:
     {
     }
 
-    double getPorosity(double r) override
+    double getPorosity(double r) const override
     {
         auto const exp_term =
             std::exp(-5.0 * (_bed_radius - r) / _pellet_diameter);
         return _homogeneous_porosity + _homogeneous_porosity * 1.36 * exp_term;
     }
 
-    double getDPorosityDr(double r) override
+    double getDPorosityDr(double r) const override
     {
         auto const exp_term =
             std::exp(-5.0 * (_bed_radius - r) / _pellet_diameter);
