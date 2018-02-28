@@ -215,13 +215,13 @@ public:
         auto const lambda_f_mat = _lambda_fluid->getHeatConductivity(
             t, p, T, x_mV, r, porosity, rho_GR, c_pG, Re_0, v_Darcy,
             v_Darcy_center);
-        assert(lambda_f_mat(0, 0) == lambda_f_mat(1, 1));
+        assert(lambda_f_mat.diagonal()[0] == lambda_f_mat.diagonal()[1]);
         double const lambda_f = lambda_f_mat.diagonal()[0];
 
         auto const lambda_p_mat = _lambda_pellet->getHeatConductivity(
             t, p, T, x_mV, r, porosity, rho_GR, c_pG, Re_0, v_Darcy,
             v_Darcy_center);
-        assert(lambda_p_mat(0, 0) == lambda_p_mat(1, 1));
+        assert(lambda_p_mat.diagonal()[0] == lambda_p_mat.diagonal()[1]);
         double const lambda_p = lambda_p_mat.diagonal()[0];
 
         double const Pe_0 =

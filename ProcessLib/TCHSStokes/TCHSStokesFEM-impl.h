@@ -376,15 +376,16 @@ void TCHSStokesLocalAssembler<
             N_1.transpose() * (hat_rho_S * w);
 
         // rhs_v
-        auto const two_sym_v_grad_phi = [&]() {
+        auto const two_sym_vDarcy_grad_phi = [&]() {
             Eigen::Matrix3d m = Eigen::Matrix3d::Zero();
             m.topLeftCorner<VelocityDim, VelocityDim>().noalias() =
-                v_Darcy * grad_porosity.transpose() / porosity;
-            m += m.transpose();
+                v_Darcy * grad_porosity.transpose() +
+                grad_porosity * v_Darcy.transpose();
             return MathLib::KelvinVector::tensorToKelvin<VelocityDim>(m);
         };
         Block::segment(local_rhs, Block::V).noalias() -=
-            mu_eff * B.transpose() * P_dev * two_sym_v_grad_phi() * w;
+            mu_eff * B.transpose() * P_dev * two_sym_vDarcy_grad_phi() *
+            (w / porosity);
     }
 }
 

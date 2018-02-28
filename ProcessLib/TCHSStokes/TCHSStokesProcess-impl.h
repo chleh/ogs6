@@ -356,14 +356,12 @@ void TCHSStokesProcess<VelocityDim>::preTimestepConcreteProcess(
     MeshLib::Location const l(_mesh.getID(), MeshLib::MeshItemType::Node,
                               _process_data.velocity_probe_node_id);
 
-    auto const p_index =
-        _local_to_global_index_map_with_base_nodes->getLocalIndex(
-            l, 0 /* p */, x.getRangeBegin(), x.getRangeEnd());
+    auto const p_index = _local_to_global_index_map->getLocalIndex(
+        l, 0 /* p */, x.getRangeBegin(), x.getRangeEnd());
     _process_data.probed_temperature = x[p_index];
 
-    auto const T_index =
-        _local_to_global_index_map_with_base_nodes->getLocalIndex(
-            l, 1 /* T */, x.getRangeBegin(), x.getRangeEnd());
+    auto const T_index = _local_to_global_index_map->getLocalIndex(
+        l, 1 /* T */, x.getRangeBegin(), x.getRangeEnd());
     _process_data.probed_temperature = x[T_index];
 
     Eigen::Matrix<double, VelocityDim, 1> v;
@@ -372,9 +370,8 @@ void TCHSStokesProcess<VelocityDim>::preTimestepConcreteProcess(
     {
         auto const global_component_id = global_component_offset + component_id;
 
-        auto const index =
-            _local_to_global_index_map_with_base_nodes->getLocalIndex(
-                l, global_component_id, x.getRangeBegin(), x.getRangeEnd());
+        auto const index = _local_to_global_index_map->getLocalIndex(
+            l, global_component_id, x.getRangeBegin(), x.getRangeEnd());
 
         // TODO for PETSc the global vector must be copied. Cf.
         // ProcessOutput.cpp
