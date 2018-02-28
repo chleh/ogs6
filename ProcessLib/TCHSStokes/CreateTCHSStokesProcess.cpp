@@ -12,8 +12,10 @@
 #include <cassert>
 
 #include "Material/CreateTCHSStokesMaterial.h"
-#include "MaterialLib/SolidModels/CreateLinearElasticIsotropic.h"
+#include "MeshGeoToolsLib/CreateSearchLength.h"
+#include "MeshGeoToolsLib/MeshNodeSearcher.h"
 #include "ProcessLib/Output/CreateSecondaryVariables.h"
+#include "ProcessLib/Utils/ProcessUtils.h"
 
 #include "TCHSStokesProcess.h"
 #include "TCHSStokesProcessData.h"
@@ -147,6 +149,35 @@ std::unique_ptr<Process> createTCHSStokesProcess(
 
     auto materials = Material::createTCHSStokesMaterials(
         config.getConfigSubtree("materials"), parameters);
+
+    auto const probe_config = config.getConfigSubtree("darcy_velocity_probe");
+    auto const probe_coords =
+        probe_config.getConfigParameter<std::vector<double>>("coords");
+    if (probe_coords.size() != 3)
+        OGS_FATAL("Wrong number of coordinates.");
+
+    auto search_length_algorithm =
+        MeshGeoToolsLib::createSearchLengthAlgorithm(probe_config, mesh);
+
+    auto const& mesh_node_searcher =
+        MeshGeoToolsLib::MeshNodeSearcher::getMeshNodeSearcher(
+            mesh, std::move(search_length_algorithm));
+    GeoLib::Point pnt(probe_coords[0], probe_coords[1], probe_coords[2]);
+    auto const probe_node_ids = mesh_node_searcher.getMeshNodeIDsForPoint(pnt);
+    if (probe_node_ids.size() != 1)
+    {
+        OGS_FATAL(
+            "The velocity probe could not be associated to exactly one mesh "
+            "node. Instead %d nodes were found.",
+            probe_node_ids.size());
+    }
+    auto const probe_node_id = probe_node_ids.front();
+    auto const probe_coords_found = *mesh.getNode(probe_node_id);
+    INFO(
+        "Found vertex (%g, %g, %g) id %d for velocity probe. Requested "
+        "coordinates: (%g, %g, %g).",
+        probe_coords_found[0], probe_coords_found[1], probe_coords_found[2],
+        probe_node_id, probe_coords[0], probe_coords[1], probe_coords[2]);
 
     TCHSStokesProcessData<VelocityDim> process_data{*material_ids,
                                                     std::move(materials)};
