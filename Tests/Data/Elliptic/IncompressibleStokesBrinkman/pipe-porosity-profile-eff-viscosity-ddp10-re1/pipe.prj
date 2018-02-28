@@ -33,10 +33,13 @@ Winterberg, M., Tsotsas, E., 2000. Impact of tube-to-particle-diameter ratio on 
             <fluid_viscosity>       mu  </fluid_viscosity>
             <homogeneous_porosity>  0.4 </homogeneous_porosity>
 
+            <reynolds_number>
+                <type>NonLocal</type>
+                <characteristic_length>0.2</characteristic_length>
+            </reynolds_number>
             <effective_fluid_viscosity>
                 <type>Giese</type>
                 <average_darcy_velocity>0.5 </average_darcy_velocity>
-                <pellet_diameter>       0.2 </pellet_diameter>
             </effective_fluid_viscosity>
 
             <process_variables>

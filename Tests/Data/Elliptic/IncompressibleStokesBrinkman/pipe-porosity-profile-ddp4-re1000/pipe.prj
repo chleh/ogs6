@@ -33,6 +33,10 @@ Winterberg, M., Tsotsas, E., 2000. Impact of tube-to-particle-diameter ratio on 
             <fluid_viscosity>       mu  </fluid_viscosity>
             <homogeneous_porosity> 0.37 </homogeneous_porosity>
 
+            <reynolds_number>
+                <type>Local</type>
+                <characteristic_length>0.5</characteristic_length>
+            </reynolds_number>
             <effective_fluid_viscosity>
                 <type>Identity</type>
             </effective_fluid_viscosity>

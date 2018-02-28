@@ -24,6 +24,11 @@
             <fluid_density>         rho </fluid_density>
             <homogeneous_porosity> 0.37 </homogeneous_porosity>
 
+            <reynolds_number>
+                <type>Local</type>
+                <characteristic_length>1</characteristic_length>
+            </reynolds_number>
+
             <effective_fluid_viscosity>
                 <type>Identity</type>
             </effective_fluid_viscosity>

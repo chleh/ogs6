@@ -35,13 +35,17 @@ VDI Waermeatlas
             <fluid_viscosity>       mu  </fluid_viscosity>
             <homogeneous_porosity>  0.4 </homogeneous_porosity>
 
-            <effective_fluid_viscosity>
-                <type>Giese</type>
-                <average_darcy_velocity>
+            <reynolds_number>
+                <type>NonLocal</type>
+                <average_velocity>
                     <coords>0.0 1e8</coords>
                     <values>0.5 0.5</values>
-                </average_darcy_velocity>
-                <pellet_diameter>       0.2 </pellet_diameter>
+                </average_velocity>
+                <characteristic_length>0.2</characteristic_length>
+            </reynolds_number>
+
+            <effective_fluid_viscosity>
+                <type>Giese</type>
             </effective_fluid_viscosity>
 
             <process_variables>
