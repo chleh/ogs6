@@ -353,6 +353,25 @@ void TCHSStokesProcess<VelocityDim>::preTimestepConcreteProcess(
 
     _process_data.delta_t = dt;
 
+    MeshLib::Location const l(_mesh.getID(), MeshLib::MeshItemType::Node,
+                              _process_data.velocity_probe_node_id);
+
+    Eigen::Matrix<double, VelocityDim, 1> v;
+    int const global_component_offset = 3;  // p, T, x, --> v <--
+    for (int component_id = 0; component_id < VelocityDim; ++component_id)
+    {
+        auto const global_component_id = global_component_offset + component_id;
+
+        auto const index =
+            _local_to_global_index_map_with_base_nodes->getLocalIndex(
+                l, global_component_id, x.getRangeBegin(), x.getRangeEnd());
+
+        // TODO for PETSc the global vector must be copied. Cf.
+        // ProcessOutput.cpp
+        v[component_id] = x[index];
+    }
+    _process_data.probed_velocity = v.norm();
+
     if (hasMechanicalProcess(process_id))
         GlobalExecutor::executeMemberOnDereferenced(
             &LocalAssemblerInterface::preTimestep, _local_assemblers,

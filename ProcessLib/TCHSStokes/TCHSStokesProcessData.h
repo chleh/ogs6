@@ -39,8 +39,11 @@ struct TCHSStokesProcessData
 {
     TCHSStokesProcessData(
         MeshLib::PropertyVector<int> const& material_ids_,
-        std::unordered_map<int, Material::TCHSStokesMaterial>&& materials_)
-        : material_ids(material_ids_), materials(std::move(materials_))
+        std::unordered_map<int, Material::TCHSStokesMaterial>&& materials_,
+        std::size_t velocity_probe_node_id_)
+        : material_ids(material_ids_),
+          materials(std::move(materials_)),
+          velocity_probe_node_id(velocity_probe_node_id_)
     {
     }
 
@@ -48,6 +51,10 @@ struct TCHSStokesProcessData
     std::unordered_map<int, Material::TCHSStokesMaterial> materials;
 
     double delta_t = std::numeric_limits<double>::quiet_NaN();
+
+    // for heat conductivity computation
+    std::size_t const velocity_probe_node_id;
+    double probed_velocity = std::numeric_limits<double>::quiet_NaN();
 
     MeshLib::PropertyVector<double>* mesh_prop_nodal_p = nullptr;
     MeshLib::PropertyVector<double>* mesh_prop_nodal_T = nullptr;

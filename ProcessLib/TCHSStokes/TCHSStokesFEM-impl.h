@@ -248,11 +248,10 @@ void TCHSStokesLocalAssembler<
             porosity * c_pG * rho_GR +
             (1.0 - porosity) *
                 mat.solid_heat_capacity->getHeatCapacity(rho_SR, T) * rho_SR;
-        // TODO
         auto const total_heat_conductivity =
             mat.heat_conductivity->getHeatConductivity(
                 t, p, T, x_mV, x_coord, porosity, rho_GR, c_pG, Re_0,
-                v_Darcy.norm(), 0 /*v_Darcy_center*/);
+                v_Darcy.norm(), _process_data.probed_velocity);
 
         // assemble local matrices /////////////////////////////////////////////
 

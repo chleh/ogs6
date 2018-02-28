@@ -179,8 +179,8 @@ std::unique_ptr<Process> createTCHSStokesProcess(
         probe_coords_found[0], probe_coords_found[1], probe_coords_found[2],
         probe_node_id, probe_coords[0], probe_coords[1], probe_coords[2]);
 
-    TCHSStokesProcessData<VelocityDim> process_data{*material_ids,
-                                                    std::move(materials)};
+    TCHSStokesProcessData<VelocityDim> process_data{
+        *material_ids, std::move(materials), probe_node_id};
 
     SecondaryVariableCollection secondary_variables;
 
