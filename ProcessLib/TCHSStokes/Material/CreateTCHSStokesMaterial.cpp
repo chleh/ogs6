@@ -91,6 +91,11 @@ std::unique_ptr<FluidViscosity> createFluidViscosity(
     auto const type = config.getConfigParameter<std::string>("type");
     if (type == "MixtureWaterNitrogen")
         return std::make_unique<FluidViscosityMixtureWaterNitrogen>();
+    if (type == "Constant")
+    {
+        auto const value = config.getConfigParameter<double>("value");
+        return std::make_unique<FluidViscosityConstant>(value);
+    }
 
     OGS_FATAL("Unknown fluid viscosity model `%s'.", type.c_str());
 }

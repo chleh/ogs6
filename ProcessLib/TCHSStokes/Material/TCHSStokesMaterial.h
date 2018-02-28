@@ -71,6 +71,22 @@ public:
     }
 };
 
+class FluidViscosityConstant final : public FluidViscosity
+{
+public:
+    explicit FluidViscosityConstant(double value) : _value(value) {}
+
+    double getViscosity(const double /*p*/,
+                        const double /*T*/,
+                        const double /*x*/) const override
+    {
+        return _value;
+    }
+
+private:
+    double const _value;
+};
+
 class FluidHeatCapacity
 {
 public:
