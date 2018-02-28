@@ -12,6 +12,7 @@
 #pragma once
 
 #include <memory>
+#include "SearchLength.h"
 
 namespace BaseLib
 {
