@@ -36,10 +36,13 @@ Winterberg, M., Tsotsas, E., 2000. Impact of tube-to-particle-diameter ratio on 
             <reynolds_number>
                 <type>NonLocal</type>
                 <characteristic_length>0.2</characteristic_length>
+                <average_velocity>
+                    <coords>0.0 1e8</coords>
+                    <values>0.5 0.5</values>
+                </average_velocity>
             </reynolds_number>
             <effective_fluid_viscosity>
                 <type>Giese</type>
-                <average_darcy_velocity>0.5 </average_darcy_velocity>
             </effective_fluid_viscosity>
 
             <process_variables>
