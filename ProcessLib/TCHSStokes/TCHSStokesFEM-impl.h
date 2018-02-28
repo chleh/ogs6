@@ -176,7 +176,7 @@ void TCHSStokesLocalAssembler<
             KelvinVectorSize>::deviatoric_projection;
 
         // interpolate nodal values ////////////////////////////////////////////
-        Eigen::Matrix<double, VelocityDim, 1> const v = H * nodal_v;
+        Eigen::Matrix<double, VelocityDim, 1> const v_Darcy = H * nodal_v;
         double const p = N_1 * nodal_p;
         double const T = N_1 * nodal_T;
         double x_mV = N_1 * nodal_xmV;
@@ -228,7 +228,8 @@ void TCHSStokesLocalAssembler<
 
         // fluid viscosity/friction
         double const mu = mat.fluid_viscosity->getViscosity(p, T, x_mV);
-        double const Re_0 = mat.reynolds_number->getRe(t, rho_GR, v.norm(), mu);
+        double const Re_0 =
+            mat.reynolds_number->getRe(t, rho_GR, v_Darcy.norm(), mu);
         double const mu_eff =
             mat.effective_fluid_viscosity->getViscosity(mu, Re_0);
         double const f_1 =
@@ -250,8 +251,8 @@ void TCHSStokesLocalAssembler<
         // TODO
         auto const total_heat_conductivity =
             mat.heat_conductivity->getHeatConductivity(
-                t, p, T, x_mV, x_coord, porosity, rho_GR, c_pG, Re_0, v.norm(),
-                0 /*v_Darcy_center*/);
+                t, p, T, x_mV, x_coord, porosity, rho_GR, c_pG, Re_0,
+                v_Darcy.norm(), 0 /*v_Darcy_center*/);
 
         // assemble local matrices /////////////////////////////////////////////
 
@@ -306,11 +307,11 @@ void TCHSStokesLocalAssembler<
         // K_p? (total mass balance) ///////////////////////////////////////////
         // K_pp
         Block::block(local_K, Block::P, Block::P).noalias() +=
-            N_1.transpose() * v.transpose() * (rho_GR / p * w) * dNdx_1;
+            N_1.transpose() * v_Darcy.transpose() * (rho_GR / p * w) * dNdx_1;
 
         // K_pT
         Block::block(local_K, Block::P, Block::T).noalias() -=
-            N_1.transpose() * v.transpose() * (rho_GR / T * w) * dNdx_1;
+            N_1.transpose() * v_Darcy.transpose() * (rho_GR / T * w) * dNdx_1;
 
         // K_px
         Block::block(local_K, Block::P, Block::X).noalias() +=
@@ -325,7 +326,8 @@ void TCHSStokesLocalAssembler<
 
         // K_TT
         Block::block(local_K, Block::T, Block::T).noalias() +=
-            N_1.transpose() * (rho_GR * c_pG * w) * v.transpose() * dNdx_1 +
+            N_1.transpose() * (rho_GR * c_pG * w) * v_Darcy.transpose() *
+                dNdx_1 +
             dNdx_1.transpose() * total_heat_conductivity * w * dNdx_1;
 
         // K_Tx = 0
@@ -339,7 +341,7 @@ void TCHSStokesLocalAssembler<
 
         // K_xx
         Block::block(local_K, Block::X, Block::X).noalias() +=
-            N_1.transpose() * (rho_GR * w) * v.transpose() * dNdx_1 -
+            N_1.transpose() * (rho_GR * w) * v_Darcy.transpose() * dNdx_1 -
             N_1.transpose() * (hat_rho_S * w) * N_1 +
             dNdx_1.transpose() * (rho_GR * w) * diffusion_coefficient * dNdx_1;
 
@@ -357,7 +359,7 @@ void TCHSStokesLocalAssembler<
         // K_vv
         Block::block(local_K, Block::V, Block::V).noalias() -=
             B.transpose() * (2 * mu_eff * w) * P_dev * B +
-            H.transpose() * (porosity * (f_1 + f_2 * v.norm()) * w) * H;
+            H.transpose() * (porosity * (f_1 + f_2 * v_Darcy.norm()) * w) * H;
 
         // rhs /////////////////////////////////////////////////////////////////
         // rhs_p
@@ -376,7 +378,7 @@ void TCHSStokesLocalAssembler<
         auto const two_sym_v_grad_phi = [&]() {
             Eigen::Matrix3d m = Eigen::Matrix3d::Zero();
             m.topLeftCorner<VelocityDim, VelocityDim>().noalias() =
-                v * grad_porosity.transpose() / porosity;
+                v_Darcy * grad_porosity.transpose() / porosity;
             m += m.transpose();
             return MathLib::KelvinVector::tensorToKelvin<VelocityDim>(m);
         };
