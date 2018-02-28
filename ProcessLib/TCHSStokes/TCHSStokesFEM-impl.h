@@ -185,9 +185,10 @@ void TCHSStokesLocalAssembler<
         auto const mat_id = _process_data.material_ids[_element.getID()];
         auto const& mat = _process_data.materials[mat_id];
 
-        double p_V =
-            p * Adsorption::AdsorptionReaction::getMolarFraction(
-                    x_mV, mat.molar_mass_reactive, mat.molar_mass_inert);
+        double const M_R = mat.molar_mass_reactive;
+        double const M_I = mat.molar_mass_inert;
+        double p_V = p * Adsorption::AdsorptionReaction::getMolarFraction(
+                             x_mV, M_R, M_I);
 
         // porosity
         auto const porosity = mat.porosity->getPorosity(x_coord);
@@ -202,8 +203,8 @@ void TCHSStokesLocalAssembler<
                 ip_data.reactive_solid_state.get(),
                 ip_data.reaction_rate_data.get()))
         {
-            x_mV = Adsorption::AdsorptionReaction::getMassFraction(
-                p_V / p, mat.molar_mass_reactive, mat.molar_mass_inert);
+            x_mV = Adsorption::AdsorptionReaction::getMassFraction(p_V / p, M_R,
+                                                                   M_I);
         }
 
         double const hat_rho_S =
@@ -218,9 +219,9 @@ void TCHSStokesLocalAssembler<
         // fluid
         double const rho_GR = mat.fluid_density->getDensity(p, T, x_mV);
 
-        // TODO
-        double const M_G = 1.0;
-        double const dMG_dxmV = 1.0;
+        // 1 / M_G * dM_G/dx_mV
+        double const dMG_dxmV_over_MG =
+            (M_R - M_I) / (M_I * x_mV + M_R * (1.0 - x_mV));
 
         double const diffusion_coefficient =
             mat.diffusion_coefficient->getDiffusionCoefficient(p, T, p_V);
@@ -266,7 +267,7 @@ void TCHSStokesLocalAssembler<
 
         // M_px
         Block::block(local_M, Block::P, Block::X).noalias() +=
-            N_1.transpose() * (rho_GR * porosity / M_G * dMG_dxmV * w) * N_1;
+            N_1.transpose() * (rho_GR * porosity * dMG_dxmV_over_MG * w) * N_1;
 
         // M_pv = 0
 
@@ -314,7 +315,7 @@ void TCHSStokesLocalAssembler<
 
         // K_px
         Block::block(local_K, Block::P, Block::X).noalias() +=
-            N_1.transpose() * (rho_GR / M_G * dMG_dxmV * w) * N_1;
+            N_1.transpose() * (rho_GR * dMG_dxmV_over_MG * w) * N_1;
 
         // K_pv
         Block::block(local_K, Block::P, Block::V).noalias() +=
