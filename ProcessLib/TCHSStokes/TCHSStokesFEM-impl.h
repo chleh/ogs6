@@ -86,7 +86,7 @@ TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
         pos.setIntegrationPoint(ip);
 
         auto const mat_id = _process_data.material_ids[_element.getID()];
-        auto& mat = _process_data.materials[mat_id];
+        auto& mat = _process_data.materials.at(mat_id);
 
         // TODO warning: 0.0 is the time!
         ip_data.reactive_solid_state =
@@ -183,7 +183,7 @@ void TCHSStokesLocalAssembler<
 
         // material parameters /////////////////////////////////////////////////
         auto const mat_id = _process_data.material_ids[_element.getID()];
-        auto const& mat = _process_data.materials[mat_id];
+        auto const& mat = _process_data.materials.at(mat_id);
 
         double const M_R = mat.molar_mass_reactive;
         double const M_I = mat.molar_mass_inert;
@@ -197,9 +197,8 @@ void TCHSStokesLocalAssembler<
         grad_porosity[0] = mat.porosity->getDPorosityDr(x_coord);
 
         // reaction
-        auto const delta_t = 1.0;  // TODO fix
         if (mat.reaction_rate->computeReactionRate(
-                delta_t, p, T, p_V, *ip_data.reaction_rate,
+                _process_data.delta_t, p, T, p_V, *ip_data.reaction_rate,
                 ip_data.reactive_solid_state.get(),
                 ip_data.reaction_rate_data.get()))
         {

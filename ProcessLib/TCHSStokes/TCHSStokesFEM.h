@@ -130,7 +130,7 @@ public:
     }
 
 private:
-    TCHSStokesProcessData<VelocityDim>& _process_data;
+    TCHSStokesProcessData<VelocityDim> const& _process_data;
 
     using BMatricesType = BMatrixPolicyType<ShapeFunctionVelocity, VelocityDim>;
     using IpData =

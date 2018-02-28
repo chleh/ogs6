@@ -37,12 +37,6 @@ namespace TCHSStokes
 template <int VelocityDim>
 struct TCHSStokesProcessData
 {
-    enum
-    {
-        MATID_VOID = 0,
-        MATID_BED = 1
-    };
-
     TCHSStokesProcessData(
         MeshLib::PropertyVector<int> const& material_ids_,
         std::unordered_map<int, Material::TCHSStokesMaterial>&& materials_)
@@ -52,6 +46,8 @@ struct TCHSStokesProcessData
 
     MeshLib::PropertyVector<int> const& material_ids;
     std::unordered_map<int, Material::TCHSStokesMaterial> materials;
+
+    double delta_t = std::numeric_limits<double>::quiet_NaN();
 
     MeshLib::PropertyVector<double>* mesh_prop_nodal_p = nullptr;
     MeshLib::PropertyVector<double>* mesh_prop_nodal_T = nullptr;

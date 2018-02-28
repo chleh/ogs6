@@ -351,6 +351,8 @@ void TCHSStokesProcess<VelocityDim>::preTimestepConcreteProcess(
 {
     DBUG("PreTimestep TCHSStokesProcess.");
 
+    _process_data.delta_t = dt;
+
     if (hasMechanicalProcess(process_id))
         GlobalExecutor::executeMemberOnDereferenced(
             &LocalAssemblerInterface::preTimestep, _local_assemblers,
