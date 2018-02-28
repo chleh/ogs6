@@ -276,7 +276,7 @@ void TCHSStokesLocalAssembler<
         // M_T? (total energy balance) /////////////////////////////////////////
         // M_Tp
         Block::block(local_M, Block::T, Block::P).noalias() -=
-            N_1.transpose() * (porosity * w) * N_1;
+            N_1.transpose() * (porosity * T * alpha_T * w) * N_1;
 
         // M_TT
         Block::block(local_M, Block::T, Block::T).noalias() +=
@@ -326,7 +326,10 @@ void TCHSStokesLocalAssembler<
             N_1.transpose() * (rho_GR * w) * I.transpose() * B;
 
         // K_T? (total energy balance) /////////////////////////////////////////
-        // K_Tp = 0
+        // K_Tp
+        Block::block(local_K, Block::T, Block::T).noalias() +=
+            N_1.transpose() * ((1.0 - T * alpha_T) * w) * v_Darcy.transpose() *
+            dNdx_1;
 
         // K_TT
         Block::block(local_K, Block::T, Block::T).noalias() +=
@@ -387,8 +390,8 @@ void TCHSStokesLocalAssembler<
             return MathLib::KelvinVector::tensorToKelvin<VelocityDim>(m);
         };
         Block::segment(local_rhs, Block::V).noalias() -=
-            mu_eff * B.transpose() * P_dev * two_sym_vDarcy_grad_phi() *
-            (w / porosity);
+            B.transpose() * P_dev * two_sym_vDarcy_grad_phi() *
+            (mu_eff * w / porosity);
     }
 }
 
