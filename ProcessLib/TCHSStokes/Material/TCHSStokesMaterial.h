@@ -190,6 +190,20 @@ public:
     }
 };
 
+class FluidHeatCapacityConstant final : public FluidHeatCapacity
+{
+public:
+    explicit FluidHeatCapacityConstant(double value) : _value(value) {}
+
+    double getHeatCapacity(double /*T*/, double /*x_mV*/) const override
+    {
+        return _value;
+    }
+
+private:
+    double const _value;
+};
+
 class PecletNumberHeat
 {
 public:

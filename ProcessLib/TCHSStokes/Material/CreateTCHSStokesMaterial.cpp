@@ -111,6 +111,11 @@ std::unique_ptr<FluidHeatCapacity> createFluidHeatCapacity(
     auto const type = config.getConfigParameter<std::string>("type");
     if (type == "MixtureWaterNitrogen")
         return std::make_unique<FluidHeatCapacityMixtureWaterNitrogen>();
+    if (type == "Constant")
+    {
+        auto const value = config.getConfigParameter<double>("value");
+        return std::make_unique<FluidHeatCapacityConstant>(value);
+    }
 
     OGS_FATAL("Unknown fluid heat capacity model `%s'.", type.c_str());
 }
