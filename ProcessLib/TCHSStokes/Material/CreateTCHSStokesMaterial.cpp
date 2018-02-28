@@ -81,6 +81,11 @@ std::unique_ptr<FluidDensity> createFluidDensity(
     auto const type = config.getConfigParameter<std::string>("type");
     if (type == "MixtureWaterNitrogen")
         return std::make_unique<FluidDensityMixtureWaterNitrogen>();
+    if (type == "Constant")
+    {
+        auto const value = config.getConfigParameter<double>("value");
+        return std::make_unique<FluidDensityConstant>(value);
+    }
 
     OGS_FATAL("Unknown fluid density model `%s'.", type.c_str());
 }

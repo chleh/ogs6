@@ -249,7 +249,7 @@ void TCHSStokesProcess<VelocityDim>::initializeConcreteProcess(
     _process_data.mesh_prop_nodal_T = mesh_prop_nodal_T;
 
     auto mesh_prop_nodal_xmV = MeshLib::getOrCreateMeshProperty<double>(
-        const_cast<MeshLib::Mesh&>(mesh), "vapour_mass_fraction_interpolated",
+        const_cast<MeshLib::Mesh&>(mesh), "mass_fraction_interpolated",
         MeshLib::MeshItemType::Node, 1);
     mesh_prop_nodal_xmV->resize(mesh.getNumberOfNodes());
     _process_data.mesh_prop_nodal_xmV = mesh_prop_nodal_xmV;

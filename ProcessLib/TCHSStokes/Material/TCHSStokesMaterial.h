@@ -36,6 +36,15 @@ public:
     virtual double getDensity(const double p,
                               const double T,
                               const double x_mV) const = 0;
+    virtual double getThermalExpansionCoefficient(const double p,
+                                                  const double T,
+                                                  const double x_mV) const = 0;
+    virtual double getCompressibility(const double p,
+                                      const double T,
+                                      const double x_mV) const = 0;
+    virtual double getDensityChangeWithComposition(const double p,
+                                                   const double T,
+                                                   const double x_mV) const = 0;
 
     virtual ~FluidDensity() = default;
 };
@@ -49,6 +58,71 @@ public:
     {
         return ProcessLib::TES::fluid_density(p, T, x_mV);
     }
+
+    double getThermalExpansionCoefficient(const double /*p*/,
+                                          const double T,
+                                          const double /*x_mV*/) const override
+    {
+        return 1.0 / T;
+    }
+
+    double getCompressibility(const double p,
+                              const double /*T*/,
+                              const double /*x_mV*/) const override
+    {
+        return 1.0 / p;
+    }
+
+    double getDensityChangeWithComposition(const double /*p*/,
+                                           const double /*T*/,
+                                           const double x_mV) const override
+    {
+        double const M_R = MaterialLib::PhysicalConstant::MolarMass::Water;
+        double const M_I = MaterialLib::PhysicalConstant::MolarMass::N2;
+
+        // 1 / M_G * dM_G/dx_mV
+        double const dMG_dxmV_over_MG =
+            (M_R - M_I) / (M_I * x_mV + M_R * (1.0 - x_mV));
+
+        return dMG_dxmV_over_MG;
+    }
+};
+
+class FluidDensityConstant final : public FluidDensity
+{
+public:
+    explicit FluidDensityConstant(double value) : _value(value) {}
+
+    double getDensity(const double /*p*/,
+                      const double /*T*/,
+                      const double /*x_mV*/) const override
+    {
+        return _value;
+    }
+
+    double getThermalExpansionCoefficient(const double /*p*/,
+                                          const double /*T*/,
+                                          const double /*x_mV*/) const override
+    {
+        return 0.0;
+    }
+
+    double getCompressibility(const double /*p*/,
+                              const double /*T*/,
+                              const double /*x_mV*/) const override
+    {
+        return 0.0;
+    }
+
+    double getDensityChangeWithComposition(const double /*p*/,
+                                           const double /*T*/,
+                                           const double /*x_mV*/) const override
+    {
+        return 0.0;
+    }
+
+private:
+    double const _value;
 };
 
 class FluidViscosity

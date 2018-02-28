@@ -217,10 +217,11 @@ void TCHSStokesLocalAssembler<
 
         // fluid
         double const rho_GR = mat.fluid_density->getDensity(p, T, x_mV);
-
-        // 1 / M_G * dM_G/dx_mV
-        double const dMG_dxmV_over_MG =
-            (M_R - M_I) / (M_I * x_mV + M_R * (1.0 - x_mV));
+        double const alpha_T =
+            mat.fluid_density->getThermalExpansionCoefficient(p, T, x_mV);
+        double const beta_p = mat.fluid_density->getCompressibility(p, T, x_mV);
+        double const gamma_x =
+            mat.fluid_density->getDensityChangeWithComposition(p, T, x_mV);
 
         auto const mass_dispersion = mat.mass_dispersion->getMassDispersion(
             t, p, T, v_Darcy.norm(), x_coord, porosity,
@@ -260,15 +261,15 @@ void TCHSStokesLocalAssembler<
         // M_p? (total mass balance) ///////////////////////////////////////////
         // M_pp
         Block::block(local_M, Block::P, Block::P).noalias() +=
-            N_1.transpose() * (rho_GR * porosity / p * w) * N_1;
+            N_1.transpose() * (rho_GR * porosity * beta_p * w) * N_1;
 
         // M_pT
         Block::block(local_M, Block::P, Block::T).noalias() -=
-            N_1.transpose() * (rho_GR * porosity / T * w) * N_1;
+            N_1.transpose() * (rho_GR * porosity * alpha_T * w) * N_1;
 
         // M_px
         Block::block(local_M, Block::P, Block::X).noalias() +=
-            N_1.transpose() * (rho_GR * porosity * dMG_dxmV_over_MG * w) * N_1;
+            N_1.transpose() * (rho_GR * porosity * gamma_x * w) * N_1;
 
         // M_pv = 0
 
@@ -308,15 +309,17 @@ void TCHSStokesLocalAssembler<
         // K_p? (total mass balance) ///////////////////////////////////////////
         // K_pp
         Block::block(local_K, Block::P, Block::P).noalias() +=
-            N_1.transpose() * v_Darcy.transpose() * (rho_GR / p * w) * dNdx_1;
+            N_1.transpose() * v_Darcy.transpose() * (rho_GR * beta_p * w) *
+            dNdx_1;
 
         // K_pT
         Block::block(local_K, Block::P, Block::T).noalias() -=
-            N_1.transpose() * v_Darcy.transpose() * (rho_GR / T * w) * dNdx_1;
+            N_1.transpose() * v_Darcy.transpose() * (rho_GR * alpha_T * w) *
+            dNdx_1;
 
         // K_px
         Block::block(local_K, Block::P, Block::X).noalias() +=
-            N_1.transpose() * (rho_GR * dMG_dxmV_over_MG * w) * N_1;
+            N_1.transpose() * (rho_GR * gamma_x * w) * N_1;
 
         // K_pv
         Block::block(local_K, Block::P, Block::V).noalias() +=
