@@ -65,9 +65,12 @@ VDI Waermeatlas
             <type>MixtureWaterNitrogen</type>
           </heat_conductivity>
 
-          <diffusion_coefficient>
-            <type>MixtureWaterAirFuller</type>
-          </diffusion_coefficient>
+          <mass_dispersion>
+            <type>Identity</type>
+            <diffusion_coefficient>
+              <type>MixtureWaterAirFuller</type>
+            </diffusion_coefficient>
+          </mass_dispersion>
 
           <fluid_momentum_production_coefficient>
             <type>Zero</type>
@@ -124,9 +127,21 @@ VDI Waermeatlas
             <pellet_diameter>0.2</pellet_diameter>
           </fluid_momentum_production_coefficient>
 
-          <diffusion_coefficient> <!-- Maybe D(r) model after VDI WWärmeatlas? -->
-            <type>MixtureWaterAirFuller</type>
-          </diffusion_coefficient>
+          <mass_dispersion>
+            <type>LambdaRModel</type>
+
+            <diffusion_coefficient>
+              <type>MixtureWaterAirFuller</type>
+            </diffusion_coefficient>
+
+            <pellet_diameter>0.002</pellet_diameter>
+            <bed_radius>1.0</bed_radius>
+
+            <peclet_number_mass>
+              <type>Local</type>
+              <characteristic_length>0.002</characteristic_length>
+            </peclet_number_mass>
+          </mass_dispersion>
 
           <heat_conductivity>
             <type>LambdaRModelNoRadiation</type>
@@ -229,9 +244,12 @@ VDI Waermeatlas
             <type>MixtureWaterNitrogen</type>
           </heat_conductivity>
 
-          <diffusion_coefficient>
-            <type>MixtureWaterAirFuller</type>
-          </diffusion_coefficient>
+          <mass_dispersion>
+            <type>Identity</type>
+            <diffusion_coefficient>
+              <type>MixtureWaterAirFuller</type>
+            </diffusion_coefficient>
+          </mass_dispersion>
 
           <solid_heat_capacity>
             <type>Constant</type>
