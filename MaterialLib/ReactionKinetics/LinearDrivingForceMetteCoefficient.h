@@ -45,8 +45,7 @@ public:
         assert(solid_state.conversion().size() == 1);
         auto const rho_SR = solid_state.conversion()[0];
 
-        auto const D =
-            _diffusion_coefficient->getDiffusionCoefficient(p, T, p_V);
+        auto const D = _diffusion_coefficient->getDiffusionCoefficient(p, T);
         auto drhodp = _equil->getDEquilibriumDensityDp(p_V, T);
 
         // Limit isotherm gradient^{-1} to maximum observed for Ca(90)-X.
@@ -73,7 +72,7 @@ public:
         auto cb = [&](const double p_V, const double p,
                       const double T) -> double {
             auto const D =
-                _diffusion_coefficient->getDiffusionCoefficient(p, T, p_V);
+                _diffusion_coefficient->getDiffusionCoefficient(p, T);
             auto const drhodp = _equil->getDEquilibriumDensityDp(p_V, T);
             INFO("drhodp = %g, p_V = %g, T = %g", drhodp, p_V, T);
             auto const k_LDF = _prefactor * D / T / drhodp;

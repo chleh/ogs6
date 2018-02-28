@@ -102,8 +102,8 @@ TESLocalAssemblerInner<Traits>::getLaplaceCoeffMatrix(const double t,
 
     // L_xx
     auto const D =
-        _d.ap.diffusion_coefficient_component->getDiffusionCoefficient(
-            _d.p, _d.T, 1.0 - _d.vapour_mass_fraction);
+        _d.ap.diffusion_coefficient_component->getDiffusionCoefficient(_d.p,
+                                                                       _d.T);
 
     Traits::blockDimDim(L, 2 * dim, 2 * dim, dim, dim) =
         Mat::Identity(dim, dim) * (_d.ap.tortuosity * _d.poro * _d.rho_GR * D);

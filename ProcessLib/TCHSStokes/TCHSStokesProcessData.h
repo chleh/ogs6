@@ -54,6 +54,8 @@ struct TCHSStokesProcessData
 
     // for heat conductivity computation
     std::size_t const velocity_probe_node_id;
+    double probed_pressure = std::numeric_limits<double>::quiet_NaN();
+    double probed_temperature = std::numeric_limits<double>::quiet_NaN();
     double probed_velocity = std::numeric_limits<double>::quiet_NaN();
 
     MeshLib::PropertyVector<double>* mesh_prop_nodal_p = nullptr;

@@ -279,7 +279,7 @@ void TESProcess::initializeSecondaryVariables()
     // //////////////////////////////////////////
     auto D_fct = [this](const double p, const double T, const double p_V) {
         return _assembly_params.diffusion_coefficient_component
-            ->getDiffusionCoefficient(p, T, p_V);
+            ->getDiffusionCoefficient(p, T);
     };
     _named_function_caller.addNamedFunction(
         {"diffusion_coefficient",

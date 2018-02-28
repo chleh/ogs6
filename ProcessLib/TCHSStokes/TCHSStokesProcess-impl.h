@@ -163,7 +163,7 @@ void TCHSStokesProcess<VelocityDim>::initializeConcreteProcess(
     unsigned const integration_order)
 {
     const int mechanical_process_id = _use_monolithic_scheme ? 0 : 1;
-    const int deformation_variable_id = _use_monolithic_scheme ? 1 : 0;
+    // const int deformation_variable_id = _use_monolithic_scheme ? 1 : 0;
     ProcessLib::TCHSStokes::createLocalAssemblers<VelocityDim,
                                                   TCHSStokesLocalAssembler>(
         mesh.getDimension(), mesh.getElements(), dof_table,
@@ -355,6 +355,16 @@ void TCHSStokesProcess<VelocityDim>::preTimestepConcreteProcess(
 
     MeshLib::Location const l(_mesh.getID(), MeshLib::MeshItemType::Node,
                               _process_data.velocity_probe_node_id);
+
+    auto const p_index =
+        _local_to_global_index_map_with_base_nodes->getLocalIndex(
+            l, 0 /* p */, x.getRangeBegin(), x.getRangeEnd());
+    _process_data.probed_temperature = x[p_index];
+
+    auto const T_index =
+        _local_to_global_index_map_with_base_nodes->getLocalIndex(
+            l, 1 /* T */, x.getRangeBegin(), x.getRangeEnd());
+    _process_data.probed_temperature = x[T_index];
 
     Eigen::Matrix<double, VelocityDim, 1> v;
     int const global_component_offset = 3;  // p, T, x, --> v <--

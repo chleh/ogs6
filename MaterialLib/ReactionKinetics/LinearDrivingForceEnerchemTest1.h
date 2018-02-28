@@ -49,8 +49,7 @@ public:
         assert(solid_state.conversion().size() == 1);
         auto const rho_SR = solid_state.conversion()[0];
 
-        auto const D =
-            _diffusion_coefficient->getDiffusionCoefficient(p, T, p_V);
+        auto const D = _diffusion_coefficient->getDiffusionCoefficient(p, T);
         auto const rho_SR_eq = _equil->getEquilibriumDensity(p_V, T);
 
         // For Ca(90)XBF roughly equivalent to 0.1 * (dC_eq/dp_V)^{-1}

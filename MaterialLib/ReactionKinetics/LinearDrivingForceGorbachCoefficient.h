@@ -47,8 +47,7 @@ public:
         assert(solid_state.conversion().size() == 1);
         auto const rho_SR = solid_state.conversion()[0];
 
-        auto const D =
-            _diffusion_coefficient->getDiffusionCoefficient(p, T, p_V);
+        auto const D = _diffusion_coefficient->getDiffusionCoefficient(p, T);
         auto const rho_SR_eq = _equil->getEquilibriumDensity(p_V, T);
         auto const factor =
             std::min(100.0, p_V / (rho_SR_eq - _pellet_density_dry));
@@ -69,7 +68,7 @@ public:
         auto cb = [this](const double p_V, const double p,
                          const double T) -> double {
             auto const D =
-                _diffusion_coefficient->getDiffusionCoefficient(p, T, p_V);
+                _diffusion_coefficient->getDiffusionCoefficient(p, T);
             auto const rho_SR_eq = _equil->getEquilibriumDensity(p_V, T);
             auto const k_LDF =
                 _prefactor * D / T * p_V / (rho_SR_eq - _pellet_density_dry);

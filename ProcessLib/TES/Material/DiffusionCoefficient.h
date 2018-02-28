@@ -20,9 +20,8 @@ class DiffusionCoefficient
 public:
     // p -- pressure of the gas mixture
     // T -- temperature of the gas mixture
-    // p_V -- vapour mass fraction
-    virtual double getDiffusionCoefficient(const double p, const double T,
-                                           const double p_V) const = 0;
+    virtual double getDiffusionCoefficient(const double p,
+                                           const double T) const = 0;
 
     virtual ~DiffusionCoefficient() = default;
 };
@@ -32,8 +31,7 @@ class DiffusionCoefficientConstant final : public DiffusionCoefficient
 public:
     explicit DiffusionCoefficientConstant(const double D) : _d(D) {}
     virtual double getDiffusionCoefficient(const double /*p*/,
-                                           const double /*T*/,
-                                           const double /*p_V*/) const override
+                                           const double /*T*/) const override
     {
         return _d;
     }
@@ -46,8 +44,8 @@ class DiffusionCoefficientWaterNitrogenMarrero final
     : public DiffusionCoefficient
 {
 public:
-    virtual double getDiffusionCoefficient(const double p, const double T,
-                                           const double /*p_V*/) const override
+    virtual double getDiffusionCoefficient(const double p,
+                                           const double T) const override
     {
         // Marrero, T.R., Mason, E.A., 1972. Gaseous Diffusion Coefficients.
         // Journal of Physical and Chemical Reference Data 1, 3–118.
@@ -61,8 +59,8 @@ public:
 class DiffusionCoefficientWaterAirFuller final : public DiffusionCoefficient
 {
 public:
-    virtual double getDiffusionCoefficient(const double p, const double T,
-                                           const double /*p_V*/) const override
+    virtual double getDiffusionCoefficient(const double p,
+                                           const double T) const override
     {
         // Poling, B.E., Prausnitz, J.M., O’Connell, J.P., 2001. The properties
         // of gases and liquids, 5th ed. ed. McGraw-Hill, New York.
@@ -102,8 +100,8 @@ public:
     {
     }
 
-    virtual double getDiffusionCoefficient(const double /*p*/, const double T,
-                                           const double /*p_V*/) const override
+    virtual double getDiffusionCoefficient(const double /*p*/,
+                                           const double T) const override
     {
         auto const R = MaterialLib::PhysicalConstant::IdealGasConstant;
         return 4.0 / 3.0 * _pore_diam *
@@ -127,12 +125,12 @@ public:
     {
     }
 
-    virtual double getDiffusionCoefficient(const double p, const double T,
-                                           const double p_V) const override
+    virtual double getDiffusionCoefficient(const double p,
+                                           const double T) const override
     {
-        auto const D_gas = _diff_coeff_gas->getDiffusionCoefficient(p, T, p_V);
+        auto const D_gas = _diff_coeff_gas->getDiffusionCoefficient(p, T);
         auto const D_Knudsen =
-            _diff_coeff_Knudsen->getDiffusionCoefficient(p, T, p_V);
+            _diff_coeff_Knudsen->getDiffusionCoefficient(p, T);
 
         return 1.0 / (1.0 / D_gas + 1.0 / D_Knudsen);
     }

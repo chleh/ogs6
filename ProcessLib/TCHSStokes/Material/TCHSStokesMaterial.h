@@ -280,6 +280,153 @@ private:
     double const _value;
 };
 
+class PecletNumberMass
+{
+public:
+    virtual double getPe(double t,
+                         double velocity,
+                         double diffusion_coefficient) const = 0;
+    virtual ~PecletNumberMass() = default;
+};
+
+class PecletNumberMassLocal final : public PecletNumberMass
+{
+public:
+    explicit PecletNumberMassLocal(double characteristic_length)
+        : _characteristic_length(characteristic_length)
+    {
+    }
+
+    double getPe(double /*t*/,
+                 double velocity,
+                 double diffusion_coefficient) const override
+    {
+        return velocity * _characteristic_length / diffusion_coefficient;
+    }
+
+private:
+    double const _characteristic_length;
+};
+
+class PecletNumberMassNonLocal final : public PecletNumberMass
+{
+public:
+    PecletNumberMassNonLocal(
+        double characteristic_length,
+        std::unique_ptr<MathLib::PiecewiseLinearInterpolation>&&
+            average_velocity)
+        : _characteristic_length(characteristic_length),
+          _average_velocity(std::move(average_velocity))
+    {
+    }
+
+    double getPe(double t,
+                 double /*velocity*/,
+                 double diffusion_coefficient) const override
+    {
+        return _average_velocity->getValue(t) * _characteristic_length /
+               diffusion_coefficient;
+    }
+
+private:
+    double const _characteristic_length;
+    std::unique_ptr<MathLib::PiecewiseLinearInterpolation> const
+        _average_velocity;
+};
+
+class MassDispersion
+{
+public:
+    virtual Eigen::DiagonalMatrix<double, 2> getMassDispersion(
+        double const t, double const p, double const T, double const v_Darcy,
+        double const r, double const porosity, double const p_center,
+        double const T_center, double const v_Darcy_center) const = 0;
+
+    virtual ~MassDispersion() = default;
+};
+
+class MassDispersionLambdaRModel final : public MassDispersion
+{
+public:
+    MassDispersionLambdaRModel(
+        double bed_radius,
+        double pellet_diameter,
+        std::unique_ptr<ProcessLib::TES::DiffusionCoefficient>&&
+            diffusion_coefficient,
+        std::unique_ptr<PecletNumberMass>&& peclet_number_mass)
+        : _bed_radius(bed_radius),
+          _pellet_diameter(pellet_diameter),
+          _diffusion_coefficient(std::move(diffusion_coefficient)),
+          _peclet_number_mass(std::move(peclet_number_mass)),
+          _peclet_number_mass_center(_pellet_diameter)
+    {
+    }
+
+    Eigen::DiagonalMatrix<double, 2> getMassDispersion(
+        double const t, double const p, double const T, double const v_Darcy,
+        double const r, double const porosity, double const p_center,
+        double const T_center, double const v_Darcy_center) const override
+    {
+        double const diff =
+            _diffusion_coefficient->getDiffusionCoefficient(p, T);
+        double const diff_bed = diff * (1.0 - std::sqrt(1.0 - porosity));
+        double const Pe_0 = _peclet_number_mass->getPe(t, v_Darcy, diff);
+        double const K_ax = 2.0;
+        double const D_ax = diff_bed + Pe_0 / K_ax * diff;
+
+        auto f = [this](double x) {
+            double const K_2 = 0.44;
+            if (x < K_2 * _pellet_diameter)
+                return boost::math::pow<2 /* n */>(x / K_2 / _pellet_diameter);
+            return 1.0;
+        };
+        double const diff_center =
+            _diffusion_coefficient->getDiffusionCoefficient(p_center, T_center);
+        double const Pe_0_center =
+            _peclet_number_mass_center.getPe(t, v_Darcy_center, diff_center);
+        double const K_1 = 0.125 / (1.0 + 3.0 / std::sqrt(Pe_0_center));
+        double const D_r = diff_bed + K_1 * Pe_0 * v_Darcy_center / v_Darcy *
+                                          f(_bed_radius - r) * diff;
+
+        return {D_r, D_ax};
+    }
+
+private:
+    double const _bed_radius;
+    double const _pellet_diameter;
+    std::unique_ptr<ProcessLib::TES::DiffusionCoefficient> const
+        _diffusion_coefficient;
+    std::unique_ptr<PecletNumberMass> const _peclet_number_mass;
+    PecletNumberMassLocal const _peclet_number_mass_center;
+};
+
+class MassDispersionIdentity final : public MassDispersion
+{
+public:
+    MassDispersionIdentity(
+        std::unique_ptr<ProcessLib::TES::DiffusionCoefficient>&&
+            diffusion_coefficient)
+        : _diffusion_coefficient(std::move(diffusion_coefficient))
+    {
+    }
+
+    Eigen::DiagonalMatrix<double, 2> getMassDispersion(
+        double const /*t*/, double const p, double const T,
+        double const /*v_Darcy*/, double const /*r*/, double const /*porosity*/,
+        double const /*p_center*/, double const /*T_center*/,
+        double const /*v_Darcy_center*/) const override
+    {
+        double const diff =
+            _diffusion_coefficient->getDiffusionCoefficient(p, T);
+
+        return {diff, diff};
+    }
+
+private:
+    std::unique_ptr<ProcessLib::TES::DiffusionCoefficient> const
+        _diffusion_coefficient;
+};
+
 class FluidMomentumProductionCoefficient
 {
 public:
@@ -449,8 +596,7 @@ struct TCHSStokesMaterial
     std::unique_ptr<EffectiveFluidViscosity> effective_fluid_viscosity;
     std::unique_ptr<FluidHeatCapacity> fluid_heat_capacity;
     std::unique_ptr<HeatConductivity> heat_conductivity;
-    std::unique_ptr<ProcessLib::TES::DiffusionCoefficient>
-        diffusion_coefficient;
+    std::unique_ptr<MassDispersion> mass_dispersion;
     std::unique_ptr<FluidMomentumProductionCoefficient>
         fluid_momentum_production_coefficient;
     std::unique_ptr<SolidHeatCapacity> solid_heat_capacity;

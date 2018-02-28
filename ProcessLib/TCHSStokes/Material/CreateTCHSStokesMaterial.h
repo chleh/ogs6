@@ -43,6 +43,12 @@ std::unique_ptr<Porosity> createPorosity(BaseLib::ConfigTree const& config);
 std::unique_ptr<PecletNumberHeat> createPecletNumberHeat(
     BaseLib::ConfigTree const& config);
 
+std::unique_ptr<PecletNumberMass> createPecletNumberMass(
+    BaseLib::ConfigTree const& config);
+
+std::unique_ptr<MassDispersion> createMassDispersion(
+    BaseLib::ConfigTree const& config);
+
 }  // namespace Material
 
 }  // namespace TCHSStokes

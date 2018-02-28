@@ -25,9 +25,8 @@ TCHSStokesMaterial createTCHSStokesMaterial(
     material.heat_conductivity =
         createHeatConductivity(config.getConfigSubtree("heat_conductivity"));
 
-    material.diffusion_coefficient =
-        ProcessLib::TES::createDiffusionCoefficient(
-            config.getConfigSubtree("diffusion_coefficient"));
+    material.mass_dispersion =
+        createMassDispersion(config.getConfigSubtree("mass_dispersion"));
 
     material.fluid_momentum_production_coefficient =
         createFluidMomentumProductionCoefficient(
@@ -221,7 +220,59 @@ std::unique_ptr<PecletNumberHeat> createPecletNumberHeat(
         return std::make_unique<PecletNumberHeatNonLocal>(l, std::move(v));
     }
 
-    OGS_FATAL("Unknown effective viscosity model: %s.", type.c_str());
+    OGS_FATAL("Unknown heat Peclet number model: %s.", type.c_str());
+}
+
+std::unique_ptr<PecletNumberMass> createPecletNumberMass(
+    BaseLib::ConfigTree const& config)
+{
+    auto const type = config.getConfigParameter<std::string>("type");
+    if (type == "Local")
+    {
+        auto const l =
+            config.getConfigParameter<double>("characteristic_length");
+        return std::make_unique<PecletNumberMassLocal>(l);
+    }
+    if (type == "NonLocal")
+    {
+        auto const l =
+            config.getConfigParameter<double>("characteristic_length");
+        auto v = MathLib::createPiecewiseLinearCurve<
+            MathLib::PiecewiseLinearInterpolation>(
+            config.getConfigSubtree("average_velocity"));
+        return std::make_unique<PecletNumberMassNonLocal>(l, std::move(v));
+    }
+
+    OGS_FATAL("Unknown mass Peclet number model: %s.", type.c_str());
+}
+
+std::unique_ptr<MassDispersion> createMassDispersion(
+    BaseLib::ConfigTree const& config)
+{
+    auto const type = config.getConfigParameter<std::string>("type");
+    if (type == "LambdaRModel")
+    {
+        auto diff = ProcessLib::TES::createDiffusionCoefficient(
+            config.getConfigSubtree("diffusion_coefficient"));
+
+        auto const pellet_diameter =
+            config.getConfigParameter<double>("pellet_diameter");
+        auto const bed_radius = config.getConfigParameter<double>("bed_radius");
+
+        auto Pe = createPecletNumberMass(
+            config.getConfigSubtree("peclet_number_mass"));
+
+        return std::make_unique<MassDispersionLambdaRModel>(
+            bed_radius, pellet_diameter, std::move(diff), std::move(Pe));
+    }
+    if (type == "Identity")
+    {
+        auto diff = ProcessLib::TES::createDiffusionCoefficient(
+            config.getConfigSubtree("diffusion_coefficient"));
+        return std::make_unique<MassDispersionIdentity>(std::move(diff));
+    }
+
+    OGS_FATAL("Unknown mass dispersion model `%s'.", type.c_str());
 }
 
 }  // namespace Material

@@ -222,8 +222,10 @@ void TCHSStokesLocalAssembler<
         double const dMG_dxmV_over_MG =
             (M_R - M_I) / (M_I * x_mV + M_R * (1.0 - x_mV));
 
-        double const diffusion_coefficient =
-            mat.diffusion_coefficient->getDiffusionCoefficient(p, T, p_V);
+        auto const mass_dispersion = mat.mass_dispersion->getMassDispersion(
+            t, p, T, v_Darcy.norm(), x_coord, porosity,
+            _process_data.probed_pressure, _process_data.probed_temperature,
+            _process_data.probed_velocity);
         double const c_pG = mat.fluid_heat_capacity->getHeatCapacity(T, x_mV);
 
         // fluid viscosity/friction
@@ -342,7 +344,7 @@ void TCHSStokesLocalAssembler<
         Block::block(local_K, Block::X, Block::X).noalias() +=
             N_1.transpose() * (rho_GR * w) * v_Darcy.transpose() * dNdx_1 -
             N_1.transpose() * (hat_rho_S * w) * N_1 +
-            dNdx_1.transpose() * (rho_GR * w) * diffusion_coefficient * dNdx_1;
+            dNdx_1.transpose() * (rho_GR * w) * mass_dispersion * dNdx_1;
 
         // K_xv = 0
 
