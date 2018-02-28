@@ -27,6 +27,14 @@ VDI Waermeatlas
         <relative_epsilons>1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8 1e-8</relative_epsilons>
       </jacobian_assembler>
 
+      <darcy_velocity_probe>
+        <coords>0.979774 3.9 0</coords>
+        <search_length_algorithm>
+          <type>fixed</type>
+          <value>1e-6</value>
+        </search_length_algorithm>
+      </darcy_velocity_probe>
+
       <materials>
         <material id="0"><!-- inlet/outlet empty pipe -->
           <reynolds_number>
