@@ -36,6 +36,25 @@ public:
     }
 };
 
+class EffectiveFluidViscosityGieseCustomCoefficient
+    : public EffectiveFluidViscosity
+{
+public:
+    explicit EffectiveFluidViscosityGieseCustomCoefficient(double coeff)
+        : _coeff(coeff)
+    {
+    }
+
+    double getViscosity(double const fluid_viscosity,
+                        double const Re_0) const override
+    {
+        return _coeff * fluid_viscosity * std::exp(2e-3 * Re_0);
+    }
+
+private:
+    double _coeff;
+};
+
 class ReynoldsNumber
 {
 public:
@@ -102,6 +121,12 @@ inline std::unique_ptr<EffectiveFluidViscosity> createEffectiveFluidViscosity(
     if (type == "Giese")
     {
         return std::make_unique<EffectiveFluidViscosityGiese>();
+    }
+    if (type == "GieseCustomCoefficient")
+    {
+        auto const coeff = config.getConfigParameter<double>("coefficient");
+        return std::make_unique<EffectiveFluidViscosityGieseCustomCoefficient>(
+            coeff);
     }
 
     OGS_FATAL("Unknown effective viscosity model: %s.", type.c_str());
