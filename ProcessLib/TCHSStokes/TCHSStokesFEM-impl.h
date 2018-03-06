@@ -320,7 +320,8 @@ void TCHSStokesLocalAssembler<
 
         // K_px
         Block::block(local_K, Block::P, Block::X).noalias() +=
-            N_1.transpose() * (rho_GR * gamma_x * w) * N_1;
+            N_1.transpose() * v_Darcy.transpose() * (rho_GR * gamma_x * w) *
+            dNdx_1;
 
         // K_pv
         Block::block(local_K, Block::P, Block::V).noalias() +=
