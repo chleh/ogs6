@@ -181,6 +181,11 @@ void TCHSStokesLocalAssembler<
         double const T = N_1 * nodal_T;
         double x_mV = N_1 * nodal_xmV;
 
+        // some shortcuts //////////////////////////////////////////////////////
+        auto const N_1_T_N_1 = (N_1.transpose() * N_1).eval();
+        auto const N_1_T_v_T_dNdx_1 =
+            (N_1.transpose() * v_Darcy.transpose() * dNdx_1).eval();
+
         // material parameters /////////////////////////////////////////////////
         auto const mat_id = _process_data.material_ids[_element.getID()];
         auto const& mat = _process_data.materials.at(mat_id);
@@ -262,26 +267,26 @@ void TCHSStokesLocalAssembler<
         // M_p? (total mass balance) ///////////////////////////////////////////
         // M_pp
         Block::block(local_M, Block::P, Block::P).noalias() +=
-            N_1.transpose() * (rho_GR * porosity * beta_p * w) * N_1;
+            N_1_T_N_1 * (rho_GR * porosity * beta_p * w);
 
         // M_pT
         Block::block(local_M, Block::P, Block::T).noalias() -=
-            N_1.transpose() * (rho_GR * porosity * alpha_T * w) * N_1;
+            N_1_T_N_1 * (rho_GR * porosity * alpha_T * w);
 
         // M_px
         Block::block(local_M, Block::P, Block::X).noalias() +=
-            N_1.transpose() * (rho_GR * porosity * gamma_x * w) * N_1;
+            N_1_T_N_1 * (rho_GR * porosity * gamma_x * w);
 
         // M_pv = 0
 
         // M_T? (total energy balance) /////////////////////////////////////////
         // M_Tp
         Block::block(local_M, Block::T, Block::P).noalias() -=
-            N_1.transpose() * (porosity * T * alpha_T * w) * N_1;
+            N_1_T_N_1 * (porosity * T * alpha_T * w);
 
         // M_TT
         Block::block(local_M, Block::T, Block::T).noalias() +=
-            N_1.transpose() * (total_heat_capacity * w) * N_1;
+            N_1_T_N_1 * (total_heat_capacity * w);
 
         // M_Tx = 0
 
@@ -294,7 +299,7 @@ void TCHSStokesLocalAssembler<
 
         // M_xx
         Block::block(local_M, Block::X, Block::X).noalias() +=
-            N_1.transpose() * (rho_GR * porosity * w) * N_1;
+            N_1_T_N_1 * (rho_GR * porosity * w);
 
         // M_xv = 0
 
@@ -310,18 +315,15 @@ void TCHSStokesLocalAssembler<
         // K_p? (total mass balance) ///////////////////////////////////////////
         // K_pp
         Block::block(local_K, Block::P, Block::P).noalias() +=
-            N_1.transpose() * v_Darcy.transpose() * (rho_GR * beta_p * w) *
-            dNdx_1;
+            N_1_T_v_T_dNdx_1 * (rho_GR * beta_p * w);
 
         // K_pT
         Block::block(local_K, Block::P, Block::T).noalias() -=
-            N_1.transpose() * v_Darcy.transpose() * (rho_GR * alpha_T * w) *
-            dNdx_1;
+            N_1_T_v_T_dNdx_1 * (rho_GR * alpha_T * w);
 
         // K_px
         Block::block(local_K, Block::P, Block::X).noalias() +=
-            N_1.transpose() * v_Darcy.transpose() * (rho_GR * gamma_x * w) *
-            dNdx_1;
+            N_1_T_v_T_dNdx_1 * (rho_GR * gamma_x * w);
 
         // K_pv
         Block::block(local_K, Block::P, Block::V).noalias() +=
@@ -330,13 +332,11 @@ void TCHSStokesLocalAssembler<
         // K_T? (total energy balance) /////////////////////////////////////////
         // K_Tp
         Block::block(local_K, Block::T, Block::T).noalias() +=
-            N_1.transpose() * ((1.0 - T * alpha_T) * w) * v_Darcy.transpose() *
-            dNdx_1;
+            N_1_T_v_T_dNdx_1 * ((1.0 - T * alpha_T) * w);
 
         // K_TT
         Block::block(local_K, Block::T, Block::T).noalias() +=
-            N_1.transpose() * (rho_GR * c_pG * w) * v_Darcy.transpose() *
-                dNdx_1 +
+            N_1_T_v_T_dNdx_1 * (rho_GR * c_pG * w) +
             dNdx_1.transpose() * total_heat_conductivity * w * dNdx_1;
 
         // K_Tx = 0
@@ -350,8 +350,7 @@ void TCHSStokesLocalAssembler<
 
         // K_xx
         Block::block(local_K, Block::X, Block::X).noalias() +=
-            N_1.transpose() * (rho_GR * w) * v_Darcy.transpose() * dNdx_1 -
-            N_1.transpose() * (hat_rho_S * w) * N_1 +
+            N_1_T_v_T_dNdx_1 * (rho_GR * w) - N_1_T_N_1 * (hat_rho_S * w) +
             dNdx_1.transpose() * (rho_GR * w) * mass_dispersion * dNdx_1;
 
         // K_xv = 0
