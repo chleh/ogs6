@@ -609,7 +609,7 @@ public:
                                    // water near solid surfaces. Chemical
                                    // Physics Letters 102, 371–374.
                                    // doi:10.1016/0009-2614(83)87058-4
-        double const sqrtpi = std::sqrt(boost::math::constants::pi<double>());
+        double const sqrtpi = boost::math::constants::root_pi<double>();
 
         double const loading = rho_SR / _rho_SR_dry - 1.0;
 
