@@ -13,6 +13,7 @@
 #include "BaseLib/Error.h"
 
 #include "Enerchem/ReactionRateUpdateMultipleEnerchem.h"
+#include "ReactionRateConstant.h"
 #include "ReactionRateInert.h"
 #include "ReactionRateRaw.h"
 #include "ReactionRateRawWithODESolver.h"
@@ -47,6 +48,10 @@ std::unique_ptr<ReactionRate> createReactionRate(
     {
         config.ignoreConfigParameter("type");
         return std::unique_ptr<ReactionRate>(new ReactionRateInert);
+    }
+    else if (type == "Constant")
+    {
+        return createReactionRateConstant(config);
     }
     else if (type == "ReactionRateRawWithODESolver")
     {
