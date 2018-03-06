@@ -585,7 +585,7 @@ class FluidMomentumProductionCoefficientZero final
 class SolidHeatCapacity
 {
 public:
-    virtual double getHeatCapacity(double rho_SR, double T) const = 0;
+    virtual double getSpecificHeatCapacity(double rho_SR, double T) const = 0;
     virtual ~SolidHeatCapacity() = default;
 };
 
@@ -597,7 +597,7 @@ public:
     {
     }
 
-    double getHeatCapacity(double rho_SR, double T) const override
+    double getSpecificHeatCapacity(double rho_SR, double T) const override
     {
         double const cp_min_water = 836.0;  // J/kg/K
         double const A = 3.762e-2;
@@ -632,7 +632,8 @@ class SolidHeatCapacityConstant final : public SolidHeatCapacity
 public:
     SolidHeatCapacityConstant(double value) : _value(value) {}
 
-    double getHeatCapacity(double /*rho_SR*/, double /*T*/) const override
+    double getSpecificHeatCapacity(double /*rho_SR*/,
+                                   double /*T*/) const override
     {
         return _value;
     }

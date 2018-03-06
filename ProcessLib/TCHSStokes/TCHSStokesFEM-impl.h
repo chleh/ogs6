@@ -250,7 +250,8 @@ void TCHSStokesLocalAssembler<
         double const total_heat_capacity =
             porosity * c_pG * rho_GR +
             (1.0 - porosity) *
-                mat.solid_heat_capacity->getHeatCapacity(rho_SR, T) * rho_SR;
+                mat.solid_heat_capacity->getSpecificHeatCapacity(rho_SR, T) *
+                rho_SR;
         auto const total_heat_conductivity =
             mat.heat_conductivity->getHeatConductivity(
                 t, p, T, x_mV, x_coord, porosity, rho_GR, c_pG, Re_0,
