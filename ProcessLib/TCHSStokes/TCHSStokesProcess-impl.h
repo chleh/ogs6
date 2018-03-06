@@ -175,6 +175,15 @@ void TCHSStokesProcess<VelocityDim>::initializeConcreteProcess(
         _local_assemblers, mesh.isAxiallySymmetric(), integration_order,
         _process_data);
 
+    Base::_secondary_variables.addSecondaryVariable(
+        "solid_density",
+        makeExtrapolator(1, getExtrapolator(), _local_assemblers,
+                         &LocalAssemblerInterface::getIntPtSolidDensity));
+    Base::_secondary_variables.addSecondaryVariable(
+        "reaction_rate",
+        makeExtrapolator(1, getExtrapolator(), _local_assemblers,
+                         &LocalAssemblerInterface::getIntPtReactionRate));
+
 #if 0
     Base::_secondary_variables.addSecondaryVariable(
         "sigma_xx",

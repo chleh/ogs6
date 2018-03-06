@@ -111,6 +111,16 @@ public:
                              double const /*t*/,
                              double const /*delta_t*/) override
     {
+        auto const mat_id = _process_data.material_ids[_element.getID()];
+        for (auto& ip_data : _ip_data)
+        {
+            if (ip_data.reactive_solid_state)
+                _process_data.materials.at(mat_id).reactive_solid->preTimestep(
+                    *ip_data.reactive_solid_state, *ip_data.reaction_rate);
+            if (ip_data.reaction_rate_data)
+                ip_data.reaction_rate_data->preTimestep(
+                    *ip_data.reactive_solid_state, *ip_data.reaction_rate);
+        }
     }
 
     void preOutputConcrete(std::vector<double> const& local_x,
@@ -128,6 +138,18 @@ public:
         // assumes N is stored contiguously in memory
         return Eigen::Map<const Eigen::RowVectorXd>(N_2.data(), N_2.size());
     }
+
+    std::vector<double> const& getIntPtSolidDensity(
+        const double /*t*/,
+        GlobalVector const& /*current_solution*/,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& /*cache*/) const override;
+
+    std::vector<double> const& getIntPtReactionRate(
+        const double /*t*/,
+        GlobalVector const& /*current_solution*/,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& /*cache*/) const override;
 
 private:
     TCHSStokesProcessData<VelocityDim> const& _process_data;

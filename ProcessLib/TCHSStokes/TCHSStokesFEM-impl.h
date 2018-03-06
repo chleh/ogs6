@@ -409,6 +409,54 @@ void TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
 
 template <typename ShapeFunctionVelocity, typename ShapeFunctionPressure,
           typename IntegrationMethod, int VelocityDim>
+std::vector<double> const&
+TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
+                         IntegrationMethod, VelocityDim>::
+    getIntPtSolidDensity(const double /*t*/,
+                         GlobalVector const& /*current_solution*/,
+                         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+                         std::vector<double>& cache) const
+{
+    cache.clear();
+    cache.reserve(_ip_data.size());
+
+    auto const mat_id = _process_data.material_ids[_element.getID()];
+    auto const& mat = _process_data.materials.at(mat_id);
+
+    for (auto& ip_data : _ip_data)
+    {
+        cache.emplace_back(
+            mat.reactive_solid->getSolidDensity(*ip_data.reactive_solid_state));
+    }
+    return cache;
+}
+
+template <typename ShapeFunctionVelocity, typename ShapeFunctionPressure,
+          typename IntegrationMethod, int VelocityDim>
+std::vector<double> const&
+TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
+                         IntegrationMethod, VelocityDim>::
+    getIntPtReactionRate(const double /*t*/,
+                         GlobalVector const& /*current_solution*/,
+                         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+                         std::vector<double>& cache) const
+{
+    cache.clear();
+    cache.reserve(_ip_data.size());
+
+    auto const mat_id = _process_data.material_ids[_element.getID()];
+    auto const& mat = _process_data.materials.at(mat_id);
+
+    for (auto& ip_data : _ip_data)
+    {
+        cache.emplace_back(
+            mat.reactive_solid->getOverallRate(*ip_data.reaction_rate));
+    }
+    return cache;
+}
+
+template <typename ShapeFunctionVelocity, typename ShapeFunctionPressure,
+          typename IntegrationMethod, int VelocityDim>
 void TCHSStokesLocalAssembler<
     ShapeFunctionVelocity, ShapeFunctionPressure, IntegrationMethod,
     VelocityDim>::preOutputConcrete(std::vector<double> const& local_x,
