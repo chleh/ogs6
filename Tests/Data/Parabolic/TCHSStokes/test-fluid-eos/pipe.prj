@@ -55,10 +55,6 @@
 
           <fluid_density>
             <type>MixtureWaterNitrogen</type>
-            <!--
-            <type>Constant</type>
-            <value>1.0</value>
-            -->
           </fluid_density>
           <fluid_heat_capacity>
             <type>Constant</type>
@@ -71,10 +67,6 @@
           </fluid_viscosity>
           <effective_fluid_viscosity>
             <type>Identity</type>
-            <!--
-            <type>GieseCustomCoefficient</type>
-            <coefficient>2.0</coefficient>
-            -->
           </effective_fluid_viscosity>
 
           <heat_conductivity>
@@ -148,9 +140,6 @@
           </variables>
         </output>
         <time_stepping>
-          <!--
-          <type>SingleStep</type>
-          -->
           <type>FixedTimeStepping</type>
           <t_initial> 0.0 </t_initial>
           <t_end> 200 </t_end>
@@ -172,7 +161,7 @@
           <each_steps>10</each_steps>
         </pair>
       </timesteps>
-      <output_iteration_results>true</output_iteration_results>
+      <output_iteration_results>false</output_iteration_results>
     </output>
   </time_loop>
   <curves>
@@ -180,11 +169,6 @@
       <name>T_of_t</name>
       <coords>0   100 1000</coords>
       <values>3e2 4e2 4e2 </values>
-    </curve>
-    <curve>
-      <name>p_of_t</name>
-      <coords>0   100 1000</coords>
-      <values>1e5 1e5 2e5 </values>
     </curve>
   </curves>
   <parameters>
@@ -204,10 +188,6 @@
       <name>temperature_0</name>
       <type>Constant</type>
       <value>3e2</value>
-      <!--
-      <type>MeshNode</type>
-      <field_name>temperature_0</field_name>
-      -->
     </parameter>
 
     <parameter>
@@ -220,19 +200,10 @@
       <name>pressure_outlet</name>
       <type>Constant</type>
       <value>1e5</value>
-      <!--
-      <type>CurveScaled</type>
-      <curve>p_of_t</curve>
-      <parameter>one</parameter>
-      -->
     </parameter>
 
     <parameter>
       <name>temperature_outlet</name>
-      <!--
-      <type>Constant</type>
-      <value>3e2</value>
-      -->
       <type>CurveScaled</type>
       <curve>T_of_t</curve>
       <parameter>one</parameter>
@@ -270,26 +241,6 @@
       <initial_condition>velocity_0</initial_condition>
 
       <boundary_conditions>
-        <!--
-        <boundary_condition>
-          <geometrical_set>pipe</geometrical_set>
-          <geometry>inner</geometry>
-
-          <type>NonuniformDirichlet</type>
-          <component>0</component>
-          <mesh>pipe_zero_v.vtu</mesh>
-          <field_name>zero</field_name>
-        </boundary_condition>
-        <boundary_condition>
-          <geometrical_set>pipe</geometrical_set>
-          <geometry>inner</geometry>
-
-          <type>NonuniformDirichlet</type>
-          <component>1</component>
-          <mesh>pipe_zero_v.vtu</mesh>
-          <field_name>zero</field_name>
-        </boundary_condition>
-        -->
         <boundary_condition>
           <geometrical_set>pipe</geometrical_set>
           <geometry>inner</geometry>
@@ -359,36 +310,6 @@
       <initial_condition>pressure_0</initial_condition>
 
       <boundary_conditions>
-        <!--
-        <boundary_condition>
-          <geometrical_set>pipe</geometrical_set>
-          <geometry>bottom</geometry>
-          <type>Dirichlet</type>
-          <component>0</component>
-          <parameter>pressure_outlet</parameter>
-        </boundary_condition>
-        <boundary_condition>
-          <geometrical_set>pipe</geometrical_set>
-          <geometry>top</geometry>
-          <type>Dirichlet</type>
-          <component>0</component>
-          <parameter>pressure_outlet</parameter>
-        </boundary_condition>
-        <boundary_condition>
-          <geometrical_set>pipe</geometrical_set>
-          <geometry>inner</geometry>
-          <type>Dirichlet</type>
-          <component>0</component>
-          <parameter>pressure_outlet</parameter>
-        </boundary_condition>
-        <boundary_condition>
-          <geometrical_set>pipe</geometrical_set>
-          <geometry>outer</geometry>
-          <type>Dirichlet</type>
-          <component>0</component>
-          <parameter>pressure_outlet</parameter>
-        </boundary_condition>
-        -->
       </boundary_conditions>
     </process_variable>
 
