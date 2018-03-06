@@ -11,6 +11,7 @@
 
 #include "BaseLib/ConfigTree.h"
 #include "ReactionRate.h"
+#include "ReactionRateDataConstant.h"
 
 namespace MaterialLib
 {
@@ -22,13 +23,20 @@ public:
     {
     }
 
-    bool computeReactionRate(double const /*delta_t*/, double const /*p*/,
+    bool computeReactionRate(double const delta_t, double const /*p*/,
                              double const /*T*/, double& /*p_V*/,
                              ReactiveSolidRate& qR,
-                             ReactiveSolidState* /*solid_state*/,
-                             ReactionRateData* /*reaction_rate_data*/) override
+                             ReactiveSolidState* solid_state,
+                             ReactionRateData* reaction_rate_data) override
     {
         qR.setConstant(_rate);
+
+        assert(dynamic_cast<ReactionRateDataConstant*>(reaction_rate_data) !=
+               nullptr);
+        auto& d = *static_cast<ReactionRateDataConstant*>(reaction_rate_data);
+
+        auto const& rhoSR_prev_ts = d.solid_density_prev_ts;
+        solid_state->conversion() = rhoSR_prev_ts + qR * delta_t;
         return false;
     }
 
@@ -43,6 +51,11 @@ public:
     {
         return Eigen::VectorXd::Constant(state->conversion().size(),
                                          _heat_of_reaction);
+    }
+
+    std::unique_ptr<ReactionRateData> createReactionRateData() const override
+    {
+        return std::make_unique<ReactionRateDataConstant>();
     }
 
 private:
