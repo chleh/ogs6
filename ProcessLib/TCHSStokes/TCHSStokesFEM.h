@@ -186,10 +186,10 @@ private:
         };
 
     public:
-        static const std::integral_constant<BlockName, BlockName::P_> P;
-        static const std::integral_constant<BlockName, BlockName::T_> T;
-        static const std::integral_constant<BlockName, BlockName::X_> X;
-        static const std::integral_constant<BlockName, BlockName::V_> V;
+        static constexpr std::integral_constant<BlockName, BlockName::P_> P = std::integral_constant<BlockName, BlockName::P_>{};
+        static constexpr std::integral_constant<BlockName, BlockName::T_> T = std::integral_constant<BlockName, BlockName::T_>{};
+        static constexpr std::integral_constant<BlockName, BlockName::X_> X = std::integral_constant<BlockName, BlockName::X_>{};
+        static constexpr std::integral_constant<BlockName, BlockName::V_> V = std::integral_constant<BlockName, BlockName::V_>{};
 
         template <BlockName Row, BlockName Col, typename Matrix>
         static decltype(auto) block(Matrix&& mat,
