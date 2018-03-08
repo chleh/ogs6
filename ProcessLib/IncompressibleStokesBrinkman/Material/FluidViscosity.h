@@ -55,6 +55,24 @@ private:
     double _coeff;
 };
 
+class EffectiveFluidViscosityConstantFactor : public EffectiveFluidViscosity
+{
+public:
+    explicit EffectiveFluidViscosityConstantFactor(double factor)
+        : _factor(factor)
+    {
+    }
+
+    double getViscosity(double const fluid_viscosity,
+                        double const /*Re_0*/) const override
+    {
+        return _factor * fluid_viscosity;
+    }
+
+private:
+    double _factor;
+};
+
 class ReynoldsNumber
 {
 public:
@@ -118,6 +136,11 @@ inline std::unique_ptr<EffectiveFluidViscosity> createEffectiveFluidViscosity(
     auto const type = config.getConfigParameter<std::string>("type");
     if (type == "Identity")
         return std::make_unique<EffectiveFluidViscosityIdentity>();
+    if (type == "ConstantFactor")
+    {
+        auto const factor = config.getConfigParameter<double>("factor");
+        return std::make_unique<EffectiveFluidViscosityConstantFactor>(factor);
+    }
     if (type == "Giese")
     {
         return std::make_unique<EffectiveFluidViscosityGiese>();
