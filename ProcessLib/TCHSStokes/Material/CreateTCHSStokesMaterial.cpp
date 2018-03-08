@@ -180,13 +180,22 @@ std::unique_ptr<SolidHeatCapacity> createSolidHeatCapacity(
         auto const value = config.getConfigParameter<double>("value");
         return std::make_unique<SolidHeatCapacityConstant>(value);
     }
-    if (type == "ZeoliteAWaterVucelic")
+    if (type == "ZeoliteNaAWaterVucelic")
     {
         auto const rho_SR_dry =
             config.getConfigParameter<double>("adsorbent_density_dry");
         auto const cp_zeo_dry =
             config.getConfigParameter<double>("adsorbent_heat_capacity_dry");
-        return std::make_unique<SolidHeatCapacityZeoliteAWaterVucelic>(
+        return std::make_unique<SolidHeatCapacityZeoliteNaAWaterVucelic>(
+            rho_SR_dry, cp_zeo_dry);
+    }
+    if (type == "ZeoliteCaAWaterVucelic")
+    {
+        auto const rho_SR_dry =
+            config.getConfigParameter<double>("adsorbent_density_dry");
+        auto const cp_zeo_dry =
+            config.getConfigParameter<double>("adsorbent_heat_capacity_dry");
+        return std::make_unique<SolidHeatCapacityZeoliteCaAWaterVucelic>(
             rho_SR_dry, cp_zeo_dry);
     }
 
