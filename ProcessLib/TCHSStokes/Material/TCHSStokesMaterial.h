@@ -604,7 +604,7 @@ public:
         // in: Studies in Surface Science and Catalysis. Elsevier, pp. 475–480.
 
         double const cp_min_water = 836.0;  // J/kg/K
-        double const A = 3.76e-2;
+        double const A = 3.76e1;
         double const B = 3.976e-4;
         double const sqrtB = std::sqrt(B);
         double const T_0 = 335;    // K
@@ -642,7 +642,7 @@ public:
         // in: Studies in Surface Science and Catalysis. Elsevier, pp. 475–480.
 
         double const cp_min_water = 1331;  // J/kg/K
-        double const A = 7.74e-2;
+        double const A = 7.74e1;
         double const B = 27.027e-4;
         double const sqrtB = std::sqrt(B);
         double const T_0 = 368;    // K

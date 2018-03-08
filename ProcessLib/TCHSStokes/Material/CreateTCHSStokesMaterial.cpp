@@ -187,7 +187,7 @@ std::unique_ptr<SolidHeatCapacity> createSolidHeatCapacity(
         auto const cp_zeo_dry =
             config.getConfigParameter<double>("adsorbent_heat_capacity_dry");
         return std::make_unique<SolidHeatCapacityZeoliteNaAWaterVucelic>(
-            rho_SR_dry, cp_zeo_dry);
+            cp_zeo_dry, rho_SR_dry);
     }
     if (type == "ZeoliteCaAWaterVucelic")
     {
@@ -196,7 +196,7 @@ std::unique_ptr<SolidHeatCapacity> createSolidHeatCapacity(
         auto const cp_zeo_dry =
             config.getConfigParameter<double>("adsorbent_heat_capacity_dry");
         return std::make_unique<SolidHeatCapacityZeoliteCaAWaterVucelic>(
-            rho_SR_dry, cp_zeo_dry);
+            cp_zeo_dry, rho_SR_dry);
     }
 
     OGS_FATAL("Unknown solid heat capacity model `%s'.", type.c_str());
