@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <omp.h>
 #include <cassert>
 
 #include "MeshLib/Elements/Utils.h"
@@ -298,16 +299,16 @@ void TCHSStokesProcess<VelocityDim>::assembleConcreteProcess(
 {
     DBUG("Assemble the equations for TCHSStokes");
 
-    // Note: This assembly function is for the Picard nonlinear solver. Since
-    // only the Newton-Raphson method is employed to simulate coupled HM
-    // processes in this class, this function is actually not used so far.
-
     std::vector<std::reference_wrapper<NumLib::LocalToGlobalIndexMap>>
         dof_table = {std::ref(*_local_to_global_index_map)};
-    // Call global assembler for each local assembly item.
-    GlobalExecutor::executeMemberDereferenced(
-        _global_assembler, &VectorMatrixAssembler::assemble, _local_assemblers,
-        dof_table, t, x, M, K, b, _coupled_solutions);
+    auto const n = _local_assemblers.size();
+
+#pragma omp parallel for
+    for (std::size_t i = 0; i < n; i++)
+    {
+        _global_assembler.assemble(i, *_local_assemblers[i], dof_table, t, x, M,
+                                   K, b, _coupled_solutions);
+    }
 }
 
 template <int VelocityDim>
@@ -349,10 +350,15 @@ void TCHSStokesProcess<VelocityDim>::assembleWithJacobianConcreteProcess(
         dof_tables.emplace_back(*_local_to_global_index_map);
     }
 
-    GlobalExecutor::executeMemberDereferenced(
-        _global_assembler, &VectorMatrixAssembler::assembleWithJacobian,
-        _local_assemblers, dof_tables, t, x, xdot, dxdot_dx, dx_dx, M, K, b,
-        Jac, _coupled_solutions);
+    auto const n = _local_assemblers.size();
+
+#pragma omp parallel for
+    for (std::size_t i = 0; i < n; i++)
+    {
+        _global_assembler.assembleWithJacobian(
+            i, *_local_assemblers[i], dof_tables, t, x, xdot, dxdot_dx, dx_dx,
+            M, K, b, Jac, _coupled_solutions);
+    }
 }
 
 template <int VelocityDim>
