@@ -29,6 +29,11 @@ struct LocalAssemblerInterface : public ProcessLib::LocalAssemblerInterface,
         GlobalVector const& /*current_solution*/,
         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& /*cache*/) const = 0;
+    virtual std::vector<double> const& getIntPtPorosity(
+        const double /*t*/,
+        GlobalVector const& /*current_solution*/,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& /*cache*/) const = 0;
 };
 
 }  // namespace TCHSStokes

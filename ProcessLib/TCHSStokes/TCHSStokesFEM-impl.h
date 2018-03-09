@@ -457,6 +457,32 @@ TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
 
 template <typename ShapeFunctionVelocity, typename ShapeFunctionPressure,
           typename IntegrationMethod, int VelocityDim>
+std::vector<double> const&
+TCHSStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
+                         IntegrationMethod, VelocityDim>::
+    getIntPtPorosity(const double /*t*/,
+                     GlobalVector const& /*current_solution*/,
+                     NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+                     std::vector<double>& cache) const
+{
+    cache.clear();
+    cache.reserve(_ip_data.size());
+
+    auto const mat_id = _process_data.material_ids[_element.getID()];
+    auto const& mat = _process_data.materials.at(mat_id);
+
+    for (auto& ip_data : _ip_data)
+    {
+        auto const r = interpolateXCoordinate<ShapeFunctionVelocity,
+                                              ShapeMatricesTypeVelocity>(
+            _element, ip_data.N_2);
+        cache.emplace_back(mat.porosity->getPorosity(r));
+    }
+    return cache;
+}
+
+template <typename ShapeFunctionVelocity, typename ShapeFunctionPressure,
+          typename IntegrationMethod, int VelocityDim>
 void TCHSStokesLocalAssembler<
     ShapeFunctionVelocity, ShapeFunctionPressure, IntegrationMethod,
     VelocityDim>::preOutputConcrete(std::vector<double> const& local_x,

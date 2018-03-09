@@ -151,6 +151,12 @@ public:
         NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
         std::vector<double>& /*cache*/) const override;
 
+    std::vector<double> const& getIntPtPorosity(
+        const double /*t*/,
+        GlobalVector const& /*current_solution*/,
+        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        std::vector<double>& /*cache*/) const override;
+
 private:
     TCHSStokesProcessData<VelocityDim> const& _process_data;
 
@@ -186,10 +192,14 @@ private:
         };
 
     public:
-        static constexpr std::integral_constant<BlockName, BlockName::P_> P = std::integral_constant<BlockName, BlockName::P_>{};
-        static constexpr std::integral_constant<BlockName, BlockName::T_> T = std::integral_constant<BlockName, BlockName::T_>{};
-        static constexpr std::integral_constant<BlockName, BlockName::X_> X = std::integral_constant<BlockName, BlockName::X_>{};
-        static constexpr std::integral_constant<BlockName, BlockName::V_> V = std::integral_constant<BlockName, BlockName::V_>{};
+        static constexpr std::integral_constant<BlockName, BlockName::P_> P =
+            std::integral_constant<BlockName, BlockName::P_>{};
+        static constexpr std::integral_constant<BlockName, BlockName::T_> T =
+            std::integral_constant<BlockName, BlockName::T_>{};
+        static constexpr std::integral_constant<BlockName, BlockName::X_> X =
+            std::integral_constant<BlockName, BlockName::X_>{};
+        static constexpr std::integral_constant<BlockName, BlockName::V_> V =
+            std::integral_constant<BlockName, BlockName::V_>{};
 
         template <BlockName Row, BlockName Col, typename Matrix>
         static decltype(auto) block(Matrix&& mat,
