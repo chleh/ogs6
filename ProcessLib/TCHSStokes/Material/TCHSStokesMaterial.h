@@ -486,11 +486,13 @@ public:
         };
         double const diff_center =
             _diffusion_coefficient->getDiffusionCoefficient(p_center, T_center);
-        double const Pe_0_center =
-            _peclet_number_mass_center.getPe(t, v_Darcy_center, diff_center);
-        double const K_1 = 0.125 / (1.0 + 3.0 / std::sqrt(Pe_0_center));
-        double const D_r = diff_bed + K_1 * Pe_0 * v_Darcy_center / v_Darcy *
-                                          f(_bed_radius - r) * diff;
+        double const sqrt_Pe_0_center = std::sqrt(
+            _peclet_number_mass_center.getPe(t, v_Darcy_center, diff_center));
+        double const K_1 = sqrt_Pe_0_center * 0.125 / (3.0 + sqrt_Pe_0_center);
+        double D_r = diff_bed;
+        if (std::abs(v_Darcy) > std::numeric_limits<double>::epsilon())
+            D_r += K_1 * Pe_0 * v_Darcy_center / v_Darcy * f(_bed_radius - r) *
+                   diff;
 
         return {D_r, D_ax};
     }
