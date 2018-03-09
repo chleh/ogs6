@@ -183,6 +183,10 @@ void TCHSStokesProcess<VelocityDim>::initializeConcreteProcess(
         "reaction_rate",
         makeExtrapolator(1, getExtrapolator(), _local_assemblers,
                          &LocalAssemblerInterface::getIntPtReactionRate));
+    Base::_secondary_variables.addSecondaryVariable(
+        "porosity",
+        makeExtrapolator(1, getExtrapolator(), _local_assemblers,
+                         &LocalAssemblerInterface::getIntPtPorosity));
 
 #if 0
     Base::_secondary_variables.addSecondaryVariable(
@@ -367,7 +371,7 @@ void TCHSStokesProcess<VelocityDim>::preTimestepConcreteProcess(
 
     auto const p_index = _local_to_global_index_map->getLocalIndex(
         l, 0 /* p */, x.getRangeBegin(), x.getRangeEnd());
-    _process_data.probed_temperature = x[p_index];
+    _process_data.probed_pressure = x[p_index];
 
     auto const T_index = _local_to_global_index_map->getLocalIndex(
         l, 1 /* T */, x.getRangeBegin(), x.getRangeEnd());
