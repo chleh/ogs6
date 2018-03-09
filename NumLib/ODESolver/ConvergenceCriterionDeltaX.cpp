@@ -40,6 +40,9 @@ void ConvergenceCriterionDeltaX::checkDeltaX(const GlobalVector& minus_delta_x,
          (norm_x == 0. ? std::numeric_limits<double>::quiet_NaN()
                        : (error_dx / norm_x)));
 
+    if (std::isnan(norm_x))
+        OGS_FATAL("Solution contains NaN.");
+
     bool satisfied_abs = false;
     bool satisfied_rel = false;
 

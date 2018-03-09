@@ -39,6 +39,9 @@ void ConvergenceCriterionResidual::checkDeltaX(
          norm_x,
          (norm_x == 0. ? std::numeric_limits<double>::quiet_NaN()
                        : (error_dx / norm_x)));
+
+    if (std::isnan(norm_x))
+        OGS_FATAL("Solution contains NaN.");
 }
 
 void ConvergenceCriterionResidual::checkResidual(const GlobalVector& residual)
@@ -70,6 +73,9 @@ void ConvergenceCriterionResidual::checkResidual(const GlobalVector& residual)
                       : (norm_res / _residual_norm_0)));
         }
     }
+
+    if (std::isnan(norm_res))
+        OGS_FATAL("Residual contains NaN.");
 
     bool satisfied_abs = false;
     bool satisfied_rel = false;

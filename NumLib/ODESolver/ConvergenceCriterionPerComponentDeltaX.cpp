@@ -59,6 +59,9 @@ void ConvergenceCriterionPerComponentDeltaX::checkDeltaX(
             (norm_x == 0. ? std::numeric_limits<double>::quiet_NaN()
                           : (error_dx / norm_x)));
 
+        if (std::isnan(norm_x))
+            OGS_FATAL("Solution contains NaN.");
+
         satisfied_abs = satisfied_abs && error_dx < _abstols[global_component];
         satisfied_rel =
             satisfied_rel && checkRelativeTolerance(_reltols[global_component],

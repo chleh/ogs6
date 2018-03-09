@@ -57,6 +57,9 @@ void ConvergenceCriterionPerComponentResidual::checkDeltaX(
             error_dx, global_component, norm_x,
             (norm_x == 0. ? std::numeric_limits<double>::quiet_NaN()
                           : (error_dx / norm_x)));
+
+        if (std::isnan(norm_x))
+            OGS_FATAL("Solution contains NaN.");
     }
 }
 
@@ -97,6 +100,9 @@ void ConvergenceCriterionPerComponentResidual::checkResidual(
             satisfied_rel &&
             checkRelativeTolerance(_reltols[global_component], norm_res,
                                    _residual_norms_0[global_component]);
+
+        if (std::isnan(norm_res))
+            OGS_FATAL("Residual contains NaN.");
     }
 
     _satisfied = _satisfied && (satisfied_abs || satisfied_rel);
