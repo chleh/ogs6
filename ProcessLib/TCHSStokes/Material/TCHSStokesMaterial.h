@@ -268,7 +268,7 @@ private:
 class HeatConductivity
 {
 public:
-    virtual Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
+    virtual Eigen::Matrix2d getHeatConductivity(
         double const t, double const p, double const T, double const x_mV,
         double const r, double const porosity, double const rho_GR,
         double const c_pG, double const Re_0, double const v_Darcy,
@@ -294,7 +294,7 @@ public:
     {
     }
 
-    Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
+    Eigen::Matrix2d getHeatConductivity(
         double const t, double const p, double const T, double const x_mV,
         double const r, double const porosity, double const rho_GR,
         double const c_pG, double const Re_0, double const v_Darcy,
@@ -353,7 +353,7 @@ private:
 class HeatConductivityMixtureWaterNitrogen final : public HeatConductivity
 {
 public:
-    Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
+    Eigen::Matrix2d getHeatConductivity(
         double const /*t*/, double const p, double const T, double const x_mV,
         double const /*r*/, double const /*porosity*/, double const /*rho_GR*/,
         double const /*c_pG*/, double const /*Re_0*/, double const /*v_Darcy*/,
@@ -370,7 +370,7 @@ class HeatConductivityConstant final : public HeatConductivity
 public:
     HeatConductivityConstant(double value) : _value(value) {}
 
-    Eigen::DiagonalMatrix<double, 2> getHeatConductivity(
+    Eigen::Matrix2d getHeatConductivity(
         double const /*t*/, double const /*p*/, double const /*T*/,
         double const /*x_mV*/, double const /*r*/, double const /*porosity*/,
         double const /*rho_GR*/, double const /*c_pG*/, double const /*Re_0*/,
@@ -382,6 +382,36 @@ public:
 
 private:
     double const _value;
+};
+
+class HeatConductivityFluidSolidParallel final : public HeatConductivity
+{
+public:
+    HeatConductivityFluidSolidParallel(
+        std::unique_ptr<HeatConductivity>&& lambda_fluid,
+        std::unique_ptr<HeatConductivity>&& lambda_solid)
+        : _lambda_fluid(std::move(lambda_fluid)),
+          _lambda_solid(std::move(lambda_solid))
+    {
+    }
+
+    Eigen::Matrix2d getHeatConductivity(
+        double const t, double const p, double const T, double const x_mV,
+        double const r, double const porosity, double const rho_GR,
+        double const c_pG, double const Re_0, double const v_Darcy,
+        double const v_Darcy_center) const override
+    {
+        return porosity * _lambda_fluid->getHeatConductivity(
+                              t, p, T, x_mV, r, porosity, rho_GR, c_pG, Re_0,
+                              v_Darcy, v_Darcy_center) +
+               (1.0 - porosity) * _lambda_solid->getHeatConductivity(
+                                      t, p, T, x_mV, r, porosity, rho_GR, c_pG,
+                                      Re_0, v_Darcy, v_Darcy_center);
+    }
+
+private:
+    std::unique_ptr<HeatConductivity> const _lambda_fluid;
+    std::unique_ptr<HeatConductivity> const _lambda_solid;
 };
 
 class PecletNumberMass

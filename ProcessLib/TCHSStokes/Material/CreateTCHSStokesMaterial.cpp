@@ -149,6 +149,16 @@ std::unique_ptr<HeatConductivity> createHeatConductivity(
         auto const value = config.getConfigParameter<double>("value");
         return std::make_unique<HeatConductivityConstant>(value);
     }
+    if (type == "FluidSolidParallel")
+    {
+        auto lambda_f = createHeatConductivity(
+            config.getConfigSubtree("fluid_heat_conductivity"));
+        auto lambda_s = createHeatConductivity(
+            config.getConfigSubtree("solid_heat_conductivity"));
+
+        return std::make_unique<HeatConductivityFluidSolidParallel>(
+            std::move(lambda_f), std::move(lambda_s));
+    }
 
     OGS_FATAL("Unknown heat conductivity model `%s'.", type.c_str());
 }
