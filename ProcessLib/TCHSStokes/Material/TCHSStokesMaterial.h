@@ -335,9 +335,10 @@ public:
             return 1.0;
         };
         double const K_1 = 0.125;
-        double const lambda_r = lambda_bed + K_1 * Pe_0 * v_Darcy_center /
-                                                 v_Darcy * f(_bed_radius - r) *
-                                                 lambda_f;
+        double lambda_r = lambda_bed;
+        if (v_Darcy > std::numeric_limits<double>::epsilon())
+            lambda_r += K_1 * Pe_0 * v_Darcy_center / v_Darcy *
+                        f(_bed_radius - r) * lambda_f;
 
         return Eigen::DiagonalMatrix<double, 2>(lambda_r, lambda_ax);
     }
