@@ -85,6 +85,7 @@ createNonuniformNeumannBoundaryCondition(
     std::unique_ptr<MathLib::PiecewiseLinearInterpolation> curve;
     if (auto const curve_config = config.getConfigSubtreeOptional("curve"))
     {
+        DBUG("reading curve to scale BC values...");
         curve = MathLib::createPiecewiseLinearCurve<
             MathLib::PiecewiseLinearInterpolation>(*curve_config);
     }
