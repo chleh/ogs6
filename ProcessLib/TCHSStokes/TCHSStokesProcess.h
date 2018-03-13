@@ -93,6 +93,9 @@ private:
                                             const double t,
                                             int const process_id) override;
 
+    void preIterationConcreteProcess(const unsigned iter,
+                                     GlobalVector const& x) override;
+
     NumLib::LocalToGlobalIndexMap const& getDOFTable(
         const int process_id) const override;
 

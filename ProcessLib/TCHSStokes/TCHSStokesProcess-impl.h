@@ -431,6 +431,17 @@ void TCHSStokesProcess<VelocityDim>::postNonLinearSolverConcreteProcess(
 }
 
 template <int VelocityDim>
+void TCHSStokesProcess<VelocityDim>::preIterationConcreteProcess(
+    const unsigned iter, GlobalVector const& /*x*/)
+{
+    for (auto& mat : _process_data.materials)
+    {
+        mat.second.reactive_solid->preIteration(iter);
+        mat.second.reaction_rate->preIteration(iter);
+    }
+}
+
+template <int VelocityDim>
 std::tuple<NumLib::LocalToGlobalIndexMap*, bool>
 TCHSStokesProcess<VelocityDim>::getDOFTableForExtrapolatorData() const
 {
