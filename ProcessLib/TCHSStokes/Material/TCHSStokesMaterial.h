@@ -181,9 +181,11 @@ public:
         const double a_H2O[5] = {4.395, -4.186e-3, 1.405e-5, -1.564e-8,
                                  0.632e-11};
 
-        const double cp_N2 = MaterialLib::PhysicalConstant::IdealGasConstant *
+        const double R = MaterialLib::PhysicalConstant::IdealGasConstant;
+        const double cp_N2 = R / MaterialLib::PhysicalConstant::MolarMass::N2 *
                              ::detail::polynomial(T, a_N2, 5);
-        const double cp_H2O = MaterialLib::PhysicalConstant::IdealGasConstant *
+        const double cp_H2O = R /
+                              MaterialLib::PhysicalConstant::MolarMass::Water *
                               ::detail::polynomial(T, a_H2O, 5);
 
         return x_mV * cp_H2O + (1.0 - x_mV) * cp_N2;
