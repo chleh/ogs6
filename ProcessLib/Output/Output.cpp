@@ -70,8 +70,8 @@ int convertVtkDataMode(std::string const& data_mode)
 double getTNonlinearIteration(double t, double t_prev, unsigned iteration)
 {
     auto const dt = t - t_prev;
-    // four digits are reserved to represent the iteration number
-    return t_prev + iteration * std::pow(10, std::floor(std::log10(dt)) - 4);
+    auto const dt_base = std::pow(10, std::floor(std::log10(dt)) - 2);
+    return t - dt_base + (iteration * 0.01) * dt_base;
 }
 }  // namespace
 
