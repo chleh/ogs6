@@ -9,6 +9,7 @@
 
 #include "NonuniformNeumannBoundaryCondition.h"
 
+#include "MathLib/Curve/CreatePiecewiseLinearCurve.h"
 #include "MeshLib/IO/readMeshFromFile.h"
 #include "ProcessLib/Utils/ProcessUtils.h"
 
@@ -67,18 +68,25 @@ createNonuniformNeumannBoundaryCondition(
         OGS_FATAL("`%s' is not a one-component field.", field_name.c_str());
     }
 
-    std::string const mapping_to_bulk_nodes_property = "OriginalSubsurfaceNodeIDs";
+    std::string const mapping_to_bulk_nodes_property =
+        "OriginalSubsurfaceNodeIDs";
     auto const* const mapping_to_bulk_nodes =
         boundary_mesh->getProperties().getPropertyVector<std::size_t>(
             mapping_to_bulk_nodes_property);
 
-    if (!(mapping_to_bulk_nodes &&
-          mapping_to_bulk_nodes->getMeshItemType() ==
-              MeshLib::MeshItemType::Node) &&
+    if (!(mapping_to_bulk_nodes && mapping_to_bulk_nodes->getMeshItemType() ==
+                                       MeshLib::MeshItemType::Node) &&
         mapping_to_bulk_nodes->getNumberOfComponents() == 1)
     {
         OGS_FATAL("Field `%s' is not set up properly.",
                   mapping_to_bulk_nodes_property.c_str());
+    }
+
+    std::unique_ptr<MathLib::PiecewiseLinearInterpolation> curve;
+    if (auto const curve_config = config.getConfigSubtreeOptional("curve"))
+    {
+        curve = MathLib::createPiecewiseLinearCurve<
+            MathLib::PiecewiseLinearInterpolation>(*curve_config);
     }
 
     return std::make_unique<NonuniformNeumannBoundaryCondition>(
@@ -86,7 +94,7 @@ createNonuniformNeumannBoundaryCondition(
         std::move(boundary_mesh),
         NonuniformNeumannBoundaryConditionData{
             *property, bulk_mesh.getID(), *mapping_to_bulk_nodes, dof_table,
-            variable_id, component_id});
+            variable_id, component_id, std::move(curve)});
 }
 
 }  // ProcessLib
