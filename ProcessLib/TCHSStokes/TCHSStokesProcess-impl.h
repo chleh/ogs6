@@ -250,23 +250,47 @@ void TCHSStokesProcess<VelocityDim>::initializeConcreteProcess(
                          &LocalAssemblerInterface::getIntPtDarcyVelocity));
 #endif
 
-    auto mesh_prop_nodal_p = MeshLib::getOrCreateMeshProperty<double>(
-        const_cast<MeshLib::Mesh&>(mesh), "pressure_interpolated",
-        MeshLib::MeshItemType::Node, 1);
-    mesh_prop_nodal_p->resize(mesh.getNumberOfNodes());
-    _process_data.mesh_prop_nodal_p = mesh_prop_nodal_p;
+    auto create_mesh_prop = [&](std::string const& name,
+                                MeshLib::MeshItemType type, int comp) {
+        auto* mesh_prop = MeshLib::getOrCreateMeshProperty<double>(
+            const_cast<MeshLib::Mesh&>(mesh), name, type, comp);
+        switch (type)
+        {
+            case MeshLib::MeshItemType::Node:
+                mesh_prop->resize(mesh.getNumberOfNodes() * comp);
+                break;
+            case MeshLib::MeshItemType::Cell:
+                mesh_prop->resize(mesh.getNumberOfElements() * comp);
+                break;
+            default:
+                OGS_FATAL("Unsupported case.");
+        }
+        return mesh_prop;
+    };
 
-    auto mesh_prop_nodal_T = MeshLib::getOrCreateMeshProperty<double>(
-        const_cast<MeshLib::Mesh&>(mesh), "temperature_interpolated",
-        MeshLib::MeshItemType::Node, 1);
-    mesh_prop_nodal_T->resize(mesh.getNumberOfNodes());
-    _process_data.mesh_prop_nodal_T = mesh_prop_nodal_T;
+    _process_data.mesh_prop_nodal_p = create_mesh_prop(
+        "pressure_interpolated", MeshLib::MeshItemType::Node, 1);
 
-    auto mesh_prop_nodal_xmV = MeshLib::getOrCreateMeshProperty<double>(
-        const_cast<MeshLib::Mesh&>(mesh), "mass_fraction_interpolated",
-        MeshLib::MeshItemType::Node, 1);
-    mesh_prop_nodal_xmV->resize(mesh.getNumberOfNodes());
-    _process_data.mesh_prop_nodal_xmV = mesh_prop_nodal_xmV;
+    _process_data.mesh_prop_nodal_T = create_mesh_prop(
+        "temperature_interpolated", MeshLib::MeshItemType::Node, 1);
+
+    _process_data.mesh_prop_nodal_xmV = create_mesh_prop(
+        "mass_fraction_interpolated", MeshLib::MeshItemType::Node, 1);
+
+    _process_data.mesh_prop_cell_hat_rho_SR =
+        create_mesh_prop("reaction_rate_cell", MeshLib::MeshItemType::Cell, 1);
+    _process_data.mesh_prop_cell_reaction_enthalpy =
+        create_mesh_prop("reaction_enthalpy", MeshLib::MeshItemType::Cell, 1);
+    _process_data.mesh_prop_cell_rho_SR =
+        create_mesh_prop("rho_SR", MeshLib::MeshItemType::Cell, 1);
+    _process_data.mesh_prop_cell_rho_GR =
+        create_mesh_prop("rho_GR", MeshLib::MeshItemType::Cell, 1);
+    _process_data.mesh_prop_cell_lambda =
+        create_mesh_prop("lambda", MeshLib::MeshItemType::Cell, VelocityDim);
+    _process_data.mesh_prop_cell_cpS =
+        create_mesh_prop("cpS", MeshLib::MeshItemType::Cell, 1);
+    _process_data.mesh_prop_cell_cpG =
+        create_mesh_prop("cpG", MeshLib::MeshItemType::Cell, 1);
 }
 
 template <int VelocityDim>

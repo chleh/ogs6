@@ -486,11 +486,12 @@ template <typename ShapeFunctionVelocity, typename ShapeFunctionPressure,
 void TCHSStokesLocalAssembler<
     ShapeFunctionVelocity, ShapeFunctionPressure, IntegrationMethod,
     VelocityDim>::preOutputConcrete(std::vector<double> const& local_x,
-                                    const double /*t*/)
+                                    const double t)
 {
-    auto const p = Block::mapVectorSegment(local_x, Block::P);
-    auto const T = Block::mapVectorSegment(local_x, Block::T);
-    auto const xmV = Block::mapVectorSegment(local_x, Block::X);
+    auto const nodal_p = Block::mapVectorSegment(local_x, Block::P);
+    auto const nodal_T = Block::mapVectorSegment(local_x, Block::T);
+    auto const nodal_xmV = Block::mapVectorSegment(local_x, Block::X);
+    auto const nodal_v = Block::mapVectorSegment(local_x, Block::V);
 
     using FemType = NumLib::TemplateIsoparametric<ShapeFunctionPressure,
                                                   ShapeMatricesTypePressure>;
@@ -503,9 +504,9 @@ void TCHSStokesLocalAssembler<
     for (int n = 0; n < number_base_nodes; ++n)
     {
         std::size_t const global_index = _element.getNodeIndex(n);
-        (*_process_data.mesh_prop_nodal_p)[global_index] = p[n];
-        (*_process_data.mesh_prop_nodal_T)[global_index] = T[n];
-        (*_process_data.mesh_prop_nodal_xmV)[global_index] = xmV[n];
+        (*_process_data.mesh_prop_nodal_p)[global_index] = nodal_p[n];
+        (*_process_data.mesh_prop_nodal_T)[global_index] = nodal_T[n];
+        (*_process_data.mesh_prop_nodal_xmV)[global_index] = nodal_xmV[n];
     }
 
     for (int n = number_base_nodes; n < number_all_nodes; ++n)
@@ -524,10 +525,125 @@ void TCHSStokesLocalAssembler<
         auto const& N_1 = shape_matrices_p.N;
 
         std::size_t const global_index = _element.getNodeIndex(n);
-        (*_process_data.mesh_prop_nodal_p)[global_index] = N_1 * p;
-        (*_process_data.mesh_prop_nodal_T)[global_index] = N_1 * T;
-        (*_process_data.mesh_prop_nodal_xmV)[global_index] = N_1 * xmV;
+        (*_process_data.mesh_prop_nodal_p)[global_index] = N_1 * nodal_p;
+        (*_process_data.mesh_prop_nodal_T)[global_index] = N_1 * nodal_T;
+        (*_process_data.mesh_prop_nodal_xmV)[global_index] = N_1 * nodal_xmV;
     }
+
+    SpatialPosition x_position;
+    x_position.setElementID(_element.getID());
+
+    double cumul_hat_rho_SR = 0.0;
+    double cumul_reaction_enthalpy = 0.0;
+    double cumul_rho_SR = 0.0;
+    double cumul_rho_GR = 0.0;
+    Eigen::Matrix<double, VelocityDim, 1> cumul_lambda =
+        Eigen::Matrix<double, VelocityDim, 1>::Zero();
+    double cumul_cpS = 0.0;
+    double cumul_cpG = 0.0;
+    double cumul_volume = 0.0;
+
+    unsigned const n_integration_points =
+        _integration_method.getNumberOfPoints();
+    for (unsigned ip = 0; ip < n_integration_points; ip++)
+    {
+        auto const& ip_data = _ip_data[ip];
+
+        // shape functions and weights /////////////////////////////////////////
+        x_position.setIntegrationPoint(ip);
+        auto const& w = ip_data.integration_weight;
+
+        auto const& H = ip_data.H;
+
+        auto const& N_2 = ip_data.N_2;
+
+        auto const& N_1 = ip_data.N_1;
+
+        auto const x_coord =
+            interpolateXCoordinate<ShapeFunctionVelocity,
+                                   ShapeMatricesTypeVelocity>(_element, N_2);
+
+        // interpolate nodal values ////////////////////////////////////////////
+        Eigen::Matrix<double, VelocityDim, 1> const v_Darcy = H * nodal_v;
+        double const p = N_1 * nodal_p;
+        double const T = N_1 * nodal_T;
+        double x_mV = N_1 * nodal_xmV;
+
+        // material parameters /////////////////////////////////////////////////
+        auto const mat_id = _process_data.material_ids[_element.getID()];
+        auto const& mat = _process_data.materials.at(mat_id);
+
+        double const M_R = mat.molar_mass_reactive;
+        double const M_I = mat.molar_mass_inert;
+        double p_V = p * Adsorption::AdsorptionReaction::getMolarFraction(
+                             x_mV, M_R, M_I);
+
+        // porosity
+        auto const porosity = mat.porosity->getPorosity(x_coord);
+        Eigen::Matrix<double, VelocityDim, 1> grad_porosity =
+            Eigen::Matrix<double, VelocityDim, 1>::Zero();
+        grad_porosity[0] = mat.porosity->getDPorosityDr(x_coord);
+
+        // reaction
+        if (mat.reaction_rate->computeReactionRate(
+                _process_data.delta_t, p, T, p_V, *ip_data.reaction_rate,
+                ip_data.reactive_solid_state.get(),
+                ip_data.reaction_rate_data.get()))
+        {
+            x_mV = Adsorption::AdsorptionReaction::getMassFraction(p_V / p, M_R,
+                                                                   M_I);
+        }
+
+        double const hat_rho_SR =
+            mat.reactive_solid->getOverallRate(*ip_data.reaction_rate);
+        auto const reaction_enthalpy = mat.reaction_rate->getHeatOfReaction(
+            p_V, T, ip_data.reactive_solid_state.get());
+
+        // fluid
+        double const rho_GR = mat.fluid_density->getDensity(p, T, x_mV);
+        double const c_pG = mat.fluid_heat_capacity->getHeatCapacity(T, x_mV);
+
+        // fluid viscosity/friction
+        double const mu = mat.fluid_viscosity->getViscosity(p, T, x_mV);
+        double const Re_0 =
+            mat.reynolds_number->getRe(t, rho_GR, v_Darcy.norm(), mu);
+
+        // solid
+        double const rho_SR =
+            mat.reactive_solid->getSolidDensity(*ip_data.reactive_solid_state);
+        double const c_pS =
+            mat.solid_heat_capacity->getSpecificHeatCapacity(rho_SR, T);
+
+        // fluid and solid
+        auto const total_heat_conductivity =
+            mat.heat_conductivity->getHeatConductivity(
+                t, p, T, x_mV, x_coord, porosity, rho_GR, c_pG, Re_0,
+                v_Darcy.norm(), _process_data.probed_velocity);
+
+        cumul_hat_rho_SR += hat_rho_SR * w;
+        cumul_reaction_enthalpy += reaction_enthalpy[0] * w;
+        cumul_rho_SR += rho_SR * w;
+        cumul_rho_GR += rho_GR * w;
+        cumul_lambda += total_heat_conductivity.diagonal() * w;
+        cumul_cpS += c_pS * w;
+        cumul_cpG += c_pG * w;
+        cumul_volume += w;
+    }
+
+    auto const id = _element.getID();
+    (*_process_data.mesh_prop_cell_hat_rho_SR)[id] =
+        cumul_hat_rho_SR / cumul_volume;
+    (*_process_data.mesh_prop_cell_reaction_enthalpy)[id] =
+        cumul_reaction_enthalpy / cumul_volume;
+    (*_process_data.mesh_prop_cell_rho_SR)[id] = cumul_rho_SR / cumul_volume;
+    (*_process_data.mesh_prop_cell_rho_GR)[id] = cumul_rho_GR / cumul_volume;
+    for (int d = 0; d < VelocityDim; ++d)
+    {
+        (*_process_data.mesh_prop_cell_lambda)[VelocityDim * id + d] =
+            cumul_lambda[d] / cumul_volume;
+    }
+    (*_process_data.mesh_prop_cell_cpS)[id] = cumul_cpS / cumul_volume;
+    (*_process_data.mesh_prop_cell_cpG)[id] = cumul_cpG / cumul_volume;
 }
 
 }  // namespace TCHSStokes
