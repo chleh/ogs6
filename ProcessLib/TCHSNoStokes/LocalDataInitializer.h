@@ -129,15 +129,12 @@ public:
                          const unsigned shapefunction_order)
         : _dof_table(dof_table)
     {
-        if (shapefunction_order != 2)
-            OGS_FATAL(
-                "The given shape function order %d is not supported.\nOnly "
-                "shape functions of order 2 are supported.",
-                shapefunction_order);
-            // /// Quads and Hexahedra ///////////////////////////////////
+    // /// Quads and Hexahedra ///////////////////////////////////
 
 #if (OGS_ENABLED_ELEMENTS & ENABLED_ELEMENT_TYPE_QUAD) != 0 && \
-    OGS_MAX_ELEMENT_DIM >= 2 && OGS_MAX_ELEMENT_ORDER >= 2
+    OGS_MAX_ELEMENT_DIM >= 2 && OGS_MAX_ELEMENT_ORDER >= 1
+        _builder[std::type_index(typeid(MeshLib::Quad))] =
+            makeLocalAssemblerBuilder<NumLib::ShapeQuad4>();
         _builder[std::type_index(typeid(MeshLib::Quad8))] =
             makeLocalAssemblerBuilder<NumLib::ShapeQuad8>();
         _builder[std::type_index(typeid(MeshLib::Quad9))] =
@@ -261,8 +258,7 @@ private:
     static LADataBuilder makeLocalAssemblerBuilder(std::true_type*)
     {
         // (Lower order elements = Order(ShapeFunctionDisplacement) - 1).
-        using ShapeFunctionPressure =
-            typename NumLib::LowerDim<ShapeFunctionDisplacement>::type;
+        using ShapeFunctionPressure = ShapeFunctionDisplacement;
         return [](MeshLib::Element const& e,
                   std::size_t const local_matrix_size,
                   ConstructorArgs&&... args) {
