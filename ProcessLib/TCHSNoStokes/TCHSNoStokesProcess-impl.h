@@ -64,11 +64,10 @@ TCHSNoStokesProcess<VelocityDim>::getMatrixSpecifications(
         return {l.dofSizeWithoutGhosts(), l.dofSizeWithoutGhosts(),
                 &l.getGhostIndices(), &this->_sparsity_pattern};
     }
-
-    // For staggered scheme and H process (pressure).
-    auto const& l = *_local_to_global_index_map_with_base_nodes;
-    return {l.dofSizeWithoutGhosts(), l.dofSizeWithoutGhosts(),
-            &l.getGhostIndices(), &_sparsity_pattern_with_linear_element};
+    else
+    {
+        OGS_FATAL("wrong scheme");
+    }
 }
 
 template <int VelocityDim>
@@ -77,10 +76,6 @@ void TCHSNoStokesProcess<VelocityDim>::constructDofTable()
     // Create single component dof in every of the mesh's nodes.
     _mesh_subset_all_nodes =
         std::make_unique<MeshLib::MeshSubset>(_mesh, &_mesh.getNodes());
-    // Create single component dof in the mesh's base nodes.
-    _base_nodes = MeshLib::getBaseNodes(_mesh.getElements());
-    _mesh_subset_base_nodes =
-        std::make_unique<MeshLib::MeshSubset>(_mesh, &_base_nodes);
 
     // TODO move the two data members somewhere else.
     // for extrapolation of secondary variables of stress or strain
@@ -97,21 +92,9 @@ void TCHSNoStokesProcess<VelocityDim>::constructDofTable()
     {
         // three linearly interpolated unknowns: p, T, x_mV
         std::vector<MeshLib::MeshSubsets> all_mesh_subsets;
-        all_mesh_subsets.emplace_back(_mesh_subset_base_nodes.get());
-        all_mesh_subsets.emplace_back(_mesh_subset_base_nodes.get());
-        all_mesh_subsets.emplace_back(_mesh_subset_base_nodes.get());
-
-        // one quadratically interpolated unknown: v_D
-        const int monolithic_process_id = 0;
-        std::generate_n(
-            std::back_inserter(all_mesh_subsets),
-            getProcessVariables(monolithic_process_id)
-                .back()
-                .get()
-                .getNumberOfComponents(),
-            [&]() {
-                return MeshLib::MeshSubsets{_mesh_subset_all_nodes.get()};
-            });
+        all_mesh_subsets.emplace_back(_mesh_subset_all_nodes.get());
+        all_mesh_subsets.emplace_back(_mesh_subset_all_nodes.get());
+        all_mesh_subsets.emplace_back(_mesh_subset_all_nodes.get());
 
         std::vector<int> const vec_n_components{1, 1, 1, VelocityDim};
         _local_to_global_index_map =
@@ -122,38 +105,7 @@ void TCHSNoStokesProcess<VelocityDim>::constructDofTable()
     }
     else
     {
-        // TODO bugs in here.
-        // For velocity equation.
-        const int process_id = 1;
-        std::vector<MeshLib::MeshSubsets> all_mesh_subsets;
-        std::generate_n(
-            std::back_inserter(all_mesh_subsets),
-            getProcessVariables(process_id)[0].get().getNumberOfComponents(),
-            [&]() {
-                return MeshLib::MeshSubsets{_mesh_subset_all_nodes.get()};
-            });
-
-        std::vector<int> const vec_n_components{VelocityDim};
-        _local_to_global_index_map =
-            std::make_unique<NumLib::LocalToGlobalIndexMap>(
-                std::move(all_mesh_subsets), vec_n_components,
-                NumLib::ComponentOrder::BY_LOCATION);
-
-        // For pressure equation.
-        // Collect the mesh subsets with base nodes in a vector.
-        std::vector<MeshLib::MeshSubsets> all_mesh_subsets_base_nodes;
-        all_mesh_subsets_base_nodes.emplace_back(_mesh_subset_base_nodes.get());
-        _local_to_global_index_map_with_base_nodes =
-            std::make_unique<NumLib::LocalToGlobalIndexMap>(
-                std::move(all_mesh_subsets_base_nodes),
-                // by location order is needed for output
-                NumLib::ComponentOrder::BY_LOCATION);
-
-        _sparsity_pattern_with_linear_element = NumLib::computeSparsityPattern(
-            *_local_to_global_index_map_with_base_nodes, _mesh);
-
-        assert(_local_to_global_index_map);
-        assert(_local_to_global_index_map_with_base_nodes);
+        OGS_FATAL("wrong scheme");
     }
 }
 
@@ -268,15 +220,6 @@ void TCHSNoStokesProcess<VelocityDim>::initializeConcreteProcess(
         return mesh_prop;
     };
 
-    _process_data.mesh_prop_nodal_p = create_mesh_prop(
-        "pressure_interpolated", MeshLib::MeshItemType::Node, 1);
-
-    _process_data.mesh_prop_nodal_T = create_mesh_prop(
-        "temperature_interpolated", MeshLib::MeshItemType::Node, 1);
-
-    _process_data.mesh_prop_nodal_xmV = create_mesh_prop(
-        "mass_fraction_interpolated", MeshLib::MeshItemType::Node, 1);
-
     _process_data.mesh_prop_cell_hat_rho_SR =
         create_mesh_prop("reaction_rate_cell", MeshLib::MeshItemType::Cell, 1);
     _process_data.mesh_prop_cell_reaction_enthalpy =
@@ -303,17 +246,10 @@ void TCHSNoStokesProcess<VelocityDim>::initializeBoundaryConditions()
             *_local_to_global_index_map, process_id_of_hydromechancs);
         return;
     }
-
-    // Staggered scheme:
-    // for the equations of pressure
-    const int hydraulic_process_id = 0;
-    initializeProcessBoundaryConditionsAndSourceTerms(
-        *_local_to_global_index_map_with_base_nodes, hydraulic_process_id);
-
-    // for the equations of deformation.
-    const int mechanical_process_id = 1;
-    initializeProcessBoundaryConditionsAndSourceTerms(
-        *_local_to_global_index_map, mechanical_process_id);
+    else
+    {
+        OGS_FATAL("wrong scheme");
+    }
 }
 
 template <int VelocityDim>
@@ -355,23 +291,7 @@ void TCHSNoStokesProcess<VelocityDim>::assembleWithJacobianConcreteProcess(
     }
     else
     {
-        // For the staggered scheme
-        if (_coupled_solutions->process_id == 0)
-        {
-            DBUG(
-                "Assemble the Jacobian equations of liquid fluid process in "
-                "TCHSNoStokes for the staggered "
-                "scheme.");
-        }
-        else
-        {
-            DBUG(
-                "Assemble the Jacobian equations of mechanical process in "
-                "TCHSNoStokes for the staggered "
-                "scheme.");
-        }
-        dof_tables.emplace_back(*_local_to_global_index_map_with_base_nodes);
-        dof_tables.emplace_back(*_local_to_global_index_map);
+        OGS_FATAL("wrong scheme");
     }
 
     auto const n = _local_assemblers.size();
@@ -482,9 +402,10 @@ TCHSNoStokesProcess<VelocityDim>::getDOFTable(const int process_id) const
     {
         return *_local_to_global_index_map;
     }
-
-    // For the equation of pressure
-    return *_local_to_global_index_map_with_base_nodes;
+    else
+    {
+        OGS_FATAL("wrong scheme");
+    }
 }
 
 }  // namespace TCHSNoStokes

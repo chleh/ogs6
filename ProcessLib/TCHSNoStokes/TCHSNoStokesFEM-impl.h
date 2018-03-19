@@ -497,40 +497,6 @@ void TCHSNoStokesLocalAssembler<
     using FemType = NumLib::TemplateIsoparametric<ShapeFunctionPressure,
                                                   ShapeMatricesTypePressure>;
 
-    FemType fe(*static_cast<const typename ShapeFunctionPressure::MeshElement*>(
-        &_element));
-    int const number_base_nodes = _element.getNumberOfBaseNodes();
-    int const number_all_nodes = _element.getNumberOfNodes();
-
-    for (int n = 0; n < number_base_nodes; ++n)
-    {
-        std::size_t const global_index = _element.getNodeIndex(n);
-        (*_process_data.mesh_prop_nodal_p)[global_index] = nodal_p[n];
-        (*_process_data.mesh_prop_nodal_T)[global_index] = nodal_T[n];
-        (*_process_data.mesh_prop_nodal_xmV)[global_index] = nodal_xmV[n];
-    }
-
-    for (int n = number_base_nodes; n < number_all_nodes; ++n)
-    {
-        // Evaluated at higher order nodes' coordinates.
-        typename ShapeMatricesTypePressure::ShapeMatrices shape_matrices_p{
-            ShapeFunctionPressure::DIM, VelocityDim,
-            ShapeFunctionPressure::NPOINTS};
-
-        fe.computeShapeFunctions(
-            NumLib::NaturalCoordinates<
-                typename ShapeFunctionVelocity::MeshElement>::coordinates[n]
-                .data(),
-            shape_matrices_p, VelocityDim, _is_axially_symmetric);
-
-        auto const& N_1 = shape_matrices_p.N;
-
-        std::size_t const global_index = _element.getNodeIndex(n);
-        (*_process_data.mesh_prop_nodal_p)[global_index] = N_1 * nodal_p;
-        (*_process_data.mesh_prop_nodal_T)[global_index] = N_1 * nodal_T;
-        (*_process_data.mesh_prop_nodal_xmV)[global_index] = N_1 * nodal_xmV;
-    }
-
     SpatialPosition x_position;
     x_position.setElementID(_element.getID());
 

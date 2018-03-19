@@ -100,26 +100,12 @@ private:
         const int process_id) const override;
 
 private:
-    std::vector<MeshLib::Node*> _base_nodes;
-    std::unique_ptr<MeshLib::MeshSubset const> _mesh_subset_base_nodes;
     TCHSNoStokesProcessData<VelocityDim> _process_data;
 
     std::vector<std::unique_ptr<LocalAssemblerInterface>> _local_assemblers;
 
     std::unique_ptr<NumLib::LocalToGlobalIndexMap>
         _local_to_global_index_map_single_component;
-
-    /// Local to global index mapping for base nodes, which is used for linear
-    /// interpolation for pressure in the staggered scheme.
-    std::unique_ptr<NumLib::LocalToGlobalIndexMap>
-        _local_to_global_index_map_with_base_nodes;
-
-    /// Sparsity pattern for the flow equation, and it is initialized only if
-    /// the staggered scheme is used.
-    GlobalSparsityPattern _sparsity_pattern_with_linear_element;
-
-    /// Solutions of the previous time step
-    std::array<std::unique_ptr<GlobalVector>, 2> _xs_previous_timestep;
 
     /**
      * @copydoc ProcessLib::Process::getDOFTableForExtrapolatorData()

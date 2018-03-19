@@ -58,10 +58,6 @@ struct TCHSNoStokesProcessData
     double probed_temperature = std::numeric_limits<double>::quiet_NaN();
     double probed_velocity = std::numeric_limits<double>::quiet_NaN();
 
-    MeshLib::PropertyVector<double>* mesh_prop_nodal_p = nullptr;
-    MeshLib::PropertyVector<double>* mesh_prop_nodal_T = nullptr;
-    MeshLib::PropertyVector<double>* mesh_prop_nodal_xmV = nullptr;
-
     MeshLib::PropertyVector<double>* mesh_prop_cell_hat_rho_SR = nullptr;
     MeshLib::PropertyVector<double>* mesh_prop_cell_reaction_enthalpy = nullptr;
     MeshLib::PropertyVector<double>* mesh_prop_cell_rho_SR = nullptr;
