@@ -58,10 +58,6 @@ public:
     using ShapeMatricesTypePressure =
         ShapeMatrixPolicyType<ShapeFunctionPressure, VelocityDim>;
 
-    static int const KelvinVectorSize =
-        MathLib::KelvinVector::KelvinVectorDimensions<VelocityDim>::value;
-    using Invariants = MathLib::KelvinVector::Invariants<KelvinVectorSize>;
-
     TCHSNoStokesLocalAssembler(TCHSNoStokesLocalAssembler const&) = delete;
     TCHSNoStokesLocalAssembler(TCHSNoStokesLocalAssembler&&) = delete;
 
