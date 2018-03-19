@@ -49,6 +49,7 @@
 // "ProcessLib/RichardsComponentTransport/CreateRichardsComponentTransportProcess.h"
 // #include "ProcessLib/RichardsFlow/CreateRichardsFlowProcess.h"
 // #include "ProcessLib/SmallDeformation/CreateSmallDeformationProcess.h"
+#include "ProcessLib/TCHSNoStokes/CreateTCHSNoStokesProcess.h"
 #include "ProcessLib/TCHSStokes/CreateTCHSStokesProcess.h"
 #include "ProcessLib/TES/CreateTESProcess.h"
 // #include
@@ -362,8 +363,35 @@ void ProjectData::parseProcesses(BaseLib::ConfigTree const& processes_config,
 #endif
                 default:
                     OGS_FATAL(
-                        "INCOMPRESSIBLE_STOKES_BRINKMAN process does not "
-                        "support given dimension");
+                        "TCHS_STOKES process does not support given dimension");
+            }
+        }
+        else if (type == "TCHS_NOSTOKES")
+        {
+            //! \ogs_file_param{prj__processes__process__TCHS_STOKES__dimension}
+            switch (process_config.getConfigParameter<int>("dimension"))
+            {
+                case 2:
+                    process =
+                        ProcessLib::TCHSNoStokes::createTCHSNoStokesProcess<2>(
+                            *_mesh_vec[0], std::move(jacobian_assembler),
+                            _process_variables, _parameters, integration_order,
+                            process_config);
+                    break;
+// TODO saving some more compile time.
+#if 0
+                case 3:
+                    process = ProcessLib::IncompressibleStokesBrinkman::
+                        createIncompressibleStokesBrinkmanProcess<3>(
+                            *_mesh_vec[0], std::move(jacobian_assembler),
+                            _process_variables, _parameters, integration_order,
+                            process_config);
+                    break;
+#endif
+                default:
+                    OGS_FATAL(
+                        "TCHS_NOSTOKES process does not support given "
+                        "dimension");
             }
         }
         else
