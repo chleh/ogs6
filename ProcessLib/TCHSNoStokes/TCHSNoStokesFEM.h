@@ -34,13 +34,6 @@ template <typename BMatricesType, typename ShapeMatrixTypeVelocity,
           typename ShapeMatricesTypePressure, int VelocityDim, int NPoints>
 struct IntegrationPointData final
 {
-    typename ShapeMatrixTypeVelocity::template MatrixType<VelocityDim,
-                                                          NPoints * VelocityDim>
-        H;
-
-    typename ShapeMatrixTypeVelocity::NodalRowVectorType N_2;
-    typename ShapeMatrixTypeVelocity::GlobalDimNodalMatrixType dNdx_2;
-
     typename ShapeMatricesTypePressure::NodalRowVectorType N_1;
     typename ShapeMatricesTypePressure::GlobalDimNodalMatrixType dNdx_1;
     double integration_weight;
@@ -134,10 +127,10 @@ public:
     Eigen::Map<const Eigen::RowVectorXd> getShapeMatrix(
         const unsigned integration_point) const override
     {
-        auto const& N_2 = _ip_data[integration_point].N_2;
+        auto const& N_1 = _ip_data[integration_point].N_1;
 
         // assumes N is stored contiguously in memory
-        return Eigen::Map<const Eigen::RowVectorXd>(N_2.data(), N_2.size());
+        return Eigen::Map<const Eigen::RowVectorXd>(N_1.data(), N_1.size());
     }
 
     std::vector<double> const& getIntPtSolidDensity(
@@ -175,12 +168,6 @@ private:
     static const int kelvin_vector_size =
         MathLib::KelvinVector::KelvinVectorDimensions<VelocityDim>::value;
 
-    /*
-    static const int Indices[] = {0, ShapeFunctionPressure::NPOINTS,
-                                  2 * ShapeFunctionPressure::NPOINTS,
-                                  3 * ShapeFunctionPressure::NPOINTS};
-                             */
-
     struct Block
     {
     private:
@@ -188,8 +175,7 @@ private:
         {
             P_,
             T_,
-            X_,
-            V_
+            X_
         };
 
     public:
@@ -199,8 +185,6 @@ private:
             std::integral_constant<BlockName, BlockName::T_>{};
         static constexpr std::integral_constant<BlockName, BlockName::X_> X =
             std::integral_constant<BlockName, BlockName::X_>{};
-        static constexpr std::integral_constant<BlockName, BlockName::V_> V =
-            std::integral_constant<BlockName, BlockName::V_>{};
 
         template <BlockName Row, BlockName Col, typename Matrix>
         static decltype(auto) block(Matrix&& mat,
@@ -248,12 +232,6 @@ private:
             return 2 * ShapeFunctionPressure::NPOINTS;
         }
 
-        static constexpr int index(
-            std::integral_constant<BlockName, BlockName::V_>)
-        {
-            return 3 * ShapeFunctionPressure::NPOINTS;
-        }
-
         static constexpr int size(
             std::integral_constant<BlockName, BlockName::P_>)
         {
@@ -270,12 +248,6 @@ private:
             std::integral_constant<BlockName, BlockName::X_>)
         {
             return ShapeFunctionPressure::NPOINTS;
-        }
-
-        static constexpr int size(
-            std::integral_constant<BlockName, BlockName::V_>)
-        {
-            return ShapeFunctionVelocity::NPOINTS * VelocityDim;
         }
     };
 };

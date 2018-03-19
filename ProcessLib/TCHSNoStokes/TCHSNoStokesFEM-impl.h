@@ -47,11 +47,6 @@ TCHSNoStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
 
     _ip_data.resize(n_integration_points);
 
-    auto const shape_matrices_quadratic =
-        initShapeMatrices<ShapeFunctionVelocity, ShapeMatricesTypeVelocity,
-                          IntegrationMethod, VelocityDim>(
-            e, is_axially_symmetric, _integration_method);
-
     auto const shape_matrices_linear =
         initShapeMatrices<ShapeFunctionPressure, ShapeMatricesTypePressure,
                           IntegrationMethod, VelocityDim>(
@@ -64,22 +59,10 @@ TCHSNoStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
     {
         // velocity (subscript u)
         auto& ip_data = _ip_data[ip];
-        auto const& sm_2 = shape_matrices_quadratic[ip];
+        auto const& sm_1 = shape_matrices_linear[ip];
         ip_data.integration_weight =
             _integration_method.getWeightedPoint(ip).getWeight() *
-            sm_2.integralMeasure * sm_2.detJ;
-
-        ip_data.H = ShapeMatricesTypeVelocity::template MatrixType<
-            VelocityDim, Block::size(Block::V)>::Zero(VelocityDim,
-                                                      Block::size(Block::V));
-        for (int i = 0; i < VelocityDim; ++i)
-            ip_data.H
-                .template block<1, Block::size(Block::V) / VelocityDim>(
-                    i, i * Block::size(Block::V) / VelocityDim)
-                .noalias() = sm_2.N;
-
-        ip_data.N_2 = sm_2.N;
-        ip_data.dNdx_2 = sm_2.dNdx;
+            sm_1.integralMeasure * sm_1.detJ;
 
         ip_data.N_1 = shape_matrices_linear[ip].N;
         ip_data.dNdx_1 = shape_matrices_linear[ip].dNdx;
@@ -113,32 +96,31 @@ void TCHSNoStokesLocalAssembler<
                            std::vector<double>& local_K_data,
                            std::vector<double>& local_rhs_data)
 {
-    assert(local_x.size() == Block::index(Block::V) + Block::size(Block::V));
+    assert(local_x.size() == Block::index(Block::X) + Block::size(Block::X));
 
     // make Eigen::Map<>s
     auto const nodal_p = Block::mapVectorSegment(local_x, Block::P);
     auto const nodal_T = Block::mapVectorSegment(local_x, Block::T);
     auto const nodal_xmV = Block::mapVectorSegment(local_x, Block::X);
-    auto const nodal_v = Block::mapVectorSegment(local_x, Block::V);
 
     auto local_M = MathLib::createZeroedMatrix<
         typename ShapeMatricesTypeVelocity::template MatrixType<
-            Block::index(Block::V) + Block::size(Block::V),
-            Block::index(Block::V) + Block::size(Block::V)>>(
-        local_M_data, Block::index(Block::V) + Block::size(Block::V),
-        Block::index(Block::V) + Block::size(Block::V));
+            Block::index(Block::X) + Block::size(Block::X),
+            Block::index(Block::X) + Block::size(Block::X)>>(
+        local_M_data, Block::index(Block::X) + Block::size(Block::X),
+        Block::index(Block::X) + Block::size(Block::X));
 
     auto local_K = MathLib::createZeroedMatrix<
         typename ShapeMatricesTypeVelocity::template MatrixType<
-            Block::index(Block::V) + Block::size(Block::V),
-            Block::index(Block::V) + Block::size(Block::V)>>(
-        local_K_data, Block::index(Block::V) + Block::size(Block::V),
-        Block::index(Block::V) + Block::size(Block::V));
+            Block::index(Block::X) + Block::size(Block::X),
+            Block::index(Block::X) + Block::size(Block::X)>>(
+        local_K_data, Block::index(Block::X) + Block::size(Block::X),
+        Block::index(Block::X) + Block::size(Block::X));
 
     auto local_rhs = MathLib::createZeroedVector<
         typename ShapeMatricesTypeVelocity::template VectorType<
-            Block::index(Block::V) + Block::size(Block::V)>>(
-        local_rhs_data, Block::index(Block::V) + Block::size(Block::V));
+            Block::index(Block::X) + Block::size(Block::X)>>(
+        local_rhs_data, Block::index(Block::X) + Block::size(Block::X));
 
     SpatialPosition x_position;
     x_position.setElementID(_element.getID());
@@ -153,31 +135,17 @@ void TCHSNoStokesLocalAssembler<
         x_position.setIntegrationPoint(ip);
         auto const& w = ip_data.integration_weight;
 
-        auto const& H = ip_data.H;
-
-        auto const& N_2 = ip_data.N_2;
-        auto const& dNdx_2 = ip_data.dNdx_2;
-
         auto const& N_1 = ip_data.N_1;
         auto const& dNdx_1 = ip_data.dNdx_1;
 
         auto const x_coord =
             interpolateXCoordinate<ShapeFunctionVelocity,
-                                   ShapeMatricesTypeVelocity>(_element, N_2);
-        auto const B =
-            LinearBMatrix::computeBMatrix<VelocityDim,
-                                          ShapeFunctionVelocity::NPOINTS,
-                                          typename BMatricesType::BMatrixType>(
-                dNdx_2, N_2, x_coord, _is_axially_symmetric);
-
-        // special vectors and tensors /////////////////////////////////////////
-        auto const& I =
-            MathLib::KelvinVector::Invariants<KelvinVectorSize>::identity2;
-        auto const& P_dev = MathLib::KelvinVector::Invariants<
-            KelvinVectorSize>::deviatoric_projection;
+                                   ShapeMatricesTypeVelocity>(_element, N_1);
 
         // interpolate nodal values ////////////////////////////////////////////
-        Eigen::Matrix<double, VelocityDim, 1> const v_Darcy = H * nodal_v;
+        // TODO fix
+        Eigen::Matrix<double, VelocityDim, 1> const v_Darcy =
+            Eigen::Matrix<double, VelocityDim, 1>::Zero();
         double const p = N_1 * nodal_p;
         double const T = N_1 * nodal_T;
         double x_mV = N_1 * nodal_xmV;
@@ -239,6 +207,8 @@ void TCHSNoStokesLocalAssembler<
         double const mu = mat.fluid_viscosity->getViscosity(p, T, x_mV);
         double const Re_0 =
             mat.reynolds_number->getRe(t, rho_GR, v_Darcy.norm(), mu);
+
+        /* unused
         double const mu_eff =
             mat.effective_fluid_viscosity->getViscosity(mu, Re_0);
         double const f_1 =
@@ -247,6 +217,7 @@ void TCHSNoStokesLocalAssembler<
         double const f_2 =
             mat.fluid_momentum_production_coefficient->getCoeffOfVSquared(
                 porosity, rho_GR);
+                */
 
         // solid
         double const rho_SR =
@@ -278,8 +249,6 @@ void TCHSNoStokesLocalAssembler<
         Block::block(local_M, Block::P, Block::X).noalias() +=
             N_1_T_N_1 * (rho_GR * porosity * gamma_x * w);
 
-        // M_pv = 0
-
         // M_T? (total energy balance) /////////////////////////////////////////
         // M_Tp
         Block::block(local_M, Block::T, Block::P).noalias() -=
@@ -291,8 +260,6 @@ void TCHSNoStokesLocalAssembler<
 
         // M_Tx = 0
 
-        // M_Tv = 0
-
         // M_x? (vapour mass balance) //////////////////////////////////////////
         // M_xp = 0
 
@@ -301,8 +268,6 @@ void TCHSNoStokesLocalAssembler<
         // M_xx
         Block::block(local_M, Block::X, Block::X).noalias() +=
             N_1_T_N_1 * (rho_GR * porosity * w);
-
-        // M_xv = 0
 
         // M_v? (gas momentum balance) /////////////////////////////////////////
         // M_vp = 0
@@ -314,6 +279,7 @@ void TCHSNoStokesLocalAssembler<
         // M_vv = 0
 
         // K_p? (total mass balance) ///////////////////////////////////////////
+        // TODO check K_p?
         // K_pp
         Block::block(local_K, Block::P, Block::P).noalias() +=
             N_1_T_v_T_dNdx_1 * (rho_GR * beta_p * w);
@@ -325,10 +291,6 @@ void TCHSNoStokesLocalAssembler<
         // K_px
         Block::block(local_K, Block::P, Block::X).noalias() +=
             N_1_T_v_T_dNdx_1 * (rho_GR * gamma_x * w);
-
-        // K_pv
-        Block::block(local_K, Block::P, Block::V).noalias() +=
-            N_1.transpose() * (rho_GR * w) * I.transpose() * B;
 
         // K_T? (total energy balance) /////////////////////////////////////////
         // K_Tp
@@ -342,8 +304,6 @@ void TCHSNoStokesLocalAssembler<
 
         // K_Tx = 0
 
-        // K_Tv = 0
-
         // K_x? (vapour mass balance) //////////////////////////////////////////
         // K_xp = 0
 
@@ -353,22 +313,6 @@ void TCHSNoStokesLocalAssembler<
         Block::block(local_K, Block::X, Block::X).noalias() +=
             N_1_T_v_T_dNdx_1 * (rho_GR * w) - N_1_T_N_1 * (hat_rho_S * w) +
             dNdx_1.transpose() * (rho_GR * w) * mass_dispersion * dNdx_1;
-
-        // K_xv = 0
-
-        // K_v? (gas momentum balance) /////////////////////////////////////////
-        // K_vp
-        Block::block(local_K, Block::V, Block::P).noalias() -=
-            H.transpose() * (porosity * w) * dNdx_1;
-
-        // K_vT = 0
-
-        // K_vx = 0
-
-        // K_vv
-        Block::block(local_K, Block::V, Block::V).noalias() -=
-            B.transpose() * (2 * mu_eff * w) * P_dev * B +
-            H.transpose() * (porosity * (f_1 + f_2 * v_Darcy.norm()) * w) * H;
 
         // rhs /////////////////////////////////////////////////////////////////
         // rhs_p
@@ -382,18 +326,6 @@ void TCHSNoStokesLocalAssembler<
         // rhs_x
         Block::segment(local_rhs, Block::X).noalias() -=
             N_1.transpose() * (hat_rho_S * w);
-
-        // rhs_v
-        auto const two_sym_vDarcy_grad_phi = [&]() {
-            Eigen::Matrix3d m = Eigen::Matrix3d::Zero();
-            m.topLeftCorner<VelocityDim, VelocityDim>().noalias() =
-                v_Darcy * grad_porosity.transpose() +
-                grad_porosity * v_Darcy.transpose();
-            return MathLib::KelvinVector::tensorToKelvin<VelocityDim>(m);
-        };
-        Block::segment(local_rhs, Block::V).noalias() -=
-            B.transpose() * P_dev * two_sym_vDarcy_grad_phi() *
-            (mu_eff * w / porosity);
     }
 }
 
@@ -476,7 +408,7 @@ TCHSNoStokesLocalAssembler<ShapeFunctionVelocity, ShapeFunctionPressure,
     {
         auto const r = interpolateXCoordinate<ShapeFunctionVelocity,
                                               ShapeMatricesTypeVelocity>(
-            _element, ip_data.N_2);
+            _element, ip_data.N_1);
         cache.emplace_back(mat.porosity->getPorosity(r));
     }
     return cache;
@@ -492,10 +424,6 @@ void TCHSNoStokesLocalAssembler<
     auto const nodal_p = Block::mapVectorSegment(local_x, Block::P);
     auto const nodal_T = Block::mapVectorSegment(local_x, Block::T);
     auto const nodal_xmV = Block::mapVectorSegment(local_x, Block::X);
-    auto const nodal_v = Block::mapVectorSegment(local_x, Block::V);
-
-    using FemType = NumLib::TemplateIsoparametric<ShapeFunctionPressure,
-                                                  ShapeMatricesTypePressure>;
 
     SpatialPosition x_position;
     x_position.setElementID(_element.getID());
@@ -519,19 +447,16 @@ void TCHSNoStokesLocalAssembler<
         // shape functions and weights /////////////////////////////////////////
         x_position.setIntegrationPoint(ip);
         auto const& w = ip_data.integration_weight;
-
-        auto const& H = ip_data.H;
-
-        auto const& N_2 = ip_data.N_2;
-
         auto const& N_1 = ip_data.N_1;
 
         auto const x_coord =
             interpolateXCoordinate<ShapeFunctionVelocity,
-                                   ShapeMatricesTypeVelocity>(_element, N_2);
+                                   ShapeMatricesTypeVelocity>(_element, N_1);
 
         // interpolate nodal values ////////////////////////////////////////////
-        Eigen::Matrix<double, VelocityDim, 1> const v_Darcy = H * nodal_v;
+        // TODO fix
+        Eigen::Matrix<double, VelocityDim, 1> const v_Darcy =
+            Eigen::Matrix<double, VelocityDim, 1>::Zero();
         double const p = N_1 * nodal_p;
         double const T = N_1 * nodal_T;
         double x_mV = N_1 * nodal_xmV;
