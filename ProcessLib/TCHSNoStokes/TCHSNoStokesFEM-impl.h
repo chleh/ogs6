@@ -198,7 +198,7 @@ void TCHSNoStokesLocalAssembler<
         auto const mass_dispersion = mat.mass_dispersion->getMassDispersion(
             t, p, T, v_Darcy.norm(), x_coord, porosity,
             _process_data.probed_pressure, _process_data.probed_temperature,
-            _process_data.probed_velocity);
+            _process_data.darcy_velocity_center);
         double const c_pG = mat.fluid_heat_capacity->getHeatCapacity(T, x_mV);
 
         double const Re_0 =
@@ -217,7 +217,7 @@ void TCHSNoStokesLocalAssembler<
         auto const total_heat_conductivity =
             mat.heat_conductivity->getHeatConductivity(
                 t, p, T, x_mV, x_coord, porosity, rho_GR, c_pG, Re_0,
-                v_Darcy.norm(), _process_data.probed_velocity);
+                v_Darcy.norm(), _process_data.darcy_velocity_center);
 
         // some shortcuts //////////////////////////////////////////////////////
         auto const N_1_T_N_1 = (N_1.transpose() * N_1).eval();
@@ -496,7 +496,7 @@ void TCHSNoStokesLocalAssembler<
         auto const total_heat_conductivity =
             mat.heat_conductivity->getHeatConductivity(
                 t, p, T, x_mV, x_coord, porosity, rho_GR, c_pG, Re_0,
-                v_Darcy.norm(), _process_data.probed_velocity);
+                v_Darcy.norm(), _process_data.darcy_velocity_center);
 
         cumul_hat_rho_SR += hat_rho_SR * w;
         cumul_reaction_enthalpy += reaction_enthalpy[0] * w;

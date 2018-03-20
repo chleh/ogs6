@@ -96,7 +96,7 @@ void TCHSNoStokesProcess<VelocityDim>::constructDofTable()
         all_mesh_subsets.emplace_back(_mesh_subset_all_nodes.get());
         all_mesh_subsets.emplace_back(_mesh_subset_all_nodes.get());
 
-        std::vector<int> const vec_n_components{1, 1, 1, VelocityDim};
+        std::vector<int> const vec_n_components{1, 1, 1};
         _local_to_global_index_map =
             std::make_unique<NumLib::LocalToGlobalIndexMap>(
                 std::move(all_mesh_subsets), vec_n_components,
@@ -326,21 +326,6 @@ void TCHSNoStokesProcess<VelocityDim>::preTimestepConcreteProcess(
     auto const T_index = _local_to_global_index_map->getLocalIndex(
         l, 1 /* T */, x.getRangeBegin(), x.getRangeEnd());
     _process_data.probed_temperature = x[T_index];
-
-    Eigen::Matrix<double, VelocityDim, 1> v;
-    int const global_component_offset = 3;  // p, T, x, --> v <--
-    for (int component_id = 0; component_id < VelocityDim; ++component_id)
-    {
-        auto const global_component_id = global_component_offset + component_id;
-
-        auto const index = _local_to_global_index_map->getLocalIndex(
-            l, global_component_id, x.getRangeBegin(), x.getRangeEnd());
-
-        // TODO for PETSc the global vector must be copied. Cf.
-        // ProcessOutput.cpp
-        v[component_id] = x[index];
-    }
-    _process_data.probed_velocity = v.norm();
 
     if (hasMechanicalProcess(process_id))
         GlobalExecutor::executeMemberOnDereferenced(

@@ -34,7 +34,7 @@ std::unique_ptr<Process> createTCHSNoStokesProcess(
     BaseLib::ConfigTree const& config)
 {
     //! \ogs_file_param{prj__processes__process__type}
-    config.checkConfigParameter("type", "TCHS_STOKES");
+    config.checkConfigParameter("type", "TCHS_NOSTOKES");
     DBUG("Create TCHSNoStokesProcess.");
 
     auto const staggered_scheme =
@@ -51,7 +51,6 @@ std::unique_ptr<Process> createTCHSNoStokesProcess(
     ProcessVariable* variable_p;
     ProcessVariable* variable_T;
     ProcessVariable* variable_xmV;
-    ProcessVariable* variable_v;
 
     std::vector<std::vector<std::reference_wrapper<ProcessVariable>>>
         process_variables;
@@ -65,21 +64,18 @@ std::unique_ptr<Process> createTCHSNoStokesProcess(
              //! \ogs_file_param_special{prj__processes__process__TCHS_STOKES__process_variables__temperature}
              "temperature",
              //! \ogs_file_param_special{prj__processes__process__TCHS_STOKES__process_variables__mass_fraction}
-             "mass_fraction",
-             //! \ogs_file_param_special{prj__processes__process__TCHS_STOKES__process_variables__darcy_velocity}
-             "darcy_velocity"});
+             "mass_fraction"});
 
         variable_p = &per_process_variables[0].get();
         variable_T = &per_process_variables[1].get();
         variable_xmV = &per_process_variables[2].get();
-        variable_v = &per_process_variables[3].get();
         process_variables.push_back(std::move(per_process_variables));
     }
     else  // staggered scheme.
     {
         using namespace std::string_literals;
         for (auto const& variable_name :
-             {"pressure"s, "temperature"s, "mass_fraction"s, "darcy_velocity"s})
+             {"pressure"s, "temperature"s, "mass_fraction"s})
         {
             auto per_process_variables =
                 findProcessVariables(variables, pv_config, {variable_name});
@@ -89,7 +85,6 @@ std::unique_ptr<Process> createTCHSNoStokesProcess(
         variable_p = &process_variables[0][0].get();
         variable_T = &process_variables[1][0].get();
         variable_xmV = &process_variables[2][0].get();
-        variable_v = &process_variables[3][0].get();
     }
 
     DBUG("Associate pressure with process variable `%s'.",
@@ -123,18 +118,6 @@ std::unique_ptr<Process> createTCHSNoStokesProcess(
             "has %d components.",
             variable_xmV->getName().c_str(),
             variable_xmV->getNumberOfComponents());
-    }
-
-    DBUG("Associate darcy velocity with process variable `%s'.",
-         variable_v->getName().c_str());
-    if (variable_v->getNumberOfComponents() != VelocityDim)
-    {
-        OGS_FATAL(
-            "Number of components of the process variable `%s' is different "
-            "from the velocity dimension: got %d, expected %d",
-            variable_v->getName().c_str(),
-            variable_v->getNumberOfComponents(),
-            VelocityDim);
     }
 
     auto const* material_ids =
@@ -179,14 +162,18 @@ std::unique_ptr<Process> createTCHSNoStokesProcess(
         probe_coords_found[0], probe_coords_found[1], probe_coords_found[2],
         probe_node_id, probe_coords[0], probe_coords[1], probe_coords[2]);
 
+    auto const darcy_velocity_center =
+        config.getConfigParameter<double>("darcy_velocity_center");
+
     TCHSNoStokesProcessData<VelocityDim> process_data{
-        *material_ids, std::move(materials), probe_node_id};
+        *material_ids, std::move(materials), probe_node_id,
+        darcy_velocity_center};
 
     SecondaryVariableCollection secondary_variables;
 
     NumLib::NamedFunctionCaller named_function_caller(
         {"TCHSNoStokes_pressure", "TCHSNoStokes_temperature",
-         "TCHSNoStokes_mass_fraction", "TCHSNoStokes_velocity"});
+         "TCHSNoStokes_mass_fraction"});
 
     ProcessLib::createSecondaryVariables(config, secondary_variables,
                                          named_function_caller);

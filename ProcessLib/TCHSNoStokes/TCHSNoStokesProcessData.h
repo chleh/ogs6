@@ -40,10 +40,12 @@ struct TCHSNoStokesProcessData
     TCHSNoStokesProcessData(
         MeshLib::PropertyVector<int> const& material_ids_,
         std::unordered_map<int, Material::TCHSNoStokesMaterial>&& materials_,
-        std::size_t velocity_probe_node_id_)
+        std::size_t velocity_probe_node_id_,
+        double darcy_velocity_center_)
         : material_ids(material_ids_),
           materials(std::move(materials_)),
-          velocity_probe_node_id(velocity_probe_node_id_)
+          velocity_probe_node_id(velocity_probe_node_id_),
+          darcy_velocity_center(darcy_velocity_center_)
     {
     }
 
@@ -56,7 +58,7 @@ struct TCHSNoStokesProcessData
     std::size_t const velocity_probe_node_id;
     double probed_pressure = std::numeric_limits<double>::quiet_NaN();
     double probed_temperature = std::numeric_limits<double>::quiet_NaN();
-    double probed_velocity = std::numeric_limits<double>::quiet_NaN();
+    const double darcy_velocity_center;
 
     MeshLib::PropertyVector<double>* mesh_prop_cell_hat_rho_SR = nullptr;
     MeshLib::PropertyVector<double>* mesh_prop_cell_reaction_enthalpy = nullptr;
