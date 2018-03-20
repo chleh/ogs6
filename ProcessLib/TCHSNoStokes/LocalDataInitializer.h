@@ -133,15 +133,26 @@ public:
 
 #if (OGS_ENABLED_ELEMENTS & ENABLED_ELEMENT_TYPE_QUAD) != 0 && \
     OGS_MAX_ELEMENT_DIM >= 2 && OGS_MAX_ELEMENT_ORDER >= 1
-        _builder[std::type_index(typeid(MeshLib::Quad))] =
-            makeLocalAssemblerBuilder<NumLib::ShapeQuad4>();
-        _builder[std::type_index(typeid(MeshLib::Quad8))] =
-            makeLocalAssemblerBuilder<NumLib::ShapeQuad8>();
-        _builder[std::type_index(typeid(MeshLib::Quad9))] =
-            makeLocalAssemblerBuilder<NumLib::ShapeQuad9>();
+        if (shapefunction_order == 1)
+        {
+            _builder[std::type_index(typeid(MeshLib::Quad))] =
+                makeLocalAssemblerBuilder<NumLib::ShapeQuad4>();
+        }
+        else if (shapefunction_order == 2)
+        {
+            _builder[std::type_index(typeid(MeshLib::Quad8))] =
+                makeLocalAssemblerBuilder<NumLib::ShapeQuad8>();
+            _builder[std::type_index(typeid(MeshLib::Quad9))] =
+                makeLocalAssemblerBuilder<NumLib::ShapeQuad9>();
+        }
+        else
+        {
+            OGS_FATAL("Shape function order %d not supported.",
+                      shapefunction_order);
+        }
 #endif
 
-        // Save some compilation time: Only compile quads.
+            // Save some compilation time: Only compile quads.
 #if 0
 
 #if (OGS_ENABLED_ELEMENTS & ENABLED_ELEMENT_TYPE_CUBOID) != 0 && \
