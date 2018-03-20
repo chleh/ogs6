@@ -20,6 +20,9 @@ std::unordered_map<int, TCHSNoStokesMaterial> createTCHSNoStokesMaterials(
     BaseLib::ConfigTree const& config,
     const std::vector<std::unique_ptr<ParameterBase>>& parameters);
 
+std::unique_ptr<Permeability> createPermeability(
+    BaseLib::ConfigTree const& config);
+
 }  // namespace Material
 
 }  // namespace TCHSNoStokes

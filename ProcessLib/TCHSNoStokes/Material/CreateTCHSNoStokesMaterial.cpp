@@ -47,6 +47,9 @@ TCHSNoStokesMaterial createTCHSNoStokesMaterial(
     material.reynolds_number = ProcessLib::createReynoldsNumber(
         config.getConfigSubtree("reynolds_number"));
 
+    material.permeability =
+        createPermeability(config.getConfigSubtree("permeability"));
+
     return material;
 }
 
@@ -69,6 +72,26 @@ std::unordered_map<int, TCHSNoStokesMaterial> createTCHSNoStokesMaterials(
         it_succ.first->second = createTCHSNoStokesMaterial(c, parameters);
     }
     return materials;
+}
+
+std::unique_ptr<Permeability> createPermeability(
+    BaseLib::ConfigTree const& config)
+{
+    auto const type = config.getConfigParameter<std::string>("type");
+
+    if (type == "Constant")
+    {
+        auto const value = config.getConfigParameter<double>("value");
+        return std::make_unique<ConstantPermeability>(value);
+    }
+    if (type == "Radial")
+    {
+        auto profile = MathLib::createPiecewiseLinearCurve<
+            MathLib::PiecewiseLinearInterpolation>(
+            config.getConfigSubtree("profile"));
+        return std::make_unique<RadialPermeability>(std::move(profile));
+    }
+    OGS_FATAL("unknown permeability type `%s'", type.c_str());
 }
 
 }  // namespace Material

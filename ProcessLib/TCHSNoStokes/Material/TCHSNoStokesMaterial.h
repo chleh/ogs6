@@ -16,6 +16,40 @@ namespace TCHSNoStokes
 {
 namespace Material
 {
+struct Permeability
+{
+    virtual double getPermeability(double r) const = 0;
+    virtual ~Permeability() = default;
+};
+
+struct ConstantPermeability final : Permeability
+{
+    explicit ConstantPermeability(double value) : _value(value) {}
+
+    double getPermeability(double /*r*/) const override { return _value; }
+
+private:
+    double const _value;
+};
+
+struct RadialPermeability final : Permeability
+{
+    explicit RadialPermeability(
+        std::unique_ptr<MathLib::PiecewiseLinearInterpolation>&& radial_profile)
+        : _radial_profile(std::move(radial_profile))
+    {
+    }
+
+    double getPermeability(double r) const override
+    {
+        return _radial_profile->getValue(r);
+    }
+
+private:
+    std::unique_ptr<MathLib::PiecewiseLinearInterpolation> const
+        _radial_profile;
+};
+
 struct TCHSNoStokesMaterial
 {
     std::unique_ptr<ProcessLib::TCHSStokes::Material::FluidDensity>
@@ -37,6 +71,8 @@ struct TCHSNoStokesMaterial
     std::unique_ptr<ProcessLib::ReynoldsNumber> reynolds_number;
     std::unique_ptr<ProcessLib::TCHSStokes::Material::PecletNumberHeat>
         peclet_number_heat;
+
+    std::unique_ptr<Permeability> permeability;
 
     double molar_mass_reactive = std::numeric_limits<double>::quiet_NaN();
     double molar_mass_inert = std::numeric_limits<double>::quiet_NaN();
