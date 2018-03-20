@@ -143,17 +143,9 @@ void TCHSNoStokesLocalAssembler<
                                    ShapeMatricesTypeVelocity>(_element, N_1);
 
         // interpolate nodal values ////////////////////////////////////////////
-        // TODO fix
-        Eigen::Matrix<double, VelocityDim, 1> const v_Darcy =
-            Eigen::Matrix<double, VelocityDim, 1>::Zero();
         double const p = N_1 * nodal_p;
         double const T = N_1 * nodal_T;
         double x_mV = N_1 * nodal_xmV;
-
-        // some shortcuts //////////////////////////////////////////////////////
-        auto const N_1_T_N_1 = (N_1.transpose() * N_1).eval();
-        auto const N_1_T_v_T_dNdx_1 =
-            (N_1.transpose() * v_Darcy.transpose() * dNdx_1).eval();
 
         // material parameters /////////////////////////////////////////////////
         auto const mat_id = _process_data.material_ids[_element.getID()];
@@ -189,6 +181,12 @@ void TCHSNoStokesLocalAssembler<
             (1.0 - porosity) * mat.reactive_solid->getHeatingRate(
                                    reaction_enthalpy, *ip_data.reaction_rate);
 
+        // fluid viscosity/friction
+        double const mu = mat.fluid_viscosity->getViscosity(p, T, x_mV);
+        double const permeability = mat.permeability->getPermeability(x_coord);
+        Eigen::Matrix<double, VelocityDim, 1> const v_Darcy =
+            (-permeability / mu) * dNdx_1 * nodal_p;
+
         // fluid
         double const rho_GR = mat.fluid_density->getDensity(p, T, x_mV);
         double const alpha_T =
@@ -203,8 +201,6 @@ void TCHSNoStokesLocalAssembler<
             _process_data.probed_velocity);
         double const c_pG = mat.fluid_heat_capacity->getHeatCapacity(T, x_mV);
 
-        // fluid viscosity/friction
-        double const mu = mat.fluid_viscosity->getViscosity(p, T, x_mV);
         double const Re_0 =
             mat.reynolds_number->getRe(t, rho_GR, v_Darcy.norm(), mu);
 
@@ -222,6 +218,11 @@ void TCHSNoStokesLocalAssembler<
             mat.heat_conductivity->getHeatConductivity(
                 t, p, T, x_mV, x_coord, porosity, rho_GR, c_pG, Re_0,
                 v_Darcy.norm(), _process_data.probed_velocity);
+
+        // some shortcuts //////////////////////////////////////////////////////
+        auto const N_1_T_N_1 = (N_1.transpose() * N_1).eval();
+        auto const N_1_T_v_T_dNdx_1 =
+            (N_1.transpose() * v_Darcy.transpose() * dNdx_1).eval();
 
         // assemble local matrices /////////////////////////////////////////////
 
@@ -268,18 +269,13 @@ void TCHSNoStokesLocalAssembler<
         // M_vv = 0
 
         // K_p? (total mass balance) ///////////////////////////////////////////
-        // TODO check K_p?
         // K_pp
         Block::block(local_K, Block::P, Block::P).noalias() +=
-            N_1_T_v_T_dNdx_1 * (rho_GR * beta_p * w);
+            dNdx_1.transpose() * dNdx_1 * (rho_GR * permeability / mu * w);
 
-        // K_pT
-        Block::block(local_K, Block::P, Block::T).noalias() -=
-            N_1_T_v_T_dNdx_1 * (rho_GR * alpha_T * w);
+        // K_pT = 0
 
-        // K_px
-        Block::block(local_K, Block::P, Block::X).noalias() +=
-            N_1_T_v_T_dNdx_1 * (rho_GR * gamma_x * w);
+        // K_px = 0
 
         // K_T? (total energy balance) /////////////////////////////////////////
         // K_Tp
@@ -437,15 +433,13 @@ void TCHSNoStokesLocalAssembler<
         x_position.setIntegrationPoint(ip);
         auto const& w = ip_data.integration_weight;
         auto const& N_1 = ip_data.N_1;
+        auto const& dNdx_1 = ip_data.dNdx_1;
 
         auto const x_coord =
             interpolateXCoordinate<ShapeFunctionVelocity,
                                    ShapeMatricesTypeVelocity>(_element, N_1);
 
         // interpolate nodal values ////////////////////////////////////////////
-        // TODO fix
-        Eigen::Matrix<double, VelocityDim, 1> const v_Darcy =
-            Eigen::Matrix<double, VelocityDim, 1>::Zero();
         double const p = N_1 * nodal_p;
         double const T = N_1 * nodal_T;
         double x_mV = N_1 * nodal_xmV;
@@ -486,6 +480,9 @@ void TCHSNoStokesLocalAssembler<
 
         // fluid viscosity/friction
         double const mu = mat.fluid_viscosity->getViscosity(p, T, x_mV);
+        double const permeability = mat.permeability->getPermeability(x_coord);
+        Eigen::Matrix<double, VelocityDim, 1> const v_Darcy =
+            (-permeability / mu) * dNdx_1 * nodal_p;
         double const Re_0 =
             mat.reynolds_number->getRe(t, rho_GR, v_Darcy.norm(), mu);
 
