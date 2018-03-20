@@ -22,16 +22,12 @@ struct TCHSNoStokesMaterial
         fluid_density;
     std::unique_ptr<ProcessLib::TCHSStokes::Material::FluidViscosity>
         fluid_viscosity;
-    std::unique_ptr<EffectiveFluidViscosity> effective_fluid_viscosity;
     std::unique_ptr<ProcessLib::TCHSStokes::Material::FluidHeatCapacity>
         fluid_heat_capacity;
     std::unique_ptr<ProcessLib::TCHSStokes::Material::HeatConductivity>
         heat_conductivity;
     std::unique_ptr<ProcessLib::TCHSStokes::Material::MassDispersion>
         mass_dispersion;
-    std::unique_ptr<
-        ProcessLib::TCHSStokes::Material::FluidMomentumProductionCoefficient>
-        fluid_momentum_production_coefficient;
     std::unique_ptr<ProcessLib::TCHSStokes::Material::SolidHeatCapacity>
         solid_heat_capacity;
     std::unique_ptr<MaterialLib::ReactiveSolidModel> reactive_solid;

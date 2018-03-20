@@ -19,9 +19,6 @@ TCHSNoStokesMaterial createTCHSNoStokesMaterial(
         createFluidDensity(config.getConfigSubtree("fluid_density"));
     material.fluid_viscosity =
         createFluidViscosity(config.getConfigSubtree("fluid_viscosity"));
-    material.effective_fluid_viscosity =
-        ProcessLib::createEffectiveFluidViscosity(
-            config.getConfigSubtree("effective_fluid_viscosity"));
     material.fluid_heat_capacity =
         createFluidHeatCapacity(config.getConfigSubtree("fluid_heat_capacity"));
 
@@ -30,10 +27,6 @@ TCHSNoStokesMaterial createTCHSNoStokesMaterial(
 
     material.mass_dispersion =
         createMassDispersion(config.getConfigSubtree("mass_dispersion"));
-
-    material.fluid_momentum_production_coefficient =
-        createFluidMomentumProductionCoefficient(
-            config.getConfigSubtree("fluid_momentum_production_coefficient"));
 
     material.solid_heat_capacity =
         createSolidHeatCapacity(config.getConfigSubtree("solid_heat_capacity"));

@@ -208,17 +208,6 @@ void TCHSNoStokesLocalAssembler<
         double const Re_0 =
             mat.reynolds_number->getRe(t, rho_GR, v_Darcy.norm(), mu);
 
-        /* unused
-        double const mu_eff =
-            mat.effective_fluid_viscosity->getViscosity(mu, Re_0);
-        double const f_1 =
-            mat.fluid_momentum_production_coefficient->getCoeffOfV(porosity,
-                                                                   mu);
-        double const f_2 =
-            mat.fluid_momentum_production_coefficient->getCoeffOfVSquared(
-                porosity, rho_GR);
-                */
-
         // solid
         double const rho_SR =
             mat.reactive_solid->getSolidDensity(*ip_data.reactive_solid_state);
