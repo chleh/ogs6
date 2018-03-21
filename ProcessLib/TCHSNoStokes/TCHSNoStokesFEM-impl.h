@@ -422,6 +422,12 @@ void TCHSNoStokesLocalAssembler<
     double cumul_cpS = 0.0;
     double cumul_cpG = 0.0;
     double cumul_volume = 0.0;
+    Eigen::Matrix<double, VelocityDim, 1> cumul_v_Darcy =
+        Eigen::Matrix<double, VelocityDim, 1>::Zero();
+    Eigen::Matrix<double, VelocityDim, 1> cumul_mass_flux =
+        Eigen::Matrix<double, VelocityDim, 1>::Zero();
+    Eigen::Matrix<double, VelocityDim, 1> cumul_vapour_mass_flux =
+        Eigen::Matrix<double, VelocityDim, 1>::Zero();
 
     unsigned const n_integration_points =
         _integration_method.getNumberOfPoints();
@@ -486,6 +492,11 @@ void TCHSNoStokesLocalAssembler<
         double const Re_0 =
             mat.reynolds_number->getRe(t, rho_GR, v_Darcy.norm(), mu);
 
+        Eigen::Matrix<double, VelocityDim, 1> const mass_flux =
+            rho_GR * v_Darcy;
+        Eigen::Matrix<double, VelocityDim, 1> const vapour_mass_flux =
+            x_mV * mass_flux;
+
         // solid
         double const rho_SR =
             mat.reactive_solid->getSolidDensity(*ip_data.reactive_solid_state);
@@ -506,6 +517,9 @@ void TCHSNoStokesLocalAssembler<
         cumul_cpS += c_pS * w;
         cumul_cpG += c_pG * w;
         cumul_volume += w;
+        cumul_v_Darcy += v_Darcy * w;
+        cumul_mass_flux += mass_flux * w;
+        cumul_vapour_mass_flux += vapour_mass_flux * w;
     }
 
     auto const id = _element.getID();
@@ -519,6 +533,12 @@ void TCHSNoStokesLocalAssembler<
     {
         (*_process_data.mesh_prop_cell_lambda)[VelocityDim * id + d] =
             cumul_lambda[d] / cumul_volume;
+        (*_process_data.mesh_prop_cell_v_Darcy)[VelocityDim * id + d] =
+            cumul_v_Darcy[d] / cumul_volume;
+        (*_process_data.mesh_prop_cell_mass_flux)[VelocityDim * id + d] =
+            cumul_mass_flux[d] / cumul_volume;
+        (*_process_data.mesh_prop_cell_vapour_mass_flux)[VelocityDim * id + d] =
+            cumul_vapour_mass_flux[d] / cumul_volume;
     }
     (*_process_data.mesh_prop_cell_cpS)[id] = cumul_cpS / cumul_volume;
     (*_process_data.mesh_prop_cell_cpG)[id] = cumul_cpG / cumul_volume;

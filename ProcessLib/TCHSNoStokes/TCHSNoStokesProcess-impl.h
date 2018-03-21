@@ -234,6 +234,12 @@ void TCHSNoStokesProcess<VelocityDim>::initializeConcreteProcess(
         create_mesh_prop("cpS", MeshLib::MeshItemType::Cell, 1);
     _process_data.mesh_prop_cell_cpG =
         create_mesh_prop("cpG", MeshLib::MeshItemType::Cell, 1);
+    _process_data.mesh_prop_cell_v_Darcy = create_mesh_prop(
+        "darcy_velocity", MeshLib::MeshItemType::Cell, VelocityDim);
+    _process_data.mesh_prop_cell_mass_flux =
+        create_mesh_prop("mass_flux", MeshLib::MeshItemType::Cell, VelocityDim);
+    _process_data.mesh_prop_cell_vapour_mass_flux = create_mesh_prop(
+        "vapour_mass_flux", MeshLib::MeshItemType::Cell, VelocityDim);
 }
 
 template <int VelocityDim>
