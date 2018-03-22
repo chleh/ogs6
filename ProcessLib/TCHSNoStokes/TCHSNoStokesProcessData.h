@@ -70,6 +70,7 @@ struct TCHSNoStokesProcessData
     MeshLib::PropertyVector<double>* mesh_prop_cell_v_Darcy = nullptr;
     MeshLib::PropertyVector<double>* mesh_prop_cell_mass_flux = nullptr;
     MeshLib::PropertyVector<double>* mesh_prop_cell_vapour_mass_flux = nullptr;
+    MeshLib::PropertyVector<double>* mesh_prop_cell_solid_mass = nullptr;
 };
 
 }  // namespace TCHSNoStokes
