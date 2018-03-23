@@ -518,7 +518,7 @@ void TCHSNoStokesLocalAssembler<
         cumul_v_Darcy += v_Darcy * w;
         cumul_mass_flux += mass_flux * w;
         cumul_vapour_mass_flux += vapour_mass_flux * w;
-        cumul_solid_mass_cell += rho_SR * porosity * w;
+        cumul_solid_mass_cell += rho_SR * (1.0 - porosity) * w;
     }
 
     auto const id = _element.getID();
