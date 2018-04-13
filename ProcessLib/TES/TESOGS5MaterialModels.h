@@ -47,6 +47,10 @@ inline double mypow<0>(const double /*x*/)
     return 1.0;
 }
 
+/* Stephan, K., Krauss, R., Laesecke, A., 1987. Viscosity and Thermal
+ * Conductivity of Nitrogen for a Wide Range of Fluid States. Journal of
+ * Physical and Chemical Reference Data 16, 993–1023. doi:10.1063/1.555798
+ */
 struct FluidViscosityN2
 {
     static double get(double rho, double T)
@@ -210,6 +214,10 @@ inline double fluid_viscosity(const double p, const double T, const double x)
     return V0 * x0 / (x0 + x1 * phi_12) + V1 * x1 / (x1 + x0 * phi_21);
 }
 
+/* Stephan, K., Krauss, R., Laesecke, A., 1987. Viscosity and Thermal
+ * Conductivity of Nitrogen for a Wide Range of Fluid States. Journal of
+ * Physical and Chemical Reference Data 16, 993–1023. doi:10.1063/1.555798
+ */
 struct FluidHeatConductivityN2
 {
     static double get(double rho, double T)
