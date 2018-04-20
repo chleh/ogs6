@@ -147,6 +147,9 @@ double getSaltLoadingAlpha(const double salt_loading_mole_fraction)
         salt_loading_mole_fraction * M_CaCl2 / M_CaX;
     auto const salt_content_mass_fraction =
         salt_loading_mass_fraction / (1.0 + salt_loading_mass_fraction);
+
+    INFO("salt loading: %g mol/mol => salt content %g g/g.",
+         salt_loading_mole_fraction, salt_content_mass_fraction);
     return salt_content_mass_fraction;
 }
 
@@ -156,7 +159,7 @@ SorptionEquilibriumCaCl2CaX_6_DubDub_corrected::
     SorptionEquilibriumCaCl2CaX_6_DubDub_corrected(const double rho_SR_dry,
                                                    const double salt_loading)
     : _rho_SR_dry(rho_SR_dry),
-      _alpha(1.0 - getSaltLoadingAlpha(salt_loading) / 15.0)
+      _alpha(1.0 - getSaltLoadingAlpha(salt_loading) / 0.15)
 {
 }
 
