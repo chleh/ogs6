@@ -106,6 +106,9 @@ private:
     static const double C[5];
 };
 
+// The International Association for the Properties of Water and Steam, 2008.
+// Release on the IAPWS Formulation 2008 for the Viscosity of Ordinary Water
+// Substance.
 struct FluidViscosityH2O
 {
     static double get(double rho, double T)
@@ -378,6 +381,10 @@ inline double fluid_heat_conductivity(const double p,
                                       const double T,
                                       const double x)
 {
+    // Wassilijewa, Maso&Saxena (see Poling, B. E.; Prausnitz, J. M.; John Paul,
+    // O. & Reid, R. C. The properties of gases and liquids McGraw-Hill New
+    // York, 2001, 5: page 10.30f.)
+
     // OGS 5 fluid heat conductivity model 11
 
     const double M0 = MaterialLib::PhysicalConstant::MolarMass::N2;
