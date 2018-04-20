@@ -13,14 +13,13 @@
 
 namespace MaterialLib
 {
-class SorptionEquilibriumCaCl2CaX_6_DubDub final : public ReactionEquilibrium
+class SorptionEquilibriumCaCl2CaX_6_DubDub_corrected final
+    : public ReactionEquilibrium
 {
 public:
-    SorptionEquilibriumCaCl2CaX_6_DubDub(const double rho_SR_dry,
-                                         const double salt_loading)
-        : _rho_SR_dry(rho_SR_dry), _alpha(1.0 - salt_loading / 15.0)
-    {
-    }
+    SorptionEquilibriumCaCl2CaX_6_DubDub_corrected(const double rho_SR_dry,
+                                                   const double salt_loading);
+
     double getEquilibriumDensity(const double p_Ads,
                                  const double T_Ads) override;
 
@@ -49,7 +48,8 @@ private:
     const double _alpha;
 };
 
-std::unique_ptr<SorptionEquilibriumCaCl2CaX_6_DubDub>
-createSorptionEquilibriumCaCl2CaX_6_DubDub(BaseLib::ConfigTree const& config);
+std::unique_ptr<SorptionEquilibriumCaCl2CaX_6_DubDub_corrected>
+createSorptionEquilibriumCaCl2CaX_6_DubDub_corrected(
+    BaseLib::ConfigTree const& config);
 
 }  // namespace MaterialLib

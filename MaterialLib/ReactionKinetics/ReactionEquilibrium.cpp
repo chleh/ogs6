@@ -15,6 +15,7 @@
 #include "DubininPolanyiOrTPD.h"
 #include "Enerchem/SorptionEquilibriumCaCl2CaX_5_DubDub.h"
 #include "Enerchem/SorptionEquilibriumCaCl2CaX_6_DubDub.h"
+#include "Enerchem/SorptionEquilibriumCaCl2CaX_6_DubDub_corrected.h"
 #include "SorptionEquilibriumCaCl2CaX_1_Combined.h"
 #include "SorptionEquilibriumCaCl2CaX_1_Combined_ZeoHeat.h"
 
@@ -37,6 +38,8 @@ std::unique_ptr<ReactionEquilibrium> createReactionEquilibrium(
         return createSorptionEquilibriumCaCl2CaX_5_DubDub(config);
     else if (type == "SorptionEquilibriumCaCl2CaX_6_DubDub")
         return createSorptionEquilibriumCaCl2CaX_6_DubDub(config);
+    else if (type == "SorptionEquilibriumCaCl2CaX_6_DubDub_corrected")
+        return createSorptionEquilibriumCaCl2CaX_6_DubDub_corrected(config);
 
     OGS_FATAL("There is no reaction equilibrium of type `%s'.", type.c_str());
 }
