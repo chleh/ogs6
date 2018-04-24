@@ -17,8 +17,9 @@ class SorptionEquilibriumCaCl2CaX_6_DubDub_corrected final
     : public ReactionEquilibrium
 {
 public:
-    SorptionEquilibriumCaCl2CaX_6_DubDub_corrected(const double rho_SR_dry,
-                                                   const double salt_loading);
+    SorptionEquilibriumCaCl2CaX_6_DubDub_corrected(
+        const double rho_SR_dry, const double salt_loading,
+        const double custom_enthalpy_factor);
 
     double getEquilibriumDensity(const double p_Ads,
                                  const double T_Ads) override;
@@ -46,6 +47,7 @@ public:
 private:
     const double _rho_SR_dry;
     const double _alpha;
+    const double _custom_enthalpy_factor;
 };
 
 std::unique_ptr<SorptionEquilibriumCaCl2CaX_6_DubDub_corrected>

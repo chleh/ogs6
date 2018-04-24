@@ -156,10 +156,12 @@ double getSaltLoadingAlpha(const double salt_loading_mole_fraction)
 namespace MaterialLib
 {
 SorptionEquilibriumCaCl2CaX_6_DubDub_corrected::
-    SorptionEquilibriumCaCl2CaX_6_DubDub_corrected(const double rho_SR_dry,
-                                                   const double salt_loading)
+    SorptionEquilibriumCaCl2CaX_6_DubDub_corrected(
+        const double rho_SR_dry, const double salt_loading,
+        const double custom_enthalpy_factor)
     : _rho_SR_dry(rho_SR_dry),
-      _alpha(1.0 - getSaltLoadingAlpha(salt_loading) / 0.15)
+      _alpha(1.0 - getSaltLoadingAlpha(salt_loading) / 0.15),
+      _custom_enthalpy_factor(custom_enthalpy_factor)
 {
 }
 
@@ -240,7 +242,7 @@ double SorptionEquilibriumCaCl2CaX_6_DubDub_corrected::getHeatOfReactionImpl(
     return (waterEnthalpyOfEvaporation(T_Ads) + A
             // - T_Ads * getEntropy(T_Ads, A)
             ) *
-           1000.0;  // in J/kg
+           1000.0 * _custom_enthalpy_factor;  // in J/kg
 }
 
 // Calculate sorption entropy
@@ -285,9 +287,12 @@ createSorptionEquilibriumCaCl2CaX_6_DubDub_corrected(
         config.getConfigParameter<double>("adsorbent_density_dry");
     auto const salt_loading = config.getConfigParameter<double>("salt_loading");
 
+    auto const custom_enthalpy_factor =
+        config.getConfigParameter("custom_enthalpy_factor", 1.0);
+
     return std::unique_ptr<SorptionEquilibriumCaCl2CaX_6_DubDub_corrected>(
-        new SorptionEquilibriumCaCl2CaX_6_DubDub_corrected(rho_SR_dry,
-                                                           salt_loading));
+        new SorptionEquilibriumCaCl2CaX_6_DubDub_corrected(
+            rho_SR_dry, salt_loading, custom_enthalpy_factor));
 }
 
 }  // namespace MaterialLib
