@@ -69,6 +69,10 @@ struct TCHSStokesProcessData
     MeshLib::PropertyVector<double>* mesh_prop_cell_lambda = nullptr;
     MeshLib::PropertyVector<double>* mesh_prop_cell_cpS = nullptr;
     MeshLib::PropertyVector<double>* mesh_prop_cell_cpG = nullptr;
+    MeshLib::PropertyVector<double>* mesh_prop_cell_v_Darcy = nullptr;
+    MeshLib::PropertyVector<double>* mesh_prop_cell_mass_flux = nullptr;
+    MeshLib::PropertyVector<double>* mesh_prop_cell_vapour_mass_flux = nullptr;
+    MeshLib::PropertyVector<double>* mesh_prop_cell_solid_mass = nullptr;
 };
 
 }  // namespace TCHSStokes
