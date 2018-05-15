@@ -25,7 +25,8 @@ public:
         throw PyNotOverridden{};
     }
 
-    virtual std::pair<bool, double> getFlux(double /*t*/) const
+    virtual std::pair<bool, double> getFlux(double /*t*/,
+                                            std::array<double, 3> /*x*/) const
     {
         throw PyNotOverridden{};
     }
@@ -43,10 +44,11 @@ public:
         PYBIND11_OVERLOAD(Ret, PyBoundaryCondition, getDirichletBCValue, t, x);
     }
 
-    virtual std::pair<bool, double> getFlux(double t) const
+    virtual std::pair<bool, double> getFlux(
+        double t, std::array<double, 3> x) const
     {
         using Ret = std::pair<bool, double>;
-        PYBIND11_OVERLOAD(Ret, PyBoundaryCondition, getFlux, t);
+        PYBIND11_OVERLOAD(Ret, PyBoundaryCondition, getFlux, t, x);
     }
 };
 }  // namespace

@@ -37,7 +37,8 @@ public:
                                   PythonBoundaryConditionData const& data)
         : Base(e, is_axially_symmetric, integration_order),
           _data(data),
-          _local_rhs(local_matrix_size)
+          _local_rhs(local_matrix_size),
+          _element(e)
     {
     }
 
@@ -46,6 +47,13 @@ public:
                   double const t, const GlobalVector& /*x*/,
                   GlobalMatrix& /*K*/, GlobalVector& b) override
     {
+        using ShapeMatricesType =
+            ShapeMatrixPolicyType<ShapeFunction, GlobalDim>;
+        using FemType =
+            NumLib::TemplateIsoparametric<ShapeFunction, ShapeMatricesType>;
+        FemType fe(*static_cast<const typename ShapeFunction::MeshElement*>(
+            &_element));
+
         auto* bc =
             _data.scope[_data.bc_object.c_str()].cast<::PyBoundaryCondition*>();
 
@@ -54,17 +62,14 @@ public:
         unsigned const n_integration_points =
             Base::_integration_method.getNumberOfPoints();
 
-        SpatialPosition pos;
-        pos.setElementID(id);
-
         for (unsigned ip = 0; ip < n_integration_points; ip++)
         {
-            auto const res = bc->getFlux(t);
+            auto const& sm = Base::_shape_matrices[ip];
+            auto const coords = fe.interpolateCoordinates(sm.N);
+            auto const res = bc->getFlux(t, coords);
             if (!res.first)
                 return;
 
-            pos.setIntegrationPoint(ip);
-            auto const& sm = Base::_shape_matrices[ip];
             auto const& wp = Base::_integration_method.getWeightedPoint(ip);
             _local_rhs.noalias() += sm.N * res.second * sm.detJ *
                                     wp.getWeight() * sm.integralMeasure;
@@ -77,6 +82,7 @@ public:
 private:
     PythonBoundaryConditionData const& _data;
     typename Base::NodalVectorType _local_rhs;
+    MeshLib::Element const& _element;
 
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
