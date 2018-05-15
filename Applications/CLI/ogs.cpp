@@ -26,6 +26,10 @@
 #include <vtkSmartPointer.h>
 #endif
 
+#ifdef OGS_USE_PYTHON
+#include <pybind11/embed.h>
+#endif
+
 // BaseLib
 #include "BaseLib/BuildInfo.h"
 #include "BaseLib/ConfigTreeUtil.h"
@@ -123,6 +127,11 @@ int main(int argc, char *argv[])
         feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 #endif  // __APPLE__
 #endif  // _WIN32
+
+#ifdef OGS_USE_PYTHON
+    pybind11::scoped_interpreter guard{};
+    (void)guard;
+#endif
 
     BaseLib::RunTime run_time;
 

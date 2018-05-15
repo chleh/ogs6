@@ -5,6 +5,10 @@ target_link_libraries(ogs
     PRIVATE BaseLib ApplicationsLib
 )
 
+if(OGS_USE_PYTHON)
+    target_link_libraries(ogs PRIVATE pybind11::embed)
+endif()
+
 if(OGS_USE_PETSC)
     target_link_libraries(ogs PRIVATE ${PETSC_LIBRARIES})
 endif()

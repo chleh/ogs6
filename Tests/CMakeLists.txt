@@ -38,6 +38,7 @@ add_executable(testrunner ${TEST_SOURCES})
 set_target_properties(testrunner PROPERTIES FOLDER Testing)
 
 target_link_libraries(testrunner
+    PRIVATE
     ApplicationsFileIO
     GTest
     MeshGeoToolsLib
@@ -47,6 +48,9 @@ target_link_libraries(testrunner
     ProcessLib
     Threads::Threads
 )
+if(OGS_USE_PYTHON)
+    target_link_libraries(testrunner PRIVATE ${PYTHON_LIBRARIES})
+endif()
 
 if(OGS_BUILD_PROCESS_LIE)
     target_link_libraries(testrunner LIE)
