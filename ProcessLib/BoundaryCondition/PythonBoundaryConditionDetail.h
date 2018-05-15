@@ -22,14 +22,23 @@ public:
     virtual std::pair<bool, double> getDirichletBCValue(
         double /*t*/, std::array<double, 3> /*x*/) const
     {
-        throw PyNotOverridden{};
+        _overridden_essential = false;
+        return {false, std::numeric_limits<double>::quiet_NaN()};
     }
 
     virtual std::pair<bool, double> getFlux(double /*t*/,
                                             std::array<double, 3> /*x*/) const
     {
-        throw PyNotOverridden{};
+        _overridden_natural = false;
+        return {false, std::numeric_limits<double>::quiet_NaN()};
     }
+
+    bool isOverriddenEssential() const { return _overridden_essential; }
+    bool isOverriddenNatural() const { return _overridden_natural; }
+
+private:
+    mutable bool _overridden_essential = true;
+    mutable bool _overridden_natural = true;
 };
 
 class PyBoundaryConditionImpl : public PyBoundaryCondition

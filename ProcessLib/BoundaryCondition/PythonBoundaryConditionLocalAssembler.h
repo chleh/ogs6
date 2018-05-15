@@ -69,6 +69,8 @@ public:
             auto const res = bc->getFlux(t, coords);
             if (!res.first)
                 return;
+            if (!bc->isOverriddenNatural())
+                throw PyNotOverridden{};
 
             auto const& wp = Base::_integration_method.getWeightedPoint(ip);
             _local_rhs.noalias() += sm.N * res.second * sm.detJ *

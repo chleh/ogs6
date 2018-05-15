@@ -95,38 +95,38 @@ void PythonBoundaryCondition::getEssentialBCValues(
 
     SpatialPosition pos;
 
-    try  // TODO refactor without exceptions
+    for (auto const id : _mesh_node_ids)
     {
-        for (auto const id : _mesh_node_ids)
+        auto* xs = nodes[id]->getCoords();  // TODO DDC problems?
+        auto val = bc->getDirichletBCValue(t, {xs[0], xs[1], xs[2]});
+        if (!bc->isOverriddenEssential())
         {
-            auto* xs = nodes[id]->getCoords();  // TODO DDC problems?
-            auto val = bc->getDirichletBCValue(t, {xs[0], xs[1], xs[2]});
-            if (val.first)
+            DBUG(
+                "Method `getDirichletBCValue' not overridden in Python "
+                "script.");
+            return;
+        }
+        if (val.first)
+        {
+            pos.setNodeID(id);
+            MeshLib::Location l(mesh_id, MeshLib::MeshItemType::Node, id);
+            const auto g_idx =
+                _dof_table_bulk.getGlobalIndex(l, _variable_id, _component_id);
+            if (g_idx == NumLib::MeshComponentMap::nop)
+                continue;
+            // For the DDC approach (e.g. with PETSc option), the negative
+            // index of g_idx means that the entry by that index is a ghost
+            // one, which should be dropped. Especially for PETSc routines
+            // MatZeroRows and MatZeroRowsColumns, which are called to apply
+            // the Dirichlet BC, the negative index is not accepted like
+            // other matrix or vector PETSc routines. Therefore, the
+            // following if-condition is applied.
+            if (g_idx >= 0)
             {
-                pos.setNodeID(id);
-                MeshLib::Location l(mesh_id, MeshLib::MeshItemType::Node, id);
-                const auto g_idx = _dof_table_bulk.getGlobalIndex(
-                    l, _variable_id, _component_id);
-                if (g_idx == NumLib::MeshComponentMap::nop)
-                    continue;
-                // For the DDC approach (e.g. with PETSc option), the negative
-                // index of g_idx means that the entry by that index is a ghost
-                // one, which should be dropped. Especially for PETSc routines
-                // MatZeroRows and MatZeroRowsColumns, which are called to apply
-                // the Dirichlet BC, the negative index is not accepted like
-                // other matrix or vector PETSc routines. Therefore, the
-                // following if-condition is applied.
-                if (g_idx >= 0)
-                {
-                    bc_values.ids.emplace_back(g_idx);
-                    bc_values.values.emplace_back(val.second);
-                }
+                bc_values.ids.emplace_back(g_idx);
+                bc_values.values.emplace_back(val.second);
             }
         }
-    }
-    catch (::PyNotOverridden const& /*e*/)
-    {
-        DBUG("Method `getDirichletBCValue' not overridden in Python script.");
     }
 }
 
@@ -174,12 +174,10 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
     // Evaluate in scope of main module
     py::module module = py::module::import("__main__");
     py::object scope = module.attr("__dict__");
-    // scope["OpenGeoSys"] = py::dict();
 
     // TODO
     // http://pybind11.readthedocs.io/en/stable/advanced/embedding.html#adding-embedded-modules
     py::module ogs = module.def_submodule("OpenGeoSys", "NO HELP AVAILABLE");
-    // scope["OpenGeoSys"] =
 
     py::class_<::PyBoundaryCondition, ::PyBoundaryConditionImpl> pybc(
         ogs, "BoundaryCondition");
@@ -187,24 +185,6 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
     pybc.def("getDirichletBCValue",
              &::PyBoundaryCondition::getDirichletBCValue);
     pybc.def("getFlux", &::PyBoundaryCondition::getFlux);
-
-    static py::exception<::PyNotOverridden> ex(ogs, "PyNotOverridden",
-                                               PyExc_RuntimeError);
-    py::register_exception_translator([](std::exception_ptr p) {
-        try
-        {
-            if (p)
-                std::rethrow_exception(p);
-        }
-        catch (const ::PyNotOverridden& /*e*/)
-        {
-            // Set PyNotOverridden as the active python error
-            ex("");
-        }
-    });
-
-    // scope["OpenGeoSys"] = ogs; //py::dict("BoundaryConsdition"_a = pybc);
-    // module.attr("OpenGeoSys") = ogs;
 
     py::eval_file(script, scope);
 
