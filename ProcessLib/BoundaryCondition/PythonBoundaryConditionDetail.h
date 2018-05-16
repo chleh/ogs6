@@ -12,7 +12,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
-namespace
+namespace ProcessLib
 {
 struct PyNotOverridden
 {
@@ -65,4 +65,4 @@ public:
                           primary_variables);
     }
 };
-}  // namespace
+}  // namespace ProcessLib

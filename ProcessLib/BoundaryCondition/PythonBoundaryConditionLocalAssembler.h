@@ -54,8 +54,9 @@ public:
         FemType fe(*static_cast<const typename ShapeFunction::MeshElement*>(
             &_element));
 
+        pybind11::print(_data.scope);
         auto* bc =
-            _data.scope[_data.bc_object.c_str()].cast<::PyBoundaryCondition*>();
+            _data.scope[_data.bc_object.c_str()].cast<PyBoundaryCondition*>();
 
         _local_rhs.setZero();
 
@@ -111,6 +112,7 @@ public:
         Eigen::Map<Eigen::MatrixXd> primary_variables_mat(
             primary_variables.data(), num_nodes, num_comp_total2);
 
+#if 0
         std::vector<GlobalIndexType> indices2 =
             NumLib::getIndices(_element.getID(), *_data.dof_table_boundary);
 
@@ -120,6 +122,7 @@ public:
             DBUG("index: %i.", i);
         }
         DBUG("end indices");
+#endif
 
         for (unsigned ip = 0; ip < n_integration_points; ip++)
         {
@@ -141,7 +144,7 @@ public:
 
         auto const indices = NumLib::getIndices(id, dof_table_boundary);
         DBUG("id %i vs. %i.", id, _element.getID());
-        DBUG("indices size %i vs. %i.", indices.size(), indices2.size());
+        // DBUG("indices size %i vs. %i.", indices.size(), indices2.size());
         b.add(indices, _local_rhs);
     }
 

@@ -80,8 +80,9 @@ PythonBoundaryCondition::PythonBoundaryCondition(
 void PythonBoundaryCondition::getEssentialBCValues(
     const double t, NumLib::IndexValueVector<GlobalIndexType>& bc_values) const
 {
-    auto* bc = _bc_data.scope[_bc_data.bc_object.c_str()]
-                   .cast<::PyBoundaryCondition*>();
+    pybind11::print(_bc_data.scope);
+    auto* bc =
+        _bc_data.scope[_bc_data.bc_object.c_str()].cast<PyBoundaryCondition*>();
 
     auto const mesh_id = _bc_data.mesh.getID();
     auto const nodes = _bc_data.mesh.getNodes();
@@ -140,7 +141,7 @@ void PythonBoundaryCondition::applyNaturalBC(const double t,
             &GenericNaturalBoundaryConditionLocalAssemblerInterface::assemble,
             _local_assemblers, *_bc_data.dof_table_boundary, t, x, K, b);
     }
-    catch (::PyNotOverridden const& /*e*/)
+    catch (PyNotOverridden const& /*e*/)
     {
         DBUG("Method `getFlux' not overridden in Python script.");
     }
@@ -174,9 +175,12 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
     py::module module = py::module::import("__main__");
     py::object scope = module.attr("__dict__");
 
+    DBUG(">>>> try importing module OpenGeoSys");
+    py::module::import("OpenGeoSys");
+    /*
     // TODO
-    // http://pybind11.readthedocs.io/en/stable/advanced/embedding.html#adding-embedded-modules
-    // first attempt on that failed
+    //
+    http://pybind11.readthedocs.io/en/stable/advanced/embedding.html#adding-embedded-modules
     py::module ogs = module.def_submodule("OpenGeoSys", "NO HELP AVAILABLE");
 
     py::class_<::PyBoundaryCondition, ::PyBoundaryConditionImpl> pybc(
@@ -185,6 +189,8 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
     pybc.def("getDirichletBCValue",
              &::PyBoundaryCondition::getDirichletBCValue);
     pybc.def("getFlux", &::PyBoundaryCondition::getFlux);
+
+    */
 
     py::eval_file(script, scope);
 
