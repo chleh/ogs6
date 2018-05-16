@@ -23,17 +23,13 @@ PythonBoundaryCondition::PythonBoundaryCondition(
     PythonBoundaryConditionData&& bc_data,
     std::vector<std::size_t>&& mesh_node_ids,
     std::vector<MeshLib::Element*>&& elements,
-    MeshLib::Mesh const& mesh,
-    NumLib::LocalToGlobalIndexMap const& dof_table_bulk,
     int const variable_id,
     int const component_id,
     unsigned const integration_order,
     unsigned const shapefunction_order)
-    : _bc_data(bc_data),
+    : _bc_data(std::move(bc_data)),
       _mesh_node_ids(std::move(mesh_node_ids)),
       _elements(std::move(elements)),
-      _mesh(mesh),
-      _dof_table_bulk(dof_table_bulk),
       _variable_id(variable_id),
       _component_id(component_id),
       _integration_order(integration_order)
@@ -43,15 +39,16 @@ PythonBoundaryCondition::PythonBoundaryCondition(
 
     // check basic data consistency
     if (variable_id >=
-            static_cast<int>(dof_table_bulk.getNumberOfVariables()) ||
+            static_cast<int>(_bc_data.dof_table_bulk.getNumberOfVariables()) ||
         component_id >=
-            dof_table_bulk.getNumberOfVariableComponents(variable_id))
+            _bc_data.dof_table_bulk.getNumberOfVariableComponents(variable_id))
     {
         OGS_FATAL(
             "Variable id or component id too high. Actual values: (%d, %d), "
             "maximum values: (%d, %d).",
-            variable_id, component_id, dof_table_bulk.getNumberOfVariables(),
-            dof_table_bulk.getNumberOfVariableComponents(variable_id));
+            variable_id, component_id,
+            _bc_data.dof_table_bulk.getNumberOfVariables(),
+            _bc_data.dof_table_bulk.getNumberOfVariableComponents(variable_id));
     }
 
     std::vector<MeshLib::Node*> nodes = MeshLib::getUniqueNodes(_elements);
@@ -59,7 +56,7 @@ PythonBoundaryCondition::PythonBoundaryCondition(
          nodes.size(), variable_id, component_id);
 
     auto const& mesh_subsets =
-        dof_table_bulk.getMeshSubsets(variable_id, component_id);
+        _bc_data.dof_table_bulk.getMeshSubsets(variable_id, component_id);
 
     // TODO extend the node intersection to all parts of mesh_subsets, i.e.
     // to each of the MeshSubset in the mesh_subsets.
@@ -69,13 +66,15 @@ PythonBoundaryCondition::PythonBoundaryCondition(
 
     // Create local DOF table from intersected mesh subsets for the given
     // variable and component ids.
-    _dof_table_boundary.reset(dof_table_bulk.deriveBoundaryConstrainedMap(
-        variable_id, {component_id}, std::move(all_mesh_subsets), _elements));
+    _bc_data.dof_table_boundary.reset(
+        _bc_data.dof_table_bulk.deriveBoundaryConstrainedMap(
+            variable_id, {component_id}, std::move(all_mesh_subsets),
+            _elements));
 
     createLocalAssemblers<PythonConditionLocalAssembler>(
-        _mesh.getDimension(), _elements, *_dof_table_boundary,
-        shapefunction_order, _local_assemblers, mesh.isAxiallySymmetric(),
-        _integration_order, _bc_data);
+        _bc_data.mesh.getDimension(), _elements, *_bc_data.dof_table_boundary,
+        shapefunction_order, _local_assemblers,
+        _bc_data.mesh.isAxiallySymmetric(), _integration_order, _bc_data);
 }
 
 void PythonBoundaryCondition::getEssentialBCValues(
@@ -84,8 +83,8 @@ void PythonBoundaryCondition::getEssentialBCValues(
     auto* bc = _bc_data.scope[_bc_data.bc_object.c_str()]
                    .cast<::PyBoundaryCondition*>();
 
-    auto const mesh_id = _mesh.getID();
-    auto const nodes = _mesh.getNodes();
+    auto const mesh_id = _bc_data.mesh.getID();
+    auto const nodes = _bc_data.mesh.getNodes();
 
     bc_values.ids.clear();
     bc_values.values.clear();
@@ -110,8 +109,8 @@ void PythonBoundaryCondition::getEssentialBCValues(
         {
             pos.setNodeID(id);
             MeshLib::Location l(mesh_id, MeshLib::MeshItemType::Node, id);
-            const auto g_idx =
-                _dof_table_bulk.getGlobalIndex(l, _variable_id, _component_id);
+            const auto g_idx = _bc_data.dof_table_bulk.getGlobalIndex(
+                l, _variable_id, _component_id);
             if (g_idx == NumLib::MeshComponentMap::nop)
                 continue;
             // For the DDC approach (e.g. with PETSc option), the negative
@@ -139,7 +138,7 @@ void PythonBoundaryCondition::applyNaturalBC(const double t,
     {
         GlobalExecutor::executeMemberOnDereferenced(
             &GenericNaturalBoundaryConditionLocalAssemblerInterface::assemble,
-            _local_assemblers, *_dof_table_boundary, t, x, K, b);
+            _local_assemblers, *_bc_data.dof_table_boundary, t, x, K, b);
     }
     catch (::PyNotOverridden const& /*e*/)
     {
@@ -177,6 +176,7 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
 
     // TODO
     // http://pybind11.readthedocs.io/en/stable/advanced/embedding.html#adding-embedded-modules
+    // first attempt on that failed
     py::module ogs = module.def_submodule("OpenGeoSys", "NO HELP AVAILABLE");
 
     py::class_<::PyBoundaryCondition, ::PyBoundaryConditionImpl> pybc(
@@ -193,9 +193,10 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
                   bc_object.c_str(), script.c_str());
 
     return std::make_unique<PythonBoundaryCondition>(
-        PythonBoundaryConditionData{std::move(scope), bc_object},
-        std::move(mesh_node_ids), std::move(elements), mesh, dof_table,
-        variable_id, component_id, integration_order, shapefunction_order);
+        PythonBoundaryConditionData{std::move(scope), bc_object, dof_table,
+                                    nullptr, mesh},
+        std::move(mesh_node_ids), std::move(elements), variable_id,
+        component_id, integration_order, shapefunction_order);
 }
 
 }  // namespace ProcessLib

@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
 namespace
@@ -26,8 +27,10 @@ public:
         return {false, std::numeric_limits<double>::quiet_NaN()};
     }
 
-    virtual std::pair<bool, double> getFlux(double /*t*/,
-                                            std::array<double, 3> /*x*/) const
+    virtual std::pair<bool, double> getFlux(
+        double /*t*/,
+        std::array<double, 3> /*x*/,
+        Eigen::VectorXd const& /*primary_variables*/) const
     {
         _overridden_natural = false;
         return {false, std::numeric_limits<double>::quiet_NaN()};
@@ -54,10 +57,12 @@ public:
     }
 
     virtual std::pair<bool, double> getFlux(
-        double t, std::array<double, 3> x) const
+        double t, std::array<double, 3> x,
+        Eigen::VectorXd const& primary_variables) const
     {
         using Ret = std::pair<bool, double>;
-        PYBIND11_OVERLOAD(Ret, PyBoundaryCondition, getFlux, t, x);
+        PYBIND11_OVERLOAD(Ret, PyBoundaryCondition, getFlux, t, x,
+                          primary_variables);
     }
 };
 }  // namespace
