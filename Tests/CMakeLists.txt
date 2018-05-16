@@ -53,7 +53,7 @@ if(OGS_USE_PYTHON)
 endif()
 
 if(OGS_BUILD_PROCESS_LIE)
-    target_link_libraries(testrunner LIE)
+    target_link_libraries(testrunner PRIVATE LIE)
 endif()
 
 if(OGS_USE_PETSC)
