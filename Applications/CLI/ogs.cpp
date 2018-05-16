@@ -46,6 +46,16 @@
 
 #include "NumLib/NumericsConfig.h"
 
+#if OGS_USE_PYTHON
+#include "ProcessLib/BoundaryCondition/PythonBoundaryConditionModule.h"
+
+PYBIND11_EMBEDDED_MODULE(OpenGeoSys, m)
+{
+    ProcessLib::pythonBindBoundaryCondition(m);
+}
+
+#endif
+
 int main(int argc, char *argv[])
 {
     // Parse CLI arguments.
