@@ -10,8 +10,8 @@
  *
  */
 
-#include <chrono>
 #include <tclap/CmdLine.h>
+#include <chrono>
 
 #ifndef _WIN32
 #ifdef __APPLE__
@@ -46,7 +46,18 @@
 
 #include "NumLib/NumericsConfig.h"
 
-int main(int argc, char *argv[])
+#if OGS_USE_PYTHON
+extern "C" PyObject* pybind11_init_impl_OpenGeoSys();
+#endif
+
+template <typename T>
+void mark_used(T p)
+{
+    volatile T vp = (volatile T)p;
+    vp = vp;
+}
+
+int main(int argc, char* argv[])
 {
     // Parse CLI arguments.
     TCLAP::CmdLine cmd(
@@ -69,34 +80,32 @@ int main(int argc, char *argv[])
         "PROJECT FILE");
     cmd.add(project_arg);
 
-    TCLAP::ValueArg<std::string> outdir_arg(
-        "o", "output-directory",
-        "the output directory to write to",
-        false,
-        "",
-        "output directory");
+    TCLAP::ValueArg<std::string> outdir_arg("o", "output-directory",
+                                            "the output directory to write to",
+                                            false, "", "output directory");
     cmd.add(outdir_arg);
 
-    TCLAP::ValueArg<std::string> log_level_arg(
-        "l", "log-level",
-        "the verbosity of logging messages: none, error, warn, info, debug, all",
-        false,
+    TCLAP::ValueArg<std::string> log_level_arg("l", "log-level",
+                                               "the verbosity of logging "
+                                               "messages: none, error, warn, "
+                                               "info, debug, all",
+                                               false,
 #ifdef NDEBUG
-        "info",
+                                               "info",
 #else
-        "all",
+                                               "all",
 #endif
-        "log level");
+                                               "log level");
     cmd.add(log_level_arg);
 
     TCLAP::SwitchArg nonfatal_arg("",
-        "config-warnings-nonfatal",
-        "warnings from parsing the configuration file will not trigger program abortion");
+                                  "config-warnings-nonfatal",
+                                  "warnings from parsing the configuration "
+                                  "file will not trigger program abortion");
     cmd.add(nonfatal_arg);
 
-    TCLAP::SwitchArg unbuffered_cout_arg("",
-        "unbuffered-std-out",
-        "use unbuffered standard output");
+    TCLAP::SwitchArg unbuffered_cout_arg("", "unbuffered-std-out",
+                                         "use unbuffered standard output");
     cmd.add(unbuffered_cout_arg);
 
 #ifndef _WIN32  // TODO: On windows floating point exceptions are not handled
@@ -130,7 +139,14 @@ int main(int argc, char *argv[])
 
 #ifdef OGS_USE_PYTHON
     pybind11::scoped_interpreter guard{};
-    (void)guard;
+
+    // mark symbol as used
+    // volatile auto p_pybind11_init_impl_OpenGeoSys =
+    // &pybind11_init_impl_OpenGeoSys;
+    mark_used(&pybind11_init_impl_OpenGeoSys);
+    // (void)p_pybind11_init_impl_OpenGeoSys;
+    /*DBUG("p_pybind11_init_impl_OpenGeoSys: %p.",
+         p_pybind11_init_impl_OpenGeoSys);*/
 #endif
 
     BaseLib::RunTime run_time;
@@ -176,7 +192,9 @@ int main(int argc, char *argv[])
             if (auto t = project_config->getConfigSubtreeOptional("insitu"))
             {
                 //! \ogs_file_param{prj__insitu__scripts}
-                InSituLib::Initialize(t->getConfigSubtree("scripts"), BaseLib::extractPath(project_arg.getValue()));
+                InSituLib::Initialize(
+                    t->getConfigSubtree("scripts"),
+                    BaseLib::extractPath(project_arg.getValue()));
                 isInsituConfigured = true;
             }
 #else
@@ -205,11 +223,11 @@ int main(int argc, char *argv[])
 #ifdef USE_INSITU
             if (isInsituConfigured)
                 InSituLib::Finalize();
- #endif
+#endif
             INFO("[time] Execution took %g s.", run_time.elapsed());
 
 #if defined(USE_PETSC)
-            controller->Finalize(1) ;
+            controller->Finalize(1);
 #endif
         }  // This nested scope ensures that everything that could possibly
            // possess a ConfigTree is destructed before the final check below is
@@ -218,7 +236,9 @@ int main(int argc, char *argv[])
         BaseLib::ConfigTree::assertNoSwallowedErrors();
 
         ogs_status = solver_succeeded ? EXIT_SUCCESS : EXIT_FAILURE;
-    } catch (std::exception& e) {
+    }
+    catch (std::exception& e)
+    {
         ERR(e.what());
         ogs_status = EXIT_FAILURE;
     }
