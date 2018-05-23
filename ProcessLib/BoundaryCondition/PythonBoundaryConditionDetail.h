@@ -21,7 +21,8 @@ class PyBoundaryCondition
 {
 public:
     virtual std::pair<bool, double> getDirichletBCValue(
-        double /*t*/, std::array<double, 3> /*x*/) const
+        double /*t*/, std::array<double, 3> /*x*/, std::size_t /*node_id*/,
+        std::vector<double> const& /*primary_variables*/) const
     {
         _overridden_essential = false;
         return {false, std::numeric_limits<double>::quiet_NaN()};
@@ -50,10 +51,12 @@ public:
     using PyBoundaryCondition::PyBoundaryCondition;
 
     std::pair<bool, double> getDirichletBCValue(
-        double t, std::array<double, 3> x) const override
+        double t, std::array<double, 3> x, std::size_t node_id,
+        std::vector<double> const& primary_variables) const override
     {
         using Ret = std::pair<bool, double>;
-        PYBIND11_OVERLOAD(Ret, PyBoundaryCondition, getDirichletBCValue, t, x);
+        PYBIND11_OVERLOAD(Ret, PyBoundaryCondition, getDirichletBCValue, t, x,
+                          node_id, primary_variables);
     }
 
     virtual std::pair<bool, double> getFlux(

@@ -77,7 +77,7 @@ PythonBoundaryCondition::PythonBoundaryCondition(
 }
 
 void PythonBoundaryCondition::getEssentialBCValues(
-    const double t, GlobalVector const& /*x*/,
+    const double t, GlobalVector const& x,
     NumLib::IndexValueVector<GlobalIndexType>& bc_values) const
 {
     auto const mesh_id = _bc_data.mesh.getID();
@@ -90,12 +90,30 @@ void PythonBoundaryCondition::getEssentialBCValues(
     bc_values.values.reserve(_mesh_node_ids.size());
 
     SpatialPosition pos;
+    std::vector<double> primary_variables;
 
-    for (auto const id : _mesh_node_ids)
+    for (auto const node_id : _mesh_node_ids)
     {
-        auto* xs = nodes[id]->getCoords();  // TODO DDC problems?
-        auto val =
-            _bc_data.bc_object->getDirichletBCValue(t, {xs[0], xs[1], xs[2]});
+        // gather primary variable values
+        primary_variables.clear();
+        auto const num_var = _bc_data.dof_table_bulk.getNumberOfVariables();
+        for (int var = 0; var < num_var; ++var)
+        {
+            auto const num_comp =
+                _bc_data.dof_table_bulk.getNumberOfVariableComponents(var);
+            for (int comp = 0; comp < num_comp; ++comp)
+            {
+                MeshLib::Location loc{_bc_data.mesh.getID(),
+                                      MeshLib::MeshItemType::Node, node_id};
+                auto const dof_idx =
+                    _bc_data.dof_table_bulk.getGlobalIndex(loc, var, comp);
+                primary_variables.push_back(x[dof_idx]);
+            }
+        }
+
+        auto* xs = nodes[node_id]->getCoords();  // TODO DDC problems?
+        auto val = _bc_data.bc_object->getDirichletBCValue(
+            t, {xs[0], xs[1], xs[2]}, node_id, primary_variables);
         if (!_bc_data.bc_object->isOverriddenEssential())
         {
             DBUG(
@@ -105,8 +123,8 @@ void PythonBoundaryCondition::getEssentialBCValues(
         }
         if (val.first)
         {
-            pos.setNodeID(id);
-            MeshLib::Location l(mesh_id, MeshLib::MeshItemType::Node, id);
+            pos.setNodeID(node_id);
+            MeshLib::Location l(mesh_id, MeshLib::MeshItemType::Node, node_id);
             const auto g_idx = _bc_data.dof_table_bulk.getGlobalIndex(
                 l, _variable_id, _component_id);
             if (g_idx == NumLib::MeshComponentMap::nop)
