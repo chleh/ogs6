@@ -42,8 +42,8 @@ public:
 
     void assemble(std::size_t const id,
                   NumLib::LocalToGlobalIndexMap const& dof_table_boundary,
-                  double const t, const GlobalVector& x, GlobalMatrix& K,
-                  GlobalVector& b) override
+                  double const t, const GlobalVector& x, GlobalMatrix& /*K*/,
+                  GlobalVector& b, GlobalMatrix* Jac) override
     {
         using ShapeMatricesType =
             ShapeMatrixPolicyType<ShapeFunction, GlobalDim>;
@@ -90,7 +90,7 @@ public:
             primary_variables.data(), num_nodes, num_comp_total);
 
         Eigen::VectorXd local_rhs = Eigen::VectorXd::Zero(num_nodes);
-        Eigen::MatrixXd local_K =
+        Eigen::MatrixXd local_Jac =
             Eigen::MatrixXd::Zero(num_nodes, num_nodes * num_comp_total);
         bool has_dFlux = true;
 
@@ -112,7 +112,7 @@ public:
             local_rhs.noalias() += sm.N * (std::get<1>(res) * w);
 
             auto const& dFlux = std::get<2>(res);
-            if (!dFlux.empty())
+            if (!dFlux.empty() && Jac)
             {
                 for (int comp = 0; comp < num_comp_total; ++comp)
                 {
@@ -120,7 +120,7 @@ public:
                     auto const left = comp * num_nodes;
                     auto const width = num_nodes;
                     auto const height = num_nodes;
-                    local_K.block(top, left, width, height).noalias() +=
+                    local_Jac.block(top, left, width, height).noalias() +=
                         sm.N.transpose() * (dFlux[comp] * w) * sm.N;
                 }
             }
@@ -135,12 +135,12 @@ public:
             dof_table_boundary(id, _data.global_component_id).rows;
         b.add(indices_comp, local_rhs);
 
-        if (has_dFlux)
+        if (has_dFlux && Jac)
         {
             auto const indices_all = NumLib::getIndices(id, dof_table_boundary);
             MathLib::RowColumnIndices<GlobalIndexType> rci{indices_comp,
                                                            indices_all};
-            K.add(rci, local_K);
+            Jac->add(rci, local_Jac);
         }
     }
 

@@ -125,14 +125,14 @@ void PythonBoundaryCondition::getEssentialBCValues(
 
 void PythonBoundaryCondition::applyNaturalBC(const double t,
                                              const GlobalVector& x,
-                                             GlobalMatrix& K,
-                                             GlobalVector& b)
+                                             GlobalMatrix& K, GlobalVector& b,
+                                             GlobalMatrix* Jac)
 {
     try
     {
         GlobalExecutor::executeMemberOnDereferenced(
             &GenericNaturalBoundaryConditionLocalAssemblerInterface::assemble,
-            _local_assemblers, *_dof_table_boundary, t, x, K, b);
+            _local_assemblers, *_dof_table_boundary, t, x, K, b, Jac);
     }
     catch (PyNotOverridden const& /*e*/)
     {

@@ -26,7 +26,7 @@ public:
     }
 
     void applyNaturalBC(const double t, GlobalVector const& x, GlobalMatrix& K,
-                        GlobalVector& b);
+                        GlobalVector& b, GlobalMatrix* Jac);
 
     std::vector<NumLib::IndexValueVector<GlobalIndexType>> const*
     getKnownSolutions(double const t, GlobalVector const& x) const
