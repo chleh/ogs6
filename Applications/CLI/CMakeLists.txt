@@ -7,6 +7,17 @@ target_link_libraries(ogs
 
 if(OGS_USE_PYTHON)
     target_link_libraries(ogs PRIVATE pybind11::embed)
+    # target_include_directories(ogs PRIVATE ${PYTHON_INCLUDE_DIRS})
+
+    add_library(ogs_python_bindings STATIC ogs_python_bindings.cpp)
+    target_link_libraries(ogs_python_bindings PRIVATE pybind11::embed)
+    target_include_directories(ogs_python_bindings PRIVATE ${PYTHON_INCLUDE_DIRS})
+
+    target_link_libraries(ogs PRIVATE ogs_python_bindings)
+
+    if(BUILD_SHARED_LIBS)
+        target_compile_definitions(ogs_python_bindings OGS_BUILD_SHARED_LIBS)
+    endif()
 endif()
 
 if(OGS_USE_PETSC)

@@ -26,10 +26,6 @@
 #include <vtkSmartPointer.h>
 #endif
 
-#ifdef OGS_USE_PYTHON
-#include <pybind11/embed.h>
-#endif
-
 // BaseLib
 #include "BaseLib/BuildInfo.h"
 #include "BaseLib/ConfigTreeUtil.h"
@@ -46,16 +42,7 @@
 
 #include "NumLib/NumericsConfig.h"
 
-#if OGS_USE_PYTHON
-extern "C" PyObject* pybind11_init_impl_OpenGeoSys();
-#endif
-
-template <typename T>
-void mark_used(T p)
-{
-    volatile T vp = (volatile T)p;
-    vp = vp;
-}
+#include "ogs_python_bindings.h"
 
 int main(int argc, char* argv[])
 {
@@ -138,15 +125,8 @@ int main(int argc, char* argv[])
 #endif  // _WIN32
 
 #ifdef OGS_USE_PYTHON
-    pybind11::scoped_interpreter guard{};
-
-    // mark symbol as used
-    // volatile auto p_pybind11_init_impl_OpenGeoSys =
-    // &pybind11_init_impl_OpenGeoSys;
-    mark_used(&pybind11_init_impl_OpenGeoSys);
-    // (void)p_pybind11_init_impl_OpenGeoSys;
-    /*DBUG("p_pybind11_init_impl_OpenGeoSys: %p.",
-         p_pybind11_init_impl_OpenGeoSys);*/
+    pybind11::scoped_interpreter guard = ApplicationsLib::setupEmbeddedPython();
+    (void)guard;
 #endif
 
     BaseLib::RunTime run_time;
