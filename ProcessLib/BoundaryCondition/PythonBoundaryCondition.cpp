@@ -164,18 +164,14 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
 
     // //// Parse Python //////////////////////
 
-    auto const script = config.getConfigParameter<std::string>("python_script");
     auto const bc_object = config.getConfigParameter<std::string>("bc_object");
 
     namespace py = pybind11;
     // using namespace py::literals;
 
     // Evaluate in scope of main module
-    py::module module = py::module::import("__main__");
-    py::object scope = module.attr("__dict__");
+    py::object scope = py::module::import("__main__").attr("__dict__");
 
-    DBUG(">>>> try importing module OpenGeoSys");
-    py::module::import("OpenGeoSys");
     /*
     // TODO
     //
@@ -191,11 +187,11 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
 
     */
 
-    py::eval_file(script, scope);
-
     if (!scope.contains(bc_object))
-        OGS_FATAL("Function `%s' is not defined in file `%s'.",
-                  bc_object.c_str(), script.c_str());
+        OGS_FATAL(
+            "Function `%s' is not defined in the python script file, or there "
+            "was no python script file specified.",
+            bc_object.c_str());
 
     return std::make_unique<PythonBoundaryCondition>(
         PythonBoundaryConditionData{std::move(scope), bc_object, dof_table,
