@@ -120,7 +120,8 @@ public:
                     auto const left = comp * num_nodes;
                     auto const width = num_nodes;
                     auto const height = num_nodes;
-                    local_Jac.block(top, left, width, height).noalias() +=
+                    // -= takes into account the sign convention
+                    local_Jac.block(top, left, width, height).noalias() -=
                         sm.N.transpose() * (dFlux[comp] * w) * sm.N;
                 }
             }
