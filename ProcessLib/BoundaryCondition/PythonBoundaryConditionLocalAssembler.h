@@ -54,28 +54,15 @@ public:
         FemType fe(*static_cast<const typename ShapeFunction::MeshElement*>(
             &_element));
 
-        _local_rhs.setZero();
-
-        unsigned const n_integration_points =
+        unsigned const num_integration_points =
             Base::_integration_method.getNumberOfPoints();
+        auto const num_var = _data.dof_table_bulk.getNumberOfVariables();
+        auto const num_nodes = _element.getNumberOfNodes();
 
-        // std::vector<double> primary_variables;
-        auto const num_var = _data.dof_table_boundary->getNumberOfVariables();
-        auto const num_comp_total =
-            _data.dof_table_boundary->getNumberOfComponents();
-        DBUG("num var %i num comp total %i.", num_var, num_comp_total);
-
-        auto const num_var2 = _data.dof_table_bulk.getNumberOfVariables();
-        auto const num_comp_total2 =
-            _data.dof_table_bulk.getNumberOfComponents();
-        DBUG("num var2 %i num comp total2 %i.", num_var2, num_comp_total2);
-        DBUG("num nodes %i.", _element.getNumberOfNodes());
-
-        // Gathering primary variables
+        // gather primary variables
         // TODO there might be problems with mixed ansatz functions
         std::vector<double> primary_variables;
-        auto const num_nodes = _element.getNumberOfNodes();
-        for (int var = 0; var < num_var2; ++var)
+        for (int var = 0; var < num_var; ++var)
         {
             auto const num_comp =
                 _data.dof_table_bulk.getNumberOfVariableComponents(var);
@@ -94,33 +81,19 @@ public:
                 }
             }
         }
-        DBUG("prim var");
-        for (auto v : primary_variables)
-        {
-            DBUG("  prim var %g.", v);
-        }
-        DBUG("prim var end");
 
-        if (num_nodes * num_comp_total2 != primary_variables.size())
+        auto const num_comp_total =
+            _data.dof_table_bulk.getNumberOfComponents();
+        if (num_nodes * num_comp_total != primary_variables.size())
             OGS_FATAL("size mismatch");
 
-        // TODO check if mapping is correct
+        // TODO check if mapping is correct (row vs col major)
         Eigen::Map<Eigen::MatrixXd> primary_variables_mat(
-            primary_variables.data(), num_nodes, num_comp_total2);
+            primary_variables.data(), num_nodes, num_comp_total);
 
-#if 0
-        std::vector<GlobalIndexType> indices2 =
-            NumLib::getIndices(_element.getID(), *_data.dof_table_boundary);
+        _local_rhs.setZero();
 
-        DBUG("indices");
-        for (auto i : indices2)
-        {
-            DBUG("index: %i.", i);
-        }
-        DBUG("end indices");
-#endif
-
-        for (unsigned ip = 0; ip < n_integration_points; ip++)
+        for (unsigned ip = 0; ip < num_integration_points; ip++)
         {
             auto const& sm = Base::_shape_matrices[ip];
             auto const coords = fe.interpolateCoordinates(sm.N);
@@ -139,8 +112,6 @@ public:
         }
 
         auto const indices = NumLib::getIndices(id, dof_table_boundary);
-        DBUG("id %i vs. %i.", id, _element.getID());
-        // DBUG("indices size %i vs. %i.", indices.size(), indices2.size());
         b.add(indices, _local_rhs);
     }
 

@@ -51,7 +51,7 @@ PythonBoundaryCondition::PythonBoundaryCondition(
     }
 
     std::vector<MeshLib::Node*> nodes = MeshLib::getUniqueNodes(_elements);
-    DBUG("Found %d nodes for Natural BCs for the variable %d and component %d",
+    DBUG("Found %d nodes for BCs for the variable %d and component %d",
          nodes.size(), variable_id, component_id);
 
     auto const& mesh_subsets =
