@@ -43,7 +43,7 @@ public:
 
     //! Writes the values of essential BCs to \c bc_values.
     virtual void getEssentialBCValues(
-        const double /*t*/,
+        const double /*t*/, GlobalVector const& /*x*/,
         NumLib::IndexValueVector<GlobalIndexType>& /*bc_values*/) const
     {
         // By default it is assumed that the BC is not an essential BC.

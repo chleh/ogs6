@@ -209,7 +209,7 @@ bool NonlinearSolver<NonlinearSolverTag::Newton>::solve(
 
         BaseLib::RunTime time_dirichlet;
         time_dirichlet.start();
-        sys.applyKnownSolutionsNewton(J, res, minus_delta_x);
+        sys.applyKnownSolutionsNewton(J, res, minus_delta_x, x);
         INFO("[time] Applying Dirichlet BCs took %g s.", time_dirichlet.elapsed());
 
         if (!sys.isLinear() && _convergence_criterion->hasResidualCheck())

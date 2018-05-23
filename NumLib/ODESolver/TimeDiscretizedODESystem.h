@@ -92,7 +92,8 @@ public:
     void applyKnownSolutions(GlobalVector& x) const override;
 
     void applyKnownSolutionsNewton(GlobalMatrix& Jac, GlobalVector& res,
-                                   GlobalVector& minus_delta_x) override;
+                                   GlobalVector& minus_delta_x,
+                                   GlobalVector const& x) override;
 
     bool isLinear() const override
     {

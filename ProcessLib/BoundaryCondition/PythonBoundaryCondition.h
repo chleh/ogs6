@@ -45,7 +45,7 @@ public:
                             unsigned const shapefunction_order);
 
     void getEssentialBCValues(
-        const double t,
+        const double t, const GlobalVector& x,
         NumLib::IndexValueVector<GlobalIndexType>& bc_values) const override;
 
     void applyNaturalBC(const double t,

@@ -77,7 +77,8 @@ PythonBoundaryCondition::PythonBoundaryCondition(
 }
 
 void PythonBoundaryCondition::getEssentialBCValues(
-    const double t, NumLib::IndexValueVector<GlobalIndexType>& bc_values) const
+    const double t, GlobalVector const& /*x*/,
+    NumLib::IndexValueVector<GlobalIndexType>& bc_values) const
 {
     pybind11::print(_bc_data.scope);
     auto* bc =
