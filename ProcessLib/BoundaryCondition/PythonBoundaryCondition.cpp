@@ -48,7 +48,7 @@ PythonBoundaryCondition::PythonBoundaryCondition(
     _dof_table_boundary = _bc_data.dof_table_bulk.deriveBoundaryConstrainedMap(
         std::move(all_mesh_subsets), _elements);
 
-    createLocalAssemblers<PythonConditionLocalAssembler>(
+    createLocalAssemblers<PythonBoundaryConditionLocalAssembler>(
         _bc_data.mesh.getDimension(), _elements, *_dof_table_boundary,
         shapefunction_order, _local_assemblers,
         _bc_data.mesh.isAxiallySymmetric(), _integration_order, _bc_data);

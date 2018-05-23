@@ -20,7 +20,7 @@ namespace ProcessLib
 {
 template <typename ShapeFunction, typename IntegrationMethod,
           unsigned GlobalDim>
-class PythonConditionLocalAssembler final
+class PythonBoundaryConditionLocalAssembler final
     : public GenericNaturalBoundaryConditionLocalAssembler<
           ShapeFunction, IntegrationMethod, GlobalDim>
 {
@@ -28,11 +28,12 @@ class PythonConditionLocalAssembler final
         ShapeFunction, IntegrationMethod, GlobalDim>;
 
 public:
-    PythonConditionLocalAssembler(MeshLib::Element const& e,
-                                  std::size_t const /*local_matrix_size*/,
-                                  bool is_axially_symmetric,
-                                  unsigned const integration_order,
-                                  PythonBoundaryConditionData const& data)
+    PythonBoundaryConditionLocalAssembler(
+        MeshLib::Element const& e,
+        std::size_t const /*local_matrix_size*/,
+        bool is_axially_symmetric,
+        unsigned const integration_order,
+        PythonBoundaryConditionData const& data)
         : Base(e, is_axially_symmetric, integration_order),
           _data(data),
           _element(e)
