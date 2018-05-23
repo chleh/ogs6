@@ -10,6 +10,7 @@
 #if OGS_USE_PYTHON
 
 #include <pybind11/embed.h>
+#include <pybind11/stl.h>
 
 #include "PythonBoundaryConditionModule.h"
 

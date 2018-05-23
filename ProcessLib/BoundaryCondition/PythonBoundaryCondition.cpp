@@ -10,7 +10,6 @@
 #include "PythonBoundaryCondition.h"
 
 #include <pybind11/eval.h>
-#include <pybind11/stl.h>
 
 #include "MeshLib/MeshSearch/NodeSearch.h"
 #include "ProcessLib/Utils/CreateLocalAssemblers.h"
