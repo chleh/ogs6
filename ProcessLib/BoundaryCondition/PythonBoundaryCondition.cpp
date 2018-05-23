@@ -80,10 +80,6 @@ void PythonBoundaryCondition::getEssentialBCValues(
     const double t, GlobalVector const& /*x*/,
     NumLib::IndexValueVector<GlobalIndexType>& bc_values) const
 {
-    pybind11::print(_bc_data.scope);
-    auto* bc =
-        _bc_data.scope[_bc_data.bc_object.c_str()].cast<PyBoundaryCondition*>();
-
     auto const mesh_id = _bc_data.mesh.getID();
     auto const nodes = _bc_data.mesh.getNodes();
 
@@ -98,8 +94,9 @@ void PythonBoundaryCondition::getEssentialBCValues(
     for (auto const id : _mesh_node_ids)
     {
         auto* xs = nodes[id]->getCoords();  // TODO DDC problems?
-        auto val = bc->getDirichletBCValue(t, {xs[0], xs[1], xs[2]});
-        if (!bc->isOverriddenEssential())
+        auto val =
+            _bc_data.bc_object->getDirichletBCValue(t, {xs[0], xs[1], xs[2]});
+        if (!_bc_data.bc_object->isOverriddenEssential())
         {
             DBUG(
                 "Method `getDirichletBCValue' not overridden in Python "
@@ -174,9 +171,10 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
             "was no python script file specified.",
             bc_object.c_str());
 
+    auto* bc = scope[bc_object.c_str()].cast<PyBoundaryCondition*>();
+
     return std::make_unique<PythonBoundaryCondition>(
-        PythonBoundaryConditionData{std::move(scope), bc_object, dof_table,
-                                    nullptr, mesh},
+        PythonBoundaryConditionData{bc, dof_table, nullptr, mesh},
         std::move(mesh_node_ids), std::move(elements), variable_id,
         component_id, integration_order, shapefunction_order);
 }

@@ -20,10 +20,11 @@
 
 namespace ProcessLib
 {
+class PyBoundaryCondition;
+
 struct PythonBoundaryConditionData
 {
-    pybind11::object scope;
-    std::string bc_object;
+    PyBoundaryCondition* bc_object;
     NumLib::LocalToGlobalIndexMap const& dof_table_bulk;
 
     /// Local dof table, a subset of the global one restricted to the

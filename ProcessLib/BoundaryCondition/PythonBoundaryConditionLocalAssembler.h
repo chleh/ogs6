@@ -54,10 +54,6 @@ public:
         FemType fe(*static_cast<const typename ShapeFunction::MeshElement*>(
             &_element));
 
-        pybind11::print(_data.scope);
-        auto* bc =
-            _data.scope[_data.bc_object.c_str()].cast<PyBoundaryCondition*>();
-
         _local_rhs.setZero();
 
         unsigned const n_integration_points =
@@ -131,10 +127,10 @@ public:
             Eigen::VectorXd prim_vars =
                 sm.N * primary_variables_mat;  // TODO problems with mixed
                                                // ansatz functions
-            auto const res = bc->getFlux(t, coords, prim_vars);
+            auto const res = _data.bc_object->getFlux(t, coords, prim_vars);
             if (!res.first)
                 return;
-            if (!bc->isOverriddenNatural())
+            if (!_data.bc_object->isOverriddenNatural())
                 throw PyNotOverridden{};
 
             auto const& wp = Base::_integration_method.getWeightedPoint(ip);
