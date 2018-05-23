@@ -87,7 +87,7 @@ BoundaryConditionBuilder::createBoundaryCondition(
 #ifdef OGS_USE_PYTHON
         return createPythonBoundaryCondition(config, dof_table, mesh,
                                              variable_id, integration_order,
-                                             shapefunction_order, parameters);
+                                             shapefunction_order);
 #else
         OGS_FATAL("BC `%s' requires OGS to be built with Python support",
                   type.c_str());
@@ -273,8 +273,7 @@ BoundaryConditionBuilder::createPythonBoundaryCondition(
     const BoundaryConditionConfig& config,
     const NumLib::LocalToGlobalIndexMap& dof_table, const MeshLib::Mesh& mesh,
     const int variable_id, const unsigned integration_order,
-    const unsigned shapefunction_order,
-    const std::vector<std::unique_ptr<ProcessLib::ParameterBase>>& parameters)
+    const unsigned shapefunction_order)
 {
     std::unique_ptr<MeshGeoToolsLib::SearchLength> search_length_algorithm =
         MeshGeoToolsLib::createSearchLengthAlgorithm(config.config, mesh);
@@ -290,7 +289,7 @@ BoundaryConditionBuilder::createPythonBoundaryCondition(
         config.config, mesh_node_searcher.getMeshNodeIDs(config.geometry),
         getClonedElements(boundary_element_searcher, config.geometry),
         dof_table, variable_id, *config.component_id, mesh, integration_order,
-        shapefunction_order, parameters);
+        shapefunction_order);
 }
 #endif
 

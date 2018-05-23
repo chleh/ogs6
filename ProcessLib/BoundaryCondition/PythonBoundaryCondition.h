@@ -79,8 +79,7 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
     std::vector<MeshLib::Element*>&& elements,
     NumLib::LocalToGlobalIndexMap const& dof_table, int const variable_id,
     int const component_id, MeshLib::Mesh const& mesh,
-    unsigned const integration_order, unsigned const shapefunction_order,
-    std::vector<std::unique_ptr<ParameterBase>> const& parameters);
+    unsigned const integration_order, unsigned const shapefunction_order);
 
 }  // namespace ProcessLib
 

@@ -157,35 +157,15 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
     std::vector<MeshLib::Element*>&& elements,
     NumLib::LocalToGlobalIndexMap const& dof_table, int const variable_id,
     int const component_id, const MeshLib::Mesh& mesh,
-    unsigned const integration_order, unsigned const shapefunction_order,
-    std::vector<std::unique_ptr<ParameterBase>> const& parameters)
+    unsigned const integration_order, unsigned const shapefunction_order)
 {
     config.checkConfigParameter("type", "Python");
 
-    // //// Parse Python //////////////////////
-
     auto const bc_object = config.getConfigParameter<std::string>("bc_object");
 
-    namespace py = pybind11;
-    // using namespace py::literals;
-
     // Evaluate in scope of main module
-    py::object scope = py::module::import("__main__").attr("__dict__");
-
-    /*
-    // TODO
-    //
-    http://pybind11.readthedocs.io/en/stable/advanced/embedding.html#adding-embedded-modules
-    py::module ogs = module.def_submodule("OpenGeoSys", "NO HELP AVAILABLE");
-
-    py::class_<::PyBoundaryCondition, ::PyBoundaryConditionImpl> pybc(
-        ogs, "BoundaryCondition");
-    pybc.def(py::init());
-    pybc.def("getDirichletBCValue",
-             &::PyBoundaryCondition::getDirichletBCValue);
-    pybc.def("getFlux", &::PyBoundaryCondition::getFlux);
-
-    */
+    pybind11::object scope =
+        pybind11::module::import("__main__").attr("__dict__");
 
     if (!scope.contains(bc_object))
         OGS_FATAL(
