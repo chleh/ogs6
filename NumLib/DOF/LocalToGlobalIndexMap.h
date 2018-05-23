@@ -41,6 +41,13 @@ namespace NumLib
 /// mesh item.
 class LocalToGlobalIndexMap final
 {
+    // Cf.
+    // http://seanmiddleditch.com/enabling-make_unique-with-private-constructors/
+    struct ConstructorTag
+    {
+        explicit ConstructorTag() = default;
+    };
+
 public:
     using RowColumnIndices = MathLib::RowColumnIndices<GlobalIndexType>;
     using LineIndex = RowColumnIndices::LineIndex;
@@ -144,7 +151,6 @@ public:
     MeshLib::MeshSubset const& getMeshSubset(
         int const global_component_id) const;
 
-private:
     /// Private constructor used by internally created local-to-global index
     /// maps. The mesh_component_map is passed as argument instead of being
     /// created by the constructor.
@@ -155,8 +161,13 @@ private:
         std::vector<int> const& global_component_ids,
         std::vector<int> const& variable_component_offsets,
         std::vector<MeshLib::Element*> const& elements,
-        NumLib::MeshComponentMap&& mesh_component_map);
+        NumLib::MeshComponentMap&& mesh_component_map, ConstructorTag);
 
+    /// The global component id for the specific variable (like velocity) and a
+    /// component (like x, or y, or z).
+    int getGlobalComponent(int const variable_id, int const component_id) const;
+
+private:
     template <typename ElementIterator>
     void findGlobalIndices(ElementIterator first, ElementIterator last,
                            std::vector<MeshLib::Node*> const& nodes,

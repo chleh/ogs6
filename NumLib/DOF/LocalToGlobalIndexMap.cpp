@@ -252,6 +252,37 @@ LocalToGlobalIndexMap* LocalToGlobalIndexMap::deriveBoundaryConstrainedMap(
         _variable_component_offsets, elements, std::move(mesh_component_map));
 }
 
+std::unique_ptr<LocalToGlobalIndexMap>
+LocalToGlobalIndexMap::deriveBoundaryConstrainedMap(
+    MeshLib::MeshSubsets&& mesh_subsets,
+    std::vector<MeshLib::Element*> const& elements) const
+{
+    DBUG("Construct reduced local to global index map.");
+
+    // Create a subset of the current mesh component map.
+    std::vector<int> global_component_ids;
+
+    for (int i = 0; i < getNumberOfComponents(); ++i)
+    {
+        // TODO correct?
+        global_component_ids.push_back(i);
+    }
+
+    auto mesh_component_map =
+        _mesh_component_map.getSubset(global_component_ids, mesh_subsets);
+
+    // Create copies of the mesh_subsets for each of the global components.
+    // The last component is moved after the for-loop.
+    std::vector<MeshLib::MeshSubsets> all_mesh_subsets;
+    for (int i = 0; i < static_cast<int>(global_component_ids.size()) - 1; ++i)
+        all_mesh_subsets.emplace_back(mesh_subsets);
+    all_mesh_subsets.emplace_back(std::move(mesh_subsets));
+
+    return std::make_unique<LocalToGlobalIndexMap>(
+        std::move(all_mesh_subsets), global_component_ids, elements,
+        std::move(mesh_component_map), ConstructorTag{});
+}
+
 std::size_t LocalToGlobalIndexMap::dofSizeWithGhosts() const
 {
     return _mesh_component_map.dofSizeWithGhosts();
