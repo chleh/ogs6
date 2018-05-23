@@ -41,7 +41,7 @@ public:
 
     void assemble(std::size_t const id,
                   NumLib::LocalToGlobalIndexMap const& dof_table_boundary,
-                  double const t, const GlobalVector& x, GlobalMatrix& /*K*/,
+                  double const t, const GlobalVector& x, GlobalMatrix& K,
                   GlobalVector& b) override
     {
         using ShapeMatricesType =
@@ -89,6 +89,9 @@ public:
             primary_variables.data(), num_nodes, num_comp_total);
 
         Eigen::VectorXd local_rhs = Eigen::VectorXd::Zero(num_nodes);
+        Eigen::MatrixXd local_K =
+            Eigen::MatrixXd::Zero(num_nodes, num_nodes * num_comp_total);
+        bool has_dFlux = true;
 
         for (unsigned ip = 0; ip < num_integration_points; ip++)
         {
@@ -104,14 +107,40 @@ public:
                 throw PyNotOverridden{};
 
             auto const& wp = Base::_integration_method.getWeightedPoint(ip);
-            local_rhs.noalias() += sm.N * (std::get<1>(res) * sm.detJ *
-                                           wp.getWeight() * sm.integralMeasure);
+            auto const w = sm.detJ * wp.getWeight() * sm.integralMeasure;
+            local_rhs.noalias() += sm.N * (std::get<1>(res) * w);
+
+            auto const& dFlux = std::get<2>(res);
+            if (!dFlux.empty())
+            {
+                for (int comp = 0; comp < num_comp_total; ++comp)
+                {
+                    auto const top = 0;
+                    auto const left = comp * num_nodes;
+                    auto const width = num_nodes;
+                    auto const height = num_nodes;
+                    local_K.block(top, left, width, height).noalias() +=
+                        sm.N.transpose() * (dFlux[comp] * w) * sm.N;
+                }
+            }
+            else
+            {
+                has_dFlux = false;
+            }
         }
 
-        // auto const indices_all = NumLib::getIndices(id, dof_table_boundary);
+        // TODO change for Newton (and Picard)!
         auto const& indices_comp =
             dof_table_boundary(id, _data.global_component_id).rows;
         b.add(indices_comp, local_rhs);
+
+        if (has_dFlux)
+        {
+            auto const indices_all = NumLib::getIndices(id, dof_table_boundary);
+            MathLib::RowColumnIndices<GlobalIndexType> rci{indices_comp,
+                                                           indices_all};
+            K.add(rci, local_K);
+        }
     }
 
 private:
