@@ -28,17 +28,19 @@ public:
         return {false, std::numeric_limits<double>::quiet_NaN()};
     }
 
-    virtual std::pair<bool, double> getFlux(
+    virtual std::tuple<bool, double, std::vector<double>> getFlux(
         double /*t*/,
         std::array<double, 3> /*x*/,
         Eigen::VectorXd const& /*primary_variables*/) const
     {
         _overridden_natural = false;
-        return {false, std::numeric_limits<double>::quiet_NaN()};
+        return {false, std::numeric_limits<double>::quiet_NaN(), {}};
     }
 
     bool isOverriddenEssential() const { return _overridden_essential; }
     bool isOverriddenNatural() const { return _overridden_natural; }
+
+    virtual ~PyBoundaryCondition() = default;
 
 private:
     mutable bool _overridden_essential = true;
@@ -59,11 +61,11 @@ public:
                           node_id, primary_variables);
     }
 
-    virtual std::pair<bool, double> getFlux(
+    std::tuple<bool, double, std::vector<double>> getFlux(
         double t, std::array<double, 3> x,
-        Eigen::VectorXd const& primary_variables) const
+        Eigen::VectorXd const& primary_variables) const override
     {
-        using Ret = std::pair<bool, double>;
+        using Ret = std::tuple<bool, double, std::vector<double>>;
         PYBIND11_OVERLOAD(Ret, PyBoundaryCondition, getFlux, t, x,
                           primary_variables);
     }

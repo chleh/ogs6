@@ -22,40 +22,20 @@ PythonBoundaryCondition::PythonBoundaryCondition(
     PythonBoundaryConditionData&& bc_data,
     std::vector<std::size_t>&& mesh_node_ids,
     std::vector<MeshLib::Element*>&& elements,
-    int const variable_id,
-    int const component_id,
     unsigned const integration_order,
     unsigned const shapefunction_order)
     : _bc_data(std::move(bc_data)),
       _mesh_node_ids(std::move(mesh_node_ids)),
       _elements(std::move(elements)),
-      _variable_id(variable_id),
-      _component_id(component_id),
       _integration_order(integration_order)
 {
     if (_mesh_node_ids.empty())
         OGS_FATAL("no mesh node ids found");
 
-    // check basic data consistency
-    if (variable_id >=
-            static_cast<int>(_bc_data.dof_table_bulk.getNumberOfVariables()) ||
-        component_id >=
-            _bc_data.dof_table_bulk.getNumberOfVariableComponents(variable_id))
-    {
-        OGS_FATAL(
-            "Variable id or component id too high. Actual values: (%d, %d), "
-            "maximum values: (%d, %d).",
-            variable_id, component_id,
-            _bc_data.dof_table_bulk.getNumberOfVariables(),
-            _bc_data.dof_table_bulk.getNumberOfVariableComponents(variable_id));
-    }
-
     std::vector<MeshLib::Node*> nodes = MeshLib::getUniqueNodes(_elements);
-    DBUG("Found %d nodes for BCs for the variable %d and component %d",
-         nodes.size(), variable_id, component_id);
 
     auto const& mesh_subsets =
-        _bc_data.dof_table_bulk.getMeshSubsets(variable_id, component_id);
+        _bc_data.dof_table_bulk.getMeshSubsets(_bc_data.global_component_id);
 
     // TODO extend the node intersection to all parts of mesh_subsets, i.e.
     // to each of the MeshSubset in the mesh_subsets.
@@ -65,13 +45,11 @@ PythonBoundaryCondition::PythonBoundaryCondition(
 
     // Create local DOF table from intersected mesh subsets for the given
     // variable and component ids.
-    _bc_data.dof_table_boundary.reset(
-        _bc_data.dof_table_bulk.deriveBoundaryConstrainedMap(
-            variable_id, {component_id}, std::move(all_mesh_subsets),
-            _elements));
+    _dof_table_boundary = _bc_data.dof_table_bulk.deriveBoundaryConstrainedMap(
+        std::move(all_mesh_subsets), _elements);
 
     createLocalAssemblers<PythonConditionLocalAssembler>(
-        _bc_data.mesh.getDimension(), _elements, *_bc_data.dof_table_boundary,
+        _bc_data.mesh.getDimension(), _elements, *_dof_table_boundary,
         shapefunction_order, _local_assemblers,
         _bc_data.mesh.isAxiallySymmetric(), _integration_order, _bc_data);
 }
@@ -126,7 +104,7 @@ void PythonBoundaryCondition::getEssentialBCValues(
             pos.setNodeID(node_id);
             MeshLib::Location l(mesh_id, MeshLib::MeshItemType::Node, node_id);
             const auto g_idx = _bc_data.dof_table_bulk.getGlobalIndex(
-                l, _variable_id, _component_id);
+                l, _bc_data.global_component_id);
             if (g_idx == NumLib::MeshComponentMap::nop)
                 continue;
             // For the DDC approach (e.g. with PETSc option), the negative
@@ -154,7 +132,7 @@ void PythonBoundaryCondition::applyNaturalBC(const double t,
     {
         GlobalExecutor::executeMemberOnDereferenced(
             &GenericNaturalBoundaryConditionLocalAssemblerInterface::assemble,
-            _local_assemblers, *_bc_data.dof_table_boundary, t, x, K, b);
+            _local_assemblers, *_dof_table_boundary, t, x, K, b);
     }
     catch (PyNotOverridden const& /*e*/)
     {
@@ -192,9 +170,11 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
     auto* bc = scope[bc_object.c_str()].cast<PyBoundaryCondition*>();
 
     return std::make_unique<PythonBoundaryCondition>(
-        PythonBoundaryConditionData{bc, dof_table, nullptr, mesh},
-        std::move(mesh_node_ids), std::move(elements), variable_id,
-        component_id, integration_order, shapefunction_order);
+        PythonBoundaryConditionData{
+            bc, dof_table,
+            dof_table.getGlobalComponent(variable_id, component_id), mesh},
+        std::move(mesh_node_ids), std::move(elements), integration_order,
+        shapefunction_order);
 }
 
 }  // namespace ProcessLib

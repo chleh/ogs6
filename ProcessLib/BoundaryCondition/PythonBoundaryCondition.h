@@ -26,10 +26,7 @@ struct PythonBoundaryConditionData
 {
     PyBoundaryCondition* bc_object;
     NumLib::LocalToGlobalIndexMap const& dof_table_bulk;
-
-    /// Local dof table, a subset of the global one restricted to the
-    /// participating #_elements of the boundary condition.
-    std::unique_ptr<NumLib::LocalToGlobalIndexMap> dof_table_boundary;
+    int const global_component_id;
 
     const MeshLib::Mesh& mesh;
 };
@@ -40,8 +37,6 @@ public:
     PythonBoundaryCondition(PythonBoundaryConditionData&& bc_data,
                             std::vector<std::size_t>&& mesh_node_ids,
                             std::vector<MeshLib::Element*>&& elements,
-                            int const variable_id,
-                            int const component_id,
                             unsigned const integration_order,
                             unsigned const shapefunction_order);
 
@@ -61,8 +56,10 @@ private:
 
     std::vector<std::size_t> const _mesh_node_ids;
     std::vector<MeshLib::Element*> const _elements;
-    int const _variable_id;
-    int const _component_id;
+
+    /// Local dof table, a subset of the global one restricted to the
+    /// participating #_elements of the boundary condition.
+    std::unique_ptr<NumLib::LocalToGlobalIndexMap> _dof_table_boundary;
 
     std::unique_ptr<MeshLib::MeshSubset const> _mesh_subset_all_nodes;
 

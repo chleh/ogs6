@@ -28,16 +28,13 @@ class PythonConditionLocalAssembler final
         ShapeFunction, IntegrationMethod, GlobalDim>;
 
 public:
-    /// The neumann_bc_value factor is directly integrated into the local
-    /// element matrix.
     PythonConditionLocalAssembler(MeshLib::Element const& e,
-                                  std::size_t const local_matrix_size,
+                                  std::size_t const /*local_matrix_size*/,
                                   bool is_axially_symmetric,
                                   unsigned const integration_order,
                                   PythonBoundaryConditionData const& data)
         : Base(e, is_axially_symmetric, integration_order),
           _data(data),
-          _local_rhs(local_matrix_size),
           _element(e)
     {
     }
@@ -91,7 +88,7 @@ public:
         Eigen::Map<Eigen::MatrixXd> primary_variables_mat(
             primary_variables.data(), num_nodes, num_comp_total);
 
-        _local_rhs.setZero();
+        Eigen::VectorXd local_rhs = Eigen::VectorXd::Zero(num_nodes);
 
         for (unsigned ip = 0; ip < num_integration_points; ip++)
         {
@@ -101,27 +98,25 @@ public:
                 sm.N * primary_variables_mat;  // TODO problems with mixed
                                                // ansatz functions
             auto const res = _data.bc_object->getFlux(t, coords, prim_vars);
-            if (!res.first)
+            if (!std::get<0>(res))
                 return;
             if (!_data.bc_object->isOverriddenNatural())
                 throw PyNotOverridden{};
 
             auto const& wp = Base::_integration_method.getWeightedPoint(ip);
-            _local_rhs.noalias() += sm.N * res.second * sm.detJ *
-                                    wp.getWeight() * sm.integralMeasure;
+            local_rhs.noalias() += sm.N * (std::get<1>(res) * sm.detJ *
+                                           wp.getWeight() * sm.integralMeasure);
         }
 
-        auto const indices = NumLib::getIndices(id, dof_table_boundary);
-        b.add(indices, _local_rhs);
+        // auto const indices_all = NumLib::getIndices(id, dof_table_boundary);
+        auto const& indices_comp =
+            dof_table_boundary(id, _data.global_component_id).rows;
+        b.add(indices_comp, local_rhs);
     }
 
 private:
     PythonBoundaryConditionData const& _data;
-    typename Base::NodalVectorType _local_rhs;
     MeshLib::Element const& _element;
-
-public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
 }  // namespace ProcessLib
