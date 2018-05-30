@@ -102,17 +102,25 @@ public:
                 sm.N * primary_variables_mat;  // TODO problems with mixed
                                                // ansatz functions
             auto const res = _data.bc_object->getFlux(t, coords, prim_vars);
-            if (!std::get<0>(res))
-                return;
             if (!_data.bc_object->isOverriddenNatural())
                 throw PyNotOverridden{};
+            if (!std::get<0>(res))
+                return;
 
             auto const& wp = Base::_integration_method.getWeightedPoint(ip);
             auto const w = sm.detJ * wp.getWeight() * sm.integralMeasure;
             local_rhs.noalias() += sm.N * (std::get<1>(res) * w);
 
             auto const& dFlux = std::get<2>(res);
-            if (!dFlux.empty() && Jac)
+            if (static_cast<int>(dFlux.size()) != num_comp_total)
+            {
+                OGS_FATAL(
+                    "The Python BC must return the derivative of the flux "
+                    "w.r.t. each primary variable. %d components expected. %d "
+                    "components returned from Python.",
+                    num_comp_total, dFlux.size());
+            }
+            if (Jac)
             {
                 for (int comp = 0; comp < num_comp_total; ++comp)
                 {
