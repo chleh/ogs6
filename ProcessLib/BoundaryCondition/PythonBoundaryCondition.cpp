@@ -9,6 +9,9 @@
 
 #include "PythonBoundaryCondition.h"
 
+#ifndef NDEBUG
+#include <iostream>
+#endif
 #include <pybind11/eval.h>
 
 #include "MeshLib/MeshSearch/NodeSearch.h"
@@ -58,6 +61,9 @@ void PythonBoundaryCondition::getEssentialBCValues(
     const double t, GlobalVector const& x,
     NumLib::IndexValueVector<GlobalIndexType>& bc_values) const
 {
+#ifndef NDEBUG
+    std::cout << std::flush;
+#endif
     auto const mesh_id = _bc_data.mesh.getID();
     auto const nodes = _bc_data.mesh.getNodes();
 
@@ -121,6 +127,11 @@ void PythonBoundaryCondition::getEssentialBCValues(
             }
         }
     }
+
+#ifndef NDEBUG
+    using namespace pybind11::literals;
+    pybind11::print("end"_a = "", "flush"_a = true);
+#endif
 }
 
 void PythonBoundaryCondition::applyNaturalBC(const double t,
@@ -128,6 +139,9 @@ void PythonBoundaryCondition::applyNaturalBC(const double t,
                                              GlobalMatrix& K, GlobalVector& b,
                                              GlobalMatrix* Jac)
 {
+#ifndef NDEBUG
+    std::cout << std::flush;
+#endif
     try
     {
         GlobalExecutor::executeMemberOnDereferenced(
@@ -138,6 +152,11 @@ void PythonBoundaryCondition::applyNaturalBC(const double t,
     {
         DBUG("Method `getFlux' not overridden in Python script.");
     }
+
+#ifndef NDEBUG
+    using namespace pybind11::literals;
+    pybind11::print("end"_a = "", "flush"_a = true);
+#endif
 }
 
 PythonBoundaryCondition::~PythonBoundaryCondition()
