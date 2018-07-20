@@ -242,6 +242,8 @@ void TCHSNoStokesProcess<VelocityDim>::initializeConcreteProcess(
         "vapour_mass_flux", MeshLib::MeshItemType::Cell, VelocityDim);
     _process_data.mesh_prop_cell_solid_mass =
         create_mesh_prop("solid_mass_cell", MeshLib::MeshItemType::Cell, 1);
+    _process_data.mesh_prop_cell_heating_rate =
+        create_mesh_prop("heating_rate_cell", MeshLib::MeshItemType::Cell, 1);
 }
 
 template <int VelocityDim>
