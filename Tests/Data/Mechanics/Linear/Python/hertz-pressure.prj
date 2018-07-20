@@ -113,7 +113,7 @@
             <name>dirichlet</name>
             <type>CurveScaled</type>
             <parameter>one</parameter>
-            <curve>dirichlet</dirichelt>
+            <curve>dirichlet</curve>
         </parameter>
     </parameters>
     <process_variables>
