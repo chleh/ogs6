@@ -590,19 +590,13 @@ void TCHSStokesLocalAssembler<
         grad_porosity[0] = mat.porosity->getDPorosityDr(x_coord);
 
         // reaction
-        if (mat.reaction_rate->computeReactionRate(
-                _process_data.delta_t, p, T, p_V, *ip_data.reaction_rate,
-                ip_data.reactive_solid_state.get(),
-                ip_data.reaction_rate_data.get()))
-        {
-            x_mV = Adsorption::AdsorptionReaction::getMassFraction(p_V / p, M_R,
-                                                                   M_I);
-        }
-
         double const hat_rho_SR =
             mat.reactive_solid->getOverallRate(*ip_data.reaction_rate);
         auto const reaction_enthalpy = mat.reaction_rate->getHeatOfReaction(
             p_V, T, ip_data.reactive_solid_state.get());
+        double const heating_rate =
+            (1.0 - porosity) * mat.reactive_solid->getHeatingRate(
+                                   reaction_enthalpy, *ip_data.reaction_rate);
 
         // fluid
         double const rho_GR = mat.fluid_density->getDensity(p, T, x_mV);
@@ -641,6 +635,7 @@ void TCHSStokesLocalAssembler<
         cumul_mass_flux += mass_flux * w;
         cumul_vapour_mass_flux += vapour_mass_flux * w;
         cumul_solid_mass_cell += rho_SR * (1.0 - porosity) * w;
+        cumul_heating_rate_cell += heating_rate * w;
     }
 
     auto const id = _element.getID();
@@ -662,6 +657,7 @@ void TCHSStokesLocalAssembler<
     (*_process_data.mesh_prop_cell_cpS)[id] = cumul_cpS / cumul_volume;
     (*_process_data.mesh_prop_cell_cpG)[id] = cumul_cpG / cumul_volume;
     (*_process_data.mesh_prop_cell_solid_mass)[id] = cumul_solid_mass_cell;
+    (*_process_data.mesh_prop_cell_heating_rate)[id] = cumul_heating_rate_cell;
 }
 
 }  // namespace TCHSStokes
