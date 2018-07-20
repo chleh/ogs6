@@ -547,6 +547,7 @@ void TCHSStokesLocalAssembler<
     Eigen::Matrix<double, VelocityDim, 1> cumul_vapour_mass_flux =
         Eigen::Matrix<double, VelocityDim, 1>::Zero();
     double cumul_solid_mass_cell = 0.0;
+    double cumul_heating_rate_cell = 0.0;
 
     unsigned const n_integration_points =
         _integration_method.getNumberOfPoints();
