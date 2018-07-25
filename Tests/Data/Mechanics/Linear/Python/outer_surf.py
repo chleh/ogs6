@@ -2,7 +2,8 @@
 
 import numpy as np
 
-N = 41
+CELLS_PER_DIMENSION = 100
+N = 2*CELLS_PER_DIMENSION + 1
 
 
 for i in range(N):

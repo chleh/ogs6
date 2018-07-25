@@ -1,7 +1,7 @@
 import OpenGeoSys
 
 def get_y_top(t):
-    return 1.0 - 0.09 * t
+    return 1.0 - 0.005 * t
 
 class BC(OpenGeoSys.BoundaryCondition):
     def getDirichletBCValue(self, t, coords, node_id, primary_vars):
@@ -12,7 +12,8 @@ class BC(OpenGeoSys.BoundaryCondition):
         y_deformed = y + primary_vars[1]
         y_top = get_y_top(t)
         print("y_top", y_top)
-        if y_deformed > y_top - 1e-6:
+        # if y_deformed > y_top - 1e-10:
+        if y_deformed >= y_top:
             print("XXXXX def!", y, y_top, y_top - y)
             # return (True, y_top - y)
             return (True, y_top - y)
