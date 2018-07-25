@@ -29,8 +29,8 @@
                 <nonlinear_solver>basic_newton</nonlinear_solver>
                 <convergence_criterion>
                     <type>DeltaX</type>
-                    <norm_type>NORM2</norm_type>
-                    <abstol>1e-15</abstol>
+                    <norm_type>INFINITY_N</norm_type>
+                    <abstol>1e-8</abstol>
                 </convergence_criterion>
                 <time_discretization>
                     <type>BackwardEuler</type>
@@ -125,6 +125,7 @@
                     <type>Python</type>
                     <component>1</component>
                     <bc_object>bc</bc_object>
+                    <flush_stdout>true</flush_stdout>
                 </boundary_condition>
             </boundary_conditions>
         </process_variable>
