@@ -181,6 +181,8 @@ bool NonlinearSolver<NonlinearSolverTag::Newton>::solve(
     auto& J =
         NumLib::GlobalMatrixProvider::provider.getMatrix(_J_id);
 
+    auto& x_new = NumLib::GlobalVectorProvider::provider.getVector(_x_new_id);
+
     bool error_norms_met = false;
 
     // TODO be more efficient
@@ -196,12 +198,13 @@ bool NonlinearSolver<NonlinearSolverTag::Newton>::solve(
         BaseLib::RunTime time_iteration;
         time_iteration.start();
 
-        sys.preIteration(iteration, x);
+        LinAlg::copy(x, x_new);
+        sys.preIteration(iteration, x_new);
 
         BaseLib::RunTime time_assembly;
         time_assembly.start();
-        sys.assemble(x);
-        sys.getResidual(x, res);
+        sys.assemble(x_new);
+        sys.getResidual(x_new, res);
         sys.getJacobian(J);
         INFO("[time] Assembly took %g s.", time_assembly.elapsed());
 
@@ -209,7 +212,7 @@ bool NonlinearSolver<NonlinearSolverTag::Newton>::solve(
 
         BaseLib::RunTime time_dirichlet;
         time_dirichlet.start();
-        sys.applyKnownSolutionsNewton(J, res, minus_delta_x, x);
+        sys.applyKnownSolutionsNewton(J, res, minus_delta_x, x_new);
         INFO("[time] Applying Dirichlet BCs took %g s.", time_dirichlet.elapsed());
 
         if (!sys.isLinear() && _convergence_criterion->hasResidualCheck())
@@ -226,12 +229,6 @@ bool NonlinearSolver<NonlinearSolverTag::Newton>::solve(
         }
         else
         {
-            // TODO could be solved in a better way
-            // cf.
-            // http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Vec/VecWAXPY.html
-            auto& x_new =
-                NumLib::GlobalVectorProvider::provider.getVector(
-                    x, _x_new_id);
             LinAlg::axpy(x_new, -_damping, minus_delta_x);
 
             if (postIterationCallback)
@@ -256,18 +253,17 @@ bool NonlinearSolver<NonlinearSolverTag::Newton>::solve(
                         .releaseVector(x_new);
                     continue;  // That throws the iteration result away.
             }
-
-            // TODO could be done via swap. Note: that also requires swapping
-            // the ids. Same for the Picard scheme.
-            LinAlg::copy(x_new, x);  // copy new solution to x
-            NumLib::GlobalVectorProvider::provider.releaseVector(
-                x_new);
         }
 
         if (!iteration_succeeded)
         {
             // Don't compute further error norms, but break here.
             error_norms_met = false;
+
+            // TODO could be done via swap. Note: that also requires swapping
+            // the ids. Same for the Picard scheme.
+            LinAlg::copy(x_new, x);  // copy new solution to x
+
             break;
         }
 
@@ -275,12 +271,18 @@ bool NonlinearSolver<NonlinearSolverTag::Newton>::solve(
             error_norms_met = true;
         } else {
             if (_convergence_criterion->hasDeltaXCheck()) {
-                // Note: x contains the new solution!
+                // recompute minus_delta_x because the "old" solution x might
+                // have "changed" by applying BCs
+                LinAlg::copy(x, minus_delta_x);  // -delta x = x
+                LinAlg::aypx(minus_delta_x, -1.0,
+                             x_new);  // -delta x = -x_new + x
                 _convergence_criterion->checkDeltaX(minus_delta_x, x);
             }
 
             error_norms_met = _convergence_criterion->isSatisfied();
         }
+
+        LinAlg::copy(x_new, x);  // copy new solution to x
 
         INFO("[time] Iteration #%u took %g s.", iteration,
              time_iteration.elapsed());
@@ -300,6 +302,7 @@ bool NonlinearSolver<NonlinearSolverTag::Newton>::solve(
     NumLib::GlobalVectorProvider::provider.releaseVector(res);
     NumLib::GlobalVectorProvider::provider.releaseVector(
         minus_delta_x);
+    NumLib::GlobalVectorProvider::provider.releaseVector(x_new);
 
     return error_norms_met;
 }

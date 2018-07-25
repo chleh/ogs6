@@ -131,8 +131,7 @@ void TimeDiscretizedODESystem<
 void TimeDiscretizedODESystem<ODESystemTag::FirstOrderImplicitQuasilinear,
                               NonlinearSolverTag::Newton>::
     applyKnownSolutionsNewton(GlobalMatrix& Jac, GlobalVector& res,
-                              GlobalVector& minus_delta_x,
-                              GlobalVector const& x)
+                              GlobalVector& minus_delta_x, GlobalVector& x)
 {
     auto const* known_solutions =
         _ode.getKnownSolutions(_time_disc.getCurrentTime(), x);
@@ -150,6 +149,8 @@ void TimeDiscretizedODESystem<ODESystemTag::FirstOrderImplicitQuasilinear,
     // For the Newton method the values must be zero
     std::vector<double> values(ids.size(), 0);
     MathLib::applyKnownSolution(Jac, res, minus_delta_x, ids, values);
+
+    ::detail::applyKnownSolutions(known_solutions, x);
 }
 
 TimeDiscretizedODESystem<ODESystemTag::FirstOrderImplicitQuasilinear,

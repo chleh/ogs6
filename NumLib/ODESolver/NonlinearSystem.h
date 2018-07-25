@@ -60,7 +60,7 @@ public:
     //! \f$ \mathit{Jac} \cdot (-\Delta x) = \mathit{res} \f$.
     virtual void applyKnownSolutionsNewton(GlobalMatrix& Jac, GlobalVector& res,
                                            GlobalVector& minus_delta_x,
-                                           GlobalVector const& x) = 0;
+                                           GlobalVector& x) = 0;
 };
 
 /*! A System of nonlinear equations to be solved with the Picard fixpoint
