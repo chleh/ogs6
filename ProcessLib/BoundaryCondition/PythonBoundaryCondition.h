@@ -38,7 +38,8 @@ public:
                             std::vector<std::size_t>&& mesh_node_ids,
                             std::vector<MeshLib::Element*>&& elements,
                             unsigned const integration_order,
-                            unsigned const shapefunction_order);
+                            unsigned const shapefunction_order,
+                            bool const flush_stdout);
 
     void getEssentialBCValues(
         const double t, const GlobalVector& x,
@@ -68,6 +69,8 @@ private:
     std::vector<
         std::unique_ptr<GenericNaturalBoundaryConditionLocalAssemblerInterface>>
         _local_assemblers;
+
+    bool const _flush_stdout;
 };
 
 std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(

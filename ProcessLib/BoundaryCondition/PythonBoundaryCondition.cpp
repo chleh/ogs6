@@ -9,15 +9,43 @@
 
 #include "PythonBoundaryCondition.h"
 
-#ifndef NDEBUG
-#include <iostream>
-#endif
 #include <pybind11/eval.h>
+#include <iostream>
 
 #include "MeshLib/MeshSearch/NodeSearch.h"
 #include "ProcessLib/Utils/CreateLocalAssemblers.h"
 #include "ProcessLib/Utils/ProcessUtils.h"
 #include "PythonBoundaryConditionLocalAssembler.h"
+
+namespace
+{
+class FlushStdoutGuard
+{
+public:
+    explicit FlushStdoutGuard(bool const flush) : _flush(flush)
+    {
+        // flush std::cout before running Python code
+        if (!flush)
+            return;
+
+        // std::cout << std::flush;
+        LOGOG_COUT << std::flush;
+    }
+
+    ~FlushStdoutGuard()
+    {
+        if (!_flush)
+            return;
+
+        // flush Python's stdout after running python code
+        using namespace pybind11::literals;
+        pybind11::print("end"_a = "", "flush"_a = true);
+    }
+
+private:
+    const bool _flush;
+};
+}  // anonymous namespace
 
 namespace ProcessLib
 {
@@ -26,11 +54,13 @@ PythonBoundaryCondition::PythonBoundaryCondition(
     std::vector<std::size_t>&& mesh_node_ids,
     std::vector<MeshLib::Element*>&& elements,
     unsigned const integration_order,
-    unsigned const shapefunction_order)
+    unsigned const shapefunction_order,
+    bool const flush_stdout)
     : _bc_data(std::move(bc_data)),
       _mesh_node_ids(std::move(mesh_node_ids)),
       _elements(std::move(elements)),
-      _integration_order(integration_order)
+      _integration_order(integration_order),
+      _flush_stdout(flush_stdout)
 {
     if (_mesh_node_ids.empty())
         OGS_FATAL("no mesh node ids found");
@@ -61,9 +91,8 @@ void PythonBoundaryCondition::getEssentialBCValues(
     const double t, GlobalVector const& x,
     NumLib::IndexValueVector<GlobalIndexType>& bc_values) const
 {
-#ifndef NDEBUG
-    std::cout << std::flush;
-#endif
+    FlushStdoutGuard guard(_flush_stdout);
+
     auto const mesh_id = _bc_data.mesh.getID();
     auto const nodes = _bc_data.mesh.getNodes();
 
@@ -127,11 +156,6 @@ void PythonBoundaryCondition::getEssentialBCValues(
             }
         }
     }
-
-#ifndef NDEBUG
-    using namespace pybind11::literals;
-    pybind11::print("end"_a = "", "flush"_a = true);
-#endif
 }
 
 void PythonBoundaryCondition::applyNaturalBC(const double t,
@@ -139,9 +163,8 @@ void PythonBoundaryCondition::applyNaturalBC(const double t,
                                              GlobalMatrix& K, GlobalVector& b,
                                              GlobalMatrix* Jac)
 {
-#ifndef NDEBUG
-    std::cout << std::flush;
-#endif
+    FlushStdoutGuard guard(_flush_stdout);
+
     try
     {
         GlobalExecutor::executeMemberOnDereferenced(
@@ -152,11 +175,6 @@ void PythonBoundaryCondition::applyNaturalBC(const double t,
     {
         DBUG("Method `getFlux' not overridden in Python script.");
     }
-
-#ifndef NDEBUG
-    using namespace pybind11::literals;
-    pybind11::print("end"_a = "", "flush"_a = true);
-#endif
 }
 
 PythonBoundaryCondition::~PythonBoundaryCondition()
@@ -175,6 +193,7 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
     config.checkConfigParameter("type", "Python");
 
     auto const bc_object = config.getConfigParameter<std::string>("bc_object");
+    auto const flush_stdout = config.getConfigParameter("flush_stdout", false);
 
     // Evaluate in scope of main module
     pybind11::object scope =
@@ -193,7 +212,7 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
             bc, dof_table,
             dof_table.getGlobalComponent(variable_id, component_id), mesh},
         std::move(mesh_node_ids), std::move(elements), integration_order,
-        shapefunction_order);
+        shapefunction_order, flush_stdout);
 }
 
 }  // namespace ProcessLib
