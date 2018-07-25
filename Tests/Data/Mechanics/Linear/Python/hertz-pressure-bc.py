@@ -7,8 +7,9 @@ class BC(OpenGeoSys.BoundaryCondition):
         super(BC, self).__init__()
         self._restricted_nodes = {}
         self._first_node = None
-        self._iteration = 0
+        self._iteration = -1
         self._t_old = -1.0
+        self._flicker_nodes = {}
 
     def getDirichletBCValue(self, t, coords, node_id, primary_vars):
         if self._t_old < t:
@@ -16,7 +17,13 @@ class BC(OpenGeoSys.BoundaryCondition):
             print("restricted nodes in prev. ts", self._restricted_nodes)
             self._restricted_nodes.clear()
             self._t_old = t
-            self._iteration = 0
+            self._iteration = -1
+
+        # detect iteration number
+        # iteration 0: apply Dirichlet BCs to the solution vector prior to
+        # assembly (due to Newton-Raphson solver implementation)
+        # iteration 1 onwards: apply Dirichlet BCs to the linearized equation
+        # system after assembly
         if self._first_node is None:
             self._first_node = node_id
         if self._first_node == node_id:
@@ -27,22 +34,29 @@ class BC(OpenGeoSys.BoundaryCondition):
         y_deformed = y + primary_vars[1]
         y_top = BC.get_y_top(t)
 
-        # print("y_top", y_top)
         if y_deformed > y_top:
             res = (True, y_top - y)
             self._restricted_nodes[node_id] = x
-            print(f"[BC] {self._iteration:2} restr: y_deformed > y_top")
+            print(f"[BC] {self._iteration:2} {node_id:5} restr: y_deformed > y_top")
+            self.restrict(node_id)
+
         elif y_deformed > y_top - 1e-8:
-            # print("XXXXX def!", y, y_top, y_top - y)
             if self.is_new_restricted_node(node_id):
                 res = (True, y_top - y)
                 self._restricted_nodes[node_id] = x
-                print(f"[BC] {self._iteration:2} new restr node")
-            elif self.is_relaxed_restricted_node(x):
+                print(f"[BC] {self._iteration:2} {node_id:5} new restr node")
+
+            elif self._iteration <= 1:
+                res = (True, y_top - y)
+                print(f"[BC] {self._iteration:2} {node_id:5} keep restr node")
+
+            elif self.is_relaxed_restricted_node(x) and not self.flickers(node_id):
                 res = (False, 0.0)
-                print(f"[BC] {self._iteration:2} relax restr node")
+                print(f"[BC] {self._iteration:2} {node_id:5} relax restr node")
+                self.relax(node_id)
+
             else:
-                print(f"[BC] {self._iteration:2} generally y_deformed > y_top - 1e-8")
+                print(f"[BC] {self._iteration:2} {node_id:5} generally y_deformed > y_top - 1e-8")
                 res = (True, y_top - y)
         else:
             res =(False, 0.0)
@@ -61,6 +75,29 @@ class BC(OpenGeoSys.BoundaryCondition):
     def is_relaxed_restricted_node(self, x):
         return len(self._restricted_nodes) != 0 and \
                 x > (1.0 - NODE_RELEASE_FRACTION) * max(self._restricted_nodes.items(), key=lambda p:p[1])[1]
+
+    def restrict(self, node_id):
+        if self._iteration <= 1: return
+        try:
+            self._flicker_nodes[node_id][0] += 1
+        except:
+            self._flicker_nodes[node_id] = [1, 0]
+
+    def relax(self, node_id):
+        if self._iteration <= 1: return
+        try:
+            self._flicker_nodes[node_id][1] += 1
+        except:
+            self._flicker_nodes[node_id] = [0, 1]
+
+    def flickers(self, node_id):
+        if self._iteration <= 1: return False
+
+        try:
+            data = self._flicker_nodes[node_id]
+            return data[0] >= 2 and data[1] >= 2
+        except:
+            return False
 
 
 bc = BC()
