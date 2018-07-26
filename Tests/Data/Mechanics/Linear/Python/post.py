@@ -116,8 +116,10 @@ rs_contact = []
 
 fig, ax = plt.subplots()
 
+fig.subplots_adjust(right=0.75)
 ax.set_xlabel("$r$ / m")
 ax.set_ylabel(r"$\sigma_{yy}$ / Pa")
+add_leg = True
 
 
 for t, fn in zip(ts, fns):
@@ -252,12 +254,15 @@ for t, fn in zip(ts, fns):
 
     # determine top boundary
     coords = vtk_to_numpy(grid.GetPoints().GetData())
+    assert abs(min(coords[:,0])) < 1e-8
     idcs_top_boundary = np.where(coords[:,1] > y_top - 1e-7)[0]
     # print(idcs_top_boundary)
     assert len(idcs_top_boundary) != 0
     xs_top_boundary = coords[idcs_top_boundary, 0]
-    r_contact = max(xs_top_boundary) - min(xs_top_boundary)
-    print("radius of contact area:", r_contact)
+    idx_max = np.argmax(xs_top_boundary)
+    r_contact = max(xs_top_boundary[idx_max], 0.0)
+    y_at_r_contact = coords[idcs_top_boundary[idx_max], 1]
+    print("radius of contact area:", r_contact, "at y =", y_at_r_contact)
 
     rs_contact.append(r_contact)
 
@@ -274,52 +279,50 @@ for t, fn in zip(ts, fns):
             try:
                 assert max(xis) <= r_contact + 1e-8
             except:
-                print( max(xis), r_contact)
+                print(max(xis), r_contact)
                 raise
-            # try:
-            #     assert max(rhos) <= r_contact
-            # except:
-            #     print(max(rhos), r_contact)
-            #     raise
             avg_stress[i] = 1.0 / rho_max * np.trapz(x=rhos, y=stress_int(xis))
         avg_stress[-1] = 0.0
 
         return rs_int, avg_stress
 
     def stress_at_contact_area():
-        plane.SetOrigin(0, y_top, 0)
+        global add_leg
+
+        plane.SetOrigin(0, y_at_r_contact, 0)
         cutter.Update()
         grid = cutter.GetOutput()
 
         # for a in range(grid.GetPointData().GetNumberOfArrays()):
         #     print(grid.GetPointData().GetArrayName(a))
 
-        stress = vtk_to_numpy(grid.GetPointData().GetArray("stress_post"))
         xs = vtk_to_numpy(grid.GetPoints().GetData())[:, 0]
-        rs, avg_stress_yy = average_stress(xs, stress[:,1])
-        h, = ax.plot(rs, avg_stress_yy, label="post" if t == 1 else "")
-
-        # idcs = np.argsort(xs)
-        # h, = ax.plot(xs[idcs], stress[:, 1][idcs], label="post" if t == 0 else "")  # sigma_yy
-        # h, = ax.step(xs[idcs], stress_kelv[:, 1][idcs])  # sigma_yy
-        # assert abs(max(xs) - r_contact) < 1e-8
-        # assert abs(min(xs)) < 1e-8
+        try:
+            assert abs(max(xs) - r_contact) < 1e-7
+            assert abs(min(xs)) < 1e-8
+        except:
+            print(min(xs), max(xs), r_contact, max(xs) - r_contact)
+            raise
 
         rs = np.linspace(0, r_contact, 200)
-        ax.plot(rs, -p_contact(rs, r_contact), color=h.get_color(), ls=":", label="ref" if t == 1 else "")
+        if add_leg: ax.plot([], [], color="k", ls=":", label="ref")
+        h, = ax.plot(rs, -p_contact(rs, r_contact), ls=":")
 
         stress_yy = vtk_to_numpy(grid.GetPointData().GetArray("sigma"))[:,1]
         rs, avg_stress_yy = average_stress(xs, stress_yy)
-        ax.plot(rs, avg_stress_yy, color=h.get_color(), ls="--", label="ogs" if t == 1 else "")
+        if add_leg: ax.plot([], [], color="k", ls="--", label="ogs")
+        ax.plot(rs, avg_stress_yy, color=h.get_color(), ls="--")
 
-        # rs = vtk_to_numpy(grid.GetPoints().GetData())[:, 0]
-        # idcs = np.argsort(rs)
-        # ax.plot(rs[idcs], stress_yy[idcs], color=h.get_color(), ls="--", label="ogs" if t == 0 else "")
+        stress = vtk_to_numpy(grid.GetPointData().GetArray("stress_post"))
+        rs, avg_stress_yy = average_stress(xs, stress[:,1])
+        if add_leg: ax.plot([], [], color="k", label="post")
+        ax.plot(rs, avg_stress_yy, color=h.get_color(), label=r"$\Delta w = {}$".format(2*(1.0 - y_top)))
 
         ax.scatter([r_contact], [0], color=h.get_color())
-        ax.legend()
+        ax.legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
 
         fig.savefig("stress_at_contact.png")
+        add_leg = False
 
     if t > 0:
         stress_at_contact_area()
