@@ -4,6 +4,7 @@ from __future__ import print_function
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 import numpy as np
+from scipy.interpolate import interp1d
 
 import matplotlib.pyplot as plt
 
@@ -15,9 +16,9 @@ R = R12 / 2.0
 nu_12 = 0.3
 E_12 = 1.0
 
-lambda_ = E_12 * nu_12 / (1+nu_12) / (1-2*nu_12)
-mu = E_12 / 2.0 / (1+nu_12)
-G_12 = E_12 / 2.0 / (1 + nu_12)
+lambda_ = E_12 * nu_12 / (1 + nu_12) / (1 - 2 * nu_12)
+mu = E_12 / 2.0 / (1 + nu_12)
+G_12 = mu
 
 kappa = 0.5 * G_12 / R / (1-nu_12)
 print("kappa:", kappa)
@@ -81,21 +82,23 @@ ts, fns = read_pvd_file(pvd_file)
 
 reader = vtk.vtkXMLUnstructuredGridReader()
 
-strainFilter = vtk.vtkCellDerivatives()
-strainFilter.SetVectorModeToPassVectors()
-strainFilter.SetTensorModeToComputeStrain()
-
-warpVector = vtk.vtkWarpVector()
-warpVector.SetInputConnection(strainFilter.GetOutputPort())
-
 destroyTopology = vtk.vtkShrinkFilter()
 destroyTopology.SetShrinkFactor(1.0)
 # destroyTopology.SetInputConnection(strainFilter.GetOutputPort())
-destroyTopology.SetInputConnection(reader.GetOutputPort())
+# destroyTopology.SetInputConnection(reader.GetOutputPort())
+
+# strainFilter = vtk.vtkCellDerivatives()
+# strainFilter.SetVectorModeToPassVectors()
+# strainFilter.SetTensorModeToComputeStrain()
+# strainFilter.SetOutputPointsPrecision(vtk.vtkAlgorithm.DOUBLE_PRECISION)
+
+warpVector = vtk.vtkWarpVector()
+# warpVector.SetInputConnection(strainFilter.GetOutputPort())
 
 # cell2point = vtk.vtkCellDataToPointData()
 # cell2point.SetInputConnection(destroyTopology.GetOutputPort())
 # cell2point.PassCellDataOff()
+# cell2point.SetOutputPointsPrecision(vtk.vtkAlgorithm.DOUBLE_PRECISION)
 
 plane = vtk.vtkPlane()
 # plane.SetOrigin(0, 0, 0)
@@ -104,6 +107,7 @@ plane.SetNormal(0, 1, 0)
 cutter = vtk.vtkCutter()
 cutter.SetCutFunction(plane)
 cutter.SetInputConnection(warpVector.GetOutputPort())
+cutter.SetOutputPointsPrecision(vtk.vtkAlgorithm.DOUBLE_PRECISION)
 
 writer = vtk.vtkXMLUnstructuredGridWriter()
 
@@ -112,8 +116,12 @@ rs_contact = []
 
 fig, ax = plt.subplots()
 
+ax.set_xlabel("$r$ / m")
+ax.set_ylabel(r"$\sigma_{yy}$ / Pa")
+
+
 for t, fn in zip(ts, fns):
-    # print(t, fn)
+    print("###### time", t)
     reader.SetFileName(fn)
     reader.Update()
     grid = reader.GetOutput()
@@ -125,7 +133,7 @@ for t, fn in zip(ts, fns):
     disp_3d_vtk.SetName("u")
 
     grid.GetPointData().AddArray(disp_3d_vtk)
-    grid.GetPointData().SetActiveVectors("u")
+    # grid.GetPointData().SetActiveVectors("u")
 
     if True:
         # compute strain
@@ -135,6 +143,7 @@ for t, fn in zip(ts, fns):
             assert point_data.shape[1] == 2  # 2D vector field
             node_ids = [ cell.GetPointId(i) for i in range(cell.GetNumberOfPoints()) ]
 
+            # interpolation using barycentric coordinates on linear triangles
             T = np.matrix(np.empty((2,2)))
             T[:,0] = (cell_pts[0,:] - cell_pts[2,:]).T
             T[:,1] = (cell_pts[1,:] - cell_pts[2,:]).T
@@ -179,7 +188,8 @@ for t, fn in zip(ts, fns):
                     ])
                 strain_data[node_id, :] = strain_kelvin
 
-        def computeStrain():
+        def computeStrain(grid):
+            destroyTopology.SetInputData(grid)
             destroyTopology.Update()
             grid = destroyTopology.GetOutput()
 
@@ -201,17 +211,35 @@ for t, fn in zip(ts, fns):
             strain_vtk.SetName("strain_post")
             grid.GetPointData().AddArray(strain_vtk)
 
+            # ( (4 x 4) * (nodes x 4).T ).T
+            stress_kelvin = (C * strain_kelvin.T).T
+            # stress_kelv = np.empty_like(strain_kelv)
+            # for c, eps in enumerate(strain_kelv):
+            #     stress_kelv[c, :] = (C * np.atleast_2d(eps).T).flat
+
+            stress_kelvin_vtk = numpy_to_vtk(stress_kelvin, 1)
+            stress_kelvin_vtk.SetName("stress_post_kelvin")
+
+            stress_symm_tensor = stress_kelvin.copy()
+            stress_symm_tensor[:,3] /= np.sqrt(2.0)
+
+            stress_symm_tensor_vtk = numpy_to_vtk(stress_symm_tensor, 1)
+            stress_symm_tensor_vtk.SetName("stress_post")
+            grid.GetPointData().AddArray(stress_symm_tensor_vtk)
+
             writer.SetInputData(grid)
             writer.SetFileName(os.path.join(
                 os.path.dirname(fn), "post_{:.0f}.vtu".format(t)))
             writer.Write()
 
-        computeStrain()
+            return grid
 
-    strainFilter.SetInputData(grid)
+        grid = computeStrain(grid)
 
     # compute stress for debugging
     if False:
+        strainFilter.SetInputData(grid)
+
         strainFilter.Update()
         grid = strainFilter.GetOutput()
 
@@ -238,55 +266,126 @@ for t, fn in zip(ts, fns):
             os.path.dirname(fn), "post_{:.0f}.vtu".format(t)))
         writer.Write()
 
-    # warpVector.SetInputData(grid)
+    grid.GetPointData().SetActiveVectors("u")
+    warpVector.SetInputData(grid)
     warpVector.Update()
     grid = warpVector.GetOutput()
 
     xmin, xmax, ymin, ymax, zmin, zmax = grid.GetBounds()
     y_top = get_y_top(t)
-    assert ymax == y_top
+    try:
+        assert abs(ymax - y_top) < 1e-7
+    except:
+        print(ymax, y_top, ymax - y_top)
+        raise
     ws.append(2 * (1.0 - y_top))
 
     # determine top boundary
     coords = vtk_to_numpy(grid.GetPoints().GetData())
-    idcs_top_boundary = np.where(coords[:,1] > y_top - 1e-8)[0]
+    idcs_top_boundary = np.where(coords[:,1] > y_top - 1e-7)[0]
+    # print(idcs_top_boundary)
+    assert len(idcs_top_boundary) != 0
     xs_top_boundary = coords[idcs_top_boundary, 0]
     r_contact = max(xs_top_boundary) - min(xs_top_boundary)
     print("radius of contact area:", r_contact)
 
     rs_contact.append(r_contact)
 
-    plane.SetOrigin(0, y_top, 0)
-    cutter.Update()
-    grid = cutter.GetOutput()
+    def stress_at_contact_area_OLD():
+        plane.SetOrigin(0, y_top - 1e-7, 0)
+        cutter.Update()
+        grid = cutter.GetOutput()
 
-    # convert 3x3 strain tensor to 4x1 Kelvin vector
-    strain = vtk_to_numpy(grid.GetCellData().GetArray("Strain"))
-    strain_kelv = strain[:,(0, 4, 8, 1)]
-    strain_kelv[:, 3] *= np.sqrt(2)
+        # convert 3x3 strain tensor to 4x1 Kelvin vector
+        strain = vtk_to_numpy(grid.GetCellData().GetArray("Strain"))
+        strain_kelv = strain[:,(0, 4, 8, 1)]
+        strain_kelv[:, 3] *= np.sqrt(2)
 
-    stress_kelv = np.empty_like(strain_kelv)
-    for c, eps in enumerate(strain_kelv):
-        # print(C * np.atleast_2d(eps).T)
-        stress_kelv[c, :] = (C * np.atleast_2d(eps).T).flat
+        stress_kelv = np.empty_like(strain_kelv)
+        for c, eps in enumerate(strain_kelv):
+            # print(C * np.atleast_2d(eps).T)
+            stress_kelv[c, :] = (C * np.atleast_2d(eps).T).flat
 
-    # print(stress_kelv)
+        # print(stress_kelv)
 
-    # TODO cell centers
-    xs = vtk_to_numpy(grid.GetPoints().GetData())[:-1, 0]
-    idcs = np.argsort(xs)
-    # h, = ax.plot(xs[idcs], stress_kelv[:, 1][idcs])  # sigma_yy
-    h, = ax.step(xs[idcs], stress_kelv[:, 1][idcs])  # sigma_yy
-    assert abs(max(xs) - r_contact) < 1e-8
-    # assert abs(min(xs)) < 1e-8
+        # TODO cell centers
+        xs = vtk_to_numpy(grid.GetPoints().GetData())[:-1, 0]
+        idcs = np.argsort(xs)
+        # h, = ax.plot(xs[idcs], stress_kelv[:, 1][idcs])  # sigma_yy
+        h, = ax.step(xs[idcs], stress_kelv[:, 1][idcs])  # sigma_yy
+        assert abs(max(xs) - r_contact) < 1e-8
+        # assert abs(min(xs)) < 1e-8
 
-    rs = np.linspace(0, r_contact, 200)
-    ax.plot(rs, -p_contact(rs, r_contact), color=h.get_color(), ls=":")
+        rs = np.linspace(0, r_contact, 200)
+        ax.plot(rs, -p_contact(rs, r_contact), color=h.get_color(), ls=":")
 
-    rs = vtk_to_numpy(grid.GetPoints().GetData())[:,0]
-    stress_yy = vtk_to_numpy(grid.GetPointData().GetArray("sigma"))[:,1]
-    idcs = np.argsort(rs)
-    ax.plot(rs[idcs], stress_yy[idcs], color=h.get_color(), ls="--")
+        rs = vtk_to_numpy(grid.GetPoints().GetData())[:,0]
+        stress_yy = vtk_to_numpy(grid.GetPointData().GetArray("sigma"))[:,1]
+        idcs = np.argsort(rs)
+        ax.plot(rs[idcs], stress_yy[idcs], color=h.get_color(), ls="--")
+
+    def average_stress(rs, stress):
+        r_contact = max(rs)
+        rs_int = np.linspace(min(rs), max(rs), max(len(rs), 200))
+        stress_int = interp1d(rs, stress, bounds_error=False, fill_value=0.0)
+        avg_stress = np.empty_like(rs_int)
+
+        for i, r in enumerate(rs_int[:-1]):
+            rho_max = np.sqrt(r_contact**2 - r**2)
+            rhos = np.linspace(0, rho_max, 100)
+            xis = np.sqrt(rhos**2 + r**2)
+            try:
+                assert max(xis) <= r_contact + 1e-8
+            except:
+                print( max(xis), r_contact)
+                raise
+            # try:
+            #     assert max(rhos) <= r_contact
+            # except:
+            #     print(max(rhos), r_contact)
+            #     raise
+            avg_stress[i] = 1.0 / rho_max * np.trapz(x=rhos, y=stress_int(xis))
+        avg_stress[-1] = 0.0
+
+        return rs_int, avg_stress
+
+    def stress_at_contact_area():
+        plane.SetOrigin(0, y_top, 0)
+        cutter.Update()
+        grid = cutter.GetOutput()
+
+        # for a in range(grid.GetPointData().GetNumberOfArrays()):
+        #     print(grid.GetPointData().GetArrayName(a))
+
+        stress = vtk_to_numpy(grid.GetPointData().GetArray("stress_post"))
+        xs = vtk_to_numpy(grid.GetPoints().GetData())[:, 0]
+        rs, avg_stress_yy = average_stress(xs, stress[:,1])
+        h, = ax.plot(rs, avg_stress_yy, label="post" if t == 1 else "")
+
+        # idcs = np.argsort(xs)
+        # h, = ax.plot(xs[idcs], stress[:, 1][idcs], label="post" if t == 0 else "")  # sigma_yy
+        # h, = ax.step(xs[idcs], stress_kelv[:, 1][idcs])  # sigma_yy
+        # assert abs(max(xs) - r_contact) < 1e-8
+        # assert abs(min(xs)) < 1e-8
+
+        rs = np.linspace(0, r_contact, 200)
+        ax.plot(rs, -p_contact(rs, r_contact), color=h.get_color(), ls=":", label="ref" if t == 1 else "")
+
+        stress_yy = vtk_to_numpy(grid.GetPointData().GetArray("sigma"))[:,1]
+        rs, avg_stress_yy = average_stress(xs, stress_yy)
+        ax.plot(rs, avg_stress_yy, color=h.get_color(), ls="--", label="ogs" if t == 1 else "")
+
+        # rs = vtk_to_numpy(grid.GetPoints().GetData())[:, 0]
+        # idcs = np.argsort(rs)
+        # ax.plot(rs[idcs], stress_yy[idcs], color=h.get_color(), ls="--", label="ogs" if t == 0 else "")
+
+        ax.scatter([r_contact], [0], color=h.get_color())
+        ax.legend()
+
+        fig.savefig("stress_at_contact.png")
+
+    if t > 0:
+        stress_at_contact_area()
 
 fig.savefig("stress_at_contact.png")
 plt.close(fig)
