@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <OpenGeoSysProject>
-    <mesh>unit-circle.vtu</mesh>
+    <mesh axially_symmetric="true">unit-circle.vtu</mesh>
     <geometry>unit-circle.gml</geometry>
     <python_script>hertz-pressure-bc.py</python_script>
     <processes>
@@ -20,6 +20,7 @@
             </process_variables>
             <secondary_variables>
                 <secondary_variable type="static" internal_name="sigma" output_name="sigma"/>
+                <secondary_variable type="static" internal_name="epsilon" output_name="epsilon"/>
             </secondary_variables>
         </process>
     </processes>
@@ -39,6 +40,7 @@
                     <variables>
                         <variable>displacement</variable>
                         <variable>sigma</variable>
+                        <variable>epsilon</variable>
                     </variables>
                 </output>
                 <time_stepping>
@@ -86,11 +88,6 @@
             <name>displacement0</name>
             <type>Constant</type>
             <values>0 0</values>
-        </parameter>
-        <parameter>
-            <name>one</name>
-            <type>Constant</type>
-            <value>1</value>
         </parameter>
         <parameter>
             <name>zero</name>
