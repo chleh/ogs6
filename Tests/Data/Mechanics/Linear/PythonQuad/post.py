@@ -282,10 +282,11 @@ for t, fn in zip(ts, fns):
     def average_stress(rs, stress):
         r_contact = max(rs)
         rs_int = np.linspace(min(rs), max(rs), max(len(rs), 200))
+        rs_int[-1] -= 1e-8
         stress_int = interp1d(rs, stress, bounds_error=False, fill_value=0.0)
         avg_stress = np.empty_like(rs_int)
 
-        for i, r in enumerate(rs_int[:-1]):
+        for i, r in enumerate(rs_int):
             rho_max = np.sqrt(r_contact**2 - r**2)
             rhos = np.linspace(0, rho_max, 100)
             xis = np.sqrt(rhos**2 + r**2)
@@ -295,7 +296,7 @@ for t, fn in zip(ts, fns):
                 print(max(xis), r_contact)
                 raise
             avg_stress[i] = 1.0 / rho_max * np.trapz(x=rhos, y=stress_int(xis))
-        avg_stress[-1] = 0.0
+        # avg_stress[-1] = 0.0
 
         return rs_int, avg_stress
 
@@ -321,6 +322,10 @@ for t, fn in zip(ts, fns):
         if add_leg: ax.plot([], [], color="k", ls=":", label="ref")
         h, = ax.plot(rs, -p_contact(rs, r_contact), ls=":")
 
+        if add_leg: ax.plot([], [], color="k", ls="-", linewidth=1, label="ref (ana $r$)")
+        r_contact_ana = np.sqrt(ws[-1] * R)
+        ax.plot(rs, -p_contact(rs, r_contact_ana), ls="-", linewidth=1, color=h.get_color())
+
         stress_yy = vtk_to_numpy(grid.GetPointData().GetArray("sigma"))[:,1]
         rs, avg_stress_yy = average_stress(xs, stress_yy)
         if add_leg: ax.plot([], [], color="k", ls="--", label="ogs")
@@ -329,13 +334,13 @@ for t, fn in zip(ts, fns):
         stress = vtk_to_numpy(grid.GetPointData().GetArray("stress_post"))
         rs, avg_stress_yy = average_stress(xs, stress[:,1])
         if add_leg: ax.plot([], [], color="k", label="post")
-        if add_leg: ax.plot([], [], color="k", ls="", marker="+", markersize=3, label="grid nodes")
+        if add_leg: ax.plot([], [], color="k", ls="", marker="+", markersize=5, label="grid nodes")
         ax.plot(rs, avg_stress_yy, color=h.get_color(), label=r"$\Delta w = {}$".format(2*(1.0 - y_top)))
 
         ax.scatter([r_contact], [0], color=h.get_color())
 
         if t == ts[-1]:
-            ax.plot(xs, [0]*len(xs), color="k", marker="+", markersize=3, ls="")
+            ax.plot(xs, [0]*len(xs), color="k", marker="+", markersize=5, ls="")
 
         ax.legend(loc="center left", bbox_to_anchor=(1.0, 0.5))
 
