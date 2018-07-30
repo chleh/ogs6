@@ -67,8 +67,12 @@ PythonBoundaryCondition::PythonBoundaryCondition(
 
     std::vector<MeshLib::Node*> nodes = MeshLib::getUniqueNodes(_elements);
 
-    auto const& mesh_subsets =
-        _bc_data.dof_table_bulk.getMeshSubsets(_bc_data.global_component_id);
+    // FIXME
+#if 0
+    auto const& mesh_subset =
+        _bc_data.dof_table_bulk.getMeshSubset(_bc_data.global_component_id);
+
+    mesh_subset.getI
 
     // TODO extend the node intersection to all parts of mesh_subsets, i.e.
     // to each of the MeshSubset in the mesh_subsets.
@@ -85,6 +89,7 @@ PythonBoundaryCondition::PythonBoundaryCondition(
         _bc_data.mesh.getDimension(), _elements, *_dof_table_boundary,
         shapefunction_order, _local_assemblers,
         _bc_data.mesh.isAxiallySymmetric(), _integration_order, _bc_data);
+#endif
 }
 
 void PythonBoundaryCondition::getEssentialBCValues(

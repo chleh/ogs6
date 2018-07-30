@@ -97,6 +97,10 @@ public:
         std::vector<int> const& component_ids,
         MeshLib::MeshSubset&& mesh_subset) const;
 
+    std::unique_ptr<LocalToGlobalIndexMap> deriveBoundaryConstrainedMap(
+        std::vector<MeshLib::MeshSubset>&& mesh_subsets,
+        std::vector<MeshLib::Element*> const& elements) const;
+
     /// Returns total number of degrees of freedom including those located in
     /// the ghost nodes.
     std::size_t dofSizeWithGhosts() const;
@@ -163,10 +167,6 @@ public:
         std::vector<MeshLib::Element*> const& elements,
         NumLib::MeshComponentMap&& mesh_component_map, ConstructorTag);
 
-    /// The global component id for the specific variable (like velocity) and a
-    /// component (like x, or y, or z).
-    int getGlobalComponent(int const variable_id, int const component_id) const;
-
 private:
     template <typename ElementIterator>
     void findGlobalIndices(ElementIterator first, ElementIterator last,
@@ -180,6 +180,7 @@ private:
         std::vector<MeshLib::Node*> const& nodes, std::size_t const mesh_id,
         const int component_id, const int comp_id_write);
 
+public:
     /// The global component id for the specific variable (like velocity) and a
     /// component (like x, or y, or z).
     int getGlobalComponent(int const variable_id, int const component_id) const;

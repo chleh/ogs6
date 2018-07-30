@@ -191,7 +191,8 @@ LocalToGlobalIndexMap::LocalToGlobalIndexMap(
     std::vector<int> const& global_component_ids,
     std::vector<int> const& variable_component_offsets,
     std::vector<MeshLib::Element*> const& elements,
-    NumLib::MeshComponentMap&& mesh_component_map)
+    NumLib::MeshComponentMap&& mesh_component_map,
+    LocalToGlobalIndexMap::ConstructorTag)
     : _mesh_subsets(std::move(mesh_subsets)),
       _mesh_component_map(std::move(mesh_component_map)),
       _variable_component_offsets(variable_component_offsets)
@@ -249,12 +250,13 @@ LocalToGlobalIndexMap* LocalToGlobalIndexMap::deriveBoundaryConstrainedMap(
 
     return new LocalToGlobalIndexMap(
         std::move(all_mesh_subsets), global_component_ids,
-        _variable_component_offsets, elements, std::move(mesh_component_map));
+        _variable_component_offsets, elements, std::move(mesh_component_map),
+        ConstructorTag{});
 }
 
 std::unique_ptr<LocalToGlobalIndexMap>
 LocalToGlobalIndexMap::deriveBoundaryConstrainedMap(
-    MeshLib::MeshSubsets&& mesh_subsets,
+    std::vector<MeshLib::MeshSubset>&& mesh_subsets,
     std::vector<MeshLib::Element*> const& elements) const
 {
     DBUG("Construct reduced local to global index map.");
@@ -268,6 +270,10 @@ LocalToGlobalIndexMap::deriveBoundaryConstrainedMap(
         global_component_ids.push_back(i);
     }
 
+    // FIXME
+    return nullptr;
+
+#if 0
     auto mesh_component_map =
         _mesh_component_map.getSubset(global_component_ids, mesh_subsets);
 
@@ -281,6 +287,7 @@ LocalToGlobalIndexMap::deriveBoundaryConstrainedMap(
     return std::make_unique<LocalToGlobalIndexMap>(
         std::move(all_mesh_subsets), global_component_ids, elements,
         std::move(mesh_component_map), ConstructorTag{});
+#endif
 }
 
 std::size_t LocalToGlobalIndexMap::dofSizeWithGhosts() const

@@ -6,7 +6,9 @@ target_link_libraries(ogs
 )
 
 if(OGS_USE_PYTHON)
+    message(STATUS "OGS uses Python!!! ${PYTHON_LIBRARIES}")
     target_link_libraries(ogs PRIVATE pybind11::embed)
+    target_link_libraries(ogs PRIVATE ${PYTHON_LIBRARIES})
     # target_include_directories(ogs PRIVATE ${PYTHON_INCLUDE_DIRS})
 
     add_library(ogs_python_bindings STATIC ogs_python_bindings.cpp)
