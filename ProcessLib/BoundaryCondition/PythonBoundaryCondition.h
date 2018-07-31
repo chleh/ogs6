@@ -38,6 +38,7 @@ public:
     PythonBoundaryCondition(PythonBoundaryConditionData&& bc_data,
                             unsigned const integration_order,
                             unsigned const shapefunction_order,
+                            unsigned const global_dim,
                             bool const flush_stdout);
 
     void getEssentialBCValues(

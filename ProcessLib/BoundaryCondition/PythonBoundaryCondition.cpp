@@ -53,6 +53,7 @@ PythonBoundaryCondition::PythonBoundaryCondition(
     PythonBoundaryConditionData&& bc_data,
     unsigned const integration_order,
     unsigned const shapefunction_order,
+    unsigned const global_dim,
     bool const flush_stdout)
     : _bc_data(std::move(bc_data)),
       _integration_order(integration_order),
@@ -67,8 +68,8 @@ PythonBoundaryCondition::PythonBoundaryCondition(
         std::move(bc_mesh_subset));
 
     createLocalAssemblers<PythonBoundaryConditionLocalAssembler>(
-        _bc_data.mesh.getDimension(), _bc_data.mesh.getElements(),
-        *_dof_table_boundary, shapefunction_order, _local_assemblers,
+        global_dim, _bc_data.mesh.getElements(), *_dof_table_boundary,
+        shapefunction_order, _local_assemblers,
         _bc_data.mesh.isAxiallySymmetric(), _integration_order, _bc_data);
 }
 
@@ -206,7 +207,7 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
         PythonBoundaryConditionData{
             bc, dof_table, bulk_mesh_id,
             dof_table.getGlobalComponent(variable_id, component_id), bc_mesh},
-        integration_order, shapefunction_order, flush_stdout);
+        integration_order, shapefunction_order, global_dim, flush_stdout);
 }
 
 }  // namespace ProcessLib
