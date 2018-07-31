@@ -47,22 +47,22 @@ class BC(OpenGeoSys.BoundaryCondition):
             if self.is_new_restricted_node(node_id):
                 res = (True, y_top - y)
                 self._restricted_nodes[node_id] = x
-                print("[BC] {self._iteration:2} {node_id:5} new restr node".format(
+                print("[BC] {it:2} {n:5} new restr node".format(
                     it=self._iteration, n=node_id))
 
             elif self._iteration <= 1:
                 res = (True, y_top - y)
-                print("[BC] {self._iteration:2} {node_id:5} keep restr node".format(
+                print("[BC] {it:2} {n:5} keep restr node".format(
                     it=self._iteration, n=node_id))
 
             elif self.is_relaxed_restricted_node(x) and not self.flickers(node_id):
                 res = (False, 0.0)
-                print("[BC] {self._iteration:2} {node_id:5} relax restr node".format(
+                print("[BC] {it:2} {n:5} relax restr node".format(
                     it=self._iteration, n=node_id))
                 self.relax(node_id)
 
             else:
-                print("[BC] {self._iteration:2} {node_id:5} generally y_deformed > y_top - 1e-8".format(
+                print("[BC] {it:2} {n:5} generally y_deformed > y_top - 1e-8".format(
                     it=self._iteration, n=node_id))
                 res = (True, y_top - y)
         else:
