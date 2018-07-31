@@ -67,15 +67,17 @@ std::unique_ptr<BoundaryCondition> createBoundaryCondition(
             config.config, dof_table, variable_id, *config.component_id,
             integration_order, shapefunction_order, mesh);
     }
-#ifdef OGS_USE_PYTHON
     if (type == "Python")
     {
+#ifdef OGS_USE_PYTHON
         return ProcessLib::createPythonBoundaryCondition(
             config.config, config.mesh, dof_table, mesh.getID(), variable_id,
-            *config.component_id, mesh.isAxiallySymmetric(), integration_order,
-            shapefunction_order, mesh.getDimension());
-    }
+            *config.component_id, integration_order, shapefunction_order,
+            mesh.getDimension());
+#else
+        OGS_FATAL("OpenGeoSys has not been built with Python support.");
 #endif
+    }
 
     //
     // Special boundary conditions
