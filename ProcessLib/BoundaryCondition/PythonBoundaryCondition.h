@@ -22,17 +22,29 @@ namespace ProcessLib
 {
 class PythonBoundaryConditionPythonSideInterface;
 
+//! Groups data used by essential and natural BCs, in particular by the
+//! local assemblers of the latter.
 struct PythonBoundaryConditionData
 {
+    //! Python object computing BC values.
     PythonBoundaryConditionPythonSideInterface* bc_object;
+
+    //! DOF table of the entire domain.
     NumLib::LocalToGlobalIndexMap const& dof_table_bulk;
+
+    //! Mesh ID of the entire domain.
     std::size_t const bulk_mesh_id;
+
+    //! Global component ID of the (variable, component) to which this BC is
+    //! applied.
     int const global_component_id;
 
+    //! The boundary mesh, i.e., the domain of this BC.
     const MeshLib::Mesh& boundary_mesh;
 };
 
-class PythonBoundaryCondition : public BoundaryCondition
+//! A boundary condition whose values are computed by a Python script.
+class PythonBoundaryCondition final : public BoundaryCondition
 {
 public:
     PythonBoundaryCondition(PythonBoundaryConditionData&& bc_data,
@@ -49,27 +61,26 @@ public:
                         GlobalVector& b, GlobalMatrix* Jac) override;
 
 private:
+    //! Auxiliary data.
     PythonBoundaryConditionData _bc_data;
 
-    /// Local dof table, a subset of the global one restricted to the
-    /// participating #_elements of the boundary condition.
+    //! Local dof table for the boundary mesh.
     std::unique_ptr<NumLib::LocalToGlobalIndexMap> _dof_table_boundary;
 
-    std::unique_ptr<MeshLib::MeshSubset const> _mesh_subset_all_nodes;
-
-    /// Integration order for integration over the lower-dimensional elements
-    unsigned const _integration_order;
-
-    /// Local assemblers for each element of #_elements.
+    //! Local assemblers for all elements of the boundary mesh.
     std::vector<
         std::unique_ptr<GenericNaturalBoundaryConditionLocalAssemblerInterface>>
         _local_assemblers;
 
+    //! Whether or not to flush standard output before and after each call to
+    //! Python code. Ensures right order of output messages and therefore
+    //! simplifies debugging.
     bool const _flush_stdout;
 };
 
+//! Creates a new PythonBoundaryCondition object.
 std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
-    BaseLib::ConfigTree const& config, MeshLib::Mesh const& bc_mesh,
+    BaseLib::ConfigTree const& config, MeshLib::Mesh const& boundary_mesh,
     NumLib::LocalToGlobalIndexMap const& dof_table, std::size_t bulk_mesh_id,
     int const variable_id, int const component_id, bool is_axially_symmetric,
     unsigned const integration_order, unsigned const shapefunction_order,

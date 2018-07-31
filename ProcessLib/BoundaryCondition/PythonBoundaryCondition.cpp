@@ -45,6 +45,7 @@ public:
     }
 
 private:
+    //! To flush or not to flush.
     const bool _flush;
 };
 }  // anonymous namespace
@@ -58,7 +59,6 @@ PythonBoundaryCondition::PythonBoundaryCondition(
     unsigned const global_dim,
     bool const flush_stdout)
     : _bc_data(std::move(bc_data)),
-      _integration_order(integration_order),
       _flush_stdout(flush_stdout)
 {
     std::vector<MeshLib::Node*> const& bc_nodes =
@@ -73,7 +73,7 @@ PythonBoundaryCondition::PythonBoundaryCondition(
     createLocalAssemblers<PythonBoundaryConditionLocalAssembler>(
         global_dim, _bc_data.boundary_mesh.getElements(), *_dof_table_boundary,
         shapefunction_order, _local_assemblers,
-        _bc_data.boundary_mesh.isAxiallySymmetric(), _integration_order,
+        _bc_data.boundary_mesh.isAxiallySymmetric(), integration_order,
         _bc_data);
 }
 
@@ -174,18 +174,21 @@ void PythonBoundaryCondition::applyNaturalBC(const double t,
 }
 
 std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
-    BaseLib::ConfigTree const& config, MeshLib::Mesh const& bc_mesh,
+    BaseLib::ConfigTree const& config, MeshLib::Mesh const& boundary_mesh,
     NumLib::LocalToGlobalIndexMap const& dof_table, std::size_t bulk_mesh_id,
     int const variable_id, int const component_id, bool is_axially_symmetric,
     unsigned const integration_order, unsigned const shapefunction_order,
     unsigned const global_dim)
 {
+    //! \ogs_file_param{prj__process_variables__process_variable__boundary_conditions__boundary_condition__type}
     config.checkConfigParameter("type", "Python");
 
+    //! \ogs_file_param{prj__process_variables__process_variable__boundary_conditions__boundary_condition__Python__bc_object}
     auto const bc_object = config.getConfigParameter<std::string>("bc_object");
+    //! \ogs_file_param{prj__process_variables__process_variable__boundary_conditions__boundary_condition__Python__flush_stdout}
     auto const flush_stdout = config.getConfigParameter("flush_stdout", false);
 
-    // Evaluate in scope of main module
+    // Evaluate Python code in scope of main module
     pybind11::object scope =
         pybind11::module::import("__main__").attr("__dict__");
 
@@ -211,7 +214,8 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
     return std::make_unique<PythonBoundaryCondition>(
         PythonBoundaryConditionData{
             bc, dof_table, bulk_mesh_id,
-            dof_table.getGlobalComponent(variable_id, component_id), bc_mesh},
+            dof_table.getGlobalComponent(variable_id, component_id),
+            boundary_mesh},
         integration_order, shapefunction_order, global_dim, flush_stdout);
 }
 
