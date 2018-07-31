@@ -40,7 +40,7 @@ public:
     {
     }
 
-    void assemble(std::size_t const id,
+    void assemble(std::size_t const boundary_element_id,
                   NumLib::LocalToGlobalIndexMap const& dof_table_boundary,
                   double const t, const GlobalVector& x, GlobalMatrix& /*K*/,
                   GlobalVector& b, GlobalMatrix* Jac) override
@@ -57,6 +57,10 @@ public:
         auto const num_var = _data.dof_table_bulk.getNumberOfVariables();
         auto const num_nodes = _element.getNumberOfNodes();
 
+        auto const& bulk_node_ids_map =
+            *_data.mesh.getProperties().getPropertyVector<std::size_t>(
+                "bulk_node_ids");
+
         // gather primary variables
         // TODO there might be problems with mixed ansatz functions
         std::vector<double> primary_variables;
@@ -70,9 +74,12 @@ public:
                      ++element_node_id)
                 {
                     auto* node = _element.getNode(element_node_id);
-                    auto const node_id = node->getID();
-                    MeshLib::Location loc{_data.mesh.getID(),
-                                          MeshLib::MeshItemType::Node, node_id};
+                    auto const boundary_node_id = node->getID();
+                    auto const bulk_node_id =
+                        bulk_node_ids_map[boundary_node_id];
+                    MeshLib::Location loc{_data.bulk_mesh_id,
+                                          MeshLib::MeshItemType::Node,
+                                          bulk_node_id};
                     auto const dof_idx =
                         _data.dof_table_bulk.getGlobalIndex(loc, var, comp);
                     primary_variables.push_back(x[dof_idx]);
@@ -104,6 +111,7 @@ public:
             auto const res = _data.bc_object->getFlux(t, coords, prim_vars);
             if (!_data.bc_object->isOverriddenNatural())
                 throw PyNotOverridden{};
+            // TODO better documentation
             if (!std::get<0>(res))
                 return;
 
@@ -114,6 +122,9 @@ public:
             auto const& dFlux = std::get<2>(res);
             if (static_cast<int>(dFlux.size()) != num_comp_total)
             {
+                // This strict check is technically mandatory only if a Jacobian
+                // is assembled. However, it is done as a consistency check also
+                // for cases without Jacobian assembly.
                 OGS_FATAL(
                     "The Python BC must return the derivative of the flux "
                     "w.r.t. each primary variable. %d components expected. %d "
@@ -128,7 +139,8 @@ public:
                     auto const left = comp * num_nodes;
                     auto const width = num_nodes;
                     auto const height = num_nodes;
-                    // -= takes into account the sign convention
+                    // The assignement -= takes into account the sign convention
+                    // of 1st-order in time ODE systems in OpenGeoSys.
                     local_Jac.block(top, left, width, height).noalias() -=
                         sm.N.transpose() * (dFlux[comp] * w) * sm.N;
                 }
@@ -141,12 +153,15 @@ public:
 
         // TODO change for Newton (and Picard)!
         auto const& indices_comp =
-            dof_table_boundary(id, _data.global_component_id).rows;
+            dof_table_boundary(boundary_element_id, _data.global_component_id)
+                .rows;
         b.add(indices_comp, local_rhs);
 
         if (has_dFlux && Jac)
         {
-            auto const indices_all = NumLib::getIndices(id, dof_table_boundary);
+            // only assemble a block of the Jacobian, not the whole local matrix
+            auto const indices_all =
+                NumLib::getIndices(boundary_element_id, dof_table_boundary);
             MathLib::RowColumnIndices<GlobalIndexType> rci{indices_comp,
                                                            indices_all};
             Jac->add(rci, local_Jac);

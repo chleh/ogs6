@@ -26,6 +26,7 @@ struct PythonBoundaryConditionData
 {
     PyBoundaryCondition* bc_object;
     NumLib::LocalToGlobalIndexMap const& dof_table_bulk;
+    std::size_t const bulk_mesh_id;
     int const global_component_id;
 
     const MeshLib::Mesh& mesh;
@@ -68,8 +69,8 @@ private:
 
 std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
     BaseLib::ConfigTree const& config, MeshLib::Mesh const& bc_mesh,
-    NumLib::LocalToGlobalIndexMap const& dof_table, int const variable_id,
-    int const component_id, bool is_axially_symmetric,
+    NumLib::LocalToGlobalIndexMap const& dof_table, std::size_t bulk_mesh_id,
+    int const variable_id, int const component_id, bool is_axially_symmetric,
     unsigned const integration_order, unsigned const shapefunction_order,
     unsigned const global_dim);
 

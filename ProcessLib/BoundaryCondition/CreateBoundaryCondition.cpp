@@ -71,7 +71,7 @@ std::unique_ptr<BoundaryCondition> createBoundaryCondition(
     if (type == "Python")
     {
         return ProcessLib::createPythonBoundaryCondition(
-            config.config, config.mesh, dof_table, variable_id,
+            config.config, config.mesh, dof_table, mesh.getID(), variable_id,
             *config.component_id, mesh.isAxiallySymmetric(), integration_order,
             shapefunction_order, mesh.getDimension());
     }

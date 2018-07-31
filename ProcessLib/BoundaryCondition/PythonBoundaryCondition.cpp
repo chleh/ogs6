@@ -78,8 +78,11 @@ void PythonBoundaryCondition::getEssentialBCValues(
 {
     FlushStdoutGuard guard(_flush_stdout);
 
-    auto const mesh_id = _bc_data.mesh.getID();
     auto const nodes = _bc_data.mesh.getNodes();
+
+    auto const& bulk_node_ids_map =
+        *_bc_data.mesh.getProperties().getPropertyVector<std::size_t>(
+            "bulk_node_ids");
 
     bc_values.ids.clear();
     bc_values.values.clear();
@@ -87,34 +90,34 @@ void PythonBoundaryCondition::getEssentialBCValues(
     bc_values.ids.reserve(_bc_data.mesh.getNumberOfNodes());
     bc_values.values.reserve(_bc_data.mesh.getNumberOfNodes());
 
-    SpatialPosition pos;
     std::vector<double> primary_variables;
 
     for (auto const* node : _bc_data.mesh.getNodes())
     {
-        auto const node_id = node->getID();
+        auto const boundary_node_id = node->getID();
+        auto const bulk_node_id = bulk_node_ids_map[boundary_node_id];
 
         // gather primary variable values
         primary_variables.clear();
-        auto const num_var = _bc_data.dof_table_bulk.getNumberOfVariables();
+        auto const num_var = _dof_table_boundary->getNumberOfVariables();
         for (int var = 0; var < num_var; ++var)
         {
             auto const num_comp =
-                _bc_data.dof_table_bulk.getNumberOfVariableComponents(var);
+                _dof_table_boundary->getNumberOfVariableComponents(var);
             for (int comp = 0; comp < num_comp; ++comp)
             {
-                MeshLib::Location loc{
-                    _bc_data.mesh.getID() /* TODO bulk mesh ID */,
-                    MeshLib::MeshItemType::Node, node_id};
+                MeshLib::Location loc{_bc_data.bulk_mesh_id,
+                                      MeshLib::MeshItemType::Node,
+                                      bulk_node_id};
                 auto const dof_idx =
                     _bc_data.dof_table_bulk.getGlobalIndex(loc, var, comp);
                 primary_variables.push_back(x[dof_idx]);
             }
         }
 
-        auto* xs = nodes[node_id]->getCoords();  // TODO DDC problems?
+        auto* xs = nodes[boundary_node_id]->getCoords();  // TODO DDC problems?
         auto val = _bc_data.bc_object->getDirichletBCValue(
-            t, {xs[0], xs[1], xs[2]}, node_id, primary_variables);
+            t, {xs[0], xs[1], xs[2]}, boundary_node_id, primary_variables);
         if (!_bc_data.bc_object->isOverriddenEssential())
         {
             DBUG(
@@ -124,11 +127,11 @@ void PythonBoundaryCondition::getEssentialBCValues(
         }
         if (val.first)
         {
-            pos.setNodeID(node_id);
-            MeshLib::Location l(mesh_id, MeshLib::MeshItemType::Node, node_id);
-            const auto g_idx = _bc_data.dof_table_bulk.getGlobalIndex(
+            MeshLib::Location l(_bc_data.bulk_mesh_id,
+                                MeshLib::MeshItemType::Node, bulk_node_id);
+            const auto dof_idx = _bc_data.dof_table_bulk.getGlobalIndex(
                 l, _bc_data.global_component_id);
-            if (g_idx == NumLib::MeshComponentMap::nop)
+            if (dof_idx == NumLib::MeshComponentMap::nop)
                 continue;
             // For the DDC approach (e.g. with PETSc option), the negative
             // index of g_idx means that the entry by that index is a ghost
@@ -137,9 +140,9 @@ void PythonBoundaryCondition::getEssentialBCValues(
             // the Dirichlet BC, the negative index is not accepted like
             // other matrix or vector PETSc routines. Therefore, the
             // following if-condition is applied.
-            if (g_idx >= 0)
+            if (dof_idx >= 0)
             {
-                bc_values.ids.emplace_back(g_idx);
+                bc_values.ids.emplace_back(dof_idx);
                 bc_values.values.emplace_back(val.second);
             }
         }
@@ -167,8 +170,8 @@ void PythonBoundaryCondition::applyNaturalBC(const double t,
 
 std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
     BaseLib::ConfigTree const& config, MeshLib::Mesh const& bc_mesh,
-    NumLib::LocalToGlobalIndexMap const& dof_table, int const variable_id,
-    int const component_id, bool is_axially_symmetric,
+    NumLib::LocalToGlobalIndexMap const& dof_table, std::size_t bulk_mesh_id,
+    int const variable_id, int const component_id, bool is_axially_symmetric,
     unsigned const integration_order, unsigned const shapefunction_order,
     unsigned const global_dim)
 {
@@ -201,7 +204,7 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
 
     return std::make_unique<PythonBoundaryCondition>(
         PythonBoundaryConditionData{
-            bc, dof_table,
+            bc, dof_table, bulk_mesh_id,
             dof_table.getGlobalComponent(variable_id, component_id), bc_mesh},
         integration_order, shapefunction_order, flush_stdout);
 }
