@@ -98,8 +98,7 @@ public:
         std::vector<int> const& component_ids,
         MeshLib::MeshSubset&& mesh_subset) const;
 
-    std::unique_ptr<LocalToGlobalIndexMap>
-    LocalToGlobalIndexMap::deriveBoundaryConstrainedMap(
+    std::unique_ptr<LocalToGlobalIndexMap> deriveBoundaryConstrainedMap(
         MeshLib::MeshSubset&& new_mesh_subset) const;
 
     /// Returns total number of degrees of freedom including those located in
