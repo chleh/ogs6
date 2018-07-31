@@ -165,7 +165,7 @@ void PythonBoundaryCondition::applyNaturalBC(const double t,
             &GenericNaturalBoundaryConditionLocalAssemblerInterface::assemble,
             _local_assemblers, *_dof_table_boundary, t, x, K, b, Jac);
     }
-    catch (PyNotOverridden const& /*e*/)
+    catch (MethodNotOverriddenInDerivedClassException const& /*e*/)
     {
         DBUG("Method `getFlux' not overridden in Python script.");
     }
@@ -193,7 +193,8 @@ std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
             "was no python script file specified.",
             bc_object.c_str());
 
-    auto* bc = scope[bc_object.c_str()].cast<PyBoundaryCondition*>();
+    auto* bc = scope[bc_object.c_str()]
+                   .cast<PythonBoundaryConditionPythonSideInterface*>();
 
     if (variable_id >= static_cast<int>(dof_table.getNumberOfVariables()) ||
         component_id >= dof_table.getNumberOfVariableComponents(variable_id))

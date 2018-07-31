@@ -110,7 +110,7 @@ public:
                                                // ansatz functions
             auto const res = _data.bc_object->getFlux(t, coords, prim_vars);
             if (!_data.bc_object->isOverriddenNatural())
-                throw PyNotOverridden{};
+                throw MethodNotOverriddenInDerivedClassException{};
             // TODO better documentation
             if (!std::get<0>(res))
                 return;

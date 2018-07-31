@@ -20,11 +20,11 @@
 
 namespace ProcessLib
 {
-class PyBoundaryCondition;
+class PythonBoundaryConditionPythonSideInterface;
 
 struct PythonBoundaryConditionData
 {
-    PyBoundaryCondition* bc_object;
+    PythonBoundaryConditionPythonSideInterface* bc_object;
     NumLib::LocalToGlobalIndexMap const& dof_table_bulk;
     std::size_t const bulk_mesh_id;
     int const global_component_id;

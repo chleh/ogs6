@@ -23,11 +23,13 @@ void pythonBindBoundaryCondition(py::module& m)
 {
     py::print(">>>>> binding module OpenGeoSys");
     // `m` is a `py::module` which is used to bind functions and classes
-    py::class_<PyBoundaryCondition, PyBoundaryConditionImpl> pybc(
-        m, "BoundaryCondition");
+    py::class_<PythonBoundaryConditionPythonSideInterface,
+               PythonBoundaryConditionPythonSideInterfaceTrampoline>
+        pybc(m, "BoundaryCondition");
     pybc.def(py::init());
-    pybc.def("getDirichletBCValue", &PyBoundaryCondition::getDirichletBCValue);
-    pybc.def("getFlux", &PyBoundaryCondition::getFlux);
+    pybc.def("getDirichletBCValue",
+             &PythonBoundaryConditionPythonSideInterface::getDirichletBCValue);
+    pybc.def("getFlux", &PythonBoundaryConditionPythonSideInterface::getFlux);
 }
 
 }  // namespace ProcessLib
