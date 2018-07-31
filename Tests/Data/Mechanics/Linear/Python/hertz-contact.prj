@@ -2,7 +2,7 @@
 <OpenGeoSysProject>
     <mesh axially_symmetric="true">unit-circle.vtu</mesh>
     <geometry>unit-circle.gml</geometry>
-    <python_script>hertz-pressure-bc.py</python_script>
+    <python_script>hertz-contact-bc.py</python_script>
     <processes>
         <process>
             <name>SD</name>

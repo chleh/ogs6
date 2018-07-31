@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import OpenGeoSys
 
 NODE_RELEASE_FRACTION = 0.5
@@ -37,26 +39,31 @@ class BC(OpenGeoSys.BoundaryCondition):
         if y_deformed > y_top:
             res = (True, y_top - y)
             self._restricted_nodes[node_id] = x
-            print(f"[BC] {self._iteration:2} {node_id:5} restr: y_deformed > y_top")
+            print("[BC] {it:2} {n:5} restr: y_deformed > y_top".format(
+                it=self._iteration, n=node_id))
             self.restrict(node_id)
 
         elif y_deformed > y_top - 1e-8:
             if self.is_new_restricted_node(node_id):
                 res = (True, y_top - y)
                 self._restricted_nodes[node_id] = x
-                print(f"[BC] {self._iteration:2} {node_id:5} new restr node")
+                print("[BC] {self._iteration:2} {node_id:5} new restr node".format(
+                    it=self._iteration, n=node_id))
 
             elif self._iteration <= 1:
                 res = (True, y_top - y)
-                print(f"[BC] {self._iteration:2} {node_id:5} keep restr node")
+                print("[BC] {self._iteration:2} {node_id:5} keep restr node".format(
+                    it=self._iteration, n=node_id))
 
             elif self.is_relaxed_restricted_node(x) and not self.flickers(node_id):
                 res = (False, 0.0)
-                print(f"[BC] {self._iteration:2} {node_id:5} relax restr node")
+                print("[BC] {self._iteration:2} {node_id:5} relax restr node".format(
+                    it=self._iteration, n=node_id))
                 self.relax(node_id)
 
             else:
-                print(f"[BC] {self._iteration:2} {node_id:5} generally y_deformed > y_top - 1e-8")
+                print("[BC] {self._iteration:2} {node_id:5} generally y_deformed > y_top - 1e-8".format(
+                    it=self._iteration, n=node_id))
                 res = (True, y_top - y)
         else:
             res =(False, 0.0)
