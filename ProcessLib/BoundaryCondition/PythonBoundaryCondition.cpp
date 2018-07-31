@@ -19,25 +19,27 @@
 
 namespace
 {
+//! Optionally flushes the standard output upon creation and destruction.
+//! Can be used to improve the debug output readability when printing debug
+//! messages both from OGS and from Python.
 class FlushStdoutGuard
 {
 public:
+    //! Optionally flushes C++ stdout before running Python code.
     explicit FlushStdoutGuard(bool const flush) : _flush(flush)
     {
-        // flush std::cout before running Python code
         if (!flush)
             return;
 
-        // std::cout << std::flush;
         LOGOG_COUT << std::flush;
     }
 
+    //! Optionally Python's stdout after running Python code.
     ~FlushStdoutGuard()
     {
         if (!_flush)
             return;
 
-        // flush Python's stdout after running python code
         using namespace pybind11::literals;
         pybind11::print("end"_a = "", "flush"_a = true);
     }
