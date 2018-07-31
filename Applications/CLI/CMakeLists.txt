@@ -24,6 +24,14 @@ if(OGS_USE_PYTHON)
     # Workaround: Always make sure that OGS is compiled with the same Python version as VTK.
     # TODO: Find out how to properly address the issue.
 
+    # Performance warning from
+    # https://github.com/pybind/pybind11/blob/master/docs/compiling.rst:
+    # Since pybind11 is a metatemplate library, it is crucial that certain compiler
+    # flags are provided to ensure high quality code generation. In contrast to the
+    # pybind11_add_module() command, the CMake interface library only provides the
+    # minimal set of parameters to ensure that the code using pybind11 compiles, but
+    # it does not pass these extra compiler flags (i.e. this is up to you).
+    # TODO: Enable further compiler/linker flags.
     target_link_libraries(ogs PRIVATE pybind11::embed)
 
     add_library(ogs_python_bindings STATIC ogs_python_bindings.cpp)
