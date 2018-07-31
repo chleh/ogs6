@@ -56,20 +56,24 @@ public:
             Base::_integration_method.getNumberOfPoints();
         auto const num_var = _data.dof_table_bulk.getNumberOfVariables();
         auto const num_nodes = _element.getNumberOfNodes();
+        auto const num_comp_total =
+            _data.dof_table_bulk.getNumberOfComponents();
 
         auto const& bulk_node_ids_map =
             *_data.boundary_mesh.getProperties().getPropertyVector<std::size_t>(
                 "bulk_node_ids");
 
         // gather primary variables
-        // TODO there might be problems with mixed ansatz functions
-        std::vector<double> primary_variables;
+        Eigen::MatrixXd primary_variables_mat(num_nodes, num_comp_total);
         for (int var = 0; var < num_var; ++var)
         {
             auto const num_comp =
                 _data.dof_table_bulk.getNumberOfVariableComponents(var);
             for (int comp = 0; comp < num_comp; ++comp)
             {
+                auto const global_component =
+                    dof_table_boundary.getGlobalComponent(var, comp);
+
                 for (unsigned element_node_id = 0; element_node_id < num_nodes;
                      ++element_node_id)
                 {
@@ -82,44 +86,57 @@ public:
                                           bulk_node_id};
                     auto const dof_idx =
                         _data.dof_table_bulk.getGlobalIndex(loc, var, comp);
-                    primary_variables.push_back(x[dof_idx]);
+                    if (dof_idx == NumLib::MeshComponentMap::nop)
+                    {
+                        // TODO extend Python BC to mixed FEM
+                        OGS_FATAL(
+                            "No d.o.f. found for (node=%d, var=%d, comp=%d).  "
+                            "That might be due to the use of mixed FEM ansatz "
+                            "functions, which is currently not supported by "
+                            "the implementation of Python BCs. That excludes, "
+                            "e.g., the HM process.",
+                            bulk_node_id, var, comp);
+                    }
+                    primary_variables_mat(element_node_id, global_component) =
+                        x[dof_idx];
                 }
             }
         }
 
-        auto const num_comp_total =
-            _data.dof_table_bulk.getNumberOfComponents();
-        if (num_nodes * num_comp_total != primary_variables.size())
-            OGS_FATAL("size mismatch");
-
-        // TODO check if mapping is correct (row vs col major)
-        Eigen::Map<Eigen::MatrixXd> primary_variables_mat(
-            primary_variables.data(), num_nodes, num_comp_total);
-
         Eigen::VectorXd local_rhs = Eigen::VectorXd::Zero(num_nodes);
         Eigen::MatrixXd local_Jac =
             Eigen::MatrixXd::Zero(num_nodes, num_nodes * num_comp_total);
-        bool has_dFlux = true;
 
         for (unsigned ip = 0; ip < num_integration_points; ip++)
         {
             auto const& sm = Base::_shape_matrices[ip];
             auto const coords = fe.interpolateCoordinates(sm.N);
             Eigen::VectorXd prim_vars =
-                sm.N * primary_variables_mat;  // TODO problems with mixed
-                                               // ansatz functions
-            auto const res = _data.bc_object->getFlux(t, coords, prim_vars);
+                sm.N *
+                primary_variables_mat;  // Assumption: all primary variables
+                                        // have same shape functions.
+            auto const flag_flux_dFlux =
+                _data.bc_object->getFlux(t, coords, prim_vars);
             if (!_data.bc_object->isOverriddenNatural())
+            {
+                // getFlux() is not overridden in Python, so we can skip the
+                // whole BC assembly (i.e., for all boundary elements).
                 throw MethodNotOverriddenInDerivedClassException{};
-            // TODO better documentation
-            if (!std::get<0>(res))
+            }
+
+            if (!std::get<0>(flag_flux_dFlux))
+            {
+                // No flux value for this integration point. Skip assembly of
+                // the entire element.
                 return;
+            }
+            auto const flux = std::get<1>(flag_flux_dFlux);
+            auto const& dFlux = std::get<2>(flag_flux_dFlux);
 
             auto const& wp = Base::_integration_method.getWeightedPoint(ip);
             auto const w = sm.detJ * wp.getWeight() * sm.integralMeasure;
-            local_rhs.noalias() += sm.N * (std::get<1>(res) * w);
+            local_rhs.noalias() += sm.N * (flux * w);
 
-            auto const& dFlux = std::get<2>(res);
             if (static_cast<int>(dFlux.size()) != num_comp_total)
             {
                 // This strict check is technically mandatory only if a Jacobian
@@ -131,6 +148,7 @@ public:
                     "components returned from Python.",
                     num_comp_total, dFlux.size());
             }
+
             if (Jac)
             {
                 for (int comp = 0; comp < num_comp_total; ++comp)
@@ -145,25 +163,20 @@ public:
                         sm.N.transpose() * (dFlux[comp] * w) * sm.N;
                 }
             }
-            else
-            {
-                has_dFlux = false;
-            }
         }
 
-        // TODO change for Newton (and Picard)!
-        auto const& indices_comp =
+        auto const& indices_specific_component =
             dof_table_boundary(boundary_element_id, _data.global_component_id)
                 .rows;
-        b.add(indices_comp, local_rhs);
+        b.add(indices_specific_component, local_rhs);
 
-        if (has_dFlux && Jac)
+        if (Jac)
         {
             // only assemble a block of the Jacobian, not the whole local matrix
-            auto const indices_all =
+            auto const indices_all_components =
                 NumLib::getIndices(boundary_element_id, dof_table_boundary);
-            MathLib::RowColumnIndices<GlobalIndexType> rci{indices_comp,
-                                                           indices_all};
+            MathLib::RowColumnIndices<GlobalIndexType> rci{
+                indices_specific_component, indices_all_components};
             Jac->add(rci, local_Jac);
         }
     }
