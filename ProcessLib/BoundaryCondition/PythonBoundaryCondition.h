@@ -46,13 +46,8 @@ public:
     void applyNaturalBC(const double t, const GlobalVector& x, GlobalMatrix& K,
                         GlobalVector& b, GlobalMatrix* Jac) override;
 
-    ~PythonBoundaryCondition();
-
 private:
     PythonBoundaryConditionData _bc_data;
-
-    std::vector<std::size_t> const _mesh_node_ids;
-    std::vector<MeshLib::Element*> const _elements;
 
     /// Local dof table, a subset of the global one restricted to the
     /// participating #_elements of the boundary condition.

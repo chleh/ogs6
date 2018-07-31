@@ -58,11 +58,6 @@ PythonBoundaryCondition::PythonBoundaryCondition(
       _integration_order(integration_order),
       _flush_stdout(flush_stdout)
 {
-    if (_mesh_node_ids.empty())
-        OGS_FATAL("no mesh node ids found");
-
-    std::vector<MeshLib::Node*> nodes = MeshLib::getUniqueNodes(_elements);
-
     std::vector<MeshLib::Node*> const& bc_nodes = _bc_data.mesh.getNodes();
     MeshLib::MeshSubset bc_mesh_subset(_bc_data.mesh, bc_nodes);
 
@@ -89,14 +84,16 @@ void PythonBoundaryCondition::getEssentialBCValues(
     bc_values.ids.clear();
     bc_values.values.clear();
 
-    bc_values.ids.reserve(_mesh_node_ids.size());
-    bc_values.values.reserve(_mesh_node_ids.size());
+    bc_values.ids.reserve(_bc_data.mesh.getNumberOfNodes());
+    bc_values.values.reserve(_bc_data.mesh.getNumberOfNodes());
 
     SpatialPosition pos;
     std::vector<double> primary_variables;
 
-    for (auto const node_id : _mesh_node_ids)
+    for (auto const* node : _bc_data.mesh.getNodes())
     {
+        auto const node_id = node->getID();
+
         // gather primary variable values
         primary_variables.clear();
         auto const num_var = _bc_data.dof_table_bulk.getNumberOfVariables();
@@ -106,8 +103,9 @@ void PythonBoundaryCondition::getEssentialBCValues(
                 _bc_data.dof_table_bulk.getNumberOfVariableComponents(var);
             for (int comp = 0; comp < num_comp; ++comp)
             {
-                MeshLib::Location loc{_bc_data.mesh.getID(),
-                                      MeshLib::MeshItemType::Node, node_id};
+                MeshLib::Location loc{
+                    _bc_data.mesh.getID() /* TODO bulk mesh ID */,
+                    MeshLib::MeshItemType::Node, node_id};
                 auto const dof_idx =
                     _bc_data.dof_table_bulk.getGlobalIndex(loc, var, comp);
                 primary_variables.push_back(x[dof_idx]);
@@ -165,12 +163,6 @@ void PythonBoundaryCondition::applyNaturalBC(const double t,
     {
         DBUG("Method `getFlux' not overridden in Python script.");
     }
-}
-
-PythonBoundaryCondition::~PythonBoundaryCondition()
-{
-    for (auto e : _elements)
-        delete e;
 }
 
 std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
