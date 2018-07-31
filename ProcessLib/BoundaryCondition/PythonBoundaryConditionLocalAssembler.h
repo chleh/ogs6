@@ -58,7 +58,7 @@ public:
         auto const num_nodes = _element.getNumberOfNodes();
 
         auto const& bulk_node_ids_map =
-            *_data.mesh.getProperties().getPropertyVector<std::size_t>(
+            *_data.boundary_mesh.getProperties().getPropertyVector<std::size_t>(
                 "bulk_node_ids");
 
         // gather primary variables

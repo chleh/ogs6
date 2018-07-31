@@ -29,7 +29,7 @@ struct PythonBoundaryConditionData
     std::size_t const bulk_mesh_id;
     int const global_component_id;
 
-    const MeshLib::Mesh& mesh;
+    const MeshLib::Mesh& boundary_mesh;
 };
 
 class PythonBoundaryCondition : public BoundaryCondition

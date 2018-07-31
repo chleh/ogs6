@@ -59,8 +59,9 @@ PythonBoundaryCondition::PythonBoundaryCondition(
       _integration_order(integration_order),
       _flush_stdout(flush_stdout)
 {
-    std::vector<MeshLib::Node*> const& bc_nodes = _bc_data.mesh.getNodes();
-    MeshLib::MeshSubset bc_mesh_subset(_bc_data.mesh, bc_nodes);
+    std::vector<MeshLib::Node*> const& bc_nodes =
+        _bc_data.boundary_mesh.getNodes();
+    MeshLib::MeshSubset bc_mesh_subset(_bc_data.boundary_mesh, bc_nodes);
 
     // Create local DOF table from the bc mesh subset for the given variable and
     // component id.
@@ -68,9 +69,10 @@ PythonBoundaryCondition::PythonBoundaryCondition(
         std::move(bc_mesh_subset));
 
     createLocalAssemblers<PythonBoundaryConditionLocalAssembler>(
-        global_dim, _bc_data.mesh.getElements(), *_dof_table_boundary,
+        global_dim, _bc_data.boundary_mesh.getElements(), *_dof_table_boundary,
         shapefunction_order, _local_assemblers,
-        _bc_data.mesh.isAxiallySymmetric(), _integration_order, _bc_data);
+        _bc_data.boundary_mesh.isAxiallySymmetric(), _integration_order,
+        _bc_data);
 }
 
 void PythonBoundaryCondition::getEssentialBCValues(
@@ -79,21 +81,21 @@ void PythonBoundaryCondition::getEssentialBCValues(
 {
     FlushStdoutGuard guard(_flush_stdout);
 
-    auto const nodes = _bc_data.mesh.getNodes();
+    auto const nodes = _bc_data.boundary_mesh.getNodes();
 
     auto const& bulk_node_ids_map =
-        *_bc_data.mesh.getProperties().getPropertyVector<std::size_t>(
+        *_bc_data.boundary_mesh.getProperties().getPropertyVector<std::size_t>(
             "bulk_node_ids");
 
     bc_values.ids.clear();
     bc_values.values.clear();
 
-    bc_values.ids.reserve(_bc_data.mesh.getNumberOfNodes());
-    bc_values.values.reserve(_bc_data.mesh.getNumberOfNodes());
+    bc_values.ids.reserve(_bc_data.boundary_mesh.getNumberOfNodes());
+    bc_values.values.reserve(_bc_data.boundary_mesh.getNumberOfNodes());
 
     std::vector<double> primary_variables;
 
-    for (auto const* node : _bc_data.mesh.getNodes())
+    for (auto const* node : _bc_data.boundary_mesh.getNodes())
     {
         auto const boundary_node_id = node->getID();
         auto const bulk_node_id = bulk_node_ids_map[boundary_node_id];
