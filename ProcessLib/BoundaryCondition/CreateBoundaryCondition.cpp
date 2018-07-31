@@ -70,24 +70,10 @@ std::unique_ptr<BoundaryCondition> createBoundaryCondition(
 #ifdef OGS_USE_PYTHON
     if (type == "Python")
     {
-        return nullptr;
-#if 0
-        std::unique_ptr<MeshGeoToolsLib::SearchLength> search_length_algorithm =
-            MeshGeoToolsLib::createSearchLengthAlgorithm(config.config, mesh);
-
-        MeshGeoToolsLib::MeshNodeSearcher const& mesh_node_searcher =
-            MeshGeoToolsLib::MeshNodeSearcher::getMeshNodeSearcher(
-                mesh, std::move(search_length_algorithm));
-
-        MeshGeoToolsLib::BoundaryElementsSearcher boundary_element_searcher(
-            mesh, mesh_node_searcher);
-
         return ProcessLib::createPythonBoundaryCondition(
-            config.config, mesh_node_searcher.getMeshNodeIDs(config.geometry),
-            getClonedElements(boundary_element_searcher, config.geometry),
-            dof_table, variable_id, *config.component_id, mesh,
-            integration_order, shapefunction_order, parameters);
-#endif
+            config.config, config.mesh, dof_table, variable_id,
+            *config.component_id, mesh.isAxiallySymmetric(), integration_order,
+            shapefunction_order, mesh.getDimension());
     }
 #endif
 

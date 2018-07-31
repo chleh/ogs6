@@ -35,8 +35,6 @@ class PythonBoundaryCondition : public BoundaryCondition
 {
 public:
     PythonBoundaryCondition(PythonBoundaryConditionData&& bc_data,
-                            std::vector<std::size_t>&& mesh_node_ids,
-                            std::vector<MeshLib::Element*>&& elements,
                             unsigned const integration_order,
                             unsigned const shapefunction_order,
                             bool const flush_stdout);
@@ -74,11 +72,11 @@ private:
 };
 
 std::unique_ptr<PythonBoundaryCondition> createPythonBoundaryCondition(
-    BaseLib::ConfigTree const& config, std::vector<std::size_t>&& mesh_node_ids,
-    std::vector<MeshLib::Element*>&& elements,
+    BaseLib::ConfigTree const& config, MeshLib::Mesh const& bc_mesh,
     NumLib::LocalToGlobalIndexMap const& dof_table, int const variable_id,
-    int const component_id, MeshLib::Mesh const& mesh,
-    unsigned const integration_order, unsigned const shapefunction_order);
+    int const component_id, bool is_axially_symmetric,
+    unsigned const integration_order, unsigned const shapefunction_order,
+    unsigned const global_dim);
 
 }  // namespace ProcessLib
 
