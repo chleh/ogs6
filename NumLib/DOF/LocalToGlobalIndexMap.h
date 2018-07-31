@@ -41,7 +41,8 @@ namespace NumLib
 /// mesh item.
 class LocalToGlobalIndexMap final
 {
-    // Cf.
+    // Enables using std::make_unique with private constructors from within
+    // member functions of LocalToGlobalIndexMap. Cf.
     // http://seanmiddleditch.com/enabling-make_unique-with-private-constructors/
     struct ConstructorTag
     {
@@ -97,9 +98,9 @@ public:
         std::vector<int> const& component_ids,
         MeshLib::MeshSubset&& mesh_subset) const;
 
-    std::unique_ptr<LocalToGlobalIndexMap> deriveBoundaryConstrainedMap(
-        std::vector<MeshLib::MeshSubset>&& mesh_subsets,
-        std::vector<MeshLib::Element*> const& elements) const;
+    std::unique_ptr<LocalToGlobalIndexMap>
+    LocalToGlobalIndexMap::deriveBoundaryConstrainedMap(
+        MeshLib::MeshSubset&& new_mesh_subset) const;
 
     /// Returns total number of degrees of freedom including those located in
     /// the ghost nodes.
