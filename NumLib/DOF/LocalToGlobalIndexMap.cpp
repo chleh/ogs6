@@ -265,7 +265,6 @@ LocalToGlobalIndexMap::deriveBoundaryConstrainedMap(
 
     for (int i = 0; i < getNumberOfComponents(); ++i)
     {
-        // TODO correct?
         global_component_ids.push_back(i);
     }
 

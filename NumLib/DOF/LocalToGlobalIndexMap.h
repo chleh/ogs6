@@ -98,6 +98,10 @@ public:
         std::vector<int> const& component_ids,
         MeshLib::MeshSubset&& mesh_subset) const;
 
+    /// Derive a LocalToGlobalIndexMap constrained to the mesh subset and mesh
+    /// subset's elements. A new mesh component map will be constructed using
+    /// the passed mesh_subset for all variables and components of the current
+    /// LocalToGlobalIndexMap.
     std::unique_ptr<LocalToGlobalIndexMap> deriveBoundaryConstrainedMap(
         MeshLib::MeshSubset&& new_mesh_subset) const;
 
@@ -155,9 +159,14 @@ public:
     MeshLib::MeshSubset const& getMeshSubset(
         int const global_component_id) const;
 
-    /// Private constructor used by internally created local-to-global index
-    /// maps. The mesh_component_map is passed as argument instead of being
-    /// created by the constructor.
+    /// The global component id for the specific variable (like velocity) and a
+    /// component (like x, or y, or z).
+    int getGlobalComponent(int const variable_id, int const component_id) const;
+
+    /// Private constructor (ensured by ConstructorTag) used by internally
+    /// created local-to-global index maps. The mesh_component_map is passed as
+    /// argument instead of being created by the constructor.
+    ///
     /// \attention The passed mesh_component_map is in undefined state after
     /// this construtor.
     explicit LocalToGlobalIndexMap(
@@ -180,12 +189,6 @@ private:
         std::vector<MeshLib::Node*> const& nodes, std::size_t const mesh_id,
         const int component_id, const int comp_id_write);
 
-public:
-    /// The global component id for the specific variable (like velocity) and a
-    /// component (like x, or y, or z).
-    int getGlobalComponent(int const variable_id, int const component_id) const;
-
-private:
     /// A vector of mesh subsets for each process variables' components.
     std::vector<MeshLib::MeshSubset> _mesh_subsets;
     NumLib::MeshComponentMap _mesh_component_map;
