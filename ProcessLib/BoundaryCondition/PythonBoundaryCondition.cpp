@@ -34,7 +34,7 @@ public:
         LOGOG_COUT << std::flush;
     }
 
-    //! Optionally Python's stdout after running Python code.
+    //! Optionally flushes Python's stdout after running Python code.
     ~FlushStdoutGuard()
     {
         if (!_flush)
