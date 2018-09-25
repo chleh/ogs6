@@ -11,6 +11,8 @@
 
 #include "BoundaryCondition.h"
 #include "BoundaryConditionConfig.h"
+// TODO [DUNE] fixme
+#if 0
 #include "ConstraintDirichletBoundaryCondition.h"
 #include "DirichletBoundaryCondition.h"
 #include "NeumannBoundaryCondition.h"
@@ -19,6 +21,9 @@
 #include "NormalTractionBoundaryCondition.h"
 #include "PhaseFieldIrreversibleDamageOracleBoundaryCondition.h"
 #include "RobinBoundaryCondition.h"
+#else
+#include "NonuniformDirichletBoundaryConditionDUNE.h"
+#endif
 #ifdef OGS_USE_PYTHON
 #include "Python/PythonBoundaryCondition.h"
 #endif
@@ -27,11 +32,13 @@ namespace ProcessLib
 {
 std::unique_ptr<BoundaryCondition> createBoundaryCondition(
     const BoundaryConditionConfig& config,
-    const NumLib::LocalToGlobalIndexMap& dof_table,
-    const MeshLib::Mesh& bulk_mesh, const int variable_id,
-    const unsigned integration_order, const unsigned shapefunction_order,
-    const std::vector<std::unique_ptr<ProcessLib::ParameterBase>>& parameters,
-    const Process& process)
+    const NumLib::AbstractDOFTable& dof_table,
+    const MeshLib::FEMMesh& bulk_mesh, const int variable_id,
+    const unsigned /*integration_order*/,
+    const unsigned /*shapefunction_order*/,
+    const std::vector<
+        std::unique_ptr<ProcessLib::ParameterBase>>& /*parameters*/,
+    const Process& /*process*/)
 {
     // Surface mesh and bulk mesh must have equal axial symmetry flags!
     if (config.boundary_mesh.isAxiallySymmetric() !=
@@ -47,6 +54,8 @@ std::unique_ptr<BoundaryCondition> createBoundaryCondition(
     //! \ogs_file_param{prj__process_variables__process_variable__boundary_conditions__boundary_condition__type}
     auto const type = config.config.peekConfigParameter<std::string>("type");
 
+    // TODO [DUNE] fixme
+#if 0
     if (type == "Dirichlet")
     {
         return ProcessLib::createDirichletBoundaryCondition(
@@ -116,6 +125,13 @@ std::unique_ptr<BoundaryCondition> createBoundaryCondition(
                 config.config, dof_table, bulk_mesh, variable_id,
                 *config.component_id);
     }
+#else
+    if (type == "NonuniformDirichlet")
+    {
+        return createNonuniformDirichletBoundaryCondition(
+            config, dof_table, bulk_mesh, variable_id);
+    }
+#endif
     OGS_FATAL("Unknown boundary condition type: `%s'.", type.c_str());
 }
 
