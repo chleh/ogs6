@@ -123,6 +123,29 @@ public:
         return _ode.getMatrixSpecifications(process_id);
     }
 
+    GlobalVector const* estimateError(GlobalVector const& x,
+                                      double& global_relative_error) override
+    {
+        if (auto sys =
+                dynamic_cast<EquationSystemWithRefinementSupport*>(&_ode))
+        {
+            return sys->estimateError(x, global_relative_error);
+        }
+
+        return nullptr;
+    }
+
+    bool refine(std::vector<char> const& elements_for_refinement) override
+    {
+        if (auto sys =
+                dynamic_cast<EquationSystemWithRefinementSupport*>(&_ode))
+        {
+            return sys->refine(elements_for_refinement);
+        }
+
+        return false;
+    }
+
 private:
     ODE& _ode;             //!< ode the ODE being wrapped
     TimeDisc& _time_disc;  //!< the time discretization to being used
@@ -222,6 +245,29 @@ public:
         const int process_id) const override
     {
         return _ode.getMatrixSpecifications(process_id);
+    }
+
+    GlobalVector const* estimateError(GlobalVector const& x,
+                                      double& global_relative_error) override
+    {
+        if (auto sys =
+                dynamic_cast<EquationSystemWithRefinementSupport*>(&_ode))
+        {
+            return sys->estimateError(x, global_relative_error);
+        }
+
+        return nullptr;
+    }
+
+    bool refine(std::vector<char> const& elements_for_refinement) override
+    {
+        if (auto sys =
+                dynamic_cast<EquationSystemWithRefinementSupport*>(&_ode))
+        {
+            return sys->refine(elements_for_refinement);
+        }
+
+        return false;
     }
 
 private:

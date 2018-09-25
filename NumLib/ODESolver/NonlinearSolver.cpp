@@ -14,9 +14,9 @@
 #include "BaseLib/ConfigTree.h"
 #include "BaseLib/Error.h"
 #include "BaseLib/RunTime.h"
+#include "ConvergenceCriterion.h"
 #include "MathLib/LinAlg/LinAlg.h"
 #include "NumLib/DOF/GlobalMatrixProviders.h"
-#include "ConvergenceCriterion.h"
 
 namespace NumLib
 {
@@ -45,6 +45,7 @@ bool NonlinearSolver<NonlinearSolverTag::Picard>::solve(
 
     _convergence_criterion->preFirstIteration();
 
+    // TODO [DUNE] mesh adaptivity.
     unsigned iteration = 1;
     for (; iteration <= _maxiter;
          ++iteration, _convergence_criterion->reset())
@@ -190,120 +191,132 @@ bool NonlinearSolver<NonlinearSolverTag::Newton>::solve(
     bool error_norms_met = false;
 
     // TODO be more efficient
-    // init minus_delta_x to the right size
+    // init _minus_delta_x to the right size and 0.0
     LinAlg::copy(x, minus_delta_x);
 
-    _convergence_criterion->preFirstIteration();
-
-    unsigned iteration = 1;
-    for (; iteration <= _maxiter;
-         ++iteration, _convergence_criterion->reset())
+    do
     {
-        BaseLib::RunTime timer_dirichlet;
-        double time_dirichlet = 0.0;
+        // TODO where to put that best?
+        _convergence_criterion->preFirstIteration();
 
-        BaseLib::RunTime time_iteration;
-        time_iteration.start();
-
-        timer_dirichlet.start();
-        sys.computeKnownSolutions(x);
-        sys.applyKnownSolutions(x);
-        time_dirichlet += timer_dirichlet.elapsed();
-
-        sys.preIteration(iteration, x);
-
-        BaseLib::RunTime time_assembly;
-        time_assembly.start();
-        sys.assemble(x);
-        sys.getResidual(x, res);
-        sys.getJacobian(J);
-        INFO("[time] Assembly took %g s.", time_assembly.elapsed());
-
-        minus_delta_x.setZero();
-
-        timer_dirichlet.start();
-        sys.applyKnownSolutionsNewton(J, res, minus_delta_x);
-        time_dirichlet += timer_dirichlet.elapsed();
-        INFO("[time] Applying Dirichlet BCs took %g s.", time_dirichlet);
-
-        if (!sys.isLinear() && _convergence_criterion->hasResidualCheck())
-            _convergence_criterion->checkResidual(res);
-
-        BaseLib::RunTime time_linear_solver;
-        time_linear_solver.start();
-        bool iteration_succeeded = _linear_solver.solve(J, res, minus_delta_x);
-        INFO("[time] Linear solver took %g s.", time_linear_solver.elapsed());
-
-        if (!iteration_succeeded)
+        unsigned iteration = 1;
+        for (; iteration <= _maxiter;
+             ++iteration, _convergence_criterion->reset())
         {
-            ERR("Newton: The linear solver failed.");
-        }
-        else
-        {
-            // TODO could be solved in a better way
-            // cf.
-            // http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Vec/VecWAXPY.html
-            auto& x_new =
-                NumLib::GlobalVectorProvider::provider.getVector(x, _x_new_id);
-            LinAlg::axpy(x_new, -_damping, minus_delta_x);
+            BaseLib::RunTime timer_dirichlet;
+            double time_dirichlet = 0.0;
 
-            if (postIterationCallback)
-                postIterationCallback(iteration, x_new);
+            BaseLib::RunTime time_iteration;
+            time_iteration.start();
 
-            switch(sys.postIteration(x_new))
+            timer_dirichlet.start();
+            sys.computeKnownSolutions(x);
+            sys.applyKnownSolutions(x);
+            time_dirichlet += timer_dirichlet.elapsed();
+
+            sys.preIteration(iteration, x);
+
+            BaseLib::RunTime time_assembly;
+            time_assembly.start();
+            sys.assemble(x);
+            sys.getResidual(x, res);
+            sys.getJacobian(J);
+            INFO("[time] Assembly took %g s.", time_assembly.elapsed());
+
+            minus_delta_x.setZero();
+
+            timer_dirichlet.start();
+            sys.applyKnownSolutionsNewton(J, res, minus_delta_x);
+            time_dirichlet += timer_dirichlet.elapsed();
+            INFO("[time] Applying Dirichlet BCs took %g s.", time_dirichlet);
+
+            if (!sys.isLinear() && _convergence_criterion->hasResidualCheck())
+                _convergence_criterion->checkResidual(res);
+
+            BaseLib::RunTime time_linear_solver;
+            time_linear_solver.start();
+            bool iteration_succeeded =
+                _linear_solver.solve(J, res, minus_delta_x);
+            INFO("[time] Linear solver took %g s.",
+                 time_linear_solver.elapsed());
+
+            if (!iteration_succeeded)
             {
-                case IterationResult::SUCCESS:
-                    break;
-                case IterationResult::FAILURE:
-                    ERR("Newton: The postIteration() hook reported a "
-                        "non-recoverable error.");
-                    iteration_succeeded = false;
-                    break;
-                case IterationResult::REPEAT_ITERATION:
-                    INFO(
-                        "Newton: The postIteration() hook decided that this "
-                        "iteration"
-                        " has to be repeated.");
-                    // TODO introduce some onDestroy hook.
-                    NumLib::GlobalVectorProvider::provider.releaseVector(x_new);
-                    continue;  // That throws the iteration result away.
+                ERR("Newton: The linear solver failed.");
+            }
+            else
+            {
+                // TODO could be solved in a better way
+                // cf.
+                // http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Vec/VecWAXPY.html
+                auto& x_new = NumLib::GlobalVectorProvider::provider.getVector(
+                    x, _x_new_id);
+                LinAlg::axpy(x_new, -_damping, minus_delta_x);
+
+                if (postIterationCallback)
+                    postIterationCallback(iteration, x_new);
+
+                switch (sys.postIteration(x_new))
+                {
+                    case IterationResult::SUCCESS:
+                        break;
+                    case IterationResult::FAILURE:
+                        ERR("Newton: The postIteration() hook reported a "
+                            "non-recoverable error.");
+                        iteration_succeeded = false;
+                        break;
+                    case IterationResult::REPEAT_ITERATION:
+                        INFO(
+                            "Newton: The postIteration() hook decided that "
+                            "this "
+                            "iteration"
+                            " has to be repeated.");
+                        // TODO introduce some onDestroy hook.
+                        NumLib::GlobalVectorProvider::provider.releaseVector(
+                            x_new);
+                        continue;  // That throws the iteration result away.
+                }
+
+                LinAlg::copy(x_new, x);  // copy new solution to x
+                NumLib::GlobalVectorProvider::provider.releaseVector(x_new);
             }
 
-            LinAlg::copy(x_new, x);  // copy new solution to x
-            NumLib::GlobalVectorProvider::provider.releaseVector(x_new);
-        }
+            if (!iteration_succeeded)
+            {
+                // Don't compute further error norms, but break here.
+                error_norms_met = false;
+                break;
+            }
 
-        if (!iteration_succeeded)
+            if (sys.isLinear())
+            {
+                error_norms_met = true;
+            }
+            else
+            {
+                if (_convergence_criterion->hasDeltaXCheck())
+                {
+                    // Note: x contains the new solution!
+                    _convergence_criterion->checkDeltaX(minus_delta_x, x);
+                }
+
+                error_norms_met = _convergence_criterion->isSatisfied();
+            }
+
+            INFO("[time] Iteration #%u took %g s.", iteration,
+                 time_iteration.elapsed());
+
+            if (error_norms_met)
+                break;
+        }  // for each iteration
+
+        if (iteration > _maxiter)
         {
-            // Don't compute further error norms, but break here.
-            error_norms_met = false;
-            break;
+            ERR("Newton: Could not solve the given nonlinear system within %u "
+                "iterations",
+                _maxiter);
         }
-
-        if (sys.isLinear()) {
-            error_norms_met = true;
-        } else {
-            if (_convergence_criterion->hasDeltaXCheck()) {
-                // Note: x contains the new solution!
-                _convergence_criterion->checkDeltaX(minus_delta_x, x);
-            }
-
-            error_norms_met = _convergence_criterion->isSatisfied();
-        }
-
-        INFO("[time] Iteration #%u took %g s.", iteration,
-             time_iteration.elapsed());
-
-        if (error_norms_met)
-            break;
-    }
-
-    if (iteration > _maxiter)
-    {
-        ERR("Newton: Could not solve the given nonlinear system within %u "
-            "iterations",
-            _maxiter);
-    }
+    } while (_adaptive_crit && _adaptive_crit->refine(sys, x));
 
     NumLib::GlobalMatrixProvider::provider.releaseMatrix(J);
     NumLib::GlobalVectorProvider::provider.releaseVector(res);
@@ -323,10 +336,18 @@ createNonlinearSolver(GlobalLinearSolver& linear_solver,
     auto const max_iter = config.getConfigParameter<unsigned>("max_iter");
 
     if (type == "Picard") {
+        std::unique_ptr<AdaptiveRefinementCriterion> adaptive_crit;
+        if (auto conf = config.getConfigSubtreeOptional("adaptive_refinement"))
+        {
+            adaptive_crit = createAdaptiveRefinementCriterion(*conf);
+        }
+
         auto const tag = NonlinearSolverTag::Picard;
         using ConcreteNLS = NonlinearSolver<tag>;
         return std::make_pair(
-            std::make_unique<ConcreteNLS>(linear_solver, max_iter), tag);
+            std::make_unique<ConcreteNLS>(linear_solver, max_iter,
+                                          std::move(adaptive_crit)),
+            tag);
     }
     if (type == "Newton")
     {
@@ -339,10 +360,18 @@ createNonlinearSolver(GlobalLinearSolver& linear_solver,
                 "%g.",
                 damping);
         }
+
+        std::unique_ptr<AdaptiveRefinementCriterion> adaptive_crit;
+        if (auto conf = config.getConfigSubtreeOptional("adaptive_refinement"))
+        {
+            adaptive_crit = createAdaptiveRefinementCriterion(*conf);
+        }
+
         auto const tag = NonlinearSolverTag::Newton;
         using ConcreteNLS = NonlinearSolver<tag>;
         return std::make_pair(
-            std::make_unique<ConcreteNLS>(linear_solver, max_iter, damping),
+            std::make_unique<ConcreteNLS>(linear_solver, max_iter, damping,
+                                          std::move(adaptive_crit)),
             tag);
     }
     OGS_FATAL("Unsupported nonlinear solver type");

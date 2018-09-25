@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "EquationSystem.h"
+#include "EquationSystemWithRefinementSupport.h"
 #include "Types.h"
 
 namespace NumLib
@@ -30,7 +30,8 @@ class NonlinearSystem;
  * \f$ \mathtt{Jac} \cdot (-\Delta x_i) = \mathtt{res} \f$.
  */
 template <>
-class NonlinearSystem<NonlinearSolverTag::Newton> : public EquationSystem
+class NonlinearSystem<NonlinearSolverTag::Newton>
+    : public EquationSystemWithRefinementSupport
 {
 public:
     //! Assembles the linearized equation system at the point \c x.
@@ -75,7 +76,8 @@ public:
  * \f$ \mathtt{A} \cdot x_i = \mathtt{rhs} \f$.
  */
 template <>
-class NonlinearSystem<NonlinearSolverTag::Picard> : public EquationSystem
+class NonlinearSystem<NonlinearSolverTag::Picard>
+    : public EquationSystemWithRefinementSupport
 {
 public:
     //! Assembles the linearized equation system at the point \c x.

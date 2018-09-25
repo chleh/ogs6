@@ -12,7 +12,7 @@
 #include "MathLib/LinAlg/MatrixVectorTraits.h"
 #include "NumLib/IndexValueVector.h"
 
-#include "EquationSystem.h"
+#include "EquationSystemWithRefinementSupport.h"
 #include "Types.h"
 
 namespace NumLib
@@ -37,7 +37,8 @@ class ODESystem;
  */
 template <>
 class ODESystem<ODESystemTag::FirstOrderImplicitQuasilinear,
-                NonlinearSolverTag::Picard> : public EquationSystem
+                NonlinearSolverTag::Picard>
+    : public EquationSystemWithRefinementSupport
 {
 public:
     //! A tag indicating the type of ODE.

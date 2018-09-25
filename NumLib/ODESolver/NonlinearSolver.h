@@ -13,6 +13,7 @@
 #include <utility>
 #include <logog/include/logog.hpp>
 
+#include "AdaptiveRefinementCriterion.h"
 #include "ConvergenceCriterion.h"
 #include "NonlinearSystem.h"
 #include "Types.h"
@@ -88,10 +89,15 @@ public:
      *                equation.
      * \param damping \copydoc _damping
      */
-    explicit NonlinearSolver(GlobalLinearSolver& linear_solver,
-                             const unsigned maxiter,
-                             double const damping = 1.0)
-        : _linear_solver(linear_solver), _maxiter(maxiter), _damping(damping)
+    explicit NonlinearSolver(
+        GlobalLinearSolver& linear_solver,
+        const unsigned maxiter,
+        double const damping,
+        std::unique_ptr<AdaptiveRefinementCriterion>&& adaptive_crit)
+        : _linear_solver(linear_solver),
+          _adaptive_crit(std::move(adaptive_crit)),
+          _maxiter(maxiter),
+          _damping(damping)
     {
     }
 
@@ -115,6 +121,9 @@ private:
 
     // TODO doc
     ConvergenceCriterion* _convergence_criterion = nullptr;
+
+    std::unique_ptr<AdaptiveRefinementCriterion> _adaptive_crit;
+
     const unsigned _maxiter;  //!< maximum number of iterations
 
     //! A positive damping factor. The default value 1.0 gives a non-damped
@@ -148,9 +157,13 @@ public:
      * \param maxiter the maximum number of iterations used to solve the
      *                equation.
      */
-    explicit NonlinearSolver(GlobalLinearSolver& linear_solver,
-                             const unsigned maxiter)
-        : _linear_solver(linear_solver), _maxiter(maxiter)
+    explicit NonlinearSolver(
+        GlobalLinearSolver& linear_solver,
+        const unsigned maxiter,
+        std::unique_ptr<AdaptiveRefinementCriterion>&& adaptive_crit)
+        : _linear_solver(linear_solver),
+          _adaptive_crit(std::move(adaptive_crit)),
+          _maxiter(maxiter)
     {
     }
 
@@ -174,6 +187,9 @@ private:
 
     // TODO doc
     ConvergenceCriterion* _convergence_criterion = nullptr;
+
+    std::unique_ptr<AdaptiveRefinementCriterion> _adaptive_crit;
+
     const unsigned _maxiter;  //!< maximum number of iterations
 
     std::size_t _A_id = 0u;      //!< ID of the \f$ A \f$ matrix.
