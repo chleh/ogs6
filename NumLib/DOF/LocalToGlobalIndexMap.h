@@ -19,6 +19,7 @@
 
 #include "MathLib/LinAlg/RowColumnIndices.h"
 
+#include "AbstractDOFTable.h"
 #include "MeshComponentMap.h"
 
 namespace MeshLib
@@ -39,7 +40,7 @@ namespace NumLib
 /// The number of rows should be equal to the number of mesh items and the
 /// number of columns should be equal to the number of the components on that
 /// mesh item.
-class LocalToGlobalIndexMap final
+class LocalToGlobalIndexMap final : public AbstractDOFTable
 {
     // Enables using std::make_unique with private constructors from within
     // member functions of LocalToGlobalIndexMap. Cf.
@@ -112,18 +113,18 @@ public:
     /// Returns total number of local degrees of freedom of the present rank,
     /// which does not count the unknowns associated with ghost nodes (for DDC
     /// with node-wise mesh partitioning).
-    std::size_t dofSizeWithoutGhosts() const;
+    std::size_t dofSizeWithoutGhosts() const override;
 
-    std::size_t size() const;
+    std::size_t size() const override;
 
-    int getNumberOfVariables() const;
+    int getNumberOfVariables() const override;
 
-    int getNumberOfVariableComponents(int variable_id) const;
+    int getNumberOfVariableComponents(int variable_id) const override;
 
     int getNumberOfComponents() const;
 
     RowColumnIndices operator()(std::size_t const mesh_item_id,
-                                const int component_id) const;
+                                const int component_id) const override;
 
     std::size_t getNumberOfElementDOF(std::size_t const mesh_item_id) const;
 
@@ -144,7 +145,7 @@ public:
         const MeshLib::Location& l) const;
 
     /// Get ghost indices, forwarded from MeshComponentMap.
-    std::vector<GlobalIndexType> const& getGhostIndices() const;
+    std::vector<GlobalIndexType> const& getGhostIndices() const override;
 
     /// Computes the index in a local (for DDC) vector for a given location and
     /// component; forwarded from MeshComponentMap.
