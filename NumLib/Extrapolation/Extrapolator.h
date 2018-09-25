@@ -12,13 +12,13 @@
 #include <vector>
 
 #include <Eigen/Eigen>
-#include "NumLib/NumericsConfig.h"
+
 #include "ExtrapolatableElementCollection.h"
+#include "NumLib/DOF/AbstractDOFTable.h"
+#include "NumLib/NumericsConfig.h"
 
 namespace NumLib
 {
-class LocalToGlobalIndexMap;
-
 //! Interface for classes that extrapolate integration point values to nodal
 //! values.
 class Extrapolator
@@ -30,7 +30,7 @@ public:
         ExtrapolatableElementCollection const& extrapolatables,
         const double t,
         GlobalVector const& current_solution,
-        LocalToGlobalIndexMap const& dof_table) = 0;
+        AbstractDOFTable const& dof_table) = 0;
 
     /*! Computes residuals from the extrapolation of the given \c property.
      *
@@ -43,7 +43,7 @@ public:
         ExtrapolatableElementCollection const& extrapolatables,
         const double t,
         GlobalVector const& current_solution,
-        LocalToGlobalIndexMap const& dof_table) = 0;
+        AbstractDOFTable const& dof_table) = 0;
 
     //! Returns the extrapolated nodal values.
     //! \todo Maybe write directly to a MeshProperty.

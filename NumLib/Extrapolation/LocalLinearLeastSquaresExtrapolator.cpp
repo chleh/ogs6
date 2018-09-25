@@ -22,7 +22,7 @@
 namespace NumLib
 {
 LocalLinearLeastSquaresExtrapolator::LocalLinearLeastSquaresExtrapolator(
-    NumLib::LocalToGlobalIndexMap const& dof_table)
+    NumLib::AbstractDOFTable const& dof_table)
     : _dof_table_single_component(dof_table)
 {
     /* Note in case the following assertion fails:
@@ -43,7 +43,7 @@ void LocalLinearLeastSquaresExtrapolator::extrapolate(
     ExtrapolatableElementCollection const& extrapolatables,
     const double t,
     GlobalVector const& current_solution,
-    LocalToGlobalIndexMap const& dof_table)
+    AbstractDOFTable const& dof_table)
 {
     auto const num_nodal_dof_result =
         _dof_table_single_component.dofSizeWithoutGhosts() * num_components;
@@ -78,7 +78,7 @@ void LocalLinearLeastSquaresExtrapolator::extrapolate(
     {
         _nodal_values = MathLib::MatrixVectorTraits<GlobalVector>::newInstance(
             {num_nodal_dof_result, num_nodal_dof_result, &ghost_indices,
-             nullptr});
+             nullptr, nullptr, nullptr});
     }
     _nodal_values->setZero();
 
@@ -105,7 +105,7 @@ void LocalLinearLeastSquaresExtrapolator::calculateResiduals(
     ExtrapolatableElementCollection const& extrapolatables,
     const double t,
     GlobalVector const& current_solution,
-    LocalToGlobalIndexMap const& dof_table)
+    AbstractDOFTable const& dof_table)
 {
     auto const num_element_dof_result = static_cast<GlobalIndexType>(
         _dof_table_single_component.size() * num_components);
@@ -140,7 +140,7 @@ void LocalLinearLeastSquaresExtrapolator::extrapolateElement(
     ExtrapolatableElementCollection const& extrapolatables,
     const double t,
     GlobalVector const& current_solution,
-    LocalToGlobalIndexMap const& dof_table,
+    AbstractDOFTable const& dof_table,
     GlobalVector& counts)
 {
     auto const& integration_point_values =
@@ -272,7 +272,7 @@ void LocalLinearLeastSquaresExtrapolator::calculateResidualElement(
     ExtrapolatableElementCollection const& extrapolatables,
     const double t,
     GlobalVector const& current_solution,
-    LocalToGlobalIndexMap const& dof_table)
+    AbstractDOFTable const& dof_table)
 {
     auto const& int_pt_vals = extrapolatables.getIntegrationPointValues(
         element_index, t, current_solution, dof_table,

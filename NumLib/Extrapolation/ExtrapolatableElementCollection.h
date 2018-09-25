@@ -13,13 +13,12 @@
 #include <vector>
 
 #include "MathLib/LinAlg/GlobalMatrixVectorTypes.h"
+#include "NumLib/DOF/AbstractDOFTable.h"
 
 #include "ExtrapolatableElement.h"
 
 namespace NumLib
 {
-class LocalToGlobalIndexMap;
-
 /*! Adaptor to get information needed by an Extrapolator from an "arbitrary"
  * collection of elements (e.g., local assemblers).
  *
@@ -62,8 +61,7 @@ public:
      */
     virtual std::vector<double> const& getIntegrationPointValues(
         std::size_t const id, const double t,
-        GlobalVector const& current_solution,
-        LocalToGlobalIndexMap const& dof_table,
+        GlobalVector const& current_solution, AbstractDOFTable const& dof_table,
         std::vector<double>& cache) const = 0;
 
     //! Returns the number of elements whose properties shall be extrapolated.
@@ -98,7 +96,7 @@ public:
         std::function<std::vector<double> const&(
             LocalAssembler const& loc_asm, const double t,
             GlobalVector const& current_solution,
-            NumLib::LocalToGlobalIndexMap const& dof_table,
+            NumLib::AbstractDOFTable const& dof_table,
             std::vector<double>& cache)>;
 
     /*! Constructs a new instance.
@@ -125,8 +123,7 @@ public:
 
     std::vector<double> const& getIntegrationPointValues(
         std::size_t const id, const double t,
-        GlobalVector const& current_solution,
-        LocalToGlobalIndexMap const& dof_table,
+        GlobalVector const& current_solution, AbstractDOFTable const& dof_table,
         std::vector<double>& cache) const override
     {
         auto const& loc_asm = *_local_assemblers[id];

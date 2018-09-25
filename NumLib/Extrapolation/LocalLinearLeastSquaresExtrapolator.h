@@ -11,7 +11,6 @@
 
 #include <map>
 
-#include "NumLib/DOF/LocalToGlobalIndexMap.h"
 #include "NumLib/DOF/GlobalMatrixProviders.h"
 #include "Extrapolator.h"
 
@@ -44,13 +43,13 @@ public:
      * variable.
      */
     explicit LocalLinearLeastSquaresExtrapolator(
-        NumLib::LocalToGlobalIndexMap const& dof_table);
+        AbstractDOFTable const& dof_table);
 
     void extrapolate(const unsigned num_components,
                      ExtrapolatableElementCollection const& extrapolatables,
                      const double t,
                      GlobalVector const& current_solution,
-                     LocalToGlobalIndexMap const& dof_table) override;
+                     const AbstractDOFTable& dof_table) override;
 
     /*! \copydoc Extrapolator::calculateResiduals()
      *
@@ -64,7 +63,7 @@ public:
         ExtrapolatableElementCollection const& extrapolatables,
         const double t,
         GlobalVector const& current_solution,
-        LocalToGlobalIndexMap const& dof_table) override;
+        AbstractDOFTable const& dof_table) override;
 
     GlobalVector const& getNodalValues() const override
     {
@@ -81,8 +80,8 @@ private:
     void extrapolateElement(
         std::size_t const element_index, const unsigned num_components,
         ExtrapolatableElementCollection const& extrapolatables, const double t,
-        GlobalVector const& current_solution,
-        LocalToGlobalIndexMap const& dof_table, GlobalVector& counts);
+        GlobalVector const& current_solution, AbstractDOFTable const& dof_table,
+        GlobalVector& counts);
 
     //! Compute the residuals for one element
     void calculateResidualElement(
@@ -91,13 +90,13 @@ private:
         ExtrapolatableElementCollection const& extrapolatables,
         const double t,
         GlobalVector const& current_solution,
-        LocalToGlobalIndexMap const& dof_table);
+        AbstractDOFTable const& dof_table);
 
     std::unique_ptr<GlobalVector> _nodal_values;  //!< extrapolated nodal values
     std::unique_ptr<GlobalVector> _residuals;     //!< extrapolation residuals
 
     //! DOF table used for writing to global vectors.
-    NumLib::LocalToGlobalIndexMap const& _dof_table_single_component;
+    NumLib::AbstractDOFTable const& _dof_table_single_component;
 
     //! Avoids frequent reallocations.
     std::vector<double> _integration_point_values_cache;
