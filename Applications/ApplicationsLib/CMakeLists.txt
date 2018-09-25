@@ -11,6 +11,7 @@ endif()
 target_link_libraries(ApplicationsLib
     PUBLIC BaseLib GeoLib Processes logog
     PRIVATE MathLib MeshLib MeshGeoToolsLib NumLib
+    ${dune-grid_LIBRARIES}
 )
 
 # Set cpp definitions if the cmake option is enabled for the given process.

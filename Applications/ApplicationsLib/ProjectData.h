@@ -77,6 +77,8 @@ public:
         return _processes;
     }
 
+    void finishInitialization() const;
+
     TimeLoop& getTimeLoop() { return *_time_loop; }
 private:
     /// Parses the process variables configuration and creates new variables for
@@ -106,7 +108,7 @@ private:
 
     void parseCurves(boost::optional<BaseLib::ConfigTree> const& config);
 
-    std::vector<std::unique_ptr<MeshLib::Mesh>> _mesh_vec;
+    std::vector<std::unique_ptr<MeshLib::FEMMesh>> _mesh_vec;
     std::map<std::string, std::unique_ptr<ProcessLib::Process>> _processes;
     std::vector<ProcessLib::ProcessVariable> _process_variables;
 

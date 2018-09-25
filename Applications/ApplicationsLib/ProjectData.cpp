@@ -23,6 +23,7 @@
 #endif
 
 #include "BaseLib/Algorithm.h"
+#include "BaseLib/DUNEConfig.h"
 #include "BaseLib/FileTools.h"
 
 #include "GeoLib/GEOObjects.h"
@@ -41,6 +42,10 @@
 
 #include "ProcessLib/UncoupledProcessesTimeLoop.h"
 
+// TODO [DUNE] re-enable
+#if OGS_USE_DUNE
+#include "ProcessLib/SmallDeformationDUNE/CreateSmallDeformationProcess.h"
+#else
 #ifdef OGS_BUILD_PROCESS_COMPONENTTRANSPORT
 #include "ProcessLib/ComponentTransport/CreateComponentTransportProcess.h"
 #endif
@@ -96,6 +101,7 @@
 #ifdef OGS_BUILD_PROCESS_TWOPHASEFLOWWITHPRHO
 #include "ProcessLib/TwoPhaseFlowWithPrho/CreateTwoPhaseFlowWithPrhoProcess.h"
 #endif
+#endif
 
 namespace
 {
@@ -106,7 +112,7 @@ void readGeometry(std::string const& fname, GeoLib::GEOObjects& geo_objects)
     gml_reader.readFile(fname);
 }
 
-std::unique_ptr<MeshLib::Mesh> readSingleMesh(
+std::unique_ptr<MeshLib::FEMMesh> readSingleMesh(
     BaseLib::ConfigTree const& mesh_config_parameter,
     std::string const& project_directory)
 {
@@ -114,8 +120,19 @@ std::unique_ptr<MeshLib::Mesh> readSingleMesh(
         mesh_config_parameter.getValue<std::string>(), project_directory);
     DBUG("Reading mesh file \'%s\'.", mesh_file.c_str());
 
-    auto mesh = std::unique_ptr<MeshLib::Mesh>(
-        MeshLib::IO::readMeshFromFile(mesh_file));
+    auto const mesh_dimension =
+        mesh_config_parameter.getConfigAttribute<unsigned>("dimension");
+    if (mesh_dimension < 1 || mesh_dimension > 3)
+        OGS_FATAL("Unsupported mesh dimension.");
+
+    auto const global_refinement_opt =
+        mesh_config_parameter.getConfigAttributeOptional<unsigned>("refine");
+    auto const global_refinement =
+        global_refinement_opt ? *global_refinement_opt : 0;
+
+    auto mesh = MeshLib::IO::readMeshFromFile(mesh_file, mesh_dimension,
+                                              global_refinement);
+
     if (!mesh)
     {
         OGS_FATAL("Could not read mesh from \'%s\' file. No mesh added.",
@@ -138,10 +155,10 @@ std::unique_ptr<MeshLib::Mesh> readSingleMesh(
     return mesh;
 }
 
-std::vector<std::unique_ptr<MeshLib::Mesh>> readMeshes(
+std::vector<std::unique_ptr<MeshLib::FEMMesh>> readMeshes(
     BaseLib::ConfigTree const& config, std::string const& project_directory)
 {
-    std::vector<std::unique_ptr<MeshLib::Mesh>> meshes;
+    std::vector<std::unique_ptr<MeshLib::FEMMesh>> meshes;
 
     //! \ogs_file_param{prj__meshes}
     auto optional_meshes = config.getConfigSubtreeOptional("meshes");
@@ -173,6 +190,8 @@ std::vector<std::unique_ptr<MeshLib::Mesh>> readMeshes(
         GeoLib::GEOObjects geoObjects;
         readGeometry(geometry_file, geoObjects);
 
+        // TODO [DUNE] fixme
+#if 0
         std::unique_ptr<MeshGeoToolsLib::SearchLength> search_length_algorithm =
             MeshGeoToolsLib::createSearchLengthAlgorithm(config, *meshes[0]);
         auto additional_meshes =
@@ -181,6 +200,7 @@ std::vector<std::unique_ptr<MeshLib::Mesh>> readMeshes(
 
         std::move(begin(additional_meshes), end(additional_meshes),
                   std::back_inserter(meshes));
+#endif
     }
     return meshes;
 }
@@ -233,6 +253,14 @@ ProjectData::ProjectData(BaseLib::ConfigTree const& project_config,
     //! \ogs_file_param{prj__time_loop}
     parseTimeLoop(project_config.getConfigSubtree("time_loop"),
                   output_directory);
+}
+
+void ProjectData::finishInitialization() const
+{
+    for (auto& mesh : _mesh_vec)
+    {
+        mesh->globalRefine();
+    }
 }
 
 void ProjectData::parseProcessVariables(
@@ -321,6 +349,8 @@ void ProjectData::parseProcesses(BaseLib::ConfigTree const& processes_config,
             //! \ogs_file_param{prj__processes__process__jacobian_assembler}
             process_config.getConfigSubtreeOptional("jacobian_assembler"));
 
+        // TODO [DUNE] re-enable
+#if 0
 #ifdef OGS_BUILD_PROCESS_GROUNDWATERFLOW
         if (type == "GROUNDWATER_FLOW")
         {
@@ -643,8 +673,41 @@ void ProjectData::parseProcesses(BaseLib::ConfigTree const& processes_config,
                     _process_variables, _parameters, integration_order,
                     process_config, _curves);
         }
-        else
 #endif
+#endif
+
+#if OGS_USE_DUNE
+        if (type == "SMALL_DEFORMATION_DUNE")
+        {
+            switch (_mesh_vec[0]->getDimension())
+            {
+                case 2:
+                    process = ProcessLib::SmallDeformationDUNE::
+                        createSmallDeformationProcess<2>(
+                            *_mesh_vec[0], std::move(jacobian_assembler),
+                            _process_variables, _parameters, integration_order,
+                            process_config);
+                    break;
+                case 3:
+                    process = ProcessLib::SmallDeformationDUNE::
+                        createSmallDeformationProcess<3>(
+                            *_mesh_vec[0], std::move(jacobian_assembler),
+                            _process_variables, _parameters, integration_order,
+                            process_config);
+                    break;
+                default:
+                    OGS_FATAL(
+                        "SMALL_DEFORMATION process does not support "
+                        "given dimension");
+            }
+        }
+#else
+        if (false)
+        {
+            (void)0;
+        }
+#endif
+        else
         {
             OGS_FATAL("Unknown process type: %s", type.c_str());
         }

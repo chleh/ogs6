@@ -13,6 +13,11 @@
 #include <tclap/CmdLine.h>
 #include <chrono>
 
+#include "BaseLib/DUNEConfig.h"
+#if OGS_USE_DUNE
+#include <dune/common/parallel/mpihelper.hh>
+#endif
+
 #ifndef _WIN32
 #ifdef __APPLE__
 #include <xmmintrin.h>
@@ -48,6 +53,8 @@
 
 int main(int argc, char* argv[])
 {
+    Dune::MPIHelper& helper = Dune::MPIHelper::instance(argc, argv);
+
     // Parse CLI arguments.
     TCLAP::CmdLine cmd(
         "OpenGeoSys-6 software.\n"
@@ -114,6 +121,16 @@ int main(int argc, char* argv[])
 
     ApplicationsLib::LogogSetup logog_setup;
     logog_setup.setLevel(log_level_arg.getValue());
+
+    if (Dune::MPIHelper::isFake)
+    {
+        INFO("This is a sequential program.");
+    }
+    else
+    {
+        INFO("I am rank %i of %i processes!", helper.rank(), helper.size());
+        // (void)0;
+    }
 
     INFO("This is OpenGeoSys-6 version %s.",
          BaseLib::BuildInfo::git_describe.c_str());
@@ -191,12 +208,11 @@ int main(int argc, char* argv[])
                 p.second->initialize();
             }
 
+            // Do, e. g., global refinement.
+            project.finishInitialization();
+
             // Check intermediately that config parsing went fine.
             project_config.checkAndInvalidate();
-            BaseLib::ConfigTree::assertNoSwallowedErrors();
-
-            BaseLib::ConfigTree::assertNoSwallowedErrors();
-
             BaseLib::ConfigTree::assertNoSwallowedErrors();
 
             INFO("Solve processes.");
