@@ -172,3 +172,35 @@ find_package(CVODE)
 if(CVODE_FOUND)
     add_definitions(-DCVODE_FOUND)
 endif() # CVODE_FOUND
+
+
+# dune
+set(CMAKE_PREFIX_PATH
+    /usr/local/lib64/cmake/dune-common
+    /usr/local/lib64/cmake/dune-geometry
+    /usr/local/lib64/cmake/dune-grid
+    /usr/local/lib64/cmake/dune-uggrid
+    ${CMAKE_PREFIX_PATH}
+)
+
+# set(DISABLE_CXX_VERSION_CHECK ON CACHE BOOL "disable DUNE's compiler feature detection")
+# set(CXX_MAX_STANDARD 14 CACHE STRING "maximum C++ standard for DUNE's compiler feature detection")
+set(DUNE_REENABLE_ADD_TEST ON CACHE BOOL "re-enable add_test")
+
+find_package(dune-common REQUIRED)
+include_directories(SYSTEM ${dune-common_INCLUDE_DIRS})
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules"
+${dune-common_MODULE_PATH})
+include(DuneMacros)
+
+dune_project()
+dune_enable_all_packages()
+finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
+file(RENAME ${CMAKE_BINARY_DIR}/config.h ${CMAKE_BINARY_DIR}/dune-config.h)
+remove_definitions(-DHAVE_CONFIG_H)
+# TODO [DUNE] avoid 'doc' target name clash.
+#set_target_properties(doc PROPERTIES PREFIX "dune_") // try to avoid 'doc' target from dune
+
+# Needed, because dune somehow disables debugging of STL, although debug build
+# type is chosen.
+set(STL_NO_DEBUG ON CACHE BOOL "Disable STL debug in debug build" FORCE)
