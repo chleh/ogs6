@@ -14,7 +14,7 @@ namespace ProcessLib
 void SourceTermCollection::addSourceTermsForProcessVariables(
     std::vector<std::reference_wrapper<ProcessVariable>> const&
         process_variables,
-    NumLib::LocalToGlobalIndexMap const& dof_table,
+    const NumLib::AbstractDOFTable& dof_table,
     unsigned const integration_order)
 {
     for (int variable_id = 0;

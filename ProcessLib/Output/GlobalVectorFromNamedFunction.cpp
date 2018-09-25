@@ -16,8 +16,8 @@ namespace ProcessLib
 {
 GlobalVectorFromNamedFunction::GlobalVectorFromNamedFunction(
     NumLib::SpecificFunctionCaller&& function_caller,
-    MeshLib::Mesh const& mesh,
-    NumLib::LocalToGlobalIndexMap const& dof_table_single,
+    MeshLib::FEMMesh const& mesh,
+    NumLib::AbstractDOFTable const& dof_table_single,
     SecondaryVariableContext& context)
     : _function_caller(std::move(function_caller)),
       _mesh(mesh),
@@ -30,34 +30,43 @@ GlobalVectorFromNamedFunction::GlobalVectorFromNamedFunction(
 GlobalVector const& GlobalVectorFromNamedFunction::call(
     const double /*t*/,
     GlobalVector const& x,
-    NumLib::LocalToGlobalIndexMap const& dof_table,
+    NumLib::AbstractDOFTable const& dof_table,
     std::unique_ptr<GlobalVector>& result)
 {
     result = MathLib::MatrixVectorTraits<GlobalVector>::newInstance(
         {_dof_table_single.dofSizeWithoutGhosts(),
          _dof_table_single.dofSizeWithoutGhosts(),
-         &_dof_table_single.getGhostIndices(), nullptr});
+         /*&_dof_table_single.getGhostIndices()*/ nullptr, nullptr, nullptr,
+         nullptr});
 
-    GlobalIndexType nnodes = _mesh.getNumberOfNodes();
-
-    auto const n_args = _function_caller.getNumberOfUnboundArguments();
-    assert(dof_table.getNumberOfComponents() == static_cast<int>(n_args));
-    std::vector<double> args(n_args);
-
-    for (GlobalIndexType node_id = 0; node_id < nnodes; ++node_id)
+    auto* mesh = dynamic_cast<MeshLib::Mesh const*>(&_mesh);
+    auto* dof_table_ =
+        dynamic_cast<NumLib::LocalToGlobalIndexMap const*>(&dof_table);
+    if (mesh != nullptr)
     {
-        // TODO maybe fill args via callback mechanism or remove this class
-        // entirely. Caution: The order of args will be the same as the order of
-        // the components in the global vector!
-        for (std::size_t i = 0; i < n_args; ++i)
+        GlobalIndexType nnodes = mesh->getNumberOfNodes();
+
+        auto const n_args = _function_caller.getNumberOfUnboundArguments();
+        assert(static_cast<std::size_t>(dof_table_->getNumberOfComponents()) ==
+               n_args);
+        std::vector<double> args(n_args);
+
+        for (GlobalIndexType node_id = 0; node_id < nnodes; ++node_id)
         {
-            args[i] = NumLib::getNodalValue(x, _mesh, dof_table, node_id, i);
+            // TODO maybe fill args via callback mechanism or remove this class
+            // entirely. Caution: The order of args will be the same as the
+            // order of the components in the global vector!
+            for (std::size_t i = 0; i < n_args; ++i)
+            {
+                args[i] =
+                    NumLib::getNodalValue(x, *mesh, *dof_table_, node_id, i);
+            }
+
+            _context.index = node_id;
+            auto const value = _function_caller.call(args);
+
+            result->set(node_id, value);
         }
-
-        _context.index = node_id;
-        auto const value = _function_caller.call(args);
-
-        result->set(node_id, value);
     }
 
     MathLib::finalizeVectorAssembly(*result);

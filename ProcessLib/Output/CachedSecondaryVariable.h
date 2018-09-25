@@ -67,7 +67,7 @@ public:
     }
 
     void updateCurrentSolution(GlobalVector const& x,
-                               NumLib::LocalToGlobalIndexMap const& dof_table)
+                               NumLib::AbstractDOFTable const& dof_table)
     {
         _current_solution = &x;
         _dof_table = &dof_table;
@@ -82,7 +82,7 @@ private:
     GlobalVector const& evalField(
         const double t,
         GlobalVector const& x,
-        NumLib::LocalToGlobalIndexMap const& dof_table,
+        NumLib::AbstractDOFTable const& dof_table,
         std::unique_ptr<GlobalVector>& /*result_cache*/
         ) const;
 
@@ -100,7 +100,7 @@ private:
 
     double _t = 0.0;
     GlobalVector const* _current_solution = nullptr;
-    NumLib::LocalToGlobalIndexMap const* _dof_table = nullptr;
+    NumLib::AbstractDOFTable const* _dof_table = nullptr;
 };
 
 }  // namespace ProcessLib

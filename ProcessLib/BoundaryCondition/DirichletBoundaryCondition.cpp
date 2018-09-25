@@ -32,7 +32,10 @@ void DirichletBoundaryCondition::getEssentialBCValues(
     for (auto const* const node : _bc_mesh.getNodes())
     {
         auto const id = node->getID();
-        pos.setNodeID(node->getID());
+        pos.setNodeID(id);
+        // TODO [DUNE] re-enable
+#if 0
+        MeshLib::Location l(_mesh_id, MeshLib::MeshItemType::Node, id);
         // TODO: that might be slow, but only done once
         auto const global_index = _dof_table_boundary->getGlobalIndex(
             {_bc_mesh.getID(), MeshLib::MeshItemType::Node, id}, _variable_id,
@@ -51,12 +54,13 @@ void DirichletBoundaryCondition::getEssentialBCValues(
             bc_values.ids.emplace_back(global_index);
             bc_values.values.emplace_back(_parameter(t, pos).front());
         }
+#endif
     }
 }
 
 std::unique_ptr<DirichletBoundaryCondition> createDirichletBoundaryCondition(
     BaseLib::ConfigTree const& config, MeshLib::Mesh const& bc_mesh,
-    NumLib::LocalToGlobalIndexMap const& dof_table_bulk, int const variable_id,
+    NumLib::AbstractDOFTable const& dof_table_bulk, int const variable_id,
     int const component_id,
     const std::vector<std::unique_ptr<ProcessLib::ParameterBase>>& parameters)
 {

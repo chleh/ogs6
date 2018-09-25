@@ -16,7 +16,7 @@
 
 namespace NumLib
 {
-class LocalToGlobalIndexMap;
+class AbstractDOFTable;
 }  // NumLib
 
 namespace ProcessLib
@@ -67,21 +67,21 @@ public:
 
     virtual void computeSecondaryVariable(
         std::size_t const mesh_item_id,
-        NumLib::LocalToGlobalIndexMap const& dof_table, const double t,
+        NumLib::AbstractDOFTable const& dof_table, const double t,
         GlobalVector const& x,
         CoupledSolutionsForStaggeredScheme const* coupled_xs);
 
     virtual void preTimestep(std::size_t const mesh_item_id,
-                             NumLib::LocalToGlobalIndexMap const& dof_table,
+                             NumLib::AbstractDOFTable const& dof_table,
                              GlobalVector const& x, double const t,
                              double const delta_t);
 
     virtual void postTimestep(std::size_t const mesh_item_id,
-                              NumLib::LocalToGlobalIndexMap const& dof_table,
+                              NumLib::AbstractDOFTable const& dof_table,
                               GlobalVector const& x);
 
     void postNonLinearSolver(std::size_t const mesh_item_id,
-                             NumLib::LocalToGlobalIndexMap const& dof_table,
+                             NumLib::AbstractDOFTable const& dof_table,
                              GlobalVector const& x, double const t,
                              bool const use_monolithic_scheme);
 

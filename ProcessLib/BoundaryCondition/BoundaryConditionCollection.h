@@ -43,7 +43,7 @@ public:
     void addBCsForProcessVariables(
         std::vector<std::reference_wrapper<ProcessVariable>> const&
             process_variables,
-        NumLib::LocalToGlobalIndexMap const& dof_table,
+        NumLib::AbstractDOFTable const& dof_table,
         unsigned const integration_order, Process const& process);
 
     void preTimestep(const double t, GlobalVector const& x)

@@ -24,8 +24,8 @@ void BoundaryConditionCollection::applyNaturalBC(const double t,
 void BoundaryConditionCollection::addBCsForProcessVariables(
     std::vector<std::reference_wrapper<ProcessVariable>> const&
         process_variables,
-    NumLib::LocalToGlobalIndexMap const& dof_table,
-    unsigned const integration_order, Process const& process)
+    NumLib::AbstractDOFTable const& dof_table, unsigned const integration_order,
+    Process const& process)
 {
     for (int variable_id = 0;
          variable_id < static_cast<int>(process_variables.size());

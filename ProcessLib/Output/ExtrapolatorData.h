@@ -10,7 +10,7 @@
 #pragma once
 
 #include <memory>
-#include "NumLib/DOF/LocalToGlobalIndexMap.h"
+#include "NumLib/DOF/AbstractDOFTable.h"
 #include "NumLib/Extrapolation/Extrapolator.h"
 
 namespace ProcessLib
@@ -36,10 +36,9 @@ public:
      * \param manage_storage If true the memory of \c dof_table_single_component
      * will be freed by the destructor of this class.
      */
-    ExtrapolatorData(
-        std::unique_ptr<NumLib::Extrapolator>&& extrapolator,
-        NumLib::LocalToGlobalIndexMap const* const dof_table_single_component,
-        bool const manage_storage)
+    ExtrapolatorData(std::unique_ptr<NumLib::Extrapolator>&& extrapolator,
+                     NumLib::AbstractDOFTable* dof_table_single_component,
+                     bool const manage_storage)
         : _extrapolator(std::move(extrapolator)),
           _dof_table_single_component(dof_table_single_component),
           _manage_storage(manage_storage)
@@ -66,7 +65,12 @@ public:
         return *this;
     }
 
-    NumLib::LocalToGlobalIndexMap const& getDOFTable() const
+    NumLib::AbstractDOFTable const& getDOFTable() const
+    {
+        return *_dof_table_single_component;
+    }
+
+    NumLib::AbstractDOFTable& getDOFTable()
     {
         return *_dof_table_single_component;
     }
@@ -89,7 +93,7 @@ private:
     std::unique_ptr<NumLib::Extrapolator> _extrapolator;
 
     //! D.o.f. table used by the extrapolator.
-    NumLib::LocalToGlobalIndexMap const* _dof_table_single_component = nullptr;
+    NumLib::AbstractDOFTable* _dof_table_single_component = nullptr;
 
     //! If true, free storage of the d.o.f. table in the ExtrapolatorData
     //! destructor.

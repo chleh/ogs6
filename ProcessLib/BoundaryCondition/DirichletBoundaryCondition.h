@@ -24,10 +24,10 @@ namespace ProcessLib
 class DirichletBoundaryCondition final : public BoundaryCondition
 {
 public:
-    DirichletBoundaryCondition(
-        Parameter<double> const& parameter, MeshLib::Mesh const& bc_mesh,
-        NumLib::LocalToGlobalIndexMap const& dof_table_bulk,
-        int const variable_id, int const component_id)
+    DirichletBoundaryCondition(Parameter<double> const& parameter,
+                               MeshLib::Mesh const& bc_mesh,
+                               NumLib::AbstractDOFTable const& dof_table_bulk,
+                               int const variable_id, int const component_id)
         : _parameter(parameter),
           _bc_mesh(bc_mesh),
           _variable_id(variable_id),
@@ -77,14 +77,14 @@ private:
     Parameter<double> const& _parameter;
 
     MeshLib::Mesh const& _bc_mesh;
-    std::unique_ptr<NumLib::LocalToGlobalIndexMap const> _dof_table_boundary;
+    std::unique_ptr<NumLib::AbstractDOFTable const> _dof_table_boundary;
     int const _variable_id;
     int const _component_id;
 };
 
 std::unique_ptr<DirichletBoundaryCondition> createDirichletBoundaryCondition(
     BaseLib::ConfigTree const& config, MeshLib::Mesh const& bc_mesh,
-    NumLib::LocalToGlobalIndexMap const& dof_table_bulk, int const variable_id,
+    NumLib::AbstractDOFTable const& dof_table_bulk, int const variable_id,
     int const component_id,
     const std::vector<std::unique_ptr<ProcessLib::ParameterBase>>& parameters);
 

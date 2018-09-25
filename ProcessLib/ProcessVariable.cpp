@@ -23,9 +23,9 @@
 
 namespace
 {
-MeshLib::Mesh const& findMeshInConfig(
+MeshLib::FEMMesh const& findMeshInConfig(
     BaseLib::ConfigTree const& config,
-    std::vector<std::unique_ptr<MeshLib::Mesh>> const& meshes)
+    std::vector<std::unique_ptr<MeshLib::FEMMesh>> const& meshes)
 {
     //
     // Get the mesh name from the config.
@@ -87,8 +87,8 @@ namespace ProcessLib
 {
 ProcessVariable::ProcessVariable(
     BaseLib::ConfigTree const& config,
-    MeshLib::Mesh& mesh,
-    std::vector<std::unique_ptr<MeshLib::Mesh>> const& meshes,
+    MeshLib::FEMMesh& mesh,
+    const std::vector<std::unique_ptr<MeshLib::FEMMesh>>& meshes,
     std::vector<std::unique_ptr<ParameterBase>> const& parameters)
     :  //! \ogs_file_param{prj__process_variables__process_variable__name}
       _name(config.getConfigParameter<std::string>("name")),
@@ -138,7 +138,7 @@ ProcessVariable::ProcessVariable(
              //! \ogs_file_param{prj__process_variables__process_variable__source_terms__source_term}
              sts_config->getConfigSubtreeList("source_term"))
         {
-            MeshLib::Mesh const& mesh = findMeshInConfig(st_config, meshes);
+            auto const& mesh = findMeshInConfig(st_config, meshes);
             auto component_id =
                 //! \ogs_file_param{prj__process_variables__process_variable__source_terms__source_term__component}
                 st_config.getConfigParameterOptional<int>("component");
@@ -171,20 +171,24 @@ std::string const& ProcessVariable::getName() const
     return _name;
 }
 
-MeshLib::Mesh const& ProcessVariable::getMesh() const
+MeshLib::FEMMesh const& ProcessVariable::getMesh() const
 {
     return _mesh;
 }
 
 MeshLib::PropertyVector<double>& ProcessVariable::getOrCreateMeshProperty()
 {
+    // TODO [DUNE] re-enable
+#if 0
     return *MeshLib::getOrCreateMeshProperty<double>(
         _mesh, _name, MeshLib::MeshItemType::Node, _n_components);
+#endif
+    OGS_FATAL("TODO [DUNE] re-enable.");
 }
 
 std::vector<std::unique_ptr<BoundaryCondition>>
 ProcessVariable::createBoundaryConditions(
-    const NumLib::LocalToGlobalIndexMap& dof_table,
+    const NumLib::AbstractDOFTable& dof_table,
     const int variable_id,
     unsigned const integration_order,
     std::vector<std::unique_ptr<ParameterBase>> const& parameters,
@@ -213,7 +217,7 @@ ProcessVariable::createBoundaryConditions(
 
 std::vector<std::unique_ptr<SourceTerm>>
 ProcessVariable::createSourceTerms(
-    const NumLib::LocalToGlobalIndexMap& dof_table,
+    const NumLib::AbstractDOFTable& dof_table,
     const int variable_id,
     unsigned const integration_order,
     std::vector<std::unique_ptr<ParameterBase>> const& parameters)

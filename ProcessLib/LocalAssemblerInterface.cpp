@@ -65,10 +65,13 @@ void LocalAssemblerInterface::assembleWithJacobianForStaggeredScheme(
 }
 
 void LocalAssemblerInterface::computeSecondaryVariable(
-    std::size_t const mesh_item_id,
-    NumLib::LocalToGlobalIndexMap const& dof_table, double const t,
-    GlobalVector const& x, CoupledSolutionsForStaggeredScheme const* coupled_xs)
+    std::size_t const /*mesh_item_id*/,
+    NumLib::AbstractDOFTable const& /*dof_table*/, double const /*t*/,
+    GlobalVector const& /*x*/,
+    CoupledSolutionsForStaggeredScheme const* /*coupled_xs*/)
 {
+// TODO [DUNE] re-enable
+#if 0
     auto const indices = NumLib::getIndices(mesh_item_id, dof_table);
 
     if (coupled_xs != nullptr)
@@ -76,39 +79,49 @@ void LocalAssemblerInterface::computeSecondaryVariable(
 
     auto const local_x = x.get(indices);
     computeSecondaryVariableConcrete(t, local_x);
+#endif
 }
 
 void LocalAssemblerInterface::preTimestep(
-    std::size_t const mesh_item_id,
-    NumLib::LocalToGlobalIndexMap const& dof_table, GlobalVector const& x,
-    double const t, double const delta_t)
+    std::size_t const /*mesh_item_id*/,
+    NumLib::AbstractDOFTable const& /*dof_table*/, GlobalVector const& /*x*/,
+    double const /*t*/, double const /*delta_t*/)
 {
+// TODO [DUNE] re-enable
+#if 0
     auto const indices = NumLib::getIndices(mesh_item_id, dof_table);
     auto const local_x = x.get(indices);
 
     preTimestepConcrete(local_x, t, delta_t);
+#endif
 }
 
 void LocalAssemblerInterface::postTimestep(
-    std::size_t const mesh_item_id,
-    NumLib::LocalToGlobalIndexMap const& dof_table,
-    GlobalVector const& x)
+    std::size_t const /*mesh_item_id*/,
+    NumLib::AbstractDOFTable const& /*dof_table*/,
+    GlobalVector const& /*x*/)
 {
+// TODO [DUNE] re-enable
+#if 0
     auto const indices = NumLib::getIndices(mesh_item_id, dof_table);
     auto const local_x = x.get(indices);
 
     postTimestepConcrete(local_x);
+#endif
 }
 
 void LocalAssemblerInterface::postNonLinearSolver(
-    std::size_t const mesh_item_id,
-    NumLib::LocalToGlobalIndexMap const& dof_table,
-    GlobalVector const& x, double const t, bool const use_monolithic_scheme)
+    std::size_t const /*mesh_item_id*/,
+    NumLib::AbstractDOFTable const& /*dof_table*/, GlobalVector const& /*x*/,
+    double const /*t*/, bool const /*use_monolithic_scheme*/)
 {
+    // TODO [DUNE] re-enable
+#if 0
     auto const indices = NumLib::getIndices(mesh_item_id, dof_table);
     auto const local_x = x.get(indices);
 
     postNonLinearSolverConcrete(local_x, t, use_monolithic_scheme);
+#endif
 }
 
 }  // namespace ProcessLib

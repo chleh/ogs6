@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "NumLib/DOF/AbstractDOFTable.h"
 #include "ProcessLib/BoundaryCondition/BoundaryConditionConfig.h"
 #include "ProcessLib/Parameter/Parameter.h"
 #include "ProcessLib/SourceTerms/SourceTermConfig.h"
@@ -39,8 +40,8 @@ class ProcessVariable
 public:
     ProcessVariable(
         BaseLib::ConfigTree const& config,
-        MeshLib::Mesh& mesh,
-        std::vector<std::unique_ptr<MeshLib::Mesh>> const& meshes,
+        MeshLib::FEMMesh& mesh,
+        std::vector<std::unique_ptr<MeshLib::FEMMesh>> const& meshes,
         std::vector<std::unique_ptr<ParameterBase>> const& parameters);
 
     ProcessVariable(ProcessVariable&&);
@@ -48,19 +49,19 @@ public:
     std::string const& getName() const;
 
     /// Returns a mesh on which the process variable is defined.
-    MeshLib::Mesh const& getMesh() const;
+    const MeshLib::FEMMesh& getMesh() const;
 
     /// Returns the number of components of the process variable.
     int getNumberOfComponents() const { return _n_components; }
 
     std::vector<std::unique_ptr<BoundaryCondition>> createBoundaryConditions(
-        const NumLib::LocalToGlobalIndexMap& dof_table, const int variable_id,
+        const NumLib::AbstractDOFTable& dof_table, const int variable_id,
         unsigned const integration_order,
         std::vector<std::unique_ptr<ParameterBase>> const& parameters,
         Process const& process);
 
     std::vector<std::unique_ptr<SourceTerm>> createSourceTerms(
-        const NumLib::LocalToGlobalIndexMap& dof_table, const int variable_id,
+        const NumLib::AbstractDOFTable& dof_table, const int variable_id,
         unsigned const integration_order,
         std::vector<std::unique_ptr<ParameterBase>> const& parameters);
 
@@ -78,7 +79,7 @@ public:
 
 private:
     std::string const _name;
-    MeshLib::Mesh& _mesh;
+    MeshLib::FEMMesh& _mesh;
     const int _n_components;
     /// The polynomial order of the process variable's shape functions.
     ///

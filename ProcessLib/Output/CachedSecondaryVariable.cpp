@@ -33,7 +33,7 @@ SecondaryVariableFunctions CachedSecondaryVariable::getExtrapolator()
     auto const eval_residuals =
         [this](const double t,
                GlobalVector const& x,
-               NumLib::LocalToGlobalIndexMap const& dof_table,
+               NumLib::AbstractDOFTable const& dof_table,
                std::unique_ptr<GlobalVector> & /*result_cache*/
                ) -> GlobalVector const& {
         _extrapolator.calculateResiduals(1, *_extrapolatables, t, x, dof_table);
@@ -46,7 +46,7 @@ SecondaryVariableFunctions CachedSecondaryVariable::getExtrapolator()
 GlobalVector const& CachedSecondaryVariable::evalField(
     const double t,
     GlobalVector const& x,
-    NumLib::LocalToGlobalIndexMap const& dof_table,
+    NumLib::AbstractDOFTable const& dof_table,
     std::unique_ptr<GlobalVector>& /*result_cache*/
     ) const
 {

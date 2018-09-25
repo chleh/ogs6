@@ -11,6 +11,7 @@
 
 #include "BoundaryCondition.h"
 #include "MeshLib/MeshSubset.h"
+#include "NumLib/DOF/LocalToGlobalIndexMap.h"
 
 namespace ProcessLib
 {

@@ -10,13 +10,9 @@
 #pragma once
 
 #include "BaseLib/Algorithm.h"
+#include "NumLib/DOF/AbstractDOFTable.h"
 #include "NumLib/Extrapolation/ExtrapolatableElementCollection.h"
 #include "NumLib/Extrapolation/Extrapolator.h"
-
-namespace NumLib
-{
-class LocalToGlobalIndexMap;
-}
 
 namespace ProcessLib
 {
@@ -37,7 +33,7 @@ struct SecondaryVariableFunctions final
     using Function = std::function<GlobalVector const&(
         const double t,
         GlobalVector const& x,
-        NumLib::LocalToGlobalIndexMap const& dof_table,
+        NumLib::AbstractDOFTable const& dof_table,
         std::unique_ptr<GlobalVector>& result_cache)>;
 
     SecondaryVariableFunctions() = default;
@@ -54,7 +50,7 @@ struct SecondaryVariableFunctions final
             std::is_same<GlobalVector const&,
                          typename std::result_of<F1(
                              double const, GlobalVector const&,
-                             NumLib::LocalToGlobalIndexMap const&,
+                             NumLib::AbstractDOFTable const&,
                              std::unique_ptr<GlobalVector>&)>::type>::value,
             "The function eval_field_ does not return a const reference"
             " to a GlobalVector");
@@ -63,7 +59,7 @@ struct SecondaryVariableFunctions final
             std::is_same<GlobalVector const&,
                          typename std::result_of<F2(
                              double const, GlobalVector const&,
-                             NumLib::LocalToGlobalIndexMap const&,
+                             NumLib::AbstractDOFTable const&,
                              std::unique_ptr<GlobalVector>&)>::type>::value,
             "The function eval_residuals_ does not return a const reference"
             " to a GlobalVector");
@@ -80,7 +76,7 @@ struct SecondaryVariableFunctions final
             std::is_same<GlobalVector const&,
                          typename std::result_of<F1(
                              double const, GlobalVector const&,
-                             NumLib::LocalToGlobalIndexMap const&,
+                             NumLib::AbstractDOFTable const&,
                              std::unique_ptr<GlobalVector>&)>::type>::value,
             "The function eval_field_ does not return a const reference"
             " to a GlobalVector");
@@ -170,7 +166,7 @@ SecondaryVariableFunctions makeExtrapolator(
                              integration_point_values_method](
                                 const double t,
                                 GlobalVector const& x,
-                                NumLib::LocalToGlobalIndexMap const& dof_table,
+                                NumLib::AbstractDOFTable const& dof_table,
                                 std::unique_ptr<GlobalVector> & /*result_cache*/
                                 ) -> GlobalVector const& {
         auto const extrapolatables = NumLib::makeExtrapolatable(
@@ -185,7 +181,7 @@ SecondaryVariableFunctions makeExtrapolator(
          integration_point_values_method](
             const double t,
             GlobalVector const& x,
-            NumLib::LocalToGlobalIndexMap const& dof_table,
+            NumLib::AbstractDOFTable const& dof_table,
             std::unique_ptr<GlobalVector> & /*result_cache*/
             ) -> GlobalVector const& {
         auto const extrapolatables = NumLib::makeExtrapolatable(

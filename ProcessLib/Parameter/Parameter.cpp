@@ -21,7 +21,7 @@ namespace ProcessLib
 {
 std::unique_ptr<ParameterBase> createParameter(
     BaseLib::ConfigTree const& config,
-    std::vector<std::unique_ptr<MeshLib::Mesh>> const& meshes,
+    std::vector<std::unique_ptr<MeshLib::FEMMesh>> const& /*meshes*/,
     std::map<std::string,
              std::unique_ptr<MathLib::PiecewiseLinearInterpolation>> const&
         curves)
@@ -45,6 +45,8 @@ std::unique_ptr<ParameterBase> createParameter(
         auto param = createCurveScaledParameter(name, config, curves);
         return param;
     }
+    // TODO [DUNE] re-enable
+#if 0
     if (type == "Group")
     {
         INFO("GroupBasedParameter: %s", name.c_str());
@@ -63,6 +65,7 @@ std::unique_ptr<ParameterBase> createParameter(
         auto param = createMeshNodeParameter(name, config, *meshes.front());
         return param;
     }
+#endif
 
     OGS_FATAL("Cannot construct a parameter of given type \'%s\'.",
               type.c_str());

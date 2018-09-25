@@ -53,7 +53,7 @@ public:
         NumLib::LocalToGlobalIndexMap const& dof_table_bulk,
         int const variable_id, int const component_id,
         MeshLib::Mesh const& bc_mesh, unsigned const integration_order,
-        MeshLib::Mesh const& bulk_mesh, double const constraint_threshold,
+        const MeshLib::FEMMesh& bulk_mesh, double const constraint_threshold,
         bool const lower,
         std::function<Eigen::Vector3d(std::size_t const,
                                       MathLib::Point3d const&, double const,

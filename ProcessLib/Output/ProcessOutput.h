@@ -32,7 +32,7 @@ void processOutputData(
     const double t,
     GlobalVector const& x,
     MeshLib::Mesh& mesh,
-    NumLib::LocalToGlobalIndexMap const& dof_table,
+    NumLib::AbstractDOFTable const& dof_table,
     std::vector<std::reference_wrapper<ProcessVariable>> const&
         process_variables,
     SecondaryVariableCollection secondary_variables,
