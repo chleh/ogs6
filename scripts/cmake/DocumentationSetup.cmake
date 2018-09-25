@@ -8,7 +8,7 @@ if(DOXYGEN_FOUND)
         set(DOT_FOUND "YES")
     endif()
 
-    add_custom_target(doc ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/Doxyfile
+    add_custom_target(ogs-doc ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/Doxyfile
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
         COMMENT "Generating source code documentation with Doxygen." VERBATIM)
 
@@ -29,7 +29,7 @@ if(DOXYGEN_FOUND)
         set(DOCS_DISABLE_INDEX_STRING "YES" CACHE INTERNAL "")
         set(DOCS_GENERATE_DOCSET_STRING "YES" CACHE INTERNAL "")
         set(DOCS_SEARCHENGINE_STRING "NO" CACHE INTERNAL "")
-        add_custom_command(TARGET doc POST_BUILD
+        add_custom_command(TARGET ogs-doc POST_BUILD
             COMMAND make
             COMMAND mv org.doxygen.Project.docset ogs6.docset
             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/docs
@@ -59,7 +59,7 @@ if(DOXYGEN_FOUND)
         -P ${PROJECT_SOURCE_DIR}/scripts/cmake/DocumentationProjectFile.cmake
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
         COMMENT "Generating project file documentation hierarchy." VERBATIM)
-    add_dependencies(doc internal_pre_doc)
+    add_dependencies(ogs-doc internal_pre_doc)
 
     if (doc_use_external_tools)
         set(data_dir "${Data_SOURCE_DIR}")
@@ -71,7 +71,7 @@ if(DOXYGEN_FOUND)
             ${data_dir}
             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
             COMMENT "Generating project file documentation quality assurance pages." VERBATIM)
-        add_dependencies(doc internal_pre_doc_qa_page)
+        add_dependencies(ogs-doc internal_pre_doc_qa_page)
         add_dependencies(internal_pre_doc_qa_page internal_pre_doc)
     endif()
 endif()
