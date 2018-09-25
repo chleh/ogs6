@@ -15,6 +15,12 @@
 
 #include <logog/include/logog.hpp>
 
+#include "MeshLib/DUNEMesh.h"
+#if OGS_USE_DUNE
+#include <dune/grid/io/file/vtk/vtkwriter.hh>
+#include "ProcessOutputDUNE.h"
+#endif
+
 #include "Applications/InSituLib/Adaptor.h"
 #include "BaseLib/FileTools.h"
 #include "BaseLib/RunTime.h"
@@ -43,6 +49,8 @@ int convertVtkDataMode(std::string const& data_mode)
         "Binary, or Appended.",
         data_mode.c_str());
 }
+
+static std::size_t outputOverallIterationCounter = 0;
 }  // namespace
 
 namespace ProcessLib
@@ -143,12 +151,14 @@ void Output::doOutputAlways(Process const& process,
     BaseLib::RunTime time_output;
     time_output.start();
 
+    /* TODO [DUNE] re-enable
     // Need to add variables of process to vtu even no output takes place.
     processOutputData(t, x, process.getMesh(), process.getDOFTable(process_id),
                       process.getProcessVariables(process_id),
                       process.getSecondaryVariables(),
                       process.getIntegrationPointWriter(),
                       process_output);
+                      */
 
     // For the staggered scheme for the coupling, only the last process, which
     // gives the latest solution within a coupling loop, is allowed to make
@@ -159,19 +169,46 @@ void Output::doOutputAlways(Process const& process,
 
     std::string const output_file_name =
         _output_file_prefix + "_pcs_" + std::to_string(process_id) + "_ts_" +
-        std::to_string(timestep) + "_t_" + std::to_string(t) + ".vtu";
+        std::to_string(timestep) + "_t_" + std::to_string(t);  // + ".vtu";
     std::string const output_file_path =
         BaseLib::joinPaths(_output_directory, output_file_name);
 
     DBUG("output to %s", output_file_path.c_str());
 
     ProcessData* process_data = findProcessData(process, process_id);
-    process_data->pvd_file.addVTUFile(output_file_name, t);
+    process_data->pvd_file.addVTUFile(output_file_name + ".vtu", t);
     INFO("[time] Output of timestep %d took %g s.", timestep,
          time_output.elapsed());
 
-    makeOutput(output_file_path, process.getMesh(), _output_file_compression,
-               _output_file_data_mode);
+    auto* fem_mesh = &process.getMesh();
+#if !OGS_USE_DUNE
+    if (auto* mesh = dynamic_cast<MeshLib::Mesh*>(fem_mesh))
+    {
+        makeOutput(output_file_path, process.getMesh(),
+                   _output_file_compression, _output_file_data_mode);
+    }
+#else
+    if (auto* mesh = dynamic_cast<MeshLib::DUNEMesh<2>*>(fem_mesh))
+    {
+        doProcessOutputDUNE(output_file_path, _output_file_compression,
+                            _output_file_data_mode, t, x, *mesh,
+                            process.getDOFTable(process_id),
+                            process.getProcessVariables(process_id),
+                            process.getSecondaryVariables(), process_output);
+    }
+    else if (auto* mesh = dynamic_cast<MeshLib::DUNEMesh<3>*>(fem_mesh))
+    {
+        doProcessOutputDUNE(output_file_path, _output_file_compression,
+                            _output_file_data_mode, t, x, *mesh,
+                            process.getDOFTable(process_id),
+                            process.getProcessVariables(process_id),
+                            process.getSecondaryVariables(), process_output);
+    }
+#endif
+    else
+    {
+        OGS_FATAL("unsupported mesh type");
+    }
 }
 
 void Output::doOutput(Process const& process,
@@ -223,12 +260,14 @@ void Output::doOutputNonlinearIteration(Process const& process,
     BaseLib::RunTime time_output;
     time_output.start();
 
+    /* TODO [DUNE] re-enable
     processOutputData(t, x, process.getMesh(),
                       process.getDOFTable(process_id),
                       process.getProcessVariables(process_id),
                       process.getSecondaryVariables(),
                       process.getIntegrationPointWriter(),
                       process_output);
+    */
 
     // For the staggered scheme for the coupling, only the last process, which
     // gives the latest solution within a coupling loop, is allowed to make
@@ -243,15 +282,42 @@ void Output::doOutputNonlinearIteration(Process const& process,
     std::string const output_file_name =
         _output_file_prefix + "_pcs_" + std::to_string(process_id) + "_ts_" +
         std::to_string(timestep) + "_t_" + std::to_string(t) + "_nliter_" +
-        std::to_string(iteration) + ".vtu";
+        std::to_string(iteration) + '_' +
+        std::to_string(++outputOverallIterationCounter);
     std::string const output_file_path =
         BaseLib::joinPaths(_output_directory, output_file_name);
-
     DBUG("output iteration results to %s", output_file_path.c_str());
 
-    INFO("[time] Output took %g s.", time_output.elapsed());
+    auto* fem_mesh = &process.getMesh();
+#if !OGS_USE_DUNE
+    if (auto* mesh = dynamic_cast<MeshLib::Mesh*>(fem_mesh))
+    {
+        makeOutput(output_file_path, process.getMesh(),
+                   _output_file_compression, _output_file_data_mode);
+    }
+#else
+    if (auto* mesh = dynamic_cast<MeshLib::DUNEMesh<2>*>(fem_mesh))
+    {
+        doProcessOutputDUNE(output_file_path, _output_file_compression,
+                            _output_file_data_mode, t, x, *mesh,
+                            process.getDOFTable(process_id),
+                            process.getProcessVariables(process_id),
+                            process.getSecondaryVariables(), process_output);
+    }
+    else if (auto* mesh = dynamic_cast<MeshLib::DUNEMesh<3>*>(fem_mesh))
+    {
+        doProcessOutputDUNE(output_file_path, _output_file_compression,
+                            _output_file_data_mode, t, x, *mesh,
+                            process.getDOFTable(process_id),
+                            process.getProcessVariables(process_id),
+                            process.getSecondaryVariables(), process_output);
+    }
+#endif
+    else
+    {
+        OGS_FATAL("unsupported mesh type");
+    }
 
-    makeOutput(output_file_path, process.getMesh(), _output_file_compression,
-               _output_file_data_mode);
+    INFO("[time] Output took %g s.", time_output.elapsed());
 }
 }  // namespace ProcessLib
