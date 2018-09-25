@@ -25,11 +25,13 @@
 
 #include <logog/include/logog.hpp>
 
+#include "BaseLib/Config.h"
 #include "BaseLib/FileTools.h"
 #include "BaseLib/StringTools.h"
 
 #include "MeshLib/Mesh.h"
 
+#include "MeshLib/IO/DUNE_IO/readDUNEMesh.h"
 #include "MeshLib/IO/Legacy/MeshIO.h"
 #include "MeshLib/IO/VtkIO/VtuInterface.h"
 
@@ -42,7 +44,9 @@ namespace MeshLib
 {
 namespace IO
 {
-MeshLib::Mesh* readMeshFromFile(const std::string &file_name)
+std::unique_ptr<MeshLib::FEMMesh> readMeshFromFile(const std::string& file_name,
+                                                   unsigned dimension,
+                                                   unsigned global_refinement)
 {
 #ifdef USE_PETSC
     int world_size;
@@ -63,20 +67,23 @@ MeshLib::Mesh* readMeshFromFile(const std::string &file_name)
     }
     return nullptr;
 #else
-    return readMeshFromFileSerial(file_name);
+    return readMeshFromFileSerial(file_name, dimension, global_refinement);
 #endif
 }
 
-MeshLib::Mesh* readMeshFromFileSerial(const std::string &file_name)
+std::unique_ptr<MeshLib::FEMMesh> readMeshFromFileSerial(
+    const std::string& file_name,
+    unsigned dimension,
+    unsigned global_refinement)
 {
     if (BaseLib::hasFileExtension("msh", file_name))
     {
-        MeshLib::IO::Legacy::MeshIO meshIO;
-        return meshIO.loadMeshFromFile(file_name);
+        return readDUNEMeshFromFile(file_name, dimension, global_refinement);
     }
 
     if (BaseLib::hasFileExtension("vtu", file_name))
-        return MeshLib::IO::VtuInterface::readVTUFile(file_name);
+        return std::unique_ptr<MeshLib::FEMMesh>(
+            MeshLib::IO::VtuInterface::readVTUFile(file_name));
 
     ERR("readMeshFromFile(): Unknown mesh file format in file %s.", file_name.c_str());
     return nullptr;

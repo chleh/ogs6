@@ -18,15 +18,23 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 
 namespace MeshLib
 {
 class Mesh;
+class FEMMesh;
 
 namespace IO
 {
-MeshLib::Mesh* readMeshFromFileSerial(const std::string &file_name);
-MeshLib::Mesh* readMeshFromFile(const std::string &file_name);
+std::unique_ptr<MeshLib::FEMMesh> readMeshFromFileSerial(
+    const std::string& file_name,
+    unsigned dimension,
+    unsigned global_refinement = 0);
+std::unique_ptr<MeshLib::FEMMesh> readMeshFromFile(
+    const std::string& file_name,
+    unsigned dimension,
+    unsigned global_refinement = 0);
 }
 }
