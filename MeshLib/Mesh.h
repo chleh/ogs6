@@ -22,6 +22,7 @@
 #include "BaseLib/Counter.h"
 #include "BaseLib/Error.h"
 
+#include "FEMMesh.h"
 #include "MeshEnums.h"
 #include "Properties.h"
 
@@ -32,31 +33,33 @@ namespace ApplicationUtils
 
 namespace MeshLib
 {
-    class Node;
-    class Element;
+class Node;
+class Element;
 
 /**
  * A basic mesh.
  */
-class Mesh : BaseLib::Counter<Mesh>
+class Mesh : BaseLib::Counter<Mesh>, public FEMMesh
 {
     /* friend functions: */
-    friend void removeMeshNodes(MeshLib::Mesh &mesh, const std::vector<std::size_t> &nodes);
+    friend void removeMeshNodes(MeshLib::Mesh& mesh,
+                                const std::vector<std::size_t>& nodes);
 
     friend class ApplicationUtils::NodeWiseMeshPartitioner;
 
 public:
     /// Constructor using a mesh name and an array of nodes and elements
     /// @param name          Mesh name.
-    /// @param nodes         A vector of mesh nodes. In case nonlinear nodes are
-    ///                      involved, one should put them after line ones in
-    ///                      the vector and set "n_base_nodes" argument.
+    /// @param nodes         A vector of mesh nodes. In case nonlinear nodes
+    /// are
+    ///                      involved, one should put them after line ones
+    ///                      in the vector and set "n_base_nodes" argument.
     /// @param elements      An array of mesh elements.
     /// @param properties    Mesh properties.
     /// @param n_base_nodes  The number of base nodes. This is an optional
-    ///                      parameter for nonlinear case.  If the parameter is
-    ///                      set to zero, we consider there are no nonlinear
-    ///                      nodes.
+    ///                      parameter for nonlinear case.  If the parameter
+    ///                      is set to zero, we consider there are no
+    ///                      nonlinear nodes.
     Mesh(std::string name,
          std::vector<Node*>
              nodes,
@@ -66,7 +69,7 @@ public:
          const std::size_t n_base_nodes = 0);
 
     /// Copy constructor
-    Mesh(const Mesh &mesh);
+    Mesh(const Mesh& mesh);
 
     /// Destructor
     virtual ~Mesh();
@@ -77,8 +80,9 @@ public:
     /// Add an element to the mesh.
     void addElement(Element* elem);
 
-    /// Returns the dimension of the mesh (determined by the maximum dimension over all elements).
-    unsigned getDimension() const { return _mesh_dimension; }
+    /// Returns the dimension of the mesh (determined by the maximum
+    /// dimension over all elements).
+    unsigned getDimension() const override { return _mesh_dimension; }
 
     /// Get the node with the given index.
     const Node* getNode(std::size_t idx) const { return _nodes[idx]; }
@@ -99,7 +103,7 @@ public:
     std::size_t getNumberOfNodes() const { return _nodes.size(); }
 
     /// Get name of the mesh.
-    const std::string getName() const { return _name; }
+    std::string const& getName() const override { return _name; }
 
     /// Get the nodes-vector for the mesh.
     std::vector<Node*> const& getNodes() const { return _nodes; }
@@ -107,32 +111,42 @@ public:
     /// Get the element-vector for the mesh.
     std::vector<Element*> const& getElements() const { return _elements; }
 
-    /// Resets the IDs of all mesh-elements to their position in the element vector
+    /// Resets the IDs of all mesh-elements to their position in the element
+    /// vector
     void resetElementIDs();
 
-    /// Resets the IDs of all mesh-nodes to their position in the node vector
+    /// Resets the IDs of all mesh-nodes to their position in the node
+    /// vector
     void resetNodeIDs();
 
     /// Changes the name of the mesh.
-    void setName(const std::string &name) { this->_name = name; }
+    void setName(const std::string& name) { this->_name = name; }
 
     /// Get id of the mesh
-    std::size_t getID() const {return _id; }
+    std::size_t getID() const override { return _id; }
 
     /// Get the number of base nodes
     std::size_t getNumberOfBaseNodes() const { return _n_base_nodes; }
 
-    /// Return true if the given node is a basic one (i.e. linear order node)
-    bool isBaseNode(std::size_t node_idx) const {return node_idx < _n_base_nodes; }
+    /// Return true if the given node is a basic one (i.e. linear order
+    /// node)
+    bool isBaseNode(std::size_t node_idx) const
+    {
+        return node_idx < _n_base_nodes;
+    }
 
     /// Return true if the mesh has any nonlinear nodes
-    bool isNonlinear() const { return (getNumberOfNodes() != getNumberOfBaseNodes()); }
+    bool isNonlinear() const
+    {
+        return (getNumberOfNodes() != getNumberOfBaseNodes());
+    }
 
-    MeshLib::Properties & getProperties() { return _properties; }
+    MeshLib::Properties& getProperties() { return _properties; }
     MeshLib::Properties const& getProperties() const { return _properties; }
 
-    bool isAxiallySymmetric() const { return _is_axially_symmetric; }
-    void setAxiallySymmetric(bool is_axial_symmetric) {
+    bool isAxiallySymmetric() const override { return _is_axially_symmetric; }
+    void setAxiallySymmetric(bool is_axial_symmetric) override
+    {
         _is_axially_symmetric = is_axial_symmetric;
     }
 
@@ -141,20 +155,23 @@ protected:
     void calcEdgeLengthRange();
 
     /**
-     * Resets the connected elements for the node vector, i.e. removes the old information and
-     * calls setElementsConnectedToNodes to set the new information.
-     * \attention This needs to be called if node neighbourhoods are reset.
+     * Resets the connected elements for the node vector, i.e. removes the
+     * old information and calls setElementsConnectedToNodes to set the new
+     * information. \attention This needs to be called if node
+     * neighbourhoods are reset.
      */
     void resetElementsConnectedToNodes();
 
     /// Sets the dimension of the mesh.
     void setDimension();
 
-    /// Fills in the neighbor-information for nodes (i.e. which element each node belongs to).
+    /// Fills in the neighbor-information for nodes (i.e. which element each
+    /// node belongs to).
     void setElementsConnectedToNodes();
 
     /// Fills in the neighbor-information for elements.
-    /// Note: Using this implementation, an element e can only have neighbors that have the same dimensionality as e.
+    /// Note: Using this implementation, an element e can only have
+    /// neighbors that have the same dimensionality as e.
     void setElementNeighbors();
 
     void setNodesConnectedByEdges();
@@ -163,7 +180,8 @@ protected:
     /// connected if they are shared by an element.
     void setNodesConnectedByElements();
 
-    /// Check if all the nonlinear nodes are stored at the end of the node vector
+    /// Check if all the nonlinear nodes are stored at the end of the node
+    /// vector
     void checkNonlinearNodeIDs() const;
 
     /// Check if the mesh contains any nonlinear element
@@ -173,7 +191,8 @@ protected:
     unsigned _mesh_dimension;
     /// The minimal and maximal edge length over all elements in the mesh
     std::pair<double, double> _edge_length;
-    /// The minimal and maximal distance of nodes within an element over all elements in the mesh
+    /// The minimal and maximal distance of nodes within an element over all
+    /// elements in the mesh
     std::pair<double, double> _node_distance;
     std::string _name;
     std::vector<Node*> _nodes;
