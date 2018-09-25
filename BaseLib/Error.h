@@ -71,3 +71,7 @@ __declspec(noreturn)
 #define OGS_FATAL(fmt, ...)                                           \
     BaseLib::detail::error_impl(BaseLib::format(fmt, ##__VA_ARGS__) + \
                                 OGS_LOCATION)
+
+#define OGS_ALWAYS_ASSERT(cond) \
+    if (!(cond))                \
+    OGS_FATAL("Assertion failed: %s", #cond)
