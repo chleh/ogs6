@@ -21,23 +21,21 @@ class Mesh;
 
 namespace NumLib
 {
-class LocalToGlobalIndexMap;
+class AbstractDOFTable;
 }  // namespace NumLib
 
 namespace ProcessLib
 {
 class SourceTerm;
-class NodalSourceTerm;
 struct SourceTermConfig;
 }  // namespace ProcessLib
 
 namespace ProcessLib
 {
 std::unique_ptr<SourceTerm> createSourceTerm(
-    const SourceTermConfig& config,
-    const NumLib::LocalToGlobalIndexMap& dof_table, const MeshLib::Mesh& mesh,
-    const int variable_id, const unsigned integration_order,
-    const unsigned shapefunction_order,
+    const SourceTermConfig& config, const NumLib::AbstractDOFTable& dof_table,
+    const MeshLib::FEMMesh& mesh, const int variable_id,
+    const unsigned integration_order, const unsigned shapefunction_order,
     std::vector<std::unique_ptr<ProcessLib::ParameterBase>> const& parameters);
 
 }  // namespace ProcessLib
