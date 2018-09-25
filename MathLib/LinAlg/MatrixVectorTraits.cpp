@@ -133,7 +133,13 @@ std::unique_ptr<EigenVector>
 MatrixVectorTraits<EigenVector>::
 newInstance(MatrixSpecifications const& spec)
 {
-    return std::make_unique<EigenVector>(spec.nrows);
+    auto x = std::make_unique<EigenVector>(spec.nrows);
+
+    // TODO [DUNE] fragile: order matters
+    x->setDOFTable(spec.dof_table);
+    x->setMesh(spec.mesh);
+
+    return x;
 }
 
 } // namespace MathLib

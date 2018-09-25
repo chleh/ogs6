@@ -18,6 +18,16 @@
 #include <Eigen/Eigen>
 #include <Eigen/Sparse>
 
+namespace MeshLib
+{
+class FEMMesh;
+}
+
+namespace NumLib
+{
+class AbstractDOFTable;
+}
+
 namespace MathLib
 {
 
@@ -40,7 +50,10 @@ public:
     explicit EigenVector(IndexType length) : _vec(length) {}
 
     /// copy constructor
-    EigenVector(EigenVector const& src) = default;
+    EigenVector(EigenVector const& other);
+    EigenVector& operator=(EigenVector const& other);
+
+    ~EigenVector();
 
     /// return a vector length
     IndexType size() const { return static_cast<IndexType>(_vec.size()); }
@@ -117,8 +130,48 @@ public:
     /// return a raw Eigen vector object
     const RawVectorType& getRawVector() const {return _vec; }
 
+    /// \defgroup DUNE
+    /// The interpretation of the EigenVector has been changed. EigenVector is
+    /// now taken to be the coefficient vector of some field that is defined on
+    /// some domain.
+    ///
+    /// @{
+
+    /// Set the mesh to which this EigenVector is associated.
+    void setMesh(MeshLib::FEMMesh*);
+    /// Return the mesh to which this EigenVector is associated.
+    MeshLib::FEMMesh* getMesh() const;
+
+    /// Set the d.o.f. table for accessing the d.o.f.s of thie EigenVector.
+    void setDOFTable(NumLib::AbstractDOFTable const*);
+    /// Return the d.o.f. table for accessing the d.o.f.s of thie EigenVector.
+    NumLib::AbstractDOFTable const* getDOFTable() const;
+
+    /// @}
+
 private:
     RawVectorType _vec;
+
+    /// \addtogroup DUNE
+    /// @{
+
+    /// The \c _mesh is the discretized domain that field is defined on. The \c
+    /// _mesh is needed to update the EigenVector after the mesh has been
+    /// adapted.
+    MeshLib::FEMMesh* _mesh = nullptr;
+
+    /// The \c _dof_table  maps mesh entities to indices in the coefficient
+    /// vector. The \c _dof_table is needed to update the EigenVector after the
+    /// mesh has been adapted.
+    NumLib::AbstractDOFTable const* _dof_table = nullptr;
+
+    /// Needed for cleaning up pre refinement hooks.
+    std::size_t _key_pre = 0;
+
+    /// Needed for cleaning up pre refinement hooks.
+    std::size_t _key_post = 0;
+
+    /// @}
 };
 
 } // MathLib
