@@ -24,32 +24,39 @@ struct MethodNotOverriddenInDerivedClassException
 {
 };
 
+class PythonSourceTermLocalAssemblerInterface
+{
+    virtual void assemble(
+        std::size_t const boundary_element_id,
+        NumLib::LocalToGlobalIndexMap const& source_term_dof_table,
+        double const t, const GlobalVector& x, GlobalVector& b,
+        GlobalMatrix* Jac) = 0;
+
+    virtual ~PythonSourceTermLocalAssemblerInterface() = default;
+};
+
 template <typename ShapeFunction, typename IntegrationMethod,
           unsigned GlobalDim>
 class PythonSourceTermLocalAssembler final
-    : public GenericNaturalSourceTermLocalAssembler<
-          ShapeFunction, IntegrationMethod, GlobalDim>
+    : public PythonSourceTermLocalAssemblerInterface
 {
-    using Base = GenericNaturalSourceTermLocalAssembler<
-        ShapeFunction, IntegrationMethod, GlobalDim>;
-
 public:
-    PythonSourceTermLocalAssembler(
-        MeshLib::Element const& e,
-        std::size_t const /*local_matrix_size*/,
-        bool is_axially_symmetric,
-        unsigned const integration_order,
-        PythonSourceTermData const& data)
-        : Base(e, is_axially_symmetric, integration_order),
-          _data(data),
-          _element(e)
+    PythonSourceTermLocalAssembler(MeshLib::Element const& e,
+                                   std::size_t const /*local_matrix_size*/,
+                                   bool is_axially_symmetric,
+                                   unsigned const integration_order,
+                                   PythonSourceTermData const& data)
+        : _data(data),
+          _element(e),
+          _is_axially_symmetric(is_axially_symmetric),
+          _integration_order(integration_order)
     {
     }
 
     void assemble(std::size_t const boundary_element_id,
                   NumLib::LocalToGlobalIndexMap const& dof_table_boundary,
-                  double const t, const GlobalVector& x, GlobalMatrix& /*K*/,
-                  GlobalVector& b, GlobalMatrix* Jac) override
+                  double const t, const GlobalVector& x, GlobalVector& b,
+                  GlobalMatrix* Jac) override
     {
         using ShapeMatricesType =
             ShapeMatrixPolicyType<ShapeFunction, GlobalDim>;
@@ -192,6 +199,8 @@ public:
 private:
     PythonSourceTermData const& _data;
     MeshLib::Element const& _element;
+    bool _is_axially_symmetric;
+    unsigned const _integration_order;
 };
 
 }  // namespace ProcessLib

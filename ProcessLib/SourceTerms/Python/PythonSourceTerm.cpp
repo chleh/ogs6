@@ -52,12 +52,13 @@ private:
 
 namespace ProcessLib
 {
-PythonSourceTerm::PythonSourceTerm(PythonSourceTermData&& source_term_data,
-                                   unsigned const integration_order,
-                                   unsigned const shapefunction_order,
-                                   unsigned const global_dim,
-                                   bool const flush_stdout)
-    : _source_term_data(std::move(source_term_data)),
+PythonSourceTerm::PythonSourceTerm(
+    NumLib::LocalToGlobalIndexMap const& source_term_dof_table,
+    PythonSourceTermData&& source_term_data, unsigned const integration_order,
+    unsigned const shapefunction_order, unsigned const global_dim,
+    bool const flush_stdout)
+    : SourceTerm(source_term_dof_table),
+      _source_term_data(std::move(source_term_data)),
       _flush_stdout(flush_stdout)
 {
     std::vector<MeshLib::Node*> const& source_term_nodes =

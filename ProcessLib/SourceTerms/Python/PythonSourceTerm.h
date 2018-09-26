@@ -41,11 +41,12 @@ struct PythonSourceTermData
 class PythonSourceTerm final : public SourceTerm
 {
 public:
-    PythonSourceTerm(PythonSourceTermData&& source_term_data,
+    PythonSourceTerm(NumLib::LocalToGlobalIndexMap const& source_term_dof_table,
+                     PythonSourceTermData&& source_term_data,
+                     unsigned const integration_order,
                      unsigned const integration_order,
                      unsigned const shapefunction_order,
-                     unsigned const global_dim,
-                     bool const flush_stdout);
+                     unsigned const global_dim, bool const flush_stdout);
 
     void integrate(const double t, const GlobalVector& x,
                    NumLib::IndexValueVector<GlobalIndexType>&
