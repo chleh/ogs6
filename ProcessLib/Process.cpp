@@ -21,7 +21,7 @@
 namespace ProcessLib
 {
 Process::Process(
-    MeshLib::Mesh& mesh,
+    MeshLib::FEMMesh& mesh,
     std::unique_ptr<ProcessLib::AbstractJacobianAssembler>&& jacobian_assembler,
     std::vector<std::unique_ptr<ParameterBase>> const& parameters,
     unsigned const integration_order,
@@ -49,7 +49,7 @@ Process::Process(
           return pcs_BCs;
       }(_process_variables.size())),
       _source_term_collections([&](const std::size_t number_of_processes)
-                               -> std::vector<SourceTermCollection> {
+                                   -> std::vector<SourceTermCollection> {
           std::vector<SourceTermCollection> pcs_sts;
           pcs_sts.reserve(number_of_processes);
           for (std::size_t i = 0; i < number_of_processes; i++)
@@ -62,7 +62,7 @@ Process::Process(
 }
 
 void Process::initializeProcessBoundaryConditionsAndSourceTerms(
-    const NumLib::LocalToGlobalIndexMap& dof_table, const int process_id)
+    const NumLib::AbstractDOFTable& dof_table, const int process_id)
 {
     auto const& per_process_variables = _process_variables[process_id];
     auto& per_process_BCs = _boundary_conditions[process_id];
@@ -110,6 +110,8 @@ void Process::initialize()
     initializeBoundaryConditions();
 }
 
+// TODO [DUNE] re-enable
+#if 0
 void Process::setInitialConditions(const int process_id, double const t,
                                    GlobalVector& x)
 {
@@ -164,13 +166,23 @@ void Process::setInitialConditions(const int process_id, double const t,
         }
     }
 }
+#endif
 
 MathLib::MatrixSpecifications Process::getMatrixSpecifications(
     const int /*process_id*/) const
 {
+// TODO [DUNE] re-enable
+#if 0
     auto const& l = *_local_to_global_index_map;
     return {l.dofSizeWithoutGhosts(), l.dofSizeWithoutGhosts(),
             &l.getGhostIndices(), &_sparsity_pattern};
+#endif
+    return {_sparsity_pattern.size(),
+            _sparsity_pattern.size(),
+            nullptr,
+            &_sparsity_pattern,
+            &_mesh,
+            _local_to_global_index_map.get()};
 }
 
 void Process::preAssemble(const double t, GlobalVector const& x)
@@ -212,6 +224,8 @@ void Process::assembleWithJacobian(const double t, GlobalVector const& x,
 
 void Process::constructDofTable()
 {
+// TODO [DUNE] implement?
+#if 0
     // Create single component dof in every of the mesh's nodes.
     _mesh_subset_all_nodes =
         std::make_unique<MeshLib::MeshSubset>(_mesh, _mesh.getNodes());
@@ -256,8 +270,11 @@ void Process::constructDofTable()
         std::make_unique<NumLib::LocalToGlobalIndexMap>(
             std::move(all_mesh_subsets), vec_var_n_components,
             NumLib::ComponentOrder::BY_LOCATION);
+#endif
 }
 
+// TODO [DUNE] re-enable
+#if 0
 std::tuple<NumLib::LocalToGlobalIndexMap*, bool>
 Process::getDOFTableForExtrapolatorData() const
 {
@@ -282,9 +299,12 @@ Process::getDOFTableForExtrapolatorData() const
                                NumLib::ComponentOrder::BY_LOCATION),
                            manage_storage);
 }
+#endif
 
 void Process::initializeExtrapolator()
 {
+    // TODO [DUNE] re-enable
+#if 0
     NumLib::LocalToGlobalIndexMap* dof_table_single_component;
     bool manage_storage;
 
@@ -298,6 +318,7 @@ void Process::initializeExtrapolator()
     // TODO: Later on the DOF table can change during the simulation!
     _extrapolator_data = ExtrapolatorData(
         std::move(extrapolator), dof_table_single_component, manage_storage);
+#endif
 }
 
 void Process::finishNamedFunctionsInitialization()
@@ -322,8 +343,11 @@ void Process::finishNamedFunctionsInitialization()
 
 void Process::computeSparsityPattern()
 {
+// TODO [DUNE] re-enable
+#if 0
     _sparsity_pattern =
         NumLib::computeSparsityPattern(*_local_to_global_index_map, _mesh);
+#endif
 }
 
 void Process::preTimestep(GlobalVector const& x, const double t,
@@ -363,11 +387,14 @@ void Process::computeSecondaryVariable(const double t, GlobalVector const& x)
 
 void Process::preIteration(const unsigned iter, const GlobalVector& x)
 {
+// TODO [DUNE] re-enable
+#if 0
     // In every new iteration cached values of secondary variables are expired.
     for (auto& cached_var : _cached_secondary_variables)
     {
         cached_var->updateCurrentSolution(x, *_local_to_global_index_map);
     }
+#endif
 
     MathLib::LinAlg::setLocalAccessibleVector(x);
     preIterationConcreteProcess(iter, x);

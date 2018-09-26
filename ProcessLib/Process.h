@@ -11,6 +11,7 @@
 
 #include <tuple>
 
+#include "NumLib/DOF/AbstractDOFTable.h"
 #include "NumLib/NamedFunctionCaller.h"
 #include "NumLib/ODESolver/NonlinearSolver.h"
 #include "NumLib/ODESolver/ODESystem.h"
@@ -45,7 +46,7 @@ public:
     using NonlinearSolver = NumLib::NonlinearSolverBase;
     using TimeDiscretization = NumLib::TimeDiscretization;
 
-    Process(MeshLib::Mesh& mesh,
+    Process(MeshLib::FEMMesh& mesh,
             std::unique_ptr<AbstractJacobianAssembler>&& jacobian_assembler,
             std::vector<std::unique_ptr<ParameterBase>> const& parameters,
             unsigned const integration_order,
@@ -77,8 +78,8 @@ public:
 
     void initialize();
 
-    void setInitialConditions(const int process_id, const double t,
-                              GlobalVector& x);
+    virtual void setInitialConditions(const int process_id, const double t,
+                                      GlobalVector& x) = 0;
 
     virtual MathLib::MatrixSpecifications getMatrixSpecifications(
         const int process_id) const override;
@@ -109,13 +110,12 @@ public:
         return _boundary_conditions[pcs_id].getKnownSolutions(t, x);
     }
 
-    virtual NumLib::LocalToGlobalIndexMap const& getDOFTable(
-        const int /*process_id*/) const
+    NumLib::AbstractDOFTable const& getDOFTable(const int /*process_id*/) const
     {
         return *_local_to_global_index_map;
     }
 
-    MeshLib::Mesh& getMesh() const { return _mesh; }
+    MeshLib::FEMMesh& getMesh() const { return _mesh; }
     std::vector<std::reference_wrapper<ProcessVariable>> const&
     getProcessVariables(const int process_id) const
     {
@@ -149,7 +149,7 @@ protected:
         return _extrapolator_data.getExtrapolator();
     }
 
-    NumLib::LocalToGlobalIndexMap const& getSingleComponentDOFTable() const
+    NumLib::AbstractDOFTable const& getSingleComponentDOFTable() const
     {
         return _extrapolator_data.getDOFTable();
     }
@@ -160,13 +160,13 @@ protected:
      * initializeBoundaryConditions().
      */
     void initializeProcessBoundaryConditionsAndSourceTerms(
-        const NumLib::LocalToGlobalIndexMap& dof_table, const int process_id);
+        const NumLib::AbstractDOFTable& dof_table, const int process_id);
 
 private:
     /// Process specific initialization called by initialize().
     virtual void initializeConcreteProcess(
-        NumLib::LocalToGlobalIndexMap const& dof_table,
-        MeshLib::Mesh const& mesh,
+        NumLib::AbstractDOFTable const& dof_table,
+        MeshLib::FEMMesh const& mesh,
         unsigned const integration_order) = 0;
 
     /// Member function to initialize the boundary conditions for all coupled
@@ -226,6 +226,8 @@ private:
 protected:
     virtual void constructDofTable();
 
+// TODO [DUNE] re-enable
+#if 0
     /**
      * Get the address of a LocalToGlobalIndexMap, and the status of its memory.
      * If the LocalToGlobalIndexMap is created as new in this function, the
@@ -236,6 +238,7 @@ protected:
      */
     virtual std::tuple<NumLib::LocalToGlobalIndexMap*, bool>
     getDOFTableForExtrapolatorData() const;
+#endif
 
 private:
     void initializeExtrapolator();
@@ -249,10 +252,10 @@ private:
     void computeSparsityPattern();
 
 protected:
-    MeshLib::Mesh& _mesh;
-    std::unique_ptr<MeshLib::MeshSubset const> _mesh_subset_all_nodes;
+    MeshLib::FEMMesh& _mesh;
+    // std::unique_ptr<MeshLib::MeshSubset const> _mesh_subset_all_nodes;
 
-    std::unique_ptr<NumLib::LocalToGlobalIndexMap> _local_to_global_index_map;
+    std::unique_ptr<NumLib::AbstractDOFTable> _local_to_global_index_map;
 
     SecondaryVariableCollection _secondary_variables;
 
@@ -281,6 +284,7 @@ protected:
         _integration_point_writer;
 
     GlobalSparsityPattern _sparsity_pattern;
+    ExtrapolatorData _extrapolator_data;
 
 private:
     /// Variables used by this process.  For the monolithic scheme or a
@@ -299,8 +303,6 @@ private:
     /// or a single process, the size of the vector is one. For the staggered
     /// scheme, the size of vector is the number of the coupled processes.
     std::vector<SourceTermCollection> _source_term_collections;
-
-    ExtrapolatorData _extrapolator_data;
 };
 
 }  // namespace ProcessLib
