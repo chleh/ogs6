@@ -8,7 +8,9 @@ endif()
 
 APPEND_SOURCE_FILES(TEST_SOURCES)
 APPEND_SOURCE_FILES(TEST_SOURCES BaseLib)
+if(0)  # TODO [DUNE] re-enable
 APPEND_SOURCE_FILES(TEST_SOURCES FileIO)
+endif()
 APPEND_SOURCE_FILES(TEST_SOURCES GeoLib)
 APPEND_SOURCE_FILES(TEST_SOURCES GeoLib/IO)
 APPEND_SOURCE_FILES(TEST_SOURCES MaterialLib)
@@ -49,8 +51,10 @@ target_link_libraries(testrunner
     ${VTK_LIBRARIES}
 )
 
+if (0)  # TODO [DUNE] re-enable
 if(OGS_BUILD_PROCESS_LIE)
     target_link_libraries(testrunner LIE)
+endif()
 endif()
 
 if(OGS_USE_PETSC)
