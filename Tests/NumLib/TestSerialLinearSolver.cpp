@@ -59,9 +59,12 @@ TEST(NumLibSerialLinearSolver, Steady2DdiffusionQuadElem)
     // Construct a linear system
     //--------------------------------------------------------------------------
     // allocate a vector and matrix
-    MathLib::MatrixSpecifications ms{local_to_global_index_map.dofSizeWithoutGhosts(),
+    MathLib::MatrixSpecifications ms{
+        local_to_global_index_map.dofSizeWithoutGhosts(),
         local_to_global_index_map.dofSizeWithoutGhosts(),
         &local_to_global_index_map.getGhostIndices(),
+        nullptr,
+        nullptr,
         nullptr};
     auto A = MathLib::MatrixVectorTraits<GlobalMatrix>::newInstance(ms);
     A->setZero();

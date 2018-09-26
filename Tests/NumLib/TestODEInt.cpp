@@ -52,6 +52,26 @@ struct Solution
     std::vector<GlobalVector> solutions;
 };
 
+std::unique_ptr<NumLib::NonlinearSolver<NumLib::NonlinearSolverTag::Picard>>
+makeNLSolver(GlobalLinearSolver& linear_solver, unsigned max_iter,
+             std::integral_constant<NumLib::NonlinearSolverTag,
+                                    NumLib::NonlinearSolverTag::Picard>)
+{
+    using NLSolver =
+        NumLib::NonlinearSolver<NumLib::NonlinearSolverTag::Picard>;
+    return std::make_unique<NLSolver>(linear_solver, max_iter, nullptr);
+}
+
+std::unique_ptr<NumLib::NonlinearSolver<NumLib::NonlinearSolverTag::Newton>>
+makeNLSolver(GlobalLinearSolver& linear_solver, unsigned max_iter,
+             std::integral_constant<NumLib::NonlinearSolverTag,
+                                    NumLib::NonlinearSolverTag::Newton>)
+{
+    using NLSolver =
+        NumLib::NonlinearSolver<NumLib::NonlinearSolverTag::Newton>;
+    return std::make_unique<NLSolver>(linear_solver, max_iter, 1.0, nullptr);
+}
+
 template<NumLib::NonlinearSolverTag NLTag>
 class TestOutput
 {
@@ -75,8 +95,9 @@ public:
         auto linear_solver = createLinearSolver();
         auto conv_crit = std::make_unique<NumLib::ConvergenceCriterionDeltaX>(
             _tol, boost::none, MathLib::VecNormType::NORM2);
-        auto nonlinear_solver =
-            std::make_unique<NLSolver>(*linear_solver, _maxiter);
+        auto nonlinear_solver = makeNLSolver(
+            *linear_solver, _maxiter,
+            std::integral_constant<NumLib::NonlinearSolverTag, NLTag>{});
 
         NumLib::TimeLoopSingleODE<NLTag> loop(ode_sys, std::move(linear_solver),
                                               std::move(nonlinear_solver),

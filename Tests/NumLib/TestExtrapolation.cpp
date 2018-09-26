@@ -7,6 +7,8 @@
  *
  */
 
+#include <functional>
+
 #include <gtest/gtest.h>
 
 #include "MathLib/LinAlg/LinAlg.h"
@@ -55,23 +57,22 @@ public:
     virtual std::vector<double> const& getStoredQuantity(
         const double /*t*/,
         GlobalVector const& /*current_solution*/,
-        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        NumLib::AbstractDOFTable const& /*dof_table*/,
         std::vector<double>& /*cache*/) const = 0;
 
     virtual std::vector<double> const& getDerivedQuantity(
         const double /*t*/,
         GlobalVector const& /*current_solution*/,
-        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        NumLib::AbstractDOFTable const& /*dof_table*/,
         std::vector<double>& cache) const = 0;
 };
 
-using IntegrationPointValuesMethod = std::vector<double> const& (
-    LocalAssemblerDataInterface::*)(const double /*t*/,
-                                    GlobalVector const& /*current_solution*/,
-                                    NumLib::
-                                        LocalToGlobalIndexMap const& /*dof_table*/
-                                    ,
-                                    std::vector<double>& /*cache*/) const;
+using IntegrationPointValuesMethod = std::function<std::vector<double> const&(
+    LocalAssemblerDataInterface const& /*loc_asm*/, const double /*t*/,
+    GlobalVector const& /*current_solution*/,
+    NumLib::AbstractDOFTable const& /*dof_table*/
+    ,
+    std::vector<double>& /*cache*/)>;
 
 template <typename ShapeFunction, typename IntegrationMethod,
           unsigned GlobalDim>
@@ -106,7 +107,7 @@ public:
     std::vector<double> const& getStoredQuantity(
         const double /*t*/,
         GlobalVector const& /*current_solution*/,
-        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        NumLib::AbstractDOFTable const& /*dof_table*/,
         std::vector<double>& /*cache*/) const override
     {
         return _int_pt_values;
@@ -115,7 +116,7 @@ public:
     std::vector<double> const& getDerivedQuantity(
         const double /*t*/,
         GlobalVector const& /*current_solution*/,
-        NumLib::LocalToGlobalIndexMap const& /*dof_table*/,
+        NumLib::AbstractDOFTable const& /*dof_table*/,
         std::vector<double>& cache) const override
     {
         cache.clear();
@@ -185,7 +186,7 @@ public:
     }
 
     std::pair<GlobalVector const*, GlobalVector const*> extrapolate(
-        IntegrationPointValuesMethod method, const double t,
+        IntegrationPointValuesMethod const& method, const double t,
         const GlobalVector& x) const
     {
         auto const extrapolatables =
@@ -211,7 +212,7 @@ private:
 };
 
 void extrapolate(ExtrapolationTestProcess const& pcs,
-                 IntegrationPointValuesMethod method,
+                 IntegrationPointValuesMethod const& method,
                  GlobalVector const& expected_extrapolated_global_nodal_values,
                  std::size_t const nnodes, std::size_t const nelements)
 {
@@ -282,7 +283,8 @@ TEST(NumLib, DISABLED_Extrapolation)
                                                         integration_order);
 
         // generate random nodal values
-        MathLib::MatrixSpecifications spec{nnodes, nnodes, nullptr, nullptr};
+        MathLib::MatrixSpecifications spec{nnodes,  nnodes,  nullptr,
+                                           nullptr, nullptr, nullptr};
         auto x = MathLib::MatrixVectorTraits<GlobalVector>::newInstance(spec);
 
         fillVectorRandomly(*x);

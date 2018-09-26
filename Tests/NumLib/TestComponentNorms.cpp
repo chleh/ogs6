@@ -93,8 +93,7 @@ void do_test(unsigned const num_components,
         MathLib::MatrixSpecifications mat_specs(
             dtd.dof_table.dofSizeWithoutGhosts(),
             dtd.dof_table.dofSizeWithoutGhosts(),
-            &dtd.dof_table.getGhostIndices(),
-            nullptr);
+            &dtd.dof_table.getGhostIndices(), nullptr, nullptr, nullptr);
 
         auto x =
             MathLib::MatrixVectorTraits<GlobalVector>::newInstance(mat_specs);

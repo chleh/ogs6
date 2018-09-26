@@ -61,7 +61,7 @@ public:
     MathLib::MatrixSpecifications getMatrixSpecifications(
         const int /*process_id*/) const override
     {
-        return { N, N, nullptr, nullptr };
+        return {N, N, nullptr, nullptr, nullptr, nullptr};
     }
 
     bool isLinear() const override
@@ -145,7 +145,7 @@ public:
     MathLib::MatrixSpecifications getMatrixSpecifications(
         const int /*process_id*/) const override
     {
-        return { N, N, nullptr, nullptr };
+        return {N, N, nullptr, nullptr, nullptr, nullptr};
     }
 
     bool isLinear() const override
@@ -272,7 +272,7 @@ public:
     MathLib::MatrixSpecifications getMatrixSpecifications(
         const int /*process_id*/) const override
     {
-        return { N, N, nullptr, nullptr };
+        return {N, N, nullptr, nullptr, nullptr, nullptr};
     }
 
     bool isLinear() const override
