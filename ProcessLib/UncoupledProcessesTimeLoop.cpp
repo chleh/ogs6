@@ -490,6 +490,8 @@ bool UncoupledProcessesTimeLoop::loop()
             process_data->process_id = process_id;
             setTimeDiscretizedODESystem(*process_data);
 
+            // TODO [DUNE] re-enable
+#if 0
             if (auto* conv_crit =
                     dynamic_cast<NumLib::ConvergenceCriterionPerComponent*>(
                         process_data->conv_crit.get()))
@@ -497,6 +499,7 @@ bool UncoupledProcessesTimeLoop::loop()
                 conv_crit->setDOFTable(pcs.getDOFTable(process_id),
                                        pcs.getMesh());
             }
+#endif
 
             // Add the fixed times of output to time stepper in order that
             // the time stepping is performed and the results are output at
