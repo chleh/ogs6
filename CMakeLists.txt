@@ -334,6 +334,8 @@ if( OGS_BUILD_TESTS AND NOT IS_SUBPROJECT )
     endif()
 endif() # OGS_BUILD_TESTS
 
+add_subdirectory(DUNE_Test)
+
 # The configuration must be called from the source dir and not BaseLib/.
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/BaseLib/BuildInfo.cpp.in"
     "${CMAKE_CURRENT_BINARY_DIR}/BaseLib/BuildInfo.cpp" @ONLY)
