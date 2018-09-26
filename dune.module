@@ -1,0 +1,10 @@
+################################
+# Dune module information file #
+################################
+
+#Name of the module
+Module: OGS-6
+Version: 1
+Maintainer: a
+#depending on
+Depends: dune-uggrid dune-grid
