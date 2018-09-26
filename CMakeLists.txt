@@ -327,10 +327,12 @@ endif()
 if( OGS_BUILD_TESTS AND NOT IS_SUBPROJECT )
     add_subdirectory( Tests )
 
-    if(OGS_USE_MPI)
-        add_subdirectory( SimpleTests/MeshTests/MPI )
-    else()
-        add_subdirectory( SimpleTests/MeshTests )
+    if(0)  # TODO [DUNE] re-enable
+        if(OGS_USE_MPI)
+            add_subdirectory( SimpleTests/MeshTests/MPI )
+        else()
+            add_subdirectory( SimpleTests/MeshTests )
+        endif()
     endif()
 endif() # OGS_BUILD_TESTS
 
