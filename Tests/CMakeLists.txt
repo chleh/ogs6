@@ -28,8 +28,10 @@ if(OGS_BUILD_SWMM)
     APPEND_SOURCE_FILES(TEST_SOURCES FileIO_SWMM)
 endif()
 
+if (0)  # TODO [DUNE] re-enable
 if(OGS_BUILD_PROCESS_LIE)
     APPEND_SOURCE_FILES(TEST_SOURCES ProcessLib/LIE)
+endif()
 endif()
 
 if(OGS_USE_PETSC)
