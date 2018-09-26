@@ -39,6 +39,8 @@ struct MeshGeoToolsLibGeoMapper : public ::testing::Test
     ac::gtest_reporter gtest_reporter;
 };
 
+// TODO [DUNE] re-enable
+#if 0
 // The test maps points with random z coordinate on the surface mesh create by
 // MeshLib::MeshGenerator::createSurfaceMesh that approximates a given surface
 // function. If the distance of the z coordinate of the mapped point p and the
@@ -84,4 +86,4 @@ TEST_F(MeshGeoToolsLibGeoMapper, PointsOnSurfaceMesh)
         ac::make_arbitrary(ac::fix(100,list_of(points_gen))),
         gtest_reporter);
 }
-
+#endif
