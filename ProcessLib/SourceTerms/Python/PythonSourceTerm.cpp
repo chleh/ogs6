@@ -79,112 +79,15 @@ PythonSourceTerm::PythonSourceTerm(
         integration_order, _source_term_data);
 }
 
-void PythonSourceTerm::integrate(
-    const double t, GlobalVector const& x,
-    NumLib::IndexValueVector<GlobalIndexType>& source_term_values) const
-{
-    FlushStdoutGuard guard(_flush_stdout);
-    (void)guard;
-
-    auto const nodes = _source_term_data.source_term_mesh.getNodes();
-
-    auto const& bulk_node_ids_map =
-        *_source_term_data.source_term_mesh.getProperties()
-             .getPropertyVector<std::size_t>("bulk_node_ids");
-
-    source_term_values.ids.clear();
-    source_term_values.values.clear();
-
-    source_term_values.ids.reserve(
-        _source_term_data.source_term_mesh.getNumberOfNodes());
-    source_term_values.values.reserve(
-        _source_term_data.source_term_mesh.getNumberOfNodes());
-
-    std::vector<double> primary_variables;
-
-    for (auto const* node : _source_term_data.source_term_mesh.getNodes())
-    {
-        auto const source_term_node_id = node->getID();
-        auto const bulk_node_id = bulk_node_ids_map[source_term_node_id];
-
-        // gather primary variable values
-        primary_variables.clear();
-        auto const num_var = _dof_table_source_term->getNumberOfVariables();
-        for (int var = 0; var < num_var; ++var)
-        {
-            auto const num_comp =
-                _dof_table_source_term->getNumberOfVariableComponents(var);
-            for (int comp = 0; comp < num_comp; ++comp)
-            {
-                MeshLib::Location loc{_source_term_data.bulk_mesh_id,
-                                      MeshLib::MeshItemType::Node,
-                                      bulk_node_id};
-                auto const dof_idx =
-                    _source_term_data.dof_table_bulk.getGlobalIndex(loc, var, comp);
-
-                if (dof_idx == NumLib::MeshComponentMap::nop)
-                {
-                    // TODO extend Python source term to mixed FEM ansatz functions
-                    OGS_FATAL(
-                        "No d.o.f. found for (node=%d, var=%d, comp=%d).  "
-                        "That might be due to the use of mixed FEM ansatz "
-                        "functions, which is currently not supported by "
-                        "the implementation of Python source terms. That "
-                        "excludes, e.g., the HM process.",
-                        bulk_node_id, var, comp);
-                }
-
-                primary_variables.push_back(x[dof_idx]);
-            }
-        }
-
-        auto* xs = nodes[source_term_node_id]->getCoords();  // TODO DDC problems?
-        auto pair_flag_value = _source_term_data.source_term_object->getDirichletsource termValue(
-            t, {xs[0], xs[1], xs[2]}, source_term_node_id, primary_variables);
-        if (!_source_term_data.source_term_object->isOverriddenEssential())
-        {
-            DBUG(
-                "Method `getDirichletsource termValue' not overridden in Python "
-                "script.");
-            return;
-        }
-
-        if (!pair_flag_value.first)
-            continue;
-
-        MeshLib::Location l(_source_term_data.bulk_mesh_id, MeshLib::MeshItemType::Node,
-                            bulk_node_id);
-        const auto dof_idx = _source_term_data.dof_table_bulk.getGlobalIndex(
-            l, _source_term_data.global_component_id);
-        if (dof_idx == NumLib::MeshComponentMap::nop)
-            OGS_FATAL(
-                "Logic error. This error should already have occured while "
-                "gathering primary variables. Something nasty is going on!");
-
-        // For the DDC approach (e.g. with PETSc option), the negative
-        // index of g_idx means that the entry by that index is a ghost
-        // one, which should be dropped. Especially for PETSc routines
-        // MatZeroRows and MatZeroRowsColumns, which are called to apply
-        // the Dirichlet source term, the negative index is not accepted like
-        // other matrix or vector PETSc routines. Therefore, the
-        // following if-condition is applied.
-        if (dof_idx >= 0)
-        {
-            source_term_values.ids.emplace_back(dof_idx);
-            source_term_values.values.emplace_back(pair_flag_value.second);
-        }
-    }
-}
-
 void PythonSourceTerm::integrate(const double t, const GlobalVector& x,
-                                 GlobalVector& b, GlobalMatrix* Jac)
+                                 GlobalVector& b, GlobalMatrix* Jac) const
 {
     FlushStdoutGuard guard(_flush_stdout);
 
     try
     {
         GlobalExecutor::executeMemberOnDereferenced(
-            &GenericNaturalSourceTermLocalAssemblerInterface::assemble,
+            &PythonSourceTermLocalAssemblerInterface::assemble,
             _local_assemblers, *_dof_table_source_term, t, x, b, Jac);
     }
     catch (MethodNotOverriddenInDerivedClassException const& /*e*/)

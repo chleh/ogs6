@@ -13,7 +13,10 @@
 
 #include "MathLib/LinAlg/Eigen/EigenMapTools.h"
 #include "NumLib/DOF/DOFTableUtil.h"
-
+#include "NumLib/Fem/FiniteElement/TemplateIsoparametric.h"
+#include "ProcessLib/LocalAssemblerTraits.h"
+#include "ProcessLib/Utils/InitShapeMatrices.h"
+#include "PythonSourceTermLocalAssemblerInterface.h"
 #include "PythonSourceTermPythonSideInterface.h"
 
 namespace ProcessLib
@@ -24,15 +27,18 @@ struct MethodNotOverriddenInDerivedClassException
 {
 };
 
-class PythonSourceTermLocalAssemblerInterface
+template <typename NodalRowVectorType>
+struct IntegrationPointData final
 {
-    virtual void assemble(
-        std::size_t const boundary_element_id,
-        NumLib::LocalToGlobalIndexMap const& source_term_dof_table,
-        double const t, const GlobalVector& x, GlobalVector& b,
-        GlobalMatrix* Jac) = 0;
+    IntegrationPointData(NodalRowVectorType const& N_,
+                         double const& integration_weight_)
+        : N(N_), integration_weight(integration_weight_)
+    {}
 
-    virtual ~PythonSourceTermLocalAssemblerInterface() = default;
+    NodalRowVectorType const N;
+    double const integration_weight;
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
 template <typename ShapeFunction, typename IntegrationMethod,
@@ -41,6 +47,9 @@ class PythonSourceTermLocalAssembler final
     : public PythonSourceTermLocalAssemblerInterface
 {
 public:
+    using ShapeMatricesType = ShapeMatrixPolicyType<ShapeFunction, GlobalDim>;
+    using NodalRowVectorType = typename ShapeMatricesType::NodalRowVectorType;
+
     PythonSourceTermLocalAssembler(MeshLib::Element const& e,
                                    std::size_t const /*local_matrix_size*/,
                                    bool is_axially_symmetric,
@@ -49,12 +58,28 @@ public:
         : _data(data),
           _element(e),
           _is_axially_symmetric(is_axially_symmetric),
-          _integration_order(integration_order)
+          _integration_method(integration_order)
     {
+        unsigned const n_integration_points =
+            _integration_method.getNumberOfPoints();
+
+        auto const shape_matrices =
+            initShapeMatrices<ShapeFunction, ShapeMatricesType,
+                              IntegrationMethod, GlobalDim>(
+                _element, _is_axially_symmetric, _integration_method);
+
+        for (unsigned ip = 0; ip < n_integration_points; ip++)
+        {
+            _ip_data.emplace_back(
+                shape_matrices[ip].N,
+                _integration_method.getWeightedPoint(ip).getWeight() *
+                    shape_matrices[ip].integralMeasure *
+                    shape_matrices[ip].detJ);
+        }
     }
 
-    void assemble(std::size_t const boundary_element_id,
-                  NumLib::LocalToGlobalIndexMap const& dof_table_boundary,
+    void assemble(std::size_t const source_term_element_id,
+                  NumLib::LocalToGlobalIndexMap const& dof_table_source_term,
                   double const t, const GlobalVector& x, GlobalVector& b,
                   GlobalMatrix* Jac) override
     {
@@ -66,14 +91,14 @@ public:
             &_element));
 
         unsigned const num_integration_points =
-            Base::_integration_method.getNumberOfPoints();
+            _integration_method.getNumberOfPoints();
         auto const num_var = _data.dof_table_bulk.getNumberOfVariables();
         auto const num_nodes = _element.getNumberOfNodes();
         auto const num_comp_total =
             _data.dof_table_bulk.getNumberOfComponents();
 
         auto const& bulk_node_ids_map =
-            *_data.boundary_mesh.getProperties()
+            *_data.source_term_mesh.getProperties()
                  .template getPropertyVector<std::size_t>("bulk_node_ids");
 
         // gather primary variables
@@ -85,7 +110,7 @@ public:
             for (int comp = 0; comp < num_comp; ++comp)
             {
                 auto const global_component =
-                    dof_table_boundary.getGlobalComponent(var, comp);
+                    dof_table_source_term.getGlobalComponent(var, comp);
 
                 for (unsigned element_node_id = 0; element_node_id < num_nodes;
                      ++element_node_id)
@@ -124,44 +149,31 @@ public:
 
         for (unsigned ip = 0; ip < num_integration_points; ip++)
         {
-            auto const& sm = Base::_shape_matrices[ip];
-            auto const coords = fe.interpolateCoordinates(sm.N);
-            prim_vars =
-                sm.N *
-                primary_variables_mat;  // Assumption: all primary variables
-                                        // have same shape functions.
-            auto const flag_flux_dFlux =
-                _data.bc_object->getFlux(t, coords, prim_vars_data);
-            if (!_data.bc_object->isOverriddenNatural())
-            {
-                // getFlux() is not overridden in Python, so we can skip the
-                // whole BC assembly (i.e., for all boundary elements).
-                throw MethodNotOverriddenInDerivedClassException{};
-            }
+            auto const ip_data = _ip_data[ip];
+            auto const& N = ip_data.N;
+            auto const coords = fe.interpolateCoordinates(N);
+            // Assumption: all primary variables have same shape functions.
+            prim_vars = N * primary_variables_mat;
 
-            if (!std::get<0>(flag_flux_dFlux))
-            {
-                // No flux value for this integration point. Skip assembly of
-                // the entire element.
-                return;
-            }
-            auto const flux = std::get<1>(flag_flux_dFlux);
-            auto const& dFlux = std::get<2>(flag_flux_dFlux);
+            auto const w = ip_data.integration_weight;
+            auto const flux_dflux =
+                _data.source_term_object->getFlux(t, coords, prim_vars_data);
+            auto const flux = std::get<1>(flux_dflux);
+            auto const& dflux = std::get<2>(flux_dflux);
+            local_rhs.noalias() += N * (flux * w);
 
-            auto const& wp = Base::_integration_method.getWeightedPoint(ip);
-            auto const w = sm.detJ * wp.getWeight() * sm.integralMeasure;
-            local_rhs.noalias() += sm.N * (flux * w);
-
-            if (static_cast<int>(dFlux.size()) != num_comp_total)
+            if (static_cast<int>(dflux.size()) != num_comp_total)
             {
-                // This strict check is technically mandatory only if a Jacobian
-                // is assembled. However, it is done as a consistency check also
-                // for cases without Jacobian assembly.
+                // This strict check is technically mandatory only if a
+                // Jacobian is assembled. However, it is done as a
+                // consistency check also for cases without Jacobian
+                // assembly.
                 OGS_FATAL(
-                    "The Python BC must return the derivative of the flux "
-                    "w.r.t. each primary variable. %d components expected. %d "
-                    "components returned from Python.",
-                    num_comp_total, dFlux.size());
+                    "The Python source term must return the derivative of "
+                    "the "
+                    "flux w.r.t. each primary variable. %d components "
+                    "expected. %d components returned from Python.",
+                    num_comp_total, dflux.size());
             }
 
             if (Jac)
@@ -175,21 +187,22 @@ public:
                     // The assignement -= takes into account the sign convention
                     // of 1st-order in time ODE systems in OpenGeoSys.
                     local_Jac.block(top, left, width, height).noalias() -=
-                        sm.N.transpose() * (dFlux[comp] * w) * sm.N;
+                        ip_data.N.transpose() * (dflux[comp] * w) * N;
                 }
             }
         }
 
         auto const& indices_specific_component =
-            dof_table_boundary(boundary_element_id, _data.global_component_id)
+            dof_table_source_term(source_term_element_id,
+                                  _data.global_component_id)
                 .rows;
         b.add(indices_specific_component, local_rhs);
 
         if (Jac)
         {
             // only assemble a block of the Jacobian, not the whole local matrix
-            auto const indices_all_components =
-                NumLib::getIndices(boundary_element_id, dof_table_boundary);
+            auto const indices_all_components = NumLib::getIndices(
+                source_term_element_id, dof_table_source_term);
             MathLib::RowColumnIndices<GlobalIndexType> rci{
                 indices_specific_component, indices_all_components};
             Jac->add(rci, local_Jac);
@@ -200,7 +213,12 @@ private:
     PythonSourceTermData const& _data;
     MeshLib::Element const& _element;
     bool _is_axially_symmetric;
-    unsigned const _integration_order;
+
+    IntegrationMethod const _integration_method;
+    std::vector<
+        IntegrationPointData<NodalRowVectorType>,
+        Eigen::aligned_allocator<IntegrationPointData<NodalRowVectorType>>>
+        _ip_data;
 };
 
 }  // namespace ProcessLib

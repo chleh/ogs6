@@ -14,6 +14,7 @@
 #include "ProcessLib/SourceTerms/SourceTerm.h"
 
 #include "PythonSourceTermPythonSideInterface.h"
+#include "PythonSourceTermLocalAssemblerInterface.h"
 
 namespace ProcessLib
 {
@@ -44,24 +45,21 @@ public:
     PythonSourceTerm(NumLib::LocalToGlobalIndexMap const& source_term_dof_table,
                      PythonSourceTermData&& source_term_data,
                      unsigned const integration_order,
-                     unsigned const integration_order,
                      unsigned const shapefunction_order,
                      unsigned const global_dim, bool const flush_stdout);
 
-    void integrate(const double t, const GlobalVector& x,
-                   NumLib::IndexValueVector<GlobalIndexType>&
-                       source_term_values) const override;
+    void integrate(const double t, GlobalVector const& x, GlobalVector& b,
+                   GlobalMatrix* jac) const override;
 
 private:
     //! Auxiliary data.
     PythonSourceTermData _source_term_data;
 
     //! Local dof table for the boundary mesh.
-    std::unique_ptr<NumLib::LocalToGlobalIndexMap> _dof_table_boundary;
+    std::unique_ptr<NumLib::LocalToGlobalIndexMap> _dof_table_source_term;
 
-    //! Local assemblers for all elements of the boundary mesh.
-    std::vector<
-        std::unique_ptr<GenericNaturalSourceTermLocalAssemblerInterface>>
+    //! Local assemblers for all elements of the source term mesh.
+    std::vector<std::unique_ptr<PythonSourceTermLocalAssemblerInterface>>
         _local_assemblers;
 
     //! Whether or not to flush standard output before and after each call to
