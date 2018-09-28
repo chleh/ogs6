@@ -26,9 +26,9 @@ class LocalToGlobalIndexMap;
 
 namespace ProcessLib
 {
-class PythonSourceTerm;
+class SourceTerm;
 
-std::unique_ptr<PythonSourceTerm> createPythonSourceTerm(
+std::unique_ptr<SourceTerm> createPythonSourceTerm(
     BaseLib::ConfigTree const& config, MeshLib::Mesh const& source_term_mesh,
     NumLib::LocalToGlobalIndexMap const& dof_table, std::size_t bulk_mesh_id,
     int const variable_id, int const component_id,

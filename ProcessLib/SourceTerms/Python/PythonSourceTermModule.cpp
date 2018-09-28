@@ -25,38 +25,26 @@ public:
     using PythonSourceTermPythonSideInterface::
         PythonSourceTermPythonSideInterface;
 
-    std::pair<bool, double> getDirichletBCValue(
-        double t, std::array<double, 3> x, std::size_t node_id,
-        std::vector<double> const& primary_variables) const override
-    {
-        using Ret = std::pair<bool, double>;
-        PYBIND11_OVERLOAD(Ret, PythonSourceTermPythonSideInterface,
-                          getDirichletBCValue, t, x, node_id,
-                          primary_variables);
-    }
-
-    std::tuple<bool, double, std::vector<double>> getFlux(
+    std::pair<double, std::array<double, 3>> getFlux(
         double t, std::array<double, 3> x,
         std::vector<double> const& primary_variables) const override
     {
-        using Ret = std::tuple<bool, double, std::vector<double>>;
+        using Ret = std::pair<double, std::array<double, 3>>;
         PYBIND11_OVERLOAD(Ret, PythonSourceTermPythonSideInterface,
                           getFlux, t, x, primary_variables);
     }
 };
 
-void pythonBindSourceTerm(pybind11::module& m)
+void pythonBindSourceTerm(pybind11::module& m_st)
 {
     namespace py = pybind11;
 
     py::class_<PythonSourceTermPythonSideInterface,
                PythonSourceTermPythonSideInterfaceTrampoline>
-        pybc(m, "SourceTerm");
+        pybc(m_st, "SourceTerm");
 
     pybc.def(py::init());
 
-    pybc.def("getDirichletBCValue",
-             &PythonSourceTermPythonSideInterface::getDirichletBCValue);
     pybc.def("getFlux", &PythonSourceTermPythonSideInterface::getFlux);
 }
 

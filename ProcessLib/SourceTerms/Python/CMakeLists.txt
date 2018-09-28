@@ -1,4 +1,6 @@
 add_library(ProcessLibSourceTermPython
+    CreatePythonSourceTerm.cpp
+    CreatePythonSourceTerm.h
     PythonSourceTerm.cpp
     PythonSourceTerm.h
     PythonSourceTermLocalAssembler.h

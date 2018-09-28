@@ -15,23 +15,25 @@
 #include "BaseLib/ConfigTree.h"
 #include "MeshLib/Mesh.h"
 #include "NumLib/DOF/LocalToGlobalIndexMap.h"
+#include "ProcessLib/SourceTerms/SourceTerm.h"
 #include "PythonSourceTerm.h"
 
 namespace ProcessLib
 {
-
-std::unique_ptr<PythonSourceTerm> createPythonSourceTerm(
+std::unique_ptr<SourceTerm> createPythonSourceTerm(
     BaseLib::ConfigTree const& config, MeshLib::Mesh const& source_term_mesh,
     NumLib::LocalToGlobalIndexMap const& dof_table, std::size_t bulk_mesh_id,
     int const variable_id, int const component_id,
     unsigned const integration_order, unsigned const shapefunction_order,
     unsigned const global_dim)
 {
+    std::cout << "createPythonSourceTerm" << std::endl;
     //! \ogs_file_param{prj__process_variables__process_variable__source_term__source_term__type}
     config.checkConfigParameter("type", "Python");
 
+    auto const source_term_object =
     //! \ogs_file_param{prj__process_variables__process_variable__source_term__source_term__Python__source_term_object}
-    auto const source_term_object = config.getConfigParameter<std::string>("source_term_object");
+        config.getConfigParameter<std::string>("source_term_object");
     //! \ogs_file_param{prj__process_variables__process_variable__source_term__source_term__Python__flush_stdout}
     auto const flush_stdout = config.getConfigParameter("flush_stdout", false);
 
@@ -74,6 +76,7 @@ std::unique_ptr<PythonSourceTerm> createPythonSourceTerm(
 #endif  // USE_PETSC
 
     return std::make_unique<PythonSourceTerm>(
+        dof_table,
         PythonSourceTermData{
             source_term, dof_table, bulk_mesh_id,
             dof_table.getGlobalComponent(variable_id, component_id),

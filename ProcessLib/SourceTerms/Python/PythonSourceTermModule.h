@@ -14,6 +14,6 @@
 
 namespace ProcessLib
 {
-//! Creates Python bindings for the Python BC class.
+//! Creates Python bindings for the Python source term class.
 OGS_EXPORT_SYMBOL void pythonBindSourceTerm(pybind11::module& m);
 }  // namespace ProcessLib

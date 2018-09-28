@@ -68,12 +68,4 @@ private:
     bool const _flush_stdout;
 };
 
-//! Creates a new PythonSourceTerm object.
-std::unique_ptr<PythonSourceTerm> createPythonSourceTerm(
-    BaseLib::ConfigTree const& config, MeshLib::Mesh const& source_term_mesh,
-    NumLib::LocalToGlobalIndexMap const& dof_table, std::size_t bulk_mesh_id,
-    int const variable_id, int const component_id,
-    unsigned const integration_order, unsigned const shapefunction_order,
-    unsigned const global_dim);
-
 }  // namespace ProcessLib
