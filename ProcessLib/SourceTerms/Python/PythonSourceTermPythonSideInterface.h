@@ -41,13 +41,13 @@ public:
 
     /*!
      * Computes the flux for the provided arguments (time, position of the node,
-     * node id, primary variables at the node).
+     * primary variables at the node).
      *
      * \return flux Flux of the source term at that node and derivative of the
      * flux w.r.t. all primary variables.
      */
     virtual std::pair<double, std::array<double, 3>> getFlux(
-        double /*t*/, std::array<double, 3> /*x*/, std::size_t /*node_id*/,
+        double /*t*/, std::array<double, 3> /*x*/,
         std::vector<double> const& /*primary_variables*/) const
     {
         return {std::numeric_limits<double>::quiet_NaN(), {}};

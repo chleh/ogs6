@@ -158,8 +158,8 @@ public:
             auto const w = ip_data.integration_weight;
             auto const flux_dflux =
                 _data.source_term_object->getFlux(t, coords, prim_vars_data);
-            auto const flux = std::get<1>(flux_dflux);
-            auto const& dflux = std::get<2>(flux_dflux);
+            auto const flux = flux_dflux.first;
+            auto const& dflux = flux_dflux.second;
             local_rhs.noalias() += N * (flux * w);
 
             if (static_cast<int>(dflux.size()) != num_comp_total)
@@ -170,8 +170,7 @@ public:
                 // assembly.
                 OGS_FATAL(
                     "The Python source term must return the derivative of "
-                    "the "
-                    "flux w.r.t. each primary variable. %d components "
+                    "the flux w.r.t. each primary variable. %d components "
                     "expected. %d components returned from Python.",
                     num_comp_total, dflux.size());
             }
