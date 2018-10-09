@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <OpenGeoSysProject>
-    <mesh dimension="2" refine="0">square_1x1_gmsh_tri_coarse.msh</mesh>
-    <geometry>square_1x1.gml</geometry>
+    <meshes>
+        <mesh dimension="2" refine="0">square_1x1_gmsh_tri_coarse.msh</mesh>
+        <mesh dimension="1">square_1x1_gmsh_tri_coarse_boundary_left.vtu</mesh>
+        <mesh dimension="1">square_1x1_gmsh_tri_coarse_boundary_bottom.vtu</mesh>
+        <mesh dimension="1">square_1x1_gmsh_tri_coarse_boundary_top.vtu</mesh>
+    </meshes>
     <processes>
         <process>
             <name>SD</name>
@@ -20,8 +24,6 @@
             <secondary_variables>
                 <secondary_variable type="static" internal_name="sigma" output_name="sigma"/>
                 <secondary_variable type="static" internal_name="epsilon" output_name="epsilon"/>
-                <!-- <secondary_variable type="static" internal_name="error_estimate_sigma" output_name="error_estimate_sigma"/> -->
-                <!-- <secondary_variable type="static" internal_name="error_estimate_epsilon" output_name="error_estimate_epsilon"/> -->
             </secondary_variables>
         </process>
     </processes>
@@ -40,10 +42,8 @@
                 <output>
                     <variables>
                         <variable>displacement</variable>
-                        <variable>sigma</variable>
                         <variable>epsilon</variable>
-                        <!-- <variable>error_estimate_sigma</variable> -->
-                        <!-- <variable>error_estimate_epsilon</variable> -->
+                        <variable>sigma</variable>
                     </variables>
                     <output_extrapolation_residuals>true</output_extrapolation_residuals>
                 </output>
@@ -111,30 +111,21 @@
             <initial_condition>displacement0</initial_condition>
             <boundary_conditions>
                 <boundary_condition>
-                    <geometrical_set>square_1x1_geometry</geometrical_set>
-                    <geometry>left</geometry>
-
                     <type>NonuniformDirichlet</type>
                     <component>0</component>
-                    <mesh>square_1x1_gmsh_tri_coarse_boundary_left.vtu</mesh>
+                    <mesh>square_1x1_gmsh_tri_coarse_boundary_left</mesh>
                     <field_name>dirichlet0</field_name>
                 </boundary_condition>
                 <boundary_condition>
-                    <geometrical_set>square_1x1_geometry</geometrical_set>
-                    <geometry>bottom</geometry>
-
                     <type>NonuniformDirichlet</type>
                     <component>1</component>
-                    <mesh>square_1x1_gmsh_tri_coarse_boundary_bottom.vtu</mesh>
+                    <mesh>square_1x1_gmsh_tri_coarse_boundary_bottom</mesh>
                     <field_name>dirichlet0</field_name>
                 </boundary_condition>
                 <boundary_condition>
-                    <geometrical_set>square_1x1_geometry</geometrical_set>
-                    <geometry>top</geometry>
-
                     <type>NonuniformDirichlet</type>
                     <component>1</component>
-                    <mesh>square_1x1_gmsh_tri_coarse_boundary_top.vtu</mesh>
+                    <mesh>square_1x1_gmsh_tri_coarse_boundary_top</mesh>
                     <field_name>dirichlet_gradient</field_name>
                 </boundary_condition>
             </boundary_conditions>

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <OpenGeoSysProject>
-    <!-- <mesh dimension="2" refine="2">square_1x1_gmsh_tri_coarse.msh</mesh> -->
     <meshes>
         <mesh dimension="2" refine="2">square_1x1_gmsh_tri_coarse.msh</mesh>
         <mesh dimension="1">square_1x1_gmsh_tri_coarse_boundary_left.vtu</mesh>
@@ -25,10 +24,6 @@
             <secondary_variables>
                 <secondary_variable type="static" internal_name="sigma" output_name="sigma"/>
                 <secondary_variable type="static" internal_name="epsilon" output_name="epsilon"/>
-                <!--
-                <secondary_variable type="static" internal_name="error_estimate_sigma" output_name="error_estimate_sigma"/>
-                <secondary_variable type="static" internal_name="error_estimate_epsilon" output_name="error_estimate_epsilon"/>
-                -->
             </secondary_variables>
         </process>
     </processes>
@@ -47,12 +42,8 @@
                 <output>
                     <variables>
                         <variable>displacement</variable>
-                        <variable>sigma</variable>
                         <variable>epsilon</variable>
-                <!--
-                        <variable>error_estimate_sigma</variable>
-                        <variable>error_estimate_epsilon</variable>
-                        -->
+                        <variable>sigma</variable>
                     </variables>
                     <output_extrapolation_residuals>true</output_extrapolation_residuals>
                 </output>
@@ -70,7 +61,6 @@
                     <each_steps>10000000</each_steps>
                 </pair>
             </timesteps>
-            <output_iteration_results>true</output_iteration_results>
         </output>
     </time_loop>
     <parameters>

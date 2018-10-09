@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <OpenGeoSysProject>
-    <mesh dimension="2">square_1x1_gmsh_tri_coarse.msh</mesh>
-    <geometry>square_1x1.gml</geometry>
+    <meshes>
+        <mesh dimension="2">square_1x1_gmsh_tri_coarse.msh</mesh>
+        <mesh dimension="1">square_1x1_gmsh_tri_coarse_boundary_left.vtu</mesh>
+        <mesh dimension="1">square_1x1_gmsh_tri_coarse_boundary_bottom.vtu</mesh>
+        <mesh dimension="1">square_1x1_gmsh_tri_coarse_boundary_top.vtu</mesh>
+    </meshes>
     <processes>
         <process>
             <name>SD</name>
@@ -107,30 +111,21 @@
             <initial_condition>displacement0</initial_condition>
             <boundary_conditions>
                 <boundary_condition>
-                    <geometrical_set>square_1x1_geometry</geometrical_set>
-                    <geometry>left</geometry>
-
                     <type>NonuniformDirichlet</type>
                     <component>0</component>
-                    <mesh>square_1x1_gmsh_tri_coarse_boundary_left.vtu</mesh>
+                    <mesh>square_1x1_gmsh_tri_coarse_boundary_left</mesh>
                     <field_name>dirichlet0</field_name>
                 </boundary_condition>
                 <boundary_condition>
-                    <geometrical_set>square_1x1_geometry</geometrical_set>
-                    <geometry>bottom</geometry>
-
                     <type>NonuniformDirichlet</type>
                     <component>1</component>
-                    <mesh>square_1x1_gmsh_tri_coarse_boundary_bottom.vtu</mesh>
+                    <mesh>square_1x1_gmsh_tri_coarse_boundary_bottom</mesh>
                     <field_name>dirichlet0</field_name>
                 </boundary_condition>
                 <boundary_condition>
-                    <geometrical_set>square_1x1_geometry</geometrical_set>
-                    <geometry>top</geometry>
-
                     <type>NonuniformDirichlet</type>
                     <component>1</component>
-                    <mesh>square_1x1_gmsh_tri_coarse_boundary_top.vtu</mesh>
+                    <mesh>square_1x1_gmsh_tri_coarse_boundary_top</mesh>
                     <field_name>dirichlet1</field_name>
                 </boundary_condition>
             </boundary_conditions>
