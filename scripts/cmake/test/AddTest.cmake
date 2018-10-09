@@ -230,7 +230,22 @@ Use six arguments version of AddTest with absolute and relative tolerances")
         set(AddTest_WRAPPER_STRING "-${AddTest_WRAPPER}")
     endif()
     set(TEST_NAME "${AddTest_EXECUTABLE}-${AddTest_NAME}${AddTest_WRAPPER_STRING}")
-    add_test(
+
+    # TODO [DUNE] _add_test has to be used here, because DUNE overwrites the
+    # add_test macro. The old macro is accessible via _add_test.
+    # This is an undocumented CMake feature. DUNE uses it, too, in DuneTestMacros.cmake.
+    # Cf. https://cmake.org/pipermail/cmake-developers/2017-July/030178.html
+    # [cmake-developers] Module macros/function names with single leading underscore
+    # If one does not want to use _add_test, one has to uncomment the following lines in DuneTestMacros.cmake:
+    # macro(add_test)
+    #   if(NOT DUNE_REENABLE_ADD_TEST)
+    #     message(SEND_ERROR "Please use dune_add_test instead of add_test! If you need add_test in a downstream project, set the variable DUNE_REENABLE_ADD_TEST to True in that project to suppress this error.")
+    #   else()
+    #     _add_test(${ARGN})
+    #   endif()
+    # endmacro()
+    # Probably this problem should be fixed upstream in DUNE.
+    _add_test(
         NAME ${TEST_NAME}
         COMMAND ${CMAKE_COMMAND}
         -DEXECUTABLE=${AddTest_EXECUTABLE_PARSED}
