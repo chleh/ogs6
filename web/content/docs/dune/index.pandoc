@@ -102,6 +102,7 @@ author = "Christoph Lehmann"
   Since both projects can write to VTU, this compatibility should be given.
 * See also: The list of not implemented features above.
 
+
 # Needed ArchLinux AUR packages
 
 ```
@@ -128,7 +129,6 @@ Note: Currently (2018-10-08) the AUR packages are at DUNE version 2.5.
 I could not compile those packages, but had to update the versions manually to 2.6.
 
 
-
 # Some details of the current implementation.
 
 * The commit messages in this branch start with either a "B" for "boring", technical
@@ -140,6 +140,18 @@ I could not compile those packages, but had to update the versions manually to 2
   is contained [here](identify-boundary.pdf)
   and a sketch of the interpolation of the BC d.o.f. is contained [here](interpolate-bc.pdf).
   These sketches will hopefully help to understand the respective code in the `NonuniformDirichletBoundaryConditionDUNE` class.
+
+
+# Tests
+
+There are some tests in the directory DUNE_Test, which are DUNE-only executables.
+The code is copied from Oliver Sanders' DUNE book.
+These tests can be used to verify that DUNE is working at all.
+
+There is a second set of test cases defined in ProcessLib/SmallDeformationDUNE/Tests.cmake.
+Those tests are ordered by increasing complexity and from one test to the next only a small detail is changed,
+such as uniform/non-uniform BCs, global refinement and local mesh adaptivity.
+The most complex of those test cases is briefly described in the aforementioned [presentation](vortrag.pdf).
 
 
 # Additional DUNE features
@@ -154,7 +166,7 @@ OS. p. 164:
 
 ## Checkpointing
 
-DUNE seems to provide some checkpointing infrastructure.
+DUNE seems to provide some checkpointing infrastructure to dump the internal state and restart from it.
 
 
 ## Powerful facilities for handling overlapping/contacting meshes, possibly of different dimensions.
