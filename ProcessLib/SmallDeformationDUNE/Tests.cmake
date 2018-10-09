@@ -109,11 +109,3 @@ AddTest(
     EXECUTABLE_ARGS square_error_estimator.prj
     REQUIREMENTS NOT OGS_USE_MPI
     )
-
-##### DUNE #####
-AddTest(
-    NAME DUNE_SmallDefLin_square_coarse
-    PATH Mechanics/LinearDUNE
-    EXECUTABLE_ARGS square_coarse.prj
-    REQUIREMENTS NOT OGS_USE_MPI
-    )

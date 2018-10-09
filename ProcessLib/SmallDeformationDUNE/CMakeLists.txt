@@ -6,4 +6,4 @@ if(BUILD_SHARED_LIBS)
 endif()
 target_link_libraries(SmallDeformationDUNE PUBLIC ProcessLib)
 
-# TODO [DUNE] fix: include(Tests.cmake)
+include(Tests.cmake)
