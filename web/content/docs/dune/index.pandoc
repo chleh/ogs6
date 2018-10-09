@@ -1,0 +1,164 @@
++++
+
+date = "2018-10-08T15:18:14+02:00"
+title = "Status of the integration of DUNE into OGS"
+author = "Christoph Lehmann"
+
+[menu]
+  [menu.dune]
++++
+
+# What runs?
+
+* The small deformation process with linear elasticity and non-uniform Dirichlet
+  boundary conditions using linear shape functions.
+* Many technical details have been adapted to DUNE, but the assembly routine
+  itself and the data stored in the local assemblers are nearly identical to the OGS-only code.
+
+
+# What is not implemented?
+
+* _Neumann/Robin/natural BCs, Source Terms._  
+  Implementing this should be straight-forward based on the assembly routine of the SmallDeformation
+  process and our current OGS BCs/STs.
+* _Other processes than small deformation._  
+  The current implementation is specifically tailored towards the SmallDeformation process.
+  In particular, reference to it (more specifically: to the fact that there is one vectorial variable interpolated with linear
+  shape functions) is made in the d.o.f. table and in the error estimator. The latter has been developed by Zienkiewicz and Zhu
+  for linear elasticity.  
+  The underlying problem is that by default DUNE's FE bases are templated (static/compile-time polymorphism).
+  Therefore, the basis for, e.g., a 2D displacement has a different C++ type than for a 3D displacement
+  than for a scalar pressure variable.
+  This is in contrast to OGS's d.o.f. table, which is always of type `LocalToGlobalIndexMap`, no matter which process.
+  As a consequence, also BCs/STs etc. will be templated with some FE basis.
+  Oliver Sander's DUNE book states that there are also dynamically polymorphic bases/d.o.f. tables in DUNE.
+  However, I could not figure out how to use them.
+  If one wants to use them, one might need some help from the DUNE developers.
+* _Staggered coupling._  
+  Since only the SmallDeformation process has been implemented so far, there is no need/possibility to use staggered
+  process coupling.
+  If the issues with the d.o.f table described above are resolved, it should be possible to easily enable staggered coupling
+  in the same fashion as currently done in OGS.
+* _Mesh adaptivity with Picard solver._  
+  Not implemented, because Picard is not used for SmallDeformation.
+  Easy to implement: Just add the refinement loop to the Picard solver, like in the Newton case.
+* _Domain decomposition and load balancing._  
+  Should not be hard. Oliver Sander describes in the DUNE book different ways of domain decomposition with
+  different ghost nodes or elements.
+  The implementation work necessary for load balancing will probably boil down to (de-)serialization of the
+  data stored in the local assemblers.
+  This work has to be done anyway, e.g., for restart functionality or for writing more comprehensive output files.
+* _Windows support._  
+  AFAIK Windows currently is not supported by DUNE and the OGS-DUNE code has not yet been tested on Windows.
+* _LIE/XFEM._  
+  It's not clear whether this is supported with the FE bases shipped with DUNE.
+
+
+# Which (high-level) features of DUNE are currently used
+
+* UG-Grid: Distributed parallel 2D/3D unstructured mixed-element grid with mesh
+  adaptivity
+* Shape functions
+* Quadrature rules
+* D.o.f. table (roughly the "Basis" in DUNE terms)
+
+
+# General issues
+
+* The FE bases (and thereby the _d.o.f. tables_) in DUNE are _templated_ (static polymorphism), which is in contrast
+  to OGS's implementation. See also above.
+* OGS's d.o.f. table provides _random access_ via element ids.  
+  In contrast DUNE's grids can only be traversed with forward iterators.
+* A _VTK reader_ is missing from DUNE.  
+  Currently the GMSH reader is used. Maybe also other wide-spread and versatile formats are supported by DUNE
+* _Single precision_ seems to be hard-coded in DUNE's VTK writer.
+* The grids in DUNE are usually made of _linear elements_  
+  (according to Oliver Sander ALUGrid might support higher-order elements)
+  and for higher-order shape functions additional d.o.f.s are assigned to the faces of the elements and possibly
+  to the element itselft, in addition to the nodes.
+  This might cause some differences in the d.o.f. handling, which might be largely different from OGS's d.o.f. handling.
+  It also means that selecting the shape function order might be more difficult to achieve.
+  The output, in turn, might use a linear mesh again.
+* _Reading partitioned meshes_ is not possible in general.  
+  Instead one MPI rank reads the whole mesh and distributes it across the cluster.
+  This might be a bearable problem if one combines this mechanism with global refinement after the mesh has been distributed.
+* The boundary of a 2D domain is 1D, but _UGGrid does not support 1D meshes_.  
+  So for BCs in general one might need to stick with OGS's meshes.
+  This has been done for the nonuniform Dirichlet BC in this implementation.
+* _Parallelizing the assembly with OpenMP_ might be difficult because of the
+  grid's forward iterators (not random access iterators)
+* According to Oliver Sander the grid's _node numbering is not guaranteed_ in DUNE
+  in general.  
+  That might lead to errors when mapping boundary meshes onto the bulk mesh.
+  For the UGGrid, however, the node numbering will probably be as given in the input mesh.
+
+
+# What to do next?
+
+* It might be worthwhile to use fewer DUNE features.  
+  I.e., not using DUNE's d.o.f. table, shape functions and quadrature rules will lead to not relying on
+  DUNE's templated d.o.f. table and will make the interfacing with DUNE more compatible to current OGS's state.  
+  In order to take this step back, however, one has to check that the node numberings are compatible between OGS and DUNE.
+  Since both projects can write to VTU, this compatibility should be given.
+* See also: The list of not implemented features above.
+
+# Needed ArchLinux AUR packages
+
+```
+$ pacman -Qs dune
+local/dune-common 2.6.0-1 (dune)
+    Basic classes used by all DUNE modules
+local/dune-functions 2.6.0-1 (dune)
+    Abstractions for functions and discrete function space bases
+local/dune-geometry 2.6.0-1 (dune)
+    Reference elements with corresponding mappings and quadratures
+local/dune-grid 2.6.0-1 (dune)
+    Nonconforming, hierarchically nested, multi-element-type, parallel grids
+local/dune-istl 2.6.0-1 (dune)
+    Iterative solver template library
+local/dune-localfunctions 2.6.0-1 (dune)
+    Shape functions, interpolation operators on DUNE reference elemements
+local/dune-typetree 2.6.0-1 (dune)
+    A template library for statically typed object trees
+local/dune-uggrid 2.6.0-1 (dune)
+    UG grid manager
+```
+
+Note: Currently (2018-10-08) the AUR packages are at DUNE version 2.5.
+I could not compile those packages, but had to update the versions manually to 2.6.
+
+
+
+# Some details of the current implementation.
+
+* The commit messages in this branch start with either a "B" for "boring", technical
+  changes or an "I" for "interesting" changes, i.e., some newly introduced algorithms.
+* A test example, the error estimator and the interpolation of nodal and
+  integration point quantities are described in [this presentation](vortrag.pdf) held in Jan.
+  2018 (meeting with Oliver Sander at TU Dresden).
+* A sketch illustrating how boundary segments (DUNE terminology) are identified
+  is contained [here](identify-boundary.pdf)
+  and a sketch of the interpolation of the BC d.o.f. is contained [here](interpolate-bc.pdf).
+  These sketches will hopefully help to understand the respective code in the `NonuniformDirichletBoundaryConditionDUNE` class.
+
+
+# Additional DUNE features
+
+
+## GmshReader insertBoundarySegments
+
+OS. p. 164:
+
+> it allows to read boundary segment descriptions of higher order. Gmsh partially supports polynomial elements of orders up to five. While grid elements themselves remain linear, higher-order boundary representations are used by some grid implementations to increase the geometric approximation when refining the grid.
+
+
+## Checkpointing
+
+DUNE seems to provide some checkpointing infrastructure.
+
+
+## Powerful facilities for handling overlapping/contacting meshes, possibly of different dimensions.
+
+* Grid glue
+* Foam grid
+

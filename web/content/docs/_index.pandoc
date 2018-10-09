@@ -41,4 +41,9 @@ name = "Mailing List"
 url = "https://groups.google.com/forum/#!forum/ogs-users"
 text = "The mailing lists for OpenGeoSys users and developers are a good place to ask question related to anything OGS."
 
+[[sections]]
+name = "DUNE"
+url = "/docs/dune"
+text = "State of the integration of DUNE"
+
 +++
