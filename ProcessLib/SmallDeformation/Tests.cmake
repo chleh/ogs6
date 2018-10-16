@@ -345,3 +345,14 @@ AddTest(
     ref_hertz_contact_ts_10.vtu hertz_pcs_0_ts_10_t_10.000000.vtu epsilon epsilon 1e-16 0
     ref_hertz_contact_ts_10.vtu hertz_pcs_0_ts_10_t_10.000000.vtu sigma sigma 1e-16 0
 )
+AddTest(
+    NAME Mechanics_SDL_disc_with_hole_mfront
+    PATH Mechanics/Linear/MFront/disc_with_hole
+    EXECUTABLE ogs
+    EXECUTABLE_ARGS disc_with_hole.prj
+    TESTER vtkdiff
+    REQUIREMENTS NOT OGS_USE_MPI
+    DIFF_DATA
+    disc_with_hole_expected_pcs_0_ts_4_t_1.000000.vtu disc_with_hole_pcs_0_ts_4_t_1.000000.vtu displacement displacement 1e-16 1e-16
+    VIS disc_with_hole_pcs_0_ts_4_t_1.000000.vtu
+)
