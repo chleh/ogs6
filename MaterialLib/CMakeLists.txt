@@ -32,7 +32,7 @@ target_include_directories(MaterialLib PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 target_link_libraries(MaterialLib
     PUBLIC BaseLib NumLib logog # ProcessLib
-    PRIVATE MathLib MeshLib
+    PRIVATE MathLib MeshLib -ldl
 )
 
 if(OGS_USE_PCH)
