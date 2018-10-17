@@ -11,14 +11,6 @@
 
 #include <dlfcn.h>
 #include <map>
-#include <typeinfo>
-
-namespace aster
-{
-// Cf. mfront/include/MFront/Aster/Aster.hxx
-using AsterInt = std::ptrdiff_t;
-using AsterReal = double;
-}  // namespace aster
 
 namespace
 {
@@ -324,25 +316,14 @@ std::unique_ptr<MFront<DisplacementDim>> createMFront(
         lib, "", "BDT");
 #endif
 
-    getSymbol<void (*)(
-        aster::AsterReal* const STRESS, aster::AsterReal* const STATEV,
-        aster::AsterReal* const DDSOE, const aster::AsterReal* const STRAN,
-        const aster::AsterReal* const DSTRAN,
-        const aster::AsterReal* const DTIME, const aster::AsterReal* const TEMP,
-        const aster::AsterReal* const DTEMP,
-        const aster::AsterReal* const PREDEF,
-        const aster::AsterReal* const DPRED, const aster::AsterInt* const NTENS,
-        const aster::AsterInt* const NSTATV,
-        const aster::AsterReal* const PROPS,
-        const aster::AsterInt* const NPROPS, const aster::AsterReal* const DROT,
-        aster::AsterReal* const PNEWDT, const aster::AsterInt* const NUMMOD)>(
+    auto const callback = getSymbol<typename MFront<DisplacementDim>::Callback>(
         lib, "", model_name);
 
     INFO(
         "### MFRONT END "
         "####################################################");
 
-    return std::make_unique<MFront<DisplacementDim>>();
+    return std::make_unique<MFront<DisplacementDim>>(callback);
 }
 
 template std::unique_ptr<MFront<2>> createMFront<2>(
