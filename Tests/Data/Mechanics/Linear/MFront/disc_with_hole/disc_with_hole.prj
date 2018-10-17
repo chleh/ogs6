@@ -8,9 +8,9 @@
             <type>SMALL_DEFORMATION</type>
             <integration_order>2</integration_order>
             <constitutive_relation>
-                <type>LinearElasticIsotropic</type>
-                <youngs_modulus>E</youngs_modulus>
-                <poissons_ratio>nu</poissons_ratio>
+                <type>MFront</type>
+                <library>libAsterBehaviour.so</library>
+                <model>asterbdt</model>
             </constitutive_relation>
             <solid_density>rho_sr</solid_density>
             <specific_body_force>0 0</specific_body_force>
