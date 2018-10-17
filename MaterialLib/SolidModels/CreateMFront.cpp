@@ -13,6 +13,13 @@
 #include <map>
 #include <typeinfo>
 
+namespace aster
+{
+// Cf. mfront/include/MFront/Aster/Aster.hxx
+using AsterInt = std::ptrdiff_t;
+using AsterReal = double;
+}  // namespace aster
+
 namespace
 {
 void symbolInfo(std::string const& symbol, char const* value)
@@ -64,7 +71,7 @@ void symbolInfo(std::string const& symbol, T* value)
 void* getRawSymbol(void* lib, std::string const& model,
                    std::string const& symbol)
 {
-    auto const symbol_name = model + "_" + symbol;
+    auto const symbol_name = model + (model.empty() ? "" : "_") + symbol;
     dlerror();
     auto* sym = dlsym(lib, symbol_name.c_str());
     auto* err = dlerror();
@@ -102,6 +109,21 @@ T* getSymbol(void* lib, std::string const& model, std::string const& symbol,
 {
     auto* sym = getRawSymbol(lib, model, symbol);
     auto value = static_cast<T*>(sym);
+    symbolInfo(symbol, value);
+
+    return value;
+}
+
+template <typename Res, typename... Args>
+using FctPtr = Res (*)(Args...);
+
+template <typename Res, typename... Args>
+FctPtr<Res, Args...> getSymbol(void* lib, std::string const& model,
+                               std::string const& symbol,
+                               Type<Res (*)(Args...)>)
+{
+    auto* sym = getRawSymbol(lib, model, symbol);
+    auto value = reinterpret_cast<Res (*)(Args...)>(sym);
     symbolInfo(symbol, value);
 
     return value;
@@ -276,80 +298,18 @@ std::unique_ptr<MFront<DisplacementDim>> createMFront(
     getSymbol<unsigned short>(lib, model_name,
                               "requiresThermalExpansionCoefficientTensor");
 
-    /*
-getSymbol<int>(lib, model_name, "setParameter(const char* const key,
-                                       const double value)
-{
-using tfel::material::BDTParametersInitializer;
-auto& i = BDTParametersInitializer::get();
-try
-{
-    i.set(key, value);
-}
-catch (std::runtime_error& e)
-{
-    std::cerr << e.what() << std::endl;
-    return 0;
-}
-return 1;
-}
+    getSymbol<int (*)(const char* const key, const double value)>(
+        lib, model_name, "setParameter");
 
-getSymbol<int>(lib, model_name, "setUnsignedShortParameter(
-const char* const key, const unsigned short value)
-{
-using tfel::material::BDTParametersInitializer;
-auto& i = BDTParametersInitializer::get();
-try
-{
-    i.set(key, value);
-}
-catch (std::runtime_error& e)
-{
-    std::cerr << e.what() << std::endl;
-    return 0;
-}
-return 1;
-}
+    getSymbol<int (*)(const char* const key, const unsigned short value)>(
+        lib, model_name, "setUnsignedShortParameter");
 
-getSymbol<void>(lib, model_name, "setOutOfBoundsPolicy(const int p)
-{
-if (p == 0)
-{
-   >(lib, model_name, "getOutOfBoundsPolicy() = tfel::material::None;
-}
-else if (p == 1)
-{
-   >(lib, model_name, "getOutOfBoundsPolicy() = tfel::material::Warning;
-}
-else if (p == 2)
-{
-   >(lib, model_name, "getOutOfBoundsPolicy() = tfel::material::Strict;
-}
-else
-{
-    std::cerr << "asterbdt_setOutOfBoundsPolicy : invalid argument\n";
-}
-}
-    */
+    getSymbol<void (*)(const int p)>(lib, model_name, "setOutOfBoundsPolicy");
+
+    getSymbol<char* (*)()>(lib, model_name, "getIntegrationErrorMessage");
 
 #if 0
-
-    char*>(lib, model_name, "getIntegrationErrorMessage()
-    {
-#if (defined __GNUC__) && (!defined __clang__) && \
-    (!defined __INTEL_COMPILER) && (!defined __PGI)
-#if __GNUC__ * 10000 + __GNUC_MINOR__ * 100 < 40800
-        static __thread char msg[128];
-#else
-        static thread_local char msg[128];
-#endif
-#else  /* (defined __GNUC__) ...*/
-        static thread_local char msg[128];
-#endif /* (defined __GNUC__) ...*/
-        return msg;
-    }  // end of>(lib, model_name, "getIntegrationErrorMessage
-
-    getSymbol<void BDT(
+    getSymbol<void (*)(
         aster::AsterReal* const STRESS, aster::AsterReal* const STATEV,
         aster::AsterReal* const DDSOE, const aster::AsterReal* const STRAN,
         const aster::AsterReal* const DSTRAN,
@@ -360,21 +320,11 @@ else
         const aster::AsterInt* const NSTATV,
         const aster::AsterReal* const PROPS,
         const aster::AsterInt* const NPROPS, const aster::AsterReal* const DROT,
-        aster::AsterReal* const PNEWDT, const aster::AsterInt* const NUMMOD)
-    {
-        char* msg =>(lib, model_name, "getIntegrationErrorMessage();
-        if (aster::AsterInterface<tfel::material::BDT>::exe(
-                msg, NTENS, DTIME, DROT, DDSOE, STRAN, DSTRAN, TEMP, DTEMP,
-                PROPS, NPROPS, PREDEF, DPRED, STATEV, NSTATV, STRESS, NUMMOD,
-               >(lib, model_name, "getOutOfBoundsPolicy(),
-                aster::AsterStandardSmallStrainStressFreeExpansionHandler) != 0)
-        {
-            *PNEWDT = -1.;
-            return;
-        }
-    }
+        aster::AsterReal* const PNEWDT, const aster::AsterInt* const NUMMOD)>(
+        lib, "", "BDT");
+#endif
 
-    getSymbol<void asterbdt(
+    getSymbol<void (*)(
         aster::AsterReal* const STRESS, aster::AsterReal* const STATEV,
         aster::AsterReal* const DDSOE, const aster::AsterReal* const STRAN,
         const aster::AsterReal* const DSTRAN,
@@ -385,14 +335,12 @@ else
         const aster::AsterInt* const NSTATV,
         const aster::AsterReal* const PROPS,
         const aster::AsterInt* const NPROPS, const aster::AsterReal* const DROT,
-        aster::AsterReal* const PNEWDT, const aster::AsterInt* const NUMMOD)
-    {
-        BDT(STRESS, STATEV, DDSOE, STRAN, DSTRAN, DTIME, TEMP, DTEMP, PREDEF,
-            DPRED, NTENS, NSTATV, PROPS, NPROPS, DROT, PNEWDT, NUMMOD);
-    }
-#endif
+        aster::AsterReal* const PNEWDT, const aster::AsterInt* const NUMMOD)>(
+        lib, "", model_name);
 
-    INFO("### MFRONT END ####################################################");
+    INFO(
+        "### MFRONT END "
+        "####################################################");
 
     return std::make_unique<MFront<DisplacementDim>>();
 }
