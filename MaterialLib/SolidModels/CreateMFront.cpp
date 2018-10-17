@@ -10,6 +10,7 @@
 #include "CreateMFront.h"
 
 #include <dlfcn.h>
+#include <map>
 #include <typeinfo>
 
 namespace
@@ -77,38 +78,30 @@ void* getRawSymbol(void* lib, std::string const& model,
 }
 
 template <typename T>
+struct Type
+{
+};
+
+template <typename T>
 T getSymbol(void* lib, std::string const& model, std::string const& symbol);
 
 template <typename T>
-T getSymbol(void* lib, std::string const& model, std::string const& symbol, T*)
+T getSymbol(void* lib, std::string const& model, std::string const& symbol,
+            Type<T>)
 {
     auto* sym = getRawSymbol(lib, model, symbol);
     auto value = *static_cast<T*>(sym);
-    INFO("YYY");
-    symbolInfo(symbol, value);
-
-    return value;
-}
-
-template <>
-int* getSymbol<int*>(void* lib, std::string const& model,
-                     std::string const& symbol, int**)
-{
-    auto* sym = getRawSymbol(lib, model, symbol);
-    auto value = static_cast<int*>(sym);
-    INFO("XXX");
     symbolInfo(symbol, value);
 
     return value;
 }
 
 template <typename T>
-T** getSymbol(void* lib, std::string const& model, std::string const& symbol,
-              T***)
+T* getSymbol(void* lib, std::string const& model, std::string const& symbol,
+             Type<T*>)
 {
     auto* sym = getRawSymbol(lib, model, symbol);
-    auto value = static_cast<T**>(sym);
-    INFO("ZZZ");
+    auto value = static_cast<T*>(sym);
     symbolInfo(symbol, value);
 
     return value;
@@ -116,10 +109,10 @@ T** getSymbol(void* lib, std::string const& model, std::string const& symbol,
 
 template <typename T>
 std::vector<T> getSymbol(void* lib, std::string const& model,
-                         std::string const& symbol, std::vector<T>*)
+                         std::string const& symbol, Type<std::vector<T>>)
 {
     auto const n = getSymbol<unsigned short>(lib, model, 'n' + symbol);
-    auto const arr = getSymbol<T*>(lib, model, symbol);
+    auto const arr = getSymbol(lib, model, symbol, Type<T*>{});
     std::vector<T> vec;
     vec.reserve(n);
 
@@ -130,28 +123,47 @@ std::vector<T> getSymbol(void* lib, std::string const& model,
     return vec;
 }
 
+std::string getSymbol(void* lib, std::string const& model,
+                      std::string const& symbol, Type<std::string>)
+{
+    auto* sym = getRawSymbol(lib, model, symbol);
+    auto value = *static_cast<const char**>(sym);
+    symbolInfo(symbol, value);
+
+    return value;
+}
+
+// array of strings, not pointer to string
+const char** getSymbol(void* lib, std::string const& model,
+                       std::string const& symbol, Type<std::string*>)
+{
+    auto* sym = getRawSymbol(lib, model, symbol);
+    auto value = static_cast<const char**>(sym);
+    symbolInfo(symbol, value);
+
+    return value;
+}
+
 template <typename T>
 T getSymbol(void* lib, std::string const& model, std::string const& symbol)
 {
-    return getSymbol(lib, model, symbol, static_cast<T*>(nullptr));
+    return getSymbol(lib, model, symbol, Type<T>{});
 }
 
-std::pair<std::vector<const char*>, std::vector<int>> getNamesAndTypes(
-    void* lib, std::string const& model, std::string const& symbol)
+std::map<std::string, int> getNamesAndTypes(void* lib, std::string const& model,
+                                            std::string const& symbol)
 {
     auto const n = getSymbol<unsigned short>(lib, model, 'n' + symbol);
     auto const arr_names = getSymbol<const char**>(lib, model, symbol);
     auto const arr_types = getSymbol<int*>(lib, model, symbol + "Types");
 
-    std::vector<const char*> vec_names;
-    std::vector<int> vec_types;
+    std::map<std::string, int> res;
 
     for (unsigned short i = 0; i < n; ++i)
     {
-        vec_names.push_back(arr_names[i]);
-        vec_types.push_back(arr_types[i]);
+        res.emplace(arr_names[i], arr_types[i]);
     }
-    return {vec_names, vec_types};
+    return res;
 }
 
 }  // namespace
@@ -184,25 +196,24 @@ std::unique_ptr<MFront<DisplacementDim>> createMFront(
                   lib_path.c_str(), err);
     }
 
-    if (getSymbol<const char*>(lib, model_name, "mfront_ept") != model_name)
+    if (getSymbol<std::string>(lib, model_name, "mfront_ept") != model_name)
     {
         OGS_FATAL("Loaded shared library is internally inconsistent.");
     }
 
-#if 1
-    getSymbol<const char*>(lib, model_name, "tfel_version");
+    getSymbol<std::string>(lib, model_name, "tfel_version");
 
     getSymbol<unsigned short>(lib, model_name, "mfront_mkt");
 
-    getSymbol<const char*>(lib, model_name, "mfront_interface");
+    getSymbol<std::string>(lib, model_name, "mfront_interface");
 
-    getSymbol<const char*>(lib, model_name, "src");
+    getSymbol<std::string>(lib, model_name, "src");
 
-    auto const hypotheses = getSymbol<std::vector<const char*>>(
+    auto const hypotheses = getSymbol<std::vector<std::string>>(
         lib, model_name, "ModellingHypotheses");
-    for (auto* str : hypotheses)
+    for (auto& str : hypotheses)
     {
-        INFO("  --> `%s'", str);
+        INFO("  --> `%s'", str.c_str());
     }
 
     getSymbol<unsigned short>(lib, model_name, "BehaviourType");
@@ -217,48 +228,32 @@ std::unique_ptr<MFront<DisplacementDim>> createMFront(
     getSymbol<unsigned short>(lib, model_name,
                               "UsableInPurelyImplicitResolution");
 
-    auto const properties = getSymbol<std::vector<const char*>>(
+    auto const properties = getSymbol<std::vector<std::string>>(
         lib, model_name, "MaterialProperties");
-    for (auto* str : properties)
+    for (auto& str : properties)
     {
-        INFO("  --> `%s'", str);
+        INFO("  --> `%s'", str.c_str());
     }
 
-    /*
-    auto const internal_vars = getSymbol<std::vector<const char*>>(
-        lib, model_name, "InternalStateVariables");
-    for (auto* str : internal_vars)
-    {
-        INFO("  --> `%s'", str);
-    }*/
     auto const internal_vars =
         getNamesAndTypes(lib, model_name, "InternalStateVariables");
-    for (std::size_t i = 0; i < internal_vars.first.size(); ++i)
+    for (auto& elem : internal_vars)
     {
-        INFO("  --> `%s' type: %i.", internal_vars.first[i],
-             internal_vars.second[i]);
+        INFO("  --> `%s' type: %i.", elem.first.c_str(), elem.second);
     }
 
-    auto const external_vars = getSymbol<std::vector<const char*>>(
+    auto const external_vars = getSymbol<std::vector<std::string>>(
         lib, model_name, "ExternalStateVariables");
-    for (auto* str : external_vars)
+    for (auto& str : external_vars)
     {
-        INFO("  --> `%s'", str);
+        INFO("  --> `%s'", str.c_str());
     }
 
-    auto const parameters_ =
-        getSymbol<std::vector<const char*>>(lib, model_name, "Parameters");
-    for (auto* str : parameters_)
+    auto const parameters_ = getNamesAndTypes(lib, model_name, "Parameters");
+    for (auto& elem : parameters_)
     {
-        INFO("  --> `%s'", str);
+        INFO("  --> `%s' type: %i.", elem.first.c_str(), elem.second);
     }
-
-    /*
-getSymbol<int>(lib, model_name, "InternalStateVariablesTypes[] = {1, 0, 0, 0,
-                                                           0, 0, 0};
-
-getSymbol<int>(lib, model_name, "ParametersTypes[] = {0, 0, 0, 0, 0, 0, 2};
-                                                                           */
 
     getSymbol<double>(lib, model_name, "theta_ParameterDefaultValue");
 
@@ -395,8 +390,6 @@ else
         BDT(STRESS, STATEV, DDSOE, STRAN, DSTRAN, DTIME, TEMP, DTEMP, PREDEF,
             DPRED, NTENS, NSTATV, PROPS, NPROPS, DROT, PNEWDT, NUMMOD);
     }
-#endif
-
 #endif
 
     INFO("### MFRONT END ####################################################");
